@@ -4,6 +4,7 @@
 1. python = 2.7
 2. PaddlePaddle >= 1.2.0
 3. TensorFlow >= 1.12.0
+
 Notice：You can install PaddlePaddle and Tensorflow in different virtual environment since dependency conflicts between PaddlePaddle and TensorFlow
 
 #### Demo: How to change tensorflow resnet_v1_50 pretrained model to PaddlePaddle model for inference
