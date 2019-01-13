@@ -11,8 +11,9 @@
 **Notice：You can install PaddlePaddle and Tensorflow in different virtual environment since there's dependency conflict between PaddlePaddle and TensorFlow**
 
 ### Usage
-**1. Model file: Tensorflow checkpoint directory**
-**2. input tensors' and output tensors' name**
+> **1. Model file: Tensorflow checkpoint directory**
+
+> **2. input tensors' and output tensors' name**
 
 ### Demo: How to change tensorflow resnet_v1_50 pretrained model to PaddlePaddle model for inference
 #### 1. Get pretrained_model
