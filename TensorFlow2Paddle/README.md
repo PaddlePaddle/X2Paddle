@@ -1,4 +1,4 @@
-<font color=red> Warning: TensorFlow2Paddle is not stable yet. Only test on vgg_16/resnet_v1_50/inception_v3 with is_training=False </font>
+###Warning: TensorFlow2Paddle is not stable yet. Only test on vgg_16/resnet_v1_50/inception_v3 with is_training=False
 
 Demo: How to change tensorflow resnet_v1_50 pretrained model to PaddlePaddle model for inference
 1. Get pretrained_model
