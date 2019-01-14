@@ -15,7 +15,7 @@
 
 > **2. input tensors' and output tensors' name**
 
-### Demo: How to change tensorflow resnet_v1_50 pretrained model to PaddlePaddle model for inference
+### Demo: How to transform tensorflow resnet_v1_50 pretrained model to PaddlePaddle model for inference
 #### 1. Get pretrained_model
 
 ```
