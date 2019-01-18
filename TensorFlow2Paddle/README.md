@@ -15,7 +15,7 @@
 
 **Notice：You can install PaddlePaddle and Tensorflow in different virtual environment since there's dependency conflict between PaddlePaddle and TensorFlow**
 
-**提示：运行Tensorflow2Paddle，依赖Tensorflow环境，目前经测试，Tensorflow与PaddlePaddle的安装彼此存在依赖冲突，因此建议将PaddlePaddle和Tensorflow分别安装在不同的虚拟环境中
+**提示：运行Tensorflow2Paddle，依赖Tensorflow环境，目前经测试，Tensorflow与PaddlePaddle的安装彼此存在依赖冲突，因此建议将PaddlePaddle和Tensorflow分别安装在不同的虚拟环境中**
 
 ### Usage
 > **1. Model file: Tensorflow checkpoint directory**
