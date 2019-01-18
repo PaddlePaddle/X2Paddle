@@ -1,7 +1,12 @@
 ### Warning
+
 > **TensorFlow2Paddle is not stable and lots of tensorflow operations are not supported yet**
 
 > **Only tested on vgg_16/resnet_v1_50/inception_v3 with is_training=False**
+
+> **Tensorflow2Paddle目前还处于开发状态中，只支持有限的TensorFlow Op**
+
+> **目前仅在vgg_16/resnet_v1_50/inception_v3上， is_training参数设为False的情况下通过无diff测试**
 
 ### Dependency
 > 1. python = 2.7
@@ -9,6 +14,8 @@
 > 3. TensorFlow >= 1.12.0
 
 **Notice：You can install PaddlePaddle and Tensorflow in different virtual environment since there's dependency conflict between PaddlePaddle and TensorFlow**
+
+**提示：运行Tensorflow2Paddle，依赖Tensorflow环境，目前经测试，Tensorflow与PaddlePaddle的安装彼此存在依赖冲突，因此建议将PaddlePaddle和Tensorflow分别安装在不同的虚拟环境中
 
 ### Usage
 > **1. Model file: Tensorflow checkpoint directory**
