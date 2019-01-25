@@ -19,7 +19,13 @@ my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_*/params_*|转换后的模型参数文件
 
-## 模型对比
+## 模型转换diff对比
+
+tensflow2fluid在公开的TensorFlow预训练模型上，转换前后的预测diff对比如下表
+
+Model|Pre-trained Model|Diff
+:--------------:|:----------------------------------------------:|:-----------------:
+[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|1e-05
 
 ## 用法
 使用tensorflow2fluid转换模型时，所需的信息如下
