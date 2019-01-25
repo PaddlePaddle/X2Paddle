@@ -49,3 +49,6 @@ python convert.py --meta_file checkpoint/model.meta \
 ```
 
 ### 加载转换后的模型
+
+## Link
+[MMdnn-Tensorflow](https://github.com/Microsoft/MMdnn/tree/master/mmdnn/conversion/tensorflow)
