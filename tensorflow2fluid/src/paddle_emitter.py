@@ -124,8 +124,8 @@ class PaddleEmitter(object):
 
         ref_name_recorder = open(self.save_dir + "/ref_name.txt", 'w')
         total_nodes_num = len(self.graph.topological_sort)
-        translated_nodes_count = 0
-        sys.stderr.write("Start to translate all the nodes(Total_num:{})\n".
+        translated_nodes_count = 1
+        sys.stderr.write("\nStart to translate all the nodes(Total_num:{})\n".
                          format(total_nodes_num))
         for node in self.graph.topological_sort:
             sys.stderr.write(
@@ -167,6 +167,9 @@ class PaddleEmitter(object):
         filew = open(self.save_dir + "/mymodel.py", 'w')
         filew.write(self.body_code)
         filew.close()
+
+        sys.stderr.write("Model translated!\n\n")
+        sys.stderr.flush()
 
         return self.body_code
 
