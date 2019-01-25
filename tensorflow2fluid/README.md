@@ -13,11 +13,13 @@
 
 tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模型，转换后的保存目录中，文件list如下表所示
 
-|文件|作用|
-|------------------|-----------------------------------------------|
-|my_model.py|基于PaddlePaddle实现的模型网络结构python代码|
-|ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系|
-|const_*/params_*|转换后的模型参数文件|
+文件|作用
+:------------------:|:-----------------------------------------------:
+my_model.py|基于PaddlePaddle实现的模型网络结构python代码
+ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
+const_*/params_*|转换后的模型参数文件
+
+## 模型对比
 
 ## 用法
 使用tensorflow2fluid转换模型时，所需的信息如下
