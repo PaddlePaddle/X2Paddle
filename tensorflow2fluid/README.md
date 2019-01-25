@@ -1,7 +1,7 @@
 # tensorflow2fluid
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-## Dependency
+## 依赖
 
 > python = 2.7
 
@@ -9,7 +9,7 @@
 
 > tensorflow >= 1.12.0
 
-## Introduce
+## 介绍
 
 tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle模型，转换后的保存目录中，文件list如下表所示
 
@@ -19,7 +19,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle模型，
 |ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系|
 |const_*/params_*|转换后的模型参数文件|
 
-## Usage
+## 用法
 使用tensorflow2fluid转换模型时，所需的信息如下
 
 |参数|说明|
