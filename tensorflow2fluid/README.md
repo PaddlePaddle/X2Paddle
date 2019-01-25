@@ -34,7 +34,8 @@ tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模
 
 目前TensorFlow保存的模型主要包括ckpt和pb两种类型。其中加载ckpt模型时，同时也需通过meta文件导入网络结构；而pb模型则已将网络结构和参数均序列化至同一个文件。因此，加载ckpt模型时，需指定meta_file和ckpt_file，而加载pb模型，则只需指定pb_file即可。
 
-例：将inception_v3模型转换至PaddlePaddle
+### 例：将inception_v3模型转换至PaddlePaddle
+
 ```Bash
 wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
 tar xzvf http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
@@ -46,3 +47,5 @@ python convert.py --meta_file checkpoint/model.meta \
                   --output_nodes InceptionV3/Logits/SpatialSqueeze \
                   --save_dir paddle_inception_v3
 ```
+
+### 加载转换后的模型
