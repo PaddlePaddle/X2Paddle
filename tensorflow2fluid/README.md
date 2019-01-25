@@ -11,7 +11,7 @@
 
 ## 介绍
 
-tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle模型，转换后的保存目录中，文件list如下表所示
+tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模型，转换后的保存目录中，文件list如下表所示
 
 |文件|作用|
 |------------------|-----------------------------------------------|
