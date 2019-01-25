@@ -5,9 +5,9 @@
 
 > python = 2.7
 
-> paddlepaddle >= 1.2.0
-
 > tensorflow >= 1.12.0
+
+tensorflow2fluid的模型转换不依赖paddlepaddle
 
 ## 介绍
 
