@@ -7,7 +7,7 @@
 
 > tensorflow >= 1.12.0
 
-tensorflow2fluid的模型转换不依赖paddlepaddle
+> 注：tensorflow2fluid的运行不依赖于paddlepaddle
 
 ## 介绍
 
