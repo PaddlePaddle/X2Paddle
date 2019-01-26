@@ -7,7 +7,7 @@
 
 > tensorflow >= 1.12.0
 
-> 注：tensorflow2fluid的运行不依赖于paddlepaddle
+> 注：tensorflow2fluid的运行不依赖于paddlepaddle，但测试转换后的模型所需的PaddlePaddle须为1.2.0或更新版本
 
 ## 介绍
 
