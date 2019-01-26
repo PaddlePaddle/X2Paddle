@@ -17,7 +17,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模
 :------------------:|:-----------------------------------------------:
 my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
-const_*/params_*|转换后的模型参数文件
+const_\*/params_\*|转换后的模型参数文件
 
 ## 模型转换diff对比
 
