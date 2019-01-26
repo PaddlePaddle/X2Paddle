@@ -45,9 +45,12 @@ Model|Pre-trained Model|Diff
 ### 例：将inception_v3模型转换至PaddlePaddle
 
 ```Bash
+# 下载inception_v3预训练模型
 wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
 tar xzvf http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
+# 将下载的预训练模型转存为check_point
 python demo/inception_v3/export_to_checkpoint.py inception_v3.py checkpoint
+# 将check_point模型转换为PaddlePaddle可加载运行的模型
 python convert.py --meta_file checkpoint/model.meta \
                   --ckpt_dir checkpoint \
                   --in_nodes inputs \
