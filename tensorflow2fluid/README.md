@@ -19,8 +19,7 @@ my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
 
-tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码，目前支持OP可见文档最末附表所示，需要注意的是，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。后续支持的OP仍然会不断扩展，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
-
+tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码。
 模型中所使用的代码，一般而言并不能直接能过模型训练时所使用的tensorflow代码中就能完全看出来。比如在python模型代码中所使用到的`tf.contrib.layers.fully_connected`就涉及到如下OP
 
 TensorFlow OP名|说明
@@ -30,6 +29,10 @@ MatMul|输入与weights乘法操作
 BiasAdd|输入值在Matmul后，再与bias相加
 Relu|输出最后需要通过的激活函数操作
 Idenitity|计算过程中的变量复制操作
+
+目前支持OP可见文档最末附表所示，需要注意的是，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。后续支持的OP仍然会不断扩展，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
+
+
 
 ## 模型转换diff对比
 
