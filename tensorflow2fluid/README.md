@@ -12,15 +12,15 @@
 ## 文档阅读建议
 
 > 1. 使用前，请务必关注文档中『TensorFlow与PaddlePaddle的差异』
-> 2. 『介绍』中列明了转换后模型目录中各文件的作用
-> 3. 『用法』通过示例展示了转换工具的使用方法
+> 2. 『使用说明』通过示例展示了转换工具的使用方法
+> 3. 『工具介绍』中介绍了工具转换代码实现的部分细节
 
 ## TensorFlow与PaddlePaddle的差异
 我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow开发者降低学习PaddlePaddle使用的难度，文档会整理在doc目录。
 
 **重要：**用户需要注意，Tensorflow的多数CV模型，默认输入为**NHWC**，而在Paddle中为**NCHW**，因此在转换后的PaddlePaddle模型，提供的输入需是为**NCHW**格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[**batch, height, width, filter_num**]，而在PaddlePaddle中，输出则为[**batch, filter_num, height, width**]
 
-## 介绍
+## 使用说明
 
 tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模型，转换后的保存目录中，文件list如下表所示
 
@@ -30,38 +30,6 @@ my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
 
-tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码。
-
-> 模型中所使用的代码，一般而言并不能直接能过模型训练时所使用的tensorflow代码中就能完全看出来。比如在python模型代码中所使用到的`tf.contrib.layers.fully_connected`就涉及到如下OP
-
-|TensorFlow OP名|说明|
-|:-----------------:|:----------------------------------------:|
-|VariableV2|用于创建变量weights和bias|
-|MatMul|输入与weights乘法操作|
-|BiasAdd|输入值在Matmul后，再与bias相加|
-|Relu|输出最后需要通过的激活函数操作|
-|Idenitity|计算过程中的变量复制操作|
-
-**目前支持转换OP如文档最末附表所示**，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
-
-
-tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
-
-
-
-## 模型转换diff对比
-
-tensflow2fluid在公开的TensorFlow预训练模型上，通过输入随机数据在原模型和转换后的模型上进行预测，得到的平均diff大小如下表所示
-
-Model|Pre-trained Model|Diff
-:--------------:|:----------------------------------------------:|:-----------------:
-[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|1e-05
-[vgg_19](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_19_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz)|1e-05
-[resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|1e-05
-[resnet_v1_101](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_101_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz)|1e-05
-[inception_v3](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|1e-05
-
-## 用法
 使用tensorflow2fluid转换模型时，所需的信息如下
 
 |参数|说明|
@@ -96,6 +64,41 @@ python convert.py --meta_file checkpoint/model.meta \
 ```
 
 ### 加载转换后的模型
+
+## 介绍
+
+tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码。
+
+> 模型中所使用的代码，一般而言并不能直接能过模型训练时所使用的tensorflow代码中就能完全看出来。比如在python模型代码中所使用到的`tf.contrib.layers.fully_connected`就涉及到如下OP
+
+|TensorFlow OP名|说明|
+|:-----------------:|:----------------------------------------:|
+|VariableV2|用于创建变量weights和bias|
+|MatMul|输入与weights乘法操作|
+|BiasAdd|输入值在Matmul后，再与bias相加|
+|Relu|输出最后需要通过的激活函数操作|
+|Idenitity|计算过程中的变量复制操作|
+
+**目前支持转换OP如文档最末附表所示**，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
+
+
+tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
+
+
+
+## 模型转换diff对比
+
+tensflow2fluid在公开的TensorFlow预训练模型上，通过输入随机数据在原模型和转换后的模型上进行预测，得到的平均diff大小如下表所示
+
+Model|Pre-trained Model|Diff
+:--------------:|:----------------------------------------------:|:-----------------:
+[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|1e-05
+[vgg_19](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_19_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz)|1e-05
+[resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|1e-05
+[resnet_v1_101](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_101_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz)|1e-05
+[inception_v3](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|1e-05
+
+
 
 ## Link
 [MMdnn-Tensorflow](https://github.com/Microsoft/MMdnn/tree/master/mmdnn/conversion/tensorflow)
