@@ -19,26 +19,7 @@ my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
 
-tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码，目前支持OP如下表所示，需要注意的是，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可
-
-| TensorFlow OP       | Python Api | TensorFlow OP          | Python Api |
-| ------------------- | ---------- | ---------------------- | ---------- |
-| VariableV2          | 1          | placeholderwithdefault | 17         |
-| Identity            | 2          | switch                 | 18         |
-| Placeholder         | 3          | merge                  | 19         |
-| Const               | 4          | MaxPool                | 20         |
-| Conv2D              | 5          | Squeeze                | 21         |
-| BiasAdd             | 6          | Add                    | 22         |
-| Relu                | 7          | Mean                   | 23         |
-| Conv2dBackpropInput | 8          | DepthwiseConv2dNative  | 24         |
-| FusedBatchNorm      | 9          | Pad                    | 25         |
-| ConcatV2            | 10         | StridedSlice           | 26         |
-| AvgPool             | 11         | ResizeNearestNeighbor  | 27         |
-| Rsqrt               | 12         | Maximum                | 28         |
-| Mul                 | 13         | Minimum                | 9          |
-| Sub                 | 14         | Sigmoid                | 30         |
-| Shape               | 15         | Pack                   | 31         |
-| Reshape             | 16         |                        |            |
+tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码，目前支持OP可见文档最末附表所示，需要注意的是，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。后续支持的OP仍然会不断扩展，也非常欢迎用户通过issue的方式提出建议和需求。
 
 模型中所使用的代码，一般而言并不能直接能过模型训练时所使用的tensorflow代码中就能完全看出来。比如在python模型代码中所使用到的`tf.contrib.layers.fully_connected`就涉及到如下OP
 
@@ -100,3 +81,24 @@ python convert.py --meta_file checkpoint/model.meta \
 
 ## Link
 [MMdnn-Tensorflow](https://github.com/Microsoft/MMdnn/tree/master/mmdnn/conversion/tensorflow)
+
+## 附表：tensorflow2fluid目前支持转换的Tensorflow OP
+
+| TensorFlow OP       | Python Api | TensorFlow OP          | Python Api |
+| ------------------- | ---------- | ---------------------- | ---------- |
+| VariableV2          | 1          | placeholderwithdefault | 17         |
+| Identity            | 2          | switch                 | 18         |
+| Placeholder         | 3          | merge                  | 19         |
+| Const               | 4          | MaxPool                | 20         |
+| Conv2D              | 5          | Squeeze                | 21         |
+| BiasAdd             | 6          | Add                    | 22         |
+| Relu                | 7          | Mean                   | 23         |
+| Conv2dBackpropInput | 8          | DepthwiseConv2dNative  | 24         |
+| FusedBatchNorm      | 9          | Pad                    | 25         |
+| ConcatV2            | 10         | StridedSlice           | 26         |
+| AvgPool             | 11         | ResizeNearestNeighbor  | 27         |
+| Rsqrt               | 12         | Maximum                | 28         |
+| Mul                 | 13         | Minimum                | 9          |
+| Sub                 | 14         | Sigmoid                | 30         |
+| Shape               | 15         | Pack                   | 31         |
+| Reshape             | 16         |                        |            |
