@@ -65,7 +65,7 @@ python convert.py --meta_file checkpoint/model.meta \
 
 ### 加载转换后的模型
 
-## 介绍
+## 工具介绍
 
 tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码。
 
