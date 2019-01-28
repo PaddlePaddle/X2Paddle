@@ -88,7 +88,7 @@ python convert.py --meta_file checkpoint/model.meta \
 ## Link
 [MMdnn-Tensorflow](https://github.com/Microsoft/MMdnn/tree/master/mmdnn/conversion/tensorflow)
 
-## 附表：tensorflow2fluid目前支持转换的Tensorflow OP
+## 附表：tensorflow2fluid目前支持转换的Tensorflow OP一览表
 
 | TensorFlow OP       | Python Api | TensorFlow OP          | Python Api |
 | ------------------- | ---------- | ---------------------- | ---------- |
