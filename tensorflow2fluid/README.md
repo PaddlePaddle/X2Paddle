@@ -69,7 +69,7 @@ Model|Pre-trained Model|Diff
 ```Bash
 # 下载并解压inception_v3预训练模型
 wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
-tar xzvf http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
+tar xzvf inception_v3_2016_08_28.tar.gz
 
 # 将下载的预训练模型转存为check_point
 python demo/inception_v3/export_to_checkpoint.py inception_v3.ckpt checkpoint
