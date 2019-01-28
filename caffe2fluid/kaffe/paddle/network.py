@@ -439,24 +439,24 @@ class Network(object):
             need_transpose = True
 
         if need_transpose:
-            order = range(dims)
-            order.remove(axis)
-            order.append(axis)
+            in_order = range(dims)
+            in_order.remove(axis)
+            in_order.append(axis)
             input = fluid.layers.transpose(
                 input,
-                perm=order,
+                perm=in_order,
                 name=self.get_unique_output_name(name, 'transpose'))
 
         output = fluid.layers.softmax(
             input, name=self.get_unique_output_name(name, 'softmax'))
 
         if need_transpose:
-            order = range(len(shape))
-            order[axis] = dims - 1
-            order[-1] = axis
+            out_order = [0, ] * dims
+            for id, v in enumerate(in_order):
+                out_order[v] = id
             output = fluid.layers.transpose(
                 output,
-                perm=order,
+                perm=out_order,
                 name=self.get_unique_output_name(name, 'transpose'))
         return output
 
