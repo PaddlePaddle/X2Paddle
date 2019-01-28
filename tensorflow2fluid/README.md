@@ -9,6 +9,12 @@
 
 > 注：tensorflow2fluid的运行不依赖于paddlepaddle，但测试转换后的模型所需的PaddlePaddle须为1.2.0或更新版本
 
+## 文档阅读建议
+
+> 1. 使用前，请务必关注文档中『TensorFlow与PaddlePaddle的差异』
+> 2. 『介绍』中列明了转换后模型目录中各文件的作用
+> 3. 『用法』通过示例展示了转换工具的使用方法
+
 ## TensorFlow与PaddlePaddle的差异
 我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow开发者降低学习PaddlePaddle使用的难度，文档会整理在doc目录。
 
