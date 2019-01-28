@@ -9,6 +9,10 @@
 
 > 注：tensorflow2fluid的运行不依赖于paddlepaddle，但测试转换后的模型所需的PaddlePaddle须为1.2.0或更新版本
 
+## TensorFlow与PaddlePaddle的差异
+我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow开发者降低学习PaddlePaddle使用的难度，文档会整理在doc目录。
+**重要：**用户需要注意，Tensorflow的多数模型，默认输入为**NHWC**，而在Paddle中为**NCHW**，因此在转换后的PaddlePaddle模型，提供的输入需是为**NCHW**格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[**batch, height, width, filter_num**]，而在PaddlePaddle中，输出则为[**batch, filter_num, height, width**]
+
 ## 介绍
 
 tensorflow2fluid支持将训练好的TensorFlow模型转至PaddlePaddle fluid模型，转换后的保存目录中，文件list如下表所示
@@ -33,7 +37,6 @@ tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为
 
 **目前支持转换OP如文档最末附表所示**，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
 
-**重要**：用户需要注意，Tensorflow的多数模型，默认输入为NHWC，而在Paddle中为NCHW，因此在转换后的PaddlePaddle模型，提供的输入需是为NCHW格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[batch, height, width, filter_num]，而在PaddlePaddle中，输出则为[batch, filter_num, height, width]
 
 tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
 
