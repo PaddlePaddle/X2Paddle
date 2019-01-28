@@ -1,6 +1,6 @@
-from src.paddle_emitter import PaddleEmitter
-from src.tensorflow_parser import TensorflowCkptParser
-from src.tensorflow_parser import TensorflowPbParser
+from paddle_emitter import PaddleEmitter
+from tensorflow_parser import TensorflowCkptParser
+from tensorflow_parser import TensorflowPbParser
 from six import text_type as _text_type
 import argparse
 import sys
@@ -15,6 +15,7 @@ def _get_parser():
     parser.add_argument("--input_shape", "-is", type=_text_type, nargs="+", default=None, help="input tensor shape")
     parser.add_argument("--output_nodes", "-o", type=_text_type, nargs="+", default=None, help="output nodes name")
     parser.add_argument("--save_dir", "-s", type=_text_type, default=None, help="path to save transformed paddle model")
+    parser.add_argument("--version", "-v", action="version", version="tensorflow2fluid version=0.0.1 Release @2019.01.28")
     return parser
 
 def _convert(args):
@@ -39,14 +40,22 @@ def _convert(args):
                 items[i] = int(items[i])
         input_shape.append(items)
 
+    sys.stderr.write("\nLoading tensorflow model......\n")
     if args.meta_file is not None:
         parser = TensorflowCkptParser(args.meta_file, args.ckpt_dir, args.output_nodes, input_shape, args.in_nodes)
     else:
         parser = TensorflowPbParser(args.pb_file, args.output_nodes, input_shape, args.in_nodes)
+    sys.stderr.write("Tensorflow model loaded!\n")
     emitter = PaddleEmitter(parser, args.save_dir)
     emitter.run()
 
-if __name__ == "__main__":
+    open(args.save_dir+"/__init__.py", "w").close()
+
+def _main():
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     parser = _get_parser()
     args = parser.parse_args()
     _convert(args)
+
+if __name__ == "__main__":
+    _main()

@@ -66,6 +66,7 @@ class PaddleEmitter(object):
         return axis
 
     def export_weights(self, weight, paddle_var_name, dir):
+        self.save_var_set.add(paddle_var_name)
         numpy_dtype_map = {
             "int16": framework.VarType.INT16,
             "int32": framework.VarType.INT32,
@@ -119,13 +120,17 @@ class PaddleEmitter(object):
             self.body_code += (self.tab * indent) + code + "\n"
 
     def run(self):
+        print("new version")
         node = self.graph.tf_graph.node[0]
         self.add_codes(0, self.header_code)
+
+        self.save_var_set = set()
 
         ref_name_recorder = open(self.save_dir + "/ref_name.txt", 'w')
         total_nodes_num = len(self.graph.topological_sort)
         translated_nodes_count = 1
-        sys.stderr.write("\nStart to translate all the nodes(Total_num:{})\n".
+        sys.stderr.write("\nModel Translating......\n")
+        sys.stderr.write("Start to translate all the nodes(Total_num:{})\n".
                          format(total_nodes_num))
         for node in self.graph.topological_sort:
             sys.stderr.write(
@@ -166,6 +171,10 @@ class PaddleEmitter(object):
 
         filew = open(self.save_dir + "/mymodel.py", 'w')
         filew.write(self.body_code)
+        filew.close()
+        filew = open(self.save_dir + "/save_var.list", 'w')
+        for var in self.save_var_set:
+            filew.write(var + '\n')
         filew.close()
 
         sys.stderr.write("Model translated!\n\n")

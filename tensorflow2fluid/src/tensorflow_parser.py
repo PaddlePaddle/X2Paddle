@@ -18,7 +18,6 @@ from tensorflow.python.framework import tensor_util
 from tensorflow.python.tools import strip_unused_lib
 from tensorflow.python.framework import dtypes
 
-
 class TensorflowCkptParser(object):
     def __init__(self,
                  meta_file,
