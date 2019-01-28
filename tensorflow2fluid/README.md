@@ -12,7 +12,7 @@
 ## TensorFlow与PaddlePaddle的差异
 我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow开发者降低学习PaddlePaddle使用的难度，文档会整理在doc目录。
 
-**重要：**用户需要注意，Tensorflow的多数模型，默认输入为**NHWC**，而在Paddle中为**NCHW**，因此在转换后的PaddlePaddle模型，提供的输入需是为**NCHW**格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[**batch, height, width, filter_num**]，而在PaddlePaddle中，输出则为[**batch, filter_num, height, width**]
+**重要：**用户需要注意，Tensorflow的多数CV模型，默认输入为**NHWC**，而在Paddle中为**NCHW**，因此在转换后的PaddlePaddle模型，提供的输入需是为**NCHW**格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[**batch, height, width, filter_num**]，而在PaddlePaddle中，输出则为[**batch, filter_num, height, width**]
 
 ## 介绍
 
