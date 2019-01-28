@@ -31,7 +31,7 @@ tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为
 |Relu|输出最后需要通过的激活函数操作|
 |Idenitity|计算过程中的变量复制操作|
 
-**目前支持转换OP如文档最末附表所示**，需要注意的是，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
+**目前支持转换OP如文档最末附表所示**，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
 
 tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
 
