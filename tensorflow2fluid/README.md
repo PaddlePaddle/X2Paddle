@@ -33,6 +33,8 @@ tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为
 
 **目前支持转换OP如文档最末附表所示**，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
 
+**重要**：用户需要注意，Tensorflow的多数模型，默认输入为NHWC，而在Paddle中为NCHW，因此在转换后的PaddlePaddle模型，提供的输入需是为NCHW格式，同时注意输出的格式，比如在经过卷积后，Tensorflow的输出为[batch, height, width, filter_num]，而在PaddlePaddle中，输出则为[batch, filter_num, height, width]
+
 tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
 
 
