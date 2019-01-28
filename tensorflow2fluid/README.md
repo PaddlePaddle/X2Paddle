@@ -84,7 +84,7 @@ wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
 tar xzvf inception_v3_2016_08_28.tar.gz
 
 # 将下载的预训练模型转存为check_point
-python demo/inception_v3/export_to_checkpoint.py inception_v3.ckpt checkpoint
+python demo/inception_v3/script/export_to_checkpoint.py inception_v3.ckpt checkpoint
 
 # 将check_point模型转换为PaddlePaddle可加载运行的模型
 python convert.py --meta_file checkpoint/model.meta \
