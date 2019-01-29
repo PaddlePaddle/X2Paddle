@@ -58,12 +58,25 @@ tf2fluid --meta_file vgg_checkpoint/model.meta \
 
 **转换模型目录文件说明**
 
-
 文件|作用
 :------------------:|:-----------------------------------------------:
 my_model.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
+save_var.list|模型载入过程中的变量list
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## 下面文档待修改，暂无需关注
 
