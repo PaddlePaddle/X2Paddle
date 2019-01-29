@@ -46,7 +46,7 @@ tf2fluid --meta_file vgg_checkpoint/model.meta \
 
 **参数说明**
 
-|参数|说明|
+|tf2fluid参数|说明|
 |------------------|-----------------------------------------------|
 |meta_file|TensorFlow模型序列化后保存的meta文件|
 |ckpt_file|TensorFlow模型保存checkpoint目录|
