@@ -9,6 +9,36 @@
 
 > 注：tensorflow2fluid的运行不依赖于paddlepaddle，但测试转换后的模型所需的PaddlePaddle须为1.2.0或更新版本
 
+## 安装
+
+```
+git clone https://github.com/PaddlePaddle/X2Paddle.git
+cd X2Paddle/tensorflow2fluid
+python setup.py install
+```
+
+## 使用
+**例. 将vgg_16模型转换至paddlepaddle模型**
+```
+# 下载预训练的vgg_16模型参数
+wget http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz
+tar xzvf vgg_16_2016_08_28.tar.gz
+
+# 将模型转存为checkpoint格式模型
+python demo/export_to_checkpoint.py --model vgg_16 --ckpt_file vgg_16.ckpt --save_dir vgg_checkpoint
+
+# 转换模型
+tf2fluid --meta_file vgg_checkpoint/model.meta \
+         --ckpt_dir vgg_checkpoint/ \
+         --in_nodes inputs \
+         --input_shape None,224,224,3 \
+         --output_nodes vgg_16/fc8/squeezed \
+         --save_dir paddle_vgg
+```
+
+
+## 下面文档待修改，暂无需关注
+
 ## 文档阅读建议
 
 > 1. 使用前，请务必关注文档中『TensorFlow与PaddlePaddle的差异』
@@ -92,7 +122,7 @@ tensflow2fluid在公开的TensorFlow预训练模型上，通过输入1000个随�
 
 Model|Pre-trained Model|Average Diff
 :--------------:|:----------------------------------------------:|:-----------------:
-[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|-
+[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[vgg_16_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz)|-
 [vgg_19](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_19_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz)|-
 [resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|-
 [resnet_v1_101](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_101_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz)|-
