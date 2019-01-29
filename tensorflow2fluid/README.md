@@ -97,7 +97,7 @@ const_\*/params_\*|转换后的模型参数文件
 |pb_file|Tensorflow保存的pb格式模型|
 |input_nodes|输入tensor名，多个输入时以空格分隔|
 |input_shape|输入tensor的shape(batch维度以None表示)，shape之间以空格分隔，shape内各维度以逗号分隔，须与input_nodes对应|
-|output_shape|输出tensor名，多个输出时以空格分隔|
+|output_nodes|输出tensor名，多个输出时以空格分隔|
 |save_dir|转换后的模型保存路径|
 
 目前TensorFlow保存的模型主要包括ckpt和pb两种类型。其中加载ckpt模型时，同时也需通过meta文件导入网络结构；而pb模型则已将网络结构和参数均序列化至同一个文件。因此，加载ckpt模型时，需指定meta_file和ckpt_file，而加载pb模型，则只需指定pb_file即可。
