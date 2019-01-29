@@ -99,9 +99,10 @@ class PaddleEmitter(object):
         filew.write(tensor_desc.SerializeToString())
         tensor_size = reduce(lambda x, y: x * y, shape)
         weight = weight.flatten()
+        tensor_stream = ""
         for i in range(0, tensor_size):
-            filew.write(
-                struct.pack(struct_write_format[str(weight.dtype)], weight[i]))
+            tensor_stream += struct.pack(struct_write_format[str(weight.dtype)], weight[i])
+        filew.write(tensor_stream)
         filew.close()
 
     @property
@@ -120,7 +121,6 @@ class PaddleEmitter(object):
             self.body_code += (self.tab * indent) + code + "\n"
 
     def run(self):
-        print("new version")
         node = self.graph.tf_graph.node[0]
         self.add_codes(0, self.header_code)
 

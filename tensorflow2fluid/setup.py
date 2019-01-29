@@ -14,10 +14,7 @@ setup(
     license='Apache 2',
     packages=find_packages(),
 
-    install_requires=[
-        'paddlepaddle >= 1.2.1',
-        'tensorflow >= 1.12.0',
-    ],
+    install_requires=[],
 
     entry_points={
         'console_scripts': [
