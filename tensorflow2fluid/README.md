@@ -22,6 +22,9 @@ python setup.py install
 ```
 
 ## 使用
+
+> 1. 目前支持转换的模型格式包括checkpoint保存的模型、将参数序列化到网络结构的pb格式模型
+
 **例. 将vgg_16模型转换至paddlepaddle模型**
 ```
 # 下载预训练的vgg_16模型参数
