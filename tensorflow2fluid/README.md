@@ -49,11 +49,11 @@ tf2fluid --meta_file vgg_checkpoint/model.meta \
 |tf2fluid参数|说明|
 |------------------|-----------------------------------------------|
 |meta_file|TensorFlow模型序列化后保存的meta文件|
-|ckpt_file|TensorFlow模型保存checkpoint目录|
+|ckpt_dir|TensorFlow模型保存checkpoint目录|
 |pb_file|Tensorflow保存的pb格式模型|
-|input_nodes|输入tensor名，多个输入时以空格分隔|
+|in_nodes|输入tensor名，多个输入时以空格分隔|
 |input_shape|输入tensor的shape(batch维度以None表示)，shape之间以空格分隔，shape内各维度以逗号分隔，须与input_nodes对应|
-|output_shape|输出tensor名，多个输出时以空格分隔|
+|output_nodes|输出tensor名，多个输出时以空格分隔|
 |save_dir|转换后的模型保存路径|
 
 **转换模型目录文件说明**
