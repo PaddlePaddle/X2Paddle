@@ -120,6 +120,11 @@ def test_case(exe, prog, result):
                 feed={'input_0':numpy.array(img_data, dtype='float32')},
                 fetch_list=[result])
     
+    # 调用save_inference_model可将模型结构（当前以代码形式保存）和参数均序列化保存
+    # 保存后的模型可使用load_inference_model加载
+    # http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/api_guides/low_level/inference.html#api-guide-inference
+    fluid.io.save_inference_model("./paddle_model", ["input_0"], [result], exe)
+    
 if __name__ == "__main__":
     exe, prog, result = model_initialize()
     test_case(exe, prog, result)
