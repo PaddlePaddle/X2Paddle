@@ -12,6 +12,10 @@
 ## 安装
 
 ```
+# 如果没有安装paddlepaddle和tensorflow环境
+pip install paddlepaddle
+pip install tensorflow
+
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle/tensorflow2fluid
 python setup.py install
