@@ -24,6 +24,7 @@ python setup.py install
 ## 使用
 
 > 1. 目前支持转换的模型格式包括checkpoint保存的模型、将参数序列化到网络结构的pb格式模型
+> 2. 模型转换后，在输入同样的数据前提下，检查模型转换前后的diff，一般结果最大diff在1e-5数量级
 
 **例. 将vgg_16模型转换至paddlepaddle模型**
 ```
