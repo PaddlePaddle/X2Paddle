@@ -75,6 +75,3 @@ save_var.list|模型载入过程中的变量list
 > 3. 模型需要加载的参数列表为save_var.list
 
 仍然以上面转换后的vgg_16为例，下面通过示例展示如何加载模型，并进行预测
-
-> 1. `import'模型结构，模型结构代码定义在my_model.py中
-> 1. `import'模型结构，模型结构代码定义在my_model.py中
