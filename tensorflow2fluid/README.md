@@ -6,6 +6,8 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 > <a href="#环境依赖">`环境依赖`</a>
 > <a href="#安装说明">`安装说明`</a>
 > <a href="#使用方法">`使用方法`</a>
+> <a href="#开发介绍">`开发介绍`</a>
+> <a href="#对比实验">`对比实验`</a>
 
 `我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！`
 
@@ -141,6 +143,59 @@ if __name__ == "__main__":
     exe, prog, result = model_initialize()
     test_case(exe, prog, result)
 ```
+
+<a id="开发介绍">
+         
+## 开发介绍
+
+tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为粒度，遍历图中的节点，并将每个节点所对应的OP转换为基于PaddlePaddle实现的python网络结构代码。
+
+> 模型中所使用的代码，一般而言并不能直接能过模型训练时所使用的tensorflow代码中就能完全看出来。比如在python模型代码中所使用到的`tf.contrib.layers.fully_connected`就涉及到如下OP
+
+|TensorFlow OP名|说明|
+|:-----------------:|:----------------------------------------:|
+|VariableV2|用于创建变量weights和bias|
+|MatMul|输入与weights乘法操作|
+|BiasAdd|输入值在Matmul后，再与bias相加|
+|Relu|输出最后需要通过的激活函数操作|
+|Idenitity|计算过程中的变量复制操作|
+
+目前支持转换OP如文档最末附表所示，需要注意的是，**在实现转换过程中，代码转换基于各OP常见的使用情况**，此外，并非所有OP都需要转成PaddlePaddle对应的代码实现，如Identity，switch等OP，在实际转换过程中，都直接将输出表示为输入即可。
+
+| TensorFlow OP       | Python Api | TensorFlow OP          | Python Api |
+| ------------------- | ---------- | ---------------------- | ---------- |
+| VariableV2          | 1          | placeholderwithdefault | 17         |
+| Identity            | 2          | switch                 | 18         |
+| Placeholder         | 3          | merge                  | 19         |
+| Const               | 4          | MaxPool                | 20         |
+| Conv2D              | 5          | Squeeze                | 21         |
+| BiasAdd             | 6          | Add                    | 22         |
+| Relu                | 7          | Mean                   | 23         |
+| Conv2dBackpropInput | 8          | DepthwiseConv2dNative  | 24         |
+| FusedBatchNorm      | 9          | Pad                    | 25         |
+| ConcatV2            | 10         | StridedSlice           | 26         |
+| AvgPool             | 11         | ResizeNearestNeighbor  | 27         |
+| Rsqrt               | 12         | Maximum                | 28         |
+| Mul                 | 13         | Minimum                | 9          |
+| Sub                 | 14         | Sigmoid                | 30         |
+| Shape               | 15         | Pack                   | 31         |
+| Reshape             | 16         |                        |            |
+
+tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
+
+<a id="对比实验">
+         
+## 对比实验
+
+tensflow2fluid在公开的TensorFlow预训练模型上，通过输入1000个随机数据在原模型和转换后的模型上进行预测，得到的平均diff大小如下表所示
+
+Model|Pre-trained Model|Average Diff
+:--------------:|:----------------------------------------------:|:-----------------:
+[vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[vgg_16_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz)|-
+[vgg_19](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_19_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz)|-
+[resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tenlssorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|-
+[resnet_v1_101](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_101_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz)|-
+[inception_v3](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|-
 
 ## Link
 
