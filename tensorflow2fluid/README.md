@@ -9,7 +9,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 > <a href="#开发介绍">`开发介绍`</a>
 > <a href="#对比实验">`对比实验`</a>
 
-`我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！`
+**我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！**
 
 ## 环境依赖
 
