@@ -195,7 +195,7 @@ Model|Pre-trained Model|Average Diff|Max Diff
 :--------------:|:----------------------------------------------:|:-----------------:|:-----------------:
 [vgg_16](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_16_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz)|1.7e-07|1.9e-06
 [vgg_19](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py)|[vgg_19_2016_08_28.tar.gz](http://download.tensorflow.org/models/vgg_19_2016_08_28.tar.gz)|1.7e-07|1.7e-06
-[resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tenlssorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|-|-
+[resnet_v1_50](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_50_2016_08_28.tar.gz](http://download.tenlssorflow.org/models/resnet_v1_50_2016_08_28.tar.gz)|2.0e-09|1.1e-06
 [resnet_v1_101](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py)|[resnet_v1_101_2016_08_28.tar.gz](http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz)|-|-
 [inception_v3](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py)|[inception_v3_2016_08_28.tar.gz](http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz)|-|-
 
