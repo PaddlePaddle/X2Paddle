@@ -72,6 +72,8 @@ tf2fluid --meta_file vgg_checkpoint/model.meta \
 |output_nodes|输出tensor名，多个输出时以空格分隔|
 |save_dir|转换后的模型保存路径|
 
+目前支持tensorflow保存的checkpoint模型和将参数及模型结构序列化存储的pb模型，前者须指定meta_file和ckpt_file，后者则指定pb_file
+
 ### 转换后模型文件说明
 
 文件|作用
