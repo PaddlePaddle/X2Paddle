@@ -38,6 +38,9 @@ def _convert(args):
         for i in range(len(items)):
             if items[i] != "None":
                 items[i] = int(items[i])
+            else:
+                items[i] = None
+                
         input_shape.append(items)
 
     sys.stderr.write("\nLoading tensorflow model......\n")
