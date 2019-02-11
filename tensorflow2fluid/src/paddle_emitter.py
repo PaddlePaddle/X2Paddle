@@ -52,6 +52,22 @@ class PaddleEmitter(object):
         pad_size = (new_size - 1) * stride + filter_size - in_size
         return pad_size
 
+    def check_op(self, node_name_list):
+        uncovered_ops = set()
+        for name in node_name_list:
+            node = self.graph.get_node(name)
+            if len(node.inputs) == 0 and len(node.outputs) == 0:
+                continue
+            if node.layer_type in self.skip_op:
+                continue
+            if not hasattr(self, "emit_" + node.layer_type):
+                uncovered_ops.add(node.layer_type)
+        if len(uncovered_ops) > 0:
+            sys.stderr.write("Still {} tensorflow OP are not supported\n".format(len(uncovered_ops)))
+            for op in uncovered_ops:
+                sys.stderr.write("Unsupported OP: {}\n".format(op))
+            sys.exit(0)
+
     def get_axis(self, node1, node2):
         shape1 = self.tensor_shape_to_list(node1.get_attr('_output_shapes'))[0]
         shape2 = self.tensor_shape_to_list(node2.get_attr('_output_shapes'))[0]
@@ -126,6 +142,7 @@ class PaddleEmitter(object):
 
         self.save_var_set = set()
 
+        self.check_op(self.graph.topological_sort)
         ref_name_recorder = open(self.save_dir + "/ref_name.txt", 'w')
         total_nodes_num = len(self.graph.topological_sort)
         translated_nodes_count = 1
@@ -630,6 +647,16 @@ class PaddleEmitter(object):
         else:
             code = "{} = layers.reshape({}, {})".format(
                 node.output_name, data.ref_name, shape.ref_name)
+            logging.warn(
+                "\tNotice there's RESHAPE in translated code, and the code list below:"
+            )
+            logging.warn("\t\t{}".format(code))
+            logging.warn(
+                "\tPaddle doesn't support tensor type for output_shape now")
+            logging.warn(
+                "\tYou need to change \'{}\'(in tf model: \'{}\') to a list with constant value, e.g. [28, 28]. IMPORTANT!!!\n"
+                .format(shape.ref_name, shape.layer_name))
+
         return code
 
     def emit_conv2dbackpropinput(self, node):
@@ -752,3 +779,10 @@ class PaddleEmitter(object):
                 .format(node.output_name, data.ref_name, in_channels,
                         [k_h, k_w], strides, kernel.ref_name, groups))
         return code
+
+    def emit_softmax(self, node):
+        data = node.inputs[0]
+        code = "{} = layers.softmax({})".format(node.output_name,
+                                                data.ref_name)
+        return code
+

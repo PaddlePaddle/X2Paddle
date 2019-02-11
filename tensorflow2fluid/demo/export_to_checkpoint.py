@@ -39,7 +39,7 @@ def resnet_v1_50(ckpt_file):
     img_size = resnet_v1.resnet_v1.default_image_size
     img = tf.placeholder(tf.float32, shape=[None, img_size, img_size, 3], name='inputs')
     with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-        net, endpoint = resnet_v1.resnet_v1_50(img, num_classes=None, is_training=False)
+        net, endpoint = resnet_v1.resnet_v1_50(img, num_classes=1000, is_training=False)
 
     sess = tf.Session()
     load_model = tf.contrib.slim.assign_from_checkpoint_fn(ckpt_file, tf.contrib.slim.get_model_variables("resnet_v1_50"))
@@ -50,7 +50,7 @@ def resnet_v1_101(ckpt_file):
     img_size = resnet_v1.resnet_v1.default_image_size
     img = tf.placeholder(tf.float32, shape=[None, img_size, img_size, 3], name='inputs')
     with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-        net, endpoint = resnet_v1.resnet_v1_101(img, num_classes=None, is_training=False)
+        net, endpoint = resnet_v1.resnet_v1_101(img, num_classes=1000, is_training=False)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())

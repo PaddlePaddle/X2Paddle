@@ -84,6 +84,7 @@ class TensorflowPbParser(object):
             if in_type_list[in_nodes[i]] == 1 or in_type_list[
                     in_nodes[i]] == 0:
                 dtype = tensorflow.float32
+                print(input_shape[i])
                 x = tensorflow.placeholder(dtype, shape=input_shape[i])
             elif in_type_list[in_nodes[i]] == 3:
                 dtype = tensorflow.int32
