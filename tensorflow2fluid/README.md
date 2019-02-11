@@ -183,7 +183,7 @@ tensorflow2fluid在模型转换过程中，以tensorflow计算图中的节点为
 | Shape               | 15         | Pack                   | 31         |
 | Reshape             | 16         |                        |            |
 
-tensorflow2paddle仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
+tensorflow2fluid仍在持续开发阶段中，也非常欢迎用户贡献自己的代码，或者通过issue的方式提出建议和需求。
 
 <a id="对比实验">
          
