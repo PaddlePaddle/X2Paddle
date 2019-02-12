@@ -41,6 +41,7 @@ class TensorflowCkptParser(object):
 
             graph_def, ver = tensorflow.get_default_graph()._as_graph_def(
                 add_shapes=True)
+#            self.sess = sess
 
         if in_nodes is not None and input_shape is not None:
             graph_def = strip_unused_lib.strip_unused(
@@ -62,6 +63,11 @@ class TensorflowPbParser(object):
         tensorflow.reset_default_graph()
         original_graph_def = tensorflow.GraphDef()
         original_graph_def.ParseFromString(serialized)
+        
+#        tensorflow.import_graph_def(origin_graph_def, name="")
+#        self.sess = tensorflow.Session(graph=tf.get_default_graph())
+#        self.sess.run(tensorflow.global_variables_initializer())
+
         original_graph_def = strip_unused_lib.strip_unused(
             input_graph_def=original_graph_def,
             input_node_names=in_nodes,
@@ -84,7 +90,6 @@ class TensorflowPbParser(object):
             if in_type_list[in_nodes[i]] == 1 or in_type_list[
                     in_nodes[i]] == 0:
                 dtype = tensorflow.float32
-                print(input_shape[i])
                 x = tensorflow.placeholder(dtype, shape=input_shape[i])
             elif in_type_list[in_nodes[i]] == 3:
                 dtype = tensorflow.int32

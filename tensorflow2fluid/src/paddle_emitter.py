@@ -413,11 +413,7 @@ class PaddleEmitter(object):
         data1 = node.inputs[0]
         data2 = node.inputs[1]
         axis = self.get_axis(data1, data2)
-        code = list()
-        code.append("# {}, {}, {}".format(node.layer_name, data1.layer_name,
-                                          data2.layer_name))
-        code.append("{} = layers.elementwise_add({}, {}, axis={})".format(
-            node.output_name, data1.ref_name, data2.ref_name, axis))
+        code = "{} = layers.elementwise_add({}, {}, axis={})".format(node.output_name, data1.ref_name, data2.ref_name, axis)
         return code
 
     def emit_mean(self, node):
