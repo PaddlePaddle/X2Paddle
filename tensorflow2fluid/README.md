@@ -189,7 +189,8 @@ tensorflow2fluid仍在持续开发阶段中，也非常欢迎用户贡献自己�
          
 ## 对比实验
 
-tensflow2fluid在公开的TensorFlow预训练模型上，通过输入1000个随机数据在原模型和转换后的模型上进行预测(网络构建过程中，参数is_training均设为False)，得到的平均diff大小如下表所示(-表示待统计)
+tensflow2fluid在公开的TensorFlow预训练模型上，通过输入1000个随机数据在原模型和转换后的模型上进行预测，得到的平均diff大小如下表所示(-表示待统计)  
+**注意：网络构建过程中，设定参数is_training=False，去除dropout层的影响**  
 
 Model|Pre-trained Model|Average Diff|Max Diff
 :--------------:|:----------------------------------------------:|:-----------------:|:-----------------:
