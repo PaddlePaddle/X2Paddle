@@ -25,8 +25,8 @@ paddle.fluid.layers.slice(
 &#160; &#160; &#160; &#160;tensorflow中，begin/size 可以是python list，也可以是变量类型；paddlepaddle中，axes/starts/ends 只能是python list。
 
 #### 参数种类：
-&#160; &#160; &#160; &#160;tensorflow中，使用begin指定要开始截取tensor的位置，使用size指定截取长度；paddlepaddle中，采用axes指定要操作的轴，
-未指定的轴默认全部截取，使用starts、ends分别指定截取tensor的开始与结束位置，注意采用的是先闭后开的写法。
+&#160; &#160; &#160; &#160;tensorflow中，使用begin指定要开始截取tensor的位置，使用size指定截取长度，必须描述所有的轴；paddlepaddle中，采用axes指定要操作的轴，
+未指定的轴默认全部截取，使用starts、ends分别指定截取tensor的开始与结束位置，注意采用的是先闭后开[start, end)的写法。
 
 
 ## paddlepaddle示例:
