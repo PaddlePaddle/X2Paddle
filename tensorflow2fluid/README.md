@@ -203,4 +203,6 @@ Model|Pre-trained Model|Average Diff|Max Diff
 
 ## Link
 
+本目录下代码得受到了MMdnn-Tensorflow转换思路的影响，对此表示感谢！
+
 [MMdnn-Tensorflow](https://github.com/Microsoft/MMdnn/tree/master/mmdnn/conversion/tensorflow)
