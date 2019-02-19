@@ -37,5 +37,5 @@ paddle.fluid.layers.slice(
 out = fluid.layers.slice(t, axes=[0,1], starts=[0,1], ends=[2,3])  
 
 # 输出 tensor out 为[[1,2],[5,6],[9,10]]
-out = fluid.layers.slice(t, axes=[1], starts=[1], ends[3])
+out = fluid.layers.slice(t, axes=[1], starts=[1], ends=[3])
 ```
