@@ -9,10 +9,7 @@ tf.stop_gradient(
 )
 ```
 
-### 功能差异：
-#### 参数类型差异：
->  tensorflow：使用stop_gradient表示该tensor不需要进行bp。
->  paddlepaddle：每个tensor具有stop_gradient的属性，用户可以将该属性直接设置成True/False。
+tensorflow中，使用stop_gradient表示该tensor不需要进行bp。而在paddlepaddle中，每个tensor具有stop_gradient的属性，用户可以将该属性直接设置成True/False。
 
 ## paddlepaddle示例:
 ```python
