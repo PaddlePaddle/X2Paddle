@@ -23,8 +23,9 @@ tf.get_variable(
 ```
 
 #### Paddle
-```
-Paddle中无对应接口，但可通过`create_parameter`创建新的参数，或通过scope获取网络中存在的参数  
-```
-[paddle.fluid.layer.create_parameter](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#permalink-201-create_parameter)  
-[如何获取网络参数?](TODO)
+
+> Paddle中无对应接口，但可通过`create_parameter`创建新的参数，或通过scope获取网络中存在的参数  
+
+> [paddle.fluid.layer.create_parameter](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#permalink-201-create_parameter)  
+
+> [如何获取网络参数?](TODO)
