@@ -22,7 +22,7 @@ tf.get_variable(
 )
 ```
 
-> tf.get_variable用于创建参数或获取同名参数。Paddle中无完全对应接口，但可通过`create_parameter`创建新的参数，或通过`scope`获取网络中存在的参数  
+&#160; &#160; &#160; &#160;tf.get_variable用于创建参数或获取同名参数。Paddle中无完全对应接口，但可通过`create_parameter`创建新的参数，或通过`scope`获取网络中存在的参数  
 
 > [paddle.fluid.layer.create_parameter](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#permalink-201-create_parameter)  
 
