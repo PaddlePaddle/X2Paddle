@@ -27,6 +27,6 @@ paddle.fluid.layers.split(
 
 1. 返回值
 
-##### 1. axis表示含义
+##### 1. 返回值
 
-&#160; &#160; &#160; &#160;Tensorflow中，`split`函数返回一个tensor类型的值，保存
+&#160; &#160; &#160; &#160;Tensorflow中，`split`函数返回的结果均保存在一个tensor类型的值中；而在PaddlePaddle中，`split`返回`list`类型结果，长度为`num_or_sections`。
