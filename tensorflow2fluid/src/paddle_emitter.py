@@ -666,9 +666,9 @@ class PaddleEmitter(object):
         k_shape = self.tensor_shape_to_list(
             kernel.get_attr("_output_shapes"))[0]
 
-        k_num, channel, k_h, k_w = k_shape
+        channel, k_num, k_h, k_w = k_shape
         if node.data_format == "NHWC":
-            k_h, k_w, channel, k_num = k_shape
+            k_h, k_w, k_num, channel = k_shape
 
         if strides[0] > k_h or strides[1] > k_w:
             raise Exception(
