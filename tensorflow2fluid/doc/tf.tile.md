@@ -1,7 +1,7 @@
 
 ## tf.tile
 
-### [tf.tile](https://www.tensorflow.org/api_docs/python/tf/constant)
+### [tf.tile](https://www.tensorflow.org/api_docs/python/tf/tile)
 ``` python
 tf.tile(
     input,
