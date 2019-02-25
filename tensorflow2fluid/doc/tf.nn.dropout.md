@@ -27,7 +27,7 @@ paddle.fluid.layers.dropout(
 
 #### 功能差异：
 tensorflow：使用rate表示保留为0的概率；使用noise_shape来设置dropout的独立性；  
-paddlepaddle：使用dropout_prob表示保留为0的概率；通过设置is_test来打开或关闭dropout。通常用户可以结合default_main_program的clone方法，来设置is_test的值。
+paddlepaddle：使用dropout_prob表示保留为0的概率；通过设置is_test来打开或关闭dropout通常用户可以结合default_main_program的clone方法，来设置is_test的值；不支持dropout独立性设置。
 
 #### paddlepaddle示例:
 ```python
