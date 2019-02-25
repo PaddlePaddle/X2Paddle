@@ -31,6 +31,6 @@ paddlepaddle：对于1-D tensor，axis为0时，output = x / sqrt(sum(x**2) + ep
 ```python
 # 输入 tensor t 为[[1,2],[3,4]]
 
-# 第0维前面padding长度为0，后面padding长度为1；第1维前面padding长度为1，后面padding长度为2
-out = fluid.layers.pad(t, paddings=[0,1,1,2])  
+# 对t进行 l2 归一化
+out = fluid.layers.l2_normalize(t, axis=1)  
 ```
