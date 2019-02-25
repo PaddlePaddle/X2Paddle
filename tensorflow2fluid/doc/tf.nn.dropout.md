@@ -36,6 +36,6 @@ paddlepaddle：使用dropout_prob表示保留为0的概率；通过设置is_test
 # 第0维前面padding长度为0，后面padding长度为1；第1维前面padding长度为1，后面padding长度为2
 out = fluid.layers.dropout(t, dropout_prob=0.2)
 
-# ... inference 时关闭dropout
+# inference 时关闭dropout
 inference_program = fluid.default_main_program().clone(for_test=True)
 ```
