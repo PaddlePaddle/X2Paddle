@@ -53,7 +53,7 @@ tensorflow 中，对于rank大于2的输入tensor，将其看做是最内两个�
 # size=6, 输出tensor 的shape为[2,6] 
 out = fluid.layers.fc(t, size=6)
 
-# # size=6, 设置kernel为均匀分布
+# size=6, 设置kernel为均匀分布
 out = fluid.layers.fc(t, size=6, \
     param_attr=fluid.ParamAttr(initializer=fluid.initializer.Uniform(low=-0.5, high=0.5)))
 
