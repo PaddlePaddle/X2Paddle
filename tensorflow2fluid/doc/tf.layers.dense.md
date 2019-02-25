@@ -37,7 +37,7 @@ paddle.fluid.layers.fc(
 ```
 
 #### 功能差异：
-##### 输入类型：
+##### 输入类型
 tensorflow 中inputs 为一个tensor；paddlepaddle中允许是一个tensor或者是一个tensor 列表，如果是tensor列表的情况，该layer会声明多个kernel，个数与列表长度相同，在将列表中各个tensor与对应kernel做矩阵乘法之后，将各个结果相加。
 
 ##### kernel、bias初始化
@@ -52,6 +52,10 @@ tensorflow 中，对于rank大于2的输入tensor，将其看做是最内两个�
 
 # size=6, 输出tensor 的shape为[2,6] 
 out = fluid.layers.fc(t, size=6)
+
+# # size=6, 设置kernel为均匀分布
+out = fluid.layers.fc(t, size=6, \
+    param_attr=fluid.ParamAttr(initializer=fluid.initializer.Uniform(low=-0.5, high=0.5)))
 
 # size=6, num_flatten_dims=2，输出tensor的shape为[2, 3, 6]
 out = fluid.layers.fc(t, size=6, num_flatten_dims=2)
