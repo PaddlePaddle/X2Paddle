@@ -33,4 +33,4 @@ paddlepaddle：目前仅支持采用常量进行padding；指定padding长度时
 
 # 第0维前面padding长度为0，后面padding长度为1；第1维前面padding长度为1，后面padding长度为2
 out = fluid.layers.pad(t, paddings=[0,1,1,2])  
-)
+```
