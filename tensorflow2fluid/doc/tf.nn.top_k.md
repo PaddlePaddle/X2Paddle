@@ -11,7 +11,7 @@ tf.math.top_k(
 )
 ```
 
-#### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#topk)
+#### [paddle.fluid.layers.topk](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#topk)
 ``` python
 paddle.fluid.layers.topk(
     input, 
