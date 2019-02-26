@@ -27,5 +27,5 @@ paddle.fluid.layers.split(
 
 ##### 返回值
 
-Tensorflow中，`split`函数返回的结果均保存在一个tensor类型的值中;  
-PaddlePaddle中，`split`返回`list`类型结果，长度为`num_or_sections`。
+**Tensorflow：**`split`函数返回的结果均保存在一个tensor类型的值中;  
+**PaddlePaddle：**`split`返回`list`类型结果，长度为`num_or_sections`。
