@@ -1,7 +1,7 @@
 
-## tf.clip_by_value
+### tf.clip_by_value
 
-### [tf.clip_by_value](https://www.tensorflow.org/api_docs/python/tf/clip_by_value)
+#### [tf.clip_by_value](https://www.tensorflow.org/api_docs/python/tf/clip_by_value)
 ``` python
 tf.clip_by_value(
     t,
@@ -11,21 +11,22 @@ tf.clip_by_value(
 )
 ```
 
-### [paddle.fluid.layers.clip](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-clip)
+#### [paddle.fluid.layers.clip](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-clip)
 ``` python
 paddle.fluid.layers.clip(
     x, 
     min, 
     max, 
-    name=None)
+    name=None
+)
 ```
 
-### 功能差异：
-#### 参数类型差异：
->  tensorflow：clip_value_min/clip_value_max可以是python scalar，也可以是variable。
->  paddlepaddle：min/max必须是python scalar。
+#### 功能差异
+##### 参数类型
+tensorflow：`clip_value_min`/`clip_value_max`可以是python scalar，也可以是variable；  
+paddlepaddle：`min`/`max`必须是python scalar。
 
-## paddlepaddle示例:
+#### paddlepaddle代码示例
 ```python
 # 输入 tensor t 为[[-1,2],[3,-4]]
 
