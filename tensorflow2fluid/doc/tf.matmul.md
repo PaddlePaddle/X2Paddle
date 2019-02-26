@@ -1,7 +1,7 @@
 
-## tf.matmul
+### tf.matmul
 
-### [tf.matmul](https://www.tensorflow.org/api_docs/python/tf/linalg/matmul)
+#### [tf.matmul](https://www.tensorflow.org/api_docs/python/tf/linalg/matmul)
 ``` python
 tf.matmul(
     a,
@@ -16,7 +16,7 @@ tf.matmul(
 )
 ```
 
-### [paddle.fluid.layers.matmul](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-matmul)
+#### [paddle.fluid.layers.matmul](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-matmul)
 ``` python
 paddle.fluid.layers.matmul(
     x, 
@@ -24,20 +24,21 @@ paddle.fluid.layers.matmul(
     transpose_x=False, 
     transpose_y=False, 
     alpha=1.0, 
-    name=None)
+    name=None
+)
 ```
 
-### 功能差异：
-#### 输入要求差异：
-&#160; &#160; &#160; &#160;tensorflow中，要求op的两个操作数具有相同的rank；paddlepaddle中，允许两者具有不同的rank，具体说就是当任一操作数的rank大于2
-时，将其看做最里面两维度矩阵的堆叠，paddlepaddle将进行broadcast操作。
+#### 功能差异：
+##### 输入要求
+tensorflow：要求op的两个操作数具有相同的rank；  
+paddlepaddle：允许两者具有不同的rank，具体说就是当任一操作数的rank大于2时，将其看做最里面两维度矩阵的堆叠，paddlepaddle将进行broadcast操作。
 
-#### 其他差别：
-&#160; &#160; &#160; &#160;tensorflow中，使用adjoint参数可以实现快速的共轭操作；paddlepaddle中并不支持。
-&#160; &#160; &#160; &#160;paddlepaddle额外支持对输出进行数乘操作。
+##### 其他差别
+tensorflow：使用`adjoint`参数可以实现快速的共轭操作；paddlepaddle中并不支持；  
+paddlepaddle：额外支持对输出进行数乘操作。
 
 
-## paddlepaddle示例:
+#### paddlepaddle代码示例:
 ```python
 # x: [M, K], y: [K, N]
 fluid.layers.matmul(x, y)  # out: [M, N]
