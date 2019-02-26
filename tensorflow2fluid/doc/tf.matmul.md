@@ -28,7 +28,7 @@ paddle.fluid.layers.matmul(
 )
 ```
 
-#### 功能差异：
+#### 功能差异
 ##### 输入要求
 tensorflow：要求op的两个操作数具有相同的rank；  
 paddlepaddle：允许两者具有不同的rank，具体说就是当任一操作数的rank大于2时，将其看做最里面两维度矩阵的堆叠，paddlepaddle将进行broadcast操作。
