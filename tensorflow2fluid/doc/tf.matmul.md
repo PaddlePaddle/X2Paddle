@@ -38,7 +38,7 @@ tensorflow：使用`adjoint`参数可以实现快速的共轭操作；paddlepadd
 paddlepaddle：额外支持对输出进行数乘操作。
 
 
-#### paddlepaddle代码示例:
+#### paddlepaddle代码示例
 ```python
 # x: [M, K], y: [K, N]
 fluid.layers.matmul(x, y)  # out: [M, N]
