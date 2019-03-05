@@ -14,8 +14,7 @@ tf.losses.sigmoid_cross_entropy(
 )
 ```
 
-#### [paddle.fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#sigmoid_cross_entropy_with_logits
-)
+#### [paddle.fluid.layers.sigmoid_cross_entropy_with_logit](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#sigmoid_cross_entropy_with_logits)
 
 ```python
 paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
