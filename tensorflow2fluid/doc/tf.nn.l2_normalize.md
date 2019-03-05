@@ -21,7 +21,8 @@ paddle.fluid.layers.l2_normalize(
     axis, 
     epsilon=1e-12, 
     name=None
-)```
+)
+```
 
 #### 功能差异
 
