@@ -42,8 +42,9 @@ paddle.fluid.layers.conv2d(
 ##### PaddlePaddle代码示例  
 ```python
 # 输入为NCHW格式
-inputs = fluid.layers.data(dtype='float32', shape=[-1, 300, 300, 3], name='inputs')
+inputs = fluid.layers.data(dtype='float32', shape=[-1, 3, 300, 300], name='inputs')
 create_kernel = fluid.layers.create_parameters(shape=[5, 3, 2, 2], dtype='float32', name='kernel')
+
 # PaddlePaddle中可通过相同的参数命名引用同一个参数变量
 # 通过指定卷积核参数名(param_attr)为'kernel'，引用了create_kernel
 result = fluid.layers.conv2d(inputs, 5, [2, 2], param_attr='kernel')
