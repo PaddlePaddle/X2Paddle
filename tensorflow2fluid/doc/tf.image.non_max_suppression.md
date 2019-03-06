@@ -37,8 +37,13 @@ PaddlePaddle：相对比Tensorflow，还支持batch和多类别，`bboxes`的sha
 TensorFlow: 返回shape为`[N]`的tensor，表示为`boxes`中选取的index集合，长度为`N`
 PaddlePaddle: 返回`[N, 6]`的[LodTensor](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/fluid_cn.html#lodtensor)，其中每行内容为`[lable, confidence, xmin, ymin, xmax, ymax]`
 
+#### 参数差异
+TensorFlow: 在所有boxes中，根据其它参数条件，最终选出的boxes数量不超过`max_output_size`  
+PaddlePaddle: 在`nms_top_k`个boxes中，根据其它参数条件，最终选出的boxes数量不超过`keep_top_k`
+
 ## paddlepaddle示例:
 ```python
-
-# 常量tensor out 中数据为 np.array([[5,5,5],[5,5,5]], dtype='int64')
-out = fluid.layers.fill_constant(shape=[2,3], dtype='int64', value=5)  
+clip_boxes = fluid.layers.data(dtype='float32', shape=[5000, 4], name='boxes')
+scores = fluid.layers.data(dtype='float32', shape=[1, 5000], name='scores')
+selected_boxes = fluid.layers.multiclass_nms(clip_boxes, scores, scrore_threshold=0.5, nms_top
+```
