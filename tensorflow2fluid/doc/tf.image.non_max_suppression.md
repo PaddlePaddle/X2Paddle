@@ -45,5 +45,13 @@ PaddlePaddle: 在`nms_top_k`个boxes中，根据其它参数条件，最终选�
 ```python
 clip_boxes = fluid.layers.data(dtype='float32', shape=[5000, 4], name='boxes')
 scores = fluid.layers.data(dtype='float32', shape=[1, 5000], name='scores')
-selected_boxes = fluid.layers.multiclass_nms(clip_boxes, scores, scrore_threshold=0.5, nms_top
+
+# nms_top_k=-1，表示在输入的所有boxes中选取
+selected_boxes = fluid.layers.multiclass_nms(
+            clip_boxes, 
+            scores, 
+            scrore_threshold=0.5, 
+            nms_top_k=-1, 
+            keep_top_k=300,
+            nms_threshold=0.7)
 ```
