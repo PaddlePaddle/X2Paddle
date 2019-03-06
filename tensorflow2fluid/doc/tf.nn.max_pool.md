@@ -42,8 +42,9 @@ PaddlePaddle：在输入的上、下、左、右分别padding，size大小为`po
 ### 示例代码
 ```
 inputs = fluid.layers.data(dtype='float32', shape=[3, 300, 300], name='inputs')
-# 根据input_size, filter_size和stride计算得到padding size
-# 只在最右和最下进行padding
+
+# 计算得到输入的长、宽对应padding size为1
+# 在最右、最下进行padding
 pad_res = fluid.layers.pad2d(inputs, padding=[0, 1, 0, 1])
 conv_res = fluid.layers.pool2d(pad_res, pool_size=3, pool_type='max', pool_stride=2)
 ```
