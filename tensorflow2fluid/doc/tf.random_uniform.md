@@ -1,5 +1,5 @@
 
-## tf.constant
+## tf.random_uniform
 
 ### [tf.random_uniform](https://www.tensorflow.org/api_docs/python/tf/random/uniform)
 ``` python
