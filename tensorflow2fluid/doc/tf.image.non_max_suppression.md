@@ -29,9 +29,9 @@ paddle.fluid.layers.multiclass_nms(
 ```
 
 ### 功能差异：
-#### 输入格式：
-TensorFlow：`boxes`的shape为`[num_boxes, 4]`， `scores`的shape为`[num_boxes]`  
-PaddlePaddle：支持batch和多类别，`bboxes`的shape为`[batch, num_boxes, 4]`， `scores`的shape为`[batch, num_classes, num_boxes]`
+#### 输入格式
+TensorFlow：`boxes`的shape为`[num_boxes, 4]`， `scores`的shape为`[num_boxes]`
+PaddlePaddle：相对比Tensorflow，还支持batch和多类别，`bboxes`的shape为`[batch, num_boxes, 4]`， `scores`的shape为`[batch, num_classes, num_boxes]`
 
 #### 输出格式
 TensorFlow: 返回shape为`[N]`的tensor，表示为`boxes`中选取的index集合，长度为`N`
