@@ -1,8 +1,8 @@
-## tf.nn.reduce_logsumexp
+## tf.math.reduce_logsumexp
 
-### [tf.nn.reduce_logsumexp](https://www.tensorflow.org/api_docs/python/tf/math/reduce_logsumexp)
+### [tf.math.reduce_logsumexp](https://www.tensorflow.org/api_docs/python/tf/math/reduce_logsumexp)
 ``` python
-tf.nn.log_softmax(
+tf.math.log_softmax(
     logits,
     axis=None,
     name=None,
