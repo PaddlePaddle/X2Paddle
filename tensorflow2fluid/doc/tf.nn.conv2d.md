@@ -1,5 +1,3 @@
-## CV常用API
-
 ### tf.nn.conv2d
 
 #### [tf.nn.conv2d](https://www.tensorflow.org/api_docs/python/tf/nn/conv2d)
