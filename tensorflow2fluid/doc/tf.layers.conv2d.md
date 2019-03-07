@@ -58,10 +58,15 @@ PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
 #### 参数差异
 TensorFlow：深度可分离卷积使用[tf.layers.separable_conv2d](https://www.tensorflow.org/api_docs/python/tf/layers/separable_conv2d)接口
 PaddlePaddle: 使用`paddle.fluid.layers.conv2d`，可参考
-[PaddlePaddle对卷积的说明文档](http://paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/layers/conv.html), 同时也可参考示例1中，`tf.nn.depthwise_conv2d`在PaddlePaddle框架下的实现方式
+[PaddlePaddle对卷积的说明文档](http://paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/layers/conv.html), 同时也可参考[tf.nn.depthwise_conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/doc/tensorflow2fluid/doc/tf.nn.conv2d)中的代码示例。
 
 ## paddlepaddle示例:
 ```python
-
-# 常量tensor out 中数据为 np.array([[5,5,5],[5,5,5]], dtype='int64')
-out = fluid.layers.fill_constant(shape=[2,3], dtype='int64', value=5)  
+# 示例1 
+# 结合pad2d，实现SAME方式的padding
+# 输入Shape：(None, 3, 200, 200)
+# 输出Shape：(None, 5， 67， 67）
+# 卷积核Shape: (5, 3, 4, 4)
+inputs = paddle.fluid.layers.data(dtype='float32', shape=[3, 200, 200], name='inputs)
+pad_inputs = paddle.fluid.layers.pad2d(inputs, paddings=[1, 2, 1, 2])
+outputs = paddle.fluid.layers.conv2d(pad_inputs, 5, [4, 4], (1, 1))
