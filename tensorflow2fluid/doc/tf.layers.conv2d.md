@@ -1,7 +1,7 @@
 
 ## tf.layers.conv2d
 
-### [tf.image.resize_bilinear](https://www.tensorflow.org/api_docs/python/tf/layers/conv2d)
+### [tf.layers.conv2d](https://www.tensorflow.org/api_docs/python/tf/layers/conv2d)
 ``` python
 tf.layers.conv2d(
     inputs,
