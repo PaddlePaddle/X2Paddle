@@ -47,9 +47,9 @@ paddle.fluid.layers.conv2d(
 
 #### 数据格式
 
-TensorFlow: 默认且目前主流tensorflow模型的输入数据格式为`NHWC`，即表示`(batch`，height, width, in_channel)`；
-对应输出格式为`(batch, height, width, filter_num)`;
-PaddlePaddle：输入数据格式为`NCHW`，
+TensorFlow: 默认且目前主流tensorflow模型的输入数据格式为`NHWC`，即表示`(batch，height, width, in_channels)`；
+对应输出格式为`(batch, height, width, filters_num)`；卷积核的格式则为`(filter_height, filter_width, in_channels, filters_num)`  
+PaddlePaddle：输入数据格式为`NCHW`；输出格式`(batch, filters_num, height, width)`；卷积核格式`(filters_num, in_channels, filter_height, filter_width)`
 
 
 ## paddlepaddle示例:
