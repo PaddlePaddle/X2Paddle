@@ -57,7 +57,7 @@ PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
 
 #### 参数差异
 TensorFlow：深度可分离卷积使用[tf.layers.separable_conv2d](https://www.tensorflow.org/api_docs/python/tf/layers/separable_conv2d)接口
-PaddlePaddle: 使用`paddle.fluid.layers.conv2d`，可参考[说明文档)(http://paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/layers/conv.html）, 同时也可参考示例1中，`tf.nn.depthwise_conv2d`在PaddlePaddle框架下的实现方式
+PaddlePaddle: 使用`paddle.fluid.layers.conv2d`，可参考[说明文档](http://paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/layers/conv.html）, 同时也可参考示例1中，`tf.nn.depthwise_conv2d`在PaddlePaddle框架下的实现方式
 
 ## paddlepaddle示例:
 ```python
