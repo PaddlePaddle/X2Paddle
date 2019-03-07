@@ -52,11 +52,11 @@ TensorFlow: 默认且目前主流tensorflow模型的输入数据格式为`NHWC`�
 PaddlePaddle：输入数据格式为`NCHW`；输出格式`(batch, filters_num, height, width)`；卷积核格式`(filters_num, in_channels, filter_height, filter_width)`
 
 #### Padding机制
-TensorFlow: `SAME`和`VALID`两种选项。当为`SAME`时，padding的计算方式如下
+TensorFlow: `SAME`和`VALID`两种选项。当为`SAME`时，padding的计算方式如下  
 PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
 
 #### 参数差异
-TensorFlow：深度可分离卷积使用[tf.layers.separable_conv2d](https://www.tensorflow.org/api_docs/python/tf/layers/separable_conv2d)接口
+TensorFlow：深度可分离卷积使用[tf.layers.separable_conv2d](https://www.tensorflow.org/api_docs/python/tf/layers/separable_conv2d)接口  
 PaddlePaddle: 使用`paddle.fluid.layers.conv2d`，可参考
 [PaddlePaddle对卷积的说明文档](http://paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/layers/conv.html), 同时也可参考[tf.nn.depthwise_conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/doc/tensorflow2fluid/doc/tf.nn.conv2d)中的代码示例。
 
