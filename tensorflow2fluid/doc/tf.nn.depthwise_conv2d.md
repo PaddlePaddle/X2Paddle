@@ -56,5 +56,5 @@ pad_right = pad_size - pad_left
 PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
 
 #### 参数差异
-Tensorflow：普通2维卷积使用`tf.layers.conv2d`
+Tensorflow：普通2维卷积使用`tf.layers.conv2d`  
 PaddlePaddle：仍使用本接口，可参考在文档[tf.layers.conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/doc/tensorflow2fluid/doc/tf.layers.conv2d.md)中
