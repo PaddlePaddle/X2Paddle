@@ -3,10 +3,9 @@
 #### [tf.nn.depthwise_conv2d](https://www.tensorflow.org/api_docs/python/tf/nn/depthwise_conv2d)
 
 ```python
-tf.nn.separable_conv2d(
+tf.nn.depthwise_conv2d(
     input,
-    depthwise_filter,
-    pointwise_filter,
+    filter,
     strides,
     padding,
     rate=None,
@@ -15,7 +14,7 @@ tf.nn.separable_conv2d(
 )
 ```
 
-#### [paddle.fluid.layers.conv2d](http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
+#### [paddle.fluid.layers.conv2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
 
 ```python
 paddle.fluid.layers.conv2d(
@@ -41,8 +40,8 @@ paddle.fluid.layers.conv2d(
 #### 数据格式
 
 TensorFlow: 默认且目前主流tensorflow模型的输入数据格式为`NHWC`，即表示`(batch，in_height, in_width, in_channels)`；
-对应输出格式为`(batch, out_height, out_width, in_channel*channel_multiplier)`；卷积核的格式则为`(filter_height, filter_width, in_channels, channel_multiplier)`  
-PaddlePaddle：输入数据格式为`NCHW`；输出格式`(batch, in_channel/groups, height, width)`；卷积核格式`(filters_num, in_channels, filter_height, filter_width)`
+卷积核的格式为`(filter_height, filter_width, in_channels, channel_multiplier)`;对应输出格式为`(batch, out_height, out_width, in_channel*channel_multiplier)`；  
+PaddlePaddle：输入数据格式为`NCHW`；卷积核格式`(filters_num, in_channels/groups, filter_height, filter_width)`；输出格式`(batch, filters_num, height, width)`
 
 #### Padding机制
 TensorFlow: `SAME`和`VALID`两种选项。当为`SAME`时，padding的计算方式如下所示
@@ -55,4 +54,7 @@ pad_left = ceil(pad_size / 2)
 pad_right = pad_size - pad_left
 ```
 PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
-```
+
+#### 参数差异
+Tensorflow：普通2维卷积使用`tf.layers.conv2d`
+PaddlePaddle：仍使用本接口，可参考在文档[tf.layers.conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/doc/tensorflow2fluid/doc/tf.layers.conv2d.md)中
