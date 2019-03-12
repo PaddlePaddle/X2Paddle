@@ -32,7 +32,7 @@ paddle.fluid.layers.pool2d(
 
 #### Padding机制
 
-Tensorflow: 存在`SAME`和`VALID`两种padding方式。当为`SAME`时，padding的size计算方式如下伪代码所示，需要注意的是，当计算得到的`pad_size`为奇数时，
+Tensorflow: 存在`SAME`和`VALID`两种padding方式。当为`SAME`时，padding的size计算方式如下伪代码所示，需要注意的是，当计算得到的`pad_size`为奇数时，右侧与下方相对比左侧和上方会多1个size。
 ``` python
 # 计算在width上的padding size
 # height上的padding计算方式同理
@@ -49,6 +49,5 @@ inputs = fluid.layers.data(dtype='float32', shape=[3, 300, 300], name='inputs')
 
 # 计算得到输入的长、宽对应padding size为1
 # 在最右、最下进行padding
-pad_res = fluid.layers.pad2d(inputs, padding=[0, 1, 0, 1])
-conv_res = fluid.layers.pool2d(pad_res, pool_size=3, pool_type='max', pool_stride=2)
+conv_res = fluid.layers.pool2d(pad_res, pool_size=3, pool_type='avg', padding=[1, 1], pool_stride=2)
 ```
