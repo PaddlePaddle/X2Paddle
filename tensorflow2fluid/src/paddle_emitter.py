@@ -177,7 +177,7 @@ class PaddleEmitter(object):
         code.append("import paddle.fluid as fluid")
         code.append("import numpy")
         code.append("")
-        code.append("def KitModel():")
+        code.append("def Model():")
         return code
 
     def add_codes(self, indent, codes):
@@ -233,7 +233,6 @@ class PaddleEmitter(object):
 
         # merge all the generated python codes
         for node in translate_nodes:
-            print(self.graph.get_node(node).output_name, node)
             codes = self.graph.get_node(node).code.gen_codes()
             self.add_codes(1, codes)
 
