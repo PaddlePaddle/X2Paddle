@@ -33,7 +33,7 @@ python src/convert.py --pb_file tf_model.pb \
 ```
 ### 参数说明  
 |tf2fluid参数|说明|
-|------------------|-----------------------------------------------|
+|-----------|-----------------------------------------------|
 |meta_file|TensorFlow模型序列化后保存的meta文件|
 |ckpt_dir|TensorFlow模型保存checkpoint目录|
 |pb_file|Tensorflow保存的pb格式模型|
@@ -42,6 +42,7 @@ python src/convert.py --pb_file tf_model.pb \
 |input_format|输入数据格式，当为CV模型时，可选择NHWC/NCHW/OTHER|
 |output_nodes|输出tensor名，多个输出时以空格分隔|
 |save_dir|转换后的模型保存路径|
+
 目前支持tensorflow保存的checkpoint模型和将参数及模型结构序列化存储的pb模型，前者须指定meta_file和ckpt_file，后者则指定pb_file
 
 ### 转换后模型文件说明  
