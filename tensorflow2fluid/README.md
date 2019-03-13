@@ -11,13 +11,16 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 
 **我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！**
 
-## 环境依赖
+## 依赖环境
 
-> python = 2.7
+工具开发过程中，我们在如下环境配置中测试模型转换
 
-> tensorflow >= 1.12.0
+> python == 2.7 or 3.6
 
-> 注：tensorflow2fluid的运行不依赖于paddlepaddle，但测试转换后的模型所需的PaddlePaddle须为1.2.0或更新版本
+> tensorflow == 1.12.0
+
+> paddlepaddle == 1.3.0
+
 
 <a id="安装说明">
          
