@@ -37,7 +37,7 @@ python src/convert.py --pb_file tf_model.pb \
 |ckpt_dir|TensorFlow模型保存checkpoint目录|
 |pb_file|Tensorflow保存的pb格式模型|
 |in_nodes|输入tensor名，多个输入时以空格分隔|
-|input_shape|输入tensor的shape(batch维度以None表示)，shape之间以空格分隔，shape内各维度以逗号分隔，须与input_nodes对应|
+|input_shape|输入tensor的shape(batch维度以None表示)，shape之间以空格分隔，shape内各维度以逗号分隔|
 |input_format|输入数据格式，NHWC/NCHW/OTHER|
 |output_nodes|输出tensor名，多个输出时以空格分隔|
 |save_dir|转换后的模型保存路径|
