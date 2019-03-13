@@ -53,15 +53,10 @@ ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关�
 const_\*/params_\*|转换后的模型参数文件
 save_var.list|模型载入过程中的变量list
 
-### 加载转换后的模型
-加载转换后的模型主要注意以下三点
+### 加载转换后的模型并用于预测
+本目录下提示的[paddle_model_loader.py](paddle_model_loader.py)可用于加载转换后的模型
 
-> 1. `import`模型结构，模型结构代码定义在my_model.py中
-> 2. 注意原模型中输出与转换后模型输出名的映射关系，参考ref_name.txt
-> 3. 模型需要加载的参数列表为save_var.list
-
-> 1. 目前支持转换的模型格式包括checkpoint保存的模型、将参数序列化到网络结构的pb格式模型
-> 2. 模型转换后，计算结果存在一定精度的diff，因此务必检查模型转换前后，在输入同样的数据前提下,diff是否符合预期
+使用转换后的模型主要注意，**模型转换后，计算结果与原模型存在一定精度的diff，因此务必检查模型转换前后，在输入同样的数据前提下,diff是否符合预期**
 
 
 ## Link
