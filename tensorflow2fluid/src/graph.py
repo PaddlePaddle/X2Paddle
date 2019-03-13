@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from name_generator import NameGenerator
+from utils import *
+import collections
 
 
 class GraphNode(object):
-    def __init__(self, layer):
+    def __init__(self, layer, layer_name=None):
         self.inputs = list()
         self.outputs = list()
         self.layer = layer
         self.ref_name = None
         self.output_name = None
+        if layer_name is not None:
+            self.layer_name = layer_name
+        else:
+            self.layer_name = layer.name
 
     def __hash__(self):
         return hash(self.layer.name)
@@ -34,14 +39,14 @@ class GraphNode(object):
 
 class Graph(object):
     def __init__(self, model):
-        self.node_map = dict()
+        self.node_map = collections.OrderedDict()
         self.input_nodes = list()
         self.output_nodes = list()
         self.topological_sort = list()
         self.model = model
         self.name_generator = NameGenerator()
 
-    def build(self):
+    def build(self, input_format):
         self._make_input_nodes()
         self._make_output_nodes()
         self._get_topological_sort()
@@ -78,8 +83,25 @@ class Graph(object):
         for node_name in self.topological_sort:
             node = self.node_map[node_name]
             ref_name = self.name_generator.get_name(node)
+
+            if node.layer_type == 'split' or node.layer_type == 'splitv':
+                index = '0'
+                if len(node_name.split(':')) == 2:
+                    index = node_name.split(':')[-1]
+                ref_name += '[{}]'.format(index)
+
             self.node_map[node.layer.name].ref_name = ref_name
             self.node_map[node.layer.name].output_name = ref_name.split('[')[0]
+
+        for node_name, node in self.node_map.items():
+            ref_name = self.name_generator.get_name(node)
+            if node.layer_type == 'split' or node.layer_type == 'splitv':
+                index = '0'
+                if len(node_name.split(':')) == 2:
+                    index = node_name.split(':')[-1]
+                ref_name += '[{}]'.format(index)
+                self.node_map[node_name].ref_name = ref_name
+                self.node_map[node_name].output_name = ref_name.split('[')[0]
 
     def get_node(self, name):
         if name not in self.node_map:
@@ -88,9 +110,8 @@ class Graph(object):
             return self.node_map[name]
 
     def _make_connection(self, src, dst):
-        if src.layer_name == dst.layer_name or src.layer_name not in self.node_map or dst.layer_name not in self.node_map:
+        if src.layer_name == dst.layer_name or src.layer_name not in \
+            self.node_map or dst.layer_name not in self.node_map:
             raise Exception('Warning: Node not exist or there is a self-loop')
-        if src not in self.node_map[dst.layer_name].inputs:
-            self.node_map[dst.layer_name].inputs.append(src)
-        if dst not in self.node_map[src.layer_name].outputs:
-            self.node_map[src.layer_name].outputs.append(dst)
+        self.node_map[dst.layer_name].inputs.append(src)
+        self.node_map[src.layer_name].outputs.append(dst)
