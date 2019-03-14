@@ -22,13 +22,29 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 <a id="使用方法">
          
 ## 使用方法
+### 转换模型
 ```
 python src/convert.py --pb_file tf_model.pb \
                       --in_nodes inputs \
                       --output_nodes outputs \
                       --input_shape None,224,224,3 \
                       --input_format NHWC \
-                      --save_dir paddle_model
+                      --save_dir translated_paddle_model
+```
+### 加载模型并预测  
+``` python
+# coding:utf-8
+# 代码运行目录 X2Paddle/tensorflow2fluid
+import sys
+import tf2fluid.model_loader as ml
+
+# 加载模型
+model = ml.ModelLoader("translated_paddle_model", use_cuda=True)
+
+# 注意
+data = numpy.random.rand(5, 3, 224, 224)
+import tf2fluid.model_loader as ml
+import tf2fluid.model_loader as ml
 ```
 ### 参数说明  
 |tf2fluid参数|说明|
