@@ -22,13 +22,13 @@ paddle.fluid.layers.pad(
 )
 ```
 
-#### 功能差异：
+#### 功能差异
 ##### padding方式
 tensorflow：支持采用三种模式进行padding，不同padding模式决定pad的值是什么，包括constant、symmetric和reflect。padding的shape为(rank, 2)，表示每一维前后padding的长度  
 
 paddlepaddle：目前仅支持采用常量进行padding；指定padding长度时，采用一个一维列表表示，其长度为输入rank的两倍，连续的两个值表示某维度上前、后进行padding的长度
 
-#### paddlepaddle示例:
+#### paddlepaddle示例
 ```python
 # 输入 tensor t 为[[1,2],[3,4]]
 
