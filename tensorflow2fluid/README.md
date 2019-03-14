@@ -24,7 +24,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 ## 使用方法
 ### 转换模型
 ```
-python src/convert.py --pb_file tf_model.pb \
+python tf2fluid/convert.py --pb_file tf_model.pb \
                       --in_nodes inputs \
                       --output_nodes outputs \
                       --input_shape None,224,224,3 \
