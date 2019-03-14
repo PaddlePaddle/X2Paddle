@@ -85,12 +85,6 @@ ref_name.info|my_model.py中各tensor与原TensorFlow模型中的tensor对应关
 const_\*/params_\*|转换后的模型参数文件
 save_var.list|模型载入过程中的变量list
 
-### 加载转换后的模型并用于预测
-本目录下的[model_loader.py](tf2fluid/model_loader.py)可用于加载转换后的模型
-
-使用转换后的模型主要注意，**模型转换后，计算结果与原模型存在一定精度的diff，因此务必检查模型转换前后，在输入同样的数据前提下,diff是否符合预期**
-
-
 ## Link
 
 本目录下部分代码参考了MMdnn-Tensorflow，对此表示感谢！
