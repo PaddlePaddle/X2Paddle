@@ -19,6 +19,7 @@ from tensorflow.python.tools import strip_unused_lib
 from tensorflow.python.framework import dtypes
 import numpy
 
+
 class TensorflowCkptParser(object):
     def __init__(self,
                  meta_file,
@@ -29,21 +30,22 @@ class TensorflowCkptParser(object):
                  input_format="NCHW".encode()):
         graph_def = None
         self.weights = None
+        self.inputs = in_nodes
+        self.outputs = dest_nodes
         sess = tf.Session()
         if meta_file is None:
             raise Exception("meta_file must be provided")
         new_saver = tf.train.import_meta_graph(meta_file)
         if checkpoint_file is not None:
             self.weights = dict()
-            new_saver.restore(
-                sess, tf.train.latest_checkpoint(checkpoint_file))
+            new_saver.restore(sess,
+                              tf.train.latest_checkpoint(checkpoint_file))
             for var in tf.global_variables():
                 value = var.eval(sess)
                 self.weights[var.name.split(':')[0]] = value
 
         self.infer = ModelInfer(sess)
-        graph_def, ver = tf.get_default_graph()._as_graph_def(
-            add_shapes=True)
+        graph_def, ver = tf.get_default_graph()._as_graph_def(add_shapes=True)
 
         if in_nodes is not None and input_shape is not None:
             graph_def = strip_unused_lib.strip_unused(
@@ -58,7 +60,8 @@ class TensorflowCkptParser(object):
                     shape = [tf.Dimension(x) for x in input_shape[index]]
                     shape_proto = tf.TensorShape(shape).as_proto()
                     node.attr['_output_shapes'].list.shape.pop()
-                    node.attr['_output_shapes'].list.shape.extend([shape_proto])
+                    node.attr['_output_shapes'].list.shape.extend(
+                        [shape_proto])
                     self.infer.gen_sample_data(node.name, input_shape[index])
 
             self.tf_graph = TensorflowGraph(graph_def)
@@ -69,14 +72,20 @@ class TensorflowCkptParser(object):
 
 
 class TensorflowPbParser(object):
-    def __init__(self, pb_file, dest_nodes, input_shape=None, 
-        in_nodes=None, input_format="NCHW".encode()):
+    def __init__(self,
+                 pb_file,
+                 dest_nodes,
+                 input_shape=None,
+                 in_nodes=None,
+                 input_format="NCHW".encode()):
         with open(pb_file, 'rb') as f:
             serialized = f.read()
         tf.reset_default_graph()
         original_graph_def = tf.GraphDef()
         original_graph_def.ParseFromString(serialized)
-        
+        self.inputs = list()
+        self.outputs = dest_nodes
+
         sess = tf.Session(graph=tf.get_default_graph())
         sess.run(tf.global_variables_initializer())
         self.infer = ModelInfer(sess)
@@ -111,11 +120,11 @@ class TensorflowPbParser(object):
                 raise Exception("Unexpected dtype for input, only support " \
                     "float32 and int32 now")
             input_map[in_nodes[i] + ":0"] = x
+            self.inputs.append(x.name.split(':')[0])
             self.infer.gen_sample_data(x.name, input_shape[i])
 
         tf.import_graph_def(graph_def, name="", input_map=input_map)
-        graph_def = tf.get_default_graph()._as_graph_def(
-            add_shapes=True)[0]
+        graph_def = tf.get_default_graph()._as_graph_def(add_shapes=True)[0]
 
         self.tf_graph = TensorflowGraph(graph_def)
         self.tf_graph.build(input_format)
@@ -164,7 +173,7 @@ class ModelInfer(object):
         if len(tensor_name.split(':')) < 2:
             tensor_name = tensor_name + ':0'
         output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
- 
+
         tensor_values = []
         for i in range(0, 3):
             inputs_tensors = dict()
@@ -175,19 +184,19 @@ class ModelInfer(object):
                 inputs_tensors[tensor] = values[i]
             r, = self.sess.run([output_tensor], inputs_tensors)
             tensor_values.append(r.flatten())
- 
+
         compare01 = (tensor_values[0] == tensor_values[1])
         compare12 = (tensor_values[1] == tensor_values[2])
- 
+
         if compare01.all() and compare12.all():
             return tensor_values[0]
-  
+
         if (compare01 == compare12).all():
-            index = numpy.argwhere(compare01==False).flatten()
+            index = numpy.argwhere(compare01 == False).flatten()
             if index.shape[0] != 1:
                 raise Exception("There's not only one unstable dimension")
             tensor_values[0][index[0]] = -1
- 
+
             index = numpy.argwhere(tensor_values[0] < 0).flatten()
             if index.shape[0] > 2:
                 raise Exception("There's more than two values less than zero")
@@ -199,17 +208,17 @@ class ModelInfer(object):
             return tensor_values[0]
         else:
             raise Exception("Can not infer a stable shape tensor value")
- 
+
     def get_tensor_shape(self, layer):
         shape = layer.attr['_output_shapes'].list.shape[0]
         shape = numpy.array([dim.size for dim in shape.dim])
-        if numpy.argwhere(shape<0).shape[0] <= 1:
+        if numpy.argwhere(shape < 0).shape[0] <= 1:
             return shape
         tensor_name = layer.name
         if len(tensor_name.split(':')) < 2:
             tensor_name = tensor_name + ':0'
         output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
- 
+
         shapes = []
         for i in range(0, 3):
             inputs_tensors = dict()
@@ -220,15 +229,15 @@ class ModelInfer(object):
                 inputs_tensors[tensor] = values[i]
             r, = self.sess.run([output_tensor], inputs_tensors)
             shapes.append(numpy.array(r.shape))
- 
+
         compare01 = (shapes[0] == shapes[1])
         compare12 = (shapes[1] == shapes[2])
- 
+
         if compare01.all() and compare12.all():
             return shapes[0]
-  
+
         if (compare01 == compare12).all():
-            index = numpy.argwhere(compare01==False).flatten()
+            index = numpy.argwhere(compare01 == False).flatten()
             if index.shape[0] != 1:
                 raise Exception("There's not only one unstable dimension")
             if index[0] != 0:
@@ -237,13 +246,13 @@ class ModelInfer(object):
             return shapes[0]
         else:
             raise Exception("Can not infer a stable tensor shape, failed!")
- 
+
     def get_const_tensor_value(self, layer):
         tensor_name = layer.name
         if len(tensor_name.split(':')) < 2:
             tensor_name = tensor_name + ':0'
         output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
- 
+
         result = []
         for i in range(0, 3):
             inputs_tensors = dict()
@@ -254,10 +263,10 @@ class ModelInfer(object):
                 inputs_tensors[tensor] = values[i]
             r, = self.sess.run([output_tensor], inputs_tensors)
             result.append(r)
- 
+
         compare01 = (result[0] == result[1])
         compare12 = (result[1] == result[2])
- 
+
         if compare01.all() and compare12.all():
             return result[0]
         else:

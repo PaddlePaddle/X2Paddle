@@ -22,7 +22,6 @@ VALID = 'VALID'.encode()
 class NameGenerator(object):
     def __init__(self):
         self.param_index = 0
-        self.input_index = 0
         self.net_index = 0
         self.const_index = 0
         self.names = dict()
@@ -38,8 +37,7 @@ class NameGenerator(object):
             ref_name = "param_" + str(self.param_index)
             self.param_index += 1
         elif op_name == "placeholder":
-            ref_name = "input_" + str(self.input_index)
-            self.input_index += 1
+            ref_name = node.layer.name
         elif op_name == "const":
             ref_name = "const_" + str(self.const_index)
             self.const_index += 1
@@ -76,10 +74,12 @@ class LayerCode(object):
         layer_code2 = ""
         for k, v in self.param_attr.items():
             layer_code2 = layer_code2 + k + "=" + "{}".format(v) + ", "
-        layer_code2 = layer_code2.strip(", ")         
+        layer_code2 = layer_code2.strip(", ")
 
-        layer_code = (layer_code0 + layer_code1 + layer_code2).strip(", ") + ")"
+        layer_code = (
+            layer_code0 + layer_code1 + layer_code2).strip(", ") + ")"
         return layer_code
+
 
 class FluidCode(object):
     def __init__(self):

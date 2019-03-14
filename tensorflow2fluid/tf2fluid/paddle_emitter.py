@@ -24,13 +24,15 @@ import struct
 import numpy
 logging.basicConfig(level=logging.DEBUG)
 
-class PaddleEmitter(object):
 
+class PaddleEmitter(object):
     def __init__(self, parser, save_dir):
         self.graph = parser.tf_graph
         self.weights = parser.weights
         self.infer = parser.infer
         self.inputs_sample_data = dict()
+        self.outputs = parser.outputs
+        self.inputs = parser.inputs
         self.save_dir = save_dir
         self.body_code = ""
         self.tab = " " * 4
@@ -81,8 +83,8 @@ class PaddleEmitter(object):
         if shape2.shape[0] == shape1.shape[0]:
             if (shape1 == shape2).all():
                 param_attr = {
-                    'x':data1.ref_name, 
-                    'y':data2.ref_name,
+                    'x': data1.ref_name,
+                    'y': data2.ref_name,
                 }
                 node.code.add_layer(op, None, node.output_name, param_attr)
                 return
@@ -101,33 +103,37 @@ class PaddleEmitter(object):
 
             perm = list(numpy.array(perm1)[numpy.array(perm2)])
             if perm != range(shape1.shape[0]):
-                param_attr = {"perm":perm}
-                node.code.add_layer("transpose", data1.ref_name, 
-                    "temp1", param_attr)
-                node.code.add_layer("transpose", data2.ref_name, 
-                    "temp2", param_attr)
+                param_attr = {"perm": perm}
+                node.code.add_layer("transpose", data1.ref_name, "temp1",
+                                    param_attr)
+                node.code.add_layer("transpose", data2.ref_name, "temp2",
+                                    param_attr)
                 if len(index2_one) > len(index1_one):
-                    param_attr = {"x":"temp1", "y":"temp2"}
+                    param_attr = {"x": "temp1", "y": "temp2"}
                 else:
-                    param_attr = {"x":"temp2", "y":"temp1"}
+                    param_attr = {"x": "temp2", "y": "temp1"}
                 node.code.add_layer(op, None, node.output_name, param_attr)
-                perm = sorted(range(len(perm)), key=lambda k:perm[k])
-                param_attr = {"perm":perm}
-                node.code.add_layer("transpose", node.output_name, 
-                    node.output_name, param_attr)
+                perm = sorted(range(len(perm)), key=lambda k: perm[k])
+                param_attr = {"perm": perm}
+                node.code.add_layer("transpose", node.output_name,
+                                    node.output_name, param_attr)
             else:
                 if len(index2_one) > len(index1_one):
-                    param_attr = {"x":data1.ref_name, "y":data2.ref_name}
+                    param_attr = {"x": data1.ref_name, "y": data2.ref_name}
                 else:
-                    param_attr = {"x":data2.ref_name, "y":data1.ref_name}
+                    param_attr = {"x": data2.ref_name, "y": data1.ref_name}
                 node.code.add_layer(op, None, node.output_name, param_attr)
         else:
-            param_attr = {"x":data1.ref_name, "y":data2.ref_name, "axis":axis}
+            param_attr = {
+                "x": data1.ref_name,
+                "y": data2.ref_name,
+                "axis": axis
+            }
             if shape2.shape[0] > shape1.shape[0]:
                 param_attr = {
-                "x":data2.ref_name, 
-                "y":data1.ref_name, 
-                "axis":axis
+                    "x": data2.ref_name,
+                    "y": data1.ref_name,
+                    "axis": axis
                 }
             node.code.add_layer(op, None, node.output_name, param_attr)
 
@@ -166,8 +172,8 @@ class PaddleEmitter(object):
         tensor_size = reduce(lambda x, y: x * y, shape)
         weight = weight.flatten()
         for i in range(0, tensor_size):
-            filew.write(struct.pack(struct_write_format[str(weight.dtype)], 
-                weight[i]))
+            filew.write(
+                struct.pack(struct_write_format[str(weight.dtype)], weight[i]))
         filew.close()
 
     @property
@@ -177,7 +183,8 @@ class PaddleEmitter(object):
         code.append("import paddle.fluid as fluid")
         code.append("import numpy")
         code.append("")
-        code.append("def Model():")
+        code.append("class Model(object):")
+        code.append("    def build(self):")
         return code
 
     def add_codes(self, indent, codes):
@@ -199,14 +206,14 @@ class PaddleEmitter(object):
         for node in self.graph.topological_sort:
             if node.count(':') == 0:
                 translate_nodes.append(node)
-        
+
         # check if exists unsupported OPs in model
         if not self.check_op(translate_nodes):
             return
 
-        # ref_name.txt record relationship between 
+        # ref_name.txt record relationship between
         # paddle value name and tensorflow value name
-        ref_name_recorder = open(self.save_dir + "/ref_name.txt", 'w')
+        ref_name_recorder = open(self.save_dir + "/ref_name.info", 'w')
 
         total_nodes_num = len(translate_nodes)
         translated_nodes_count = 1
@@ -234,23 +241,27 @@ class PaddleEmitter(object):
         # merge all the generated python codes
         for node in translate_nodes:
             codes = self.graph.get_node(node).code.gen_codes()
-            self.add_codes(1, codes)
+            self.add_codes(2, codes)
 
         # add return value codes
         outs = []
-        for node in self.graph.output_nodes:
+        for node in self.outputs:
             outs.append(self.graph.get_node(node).output_name)
-            self.add_codes(1, "# {} : {}".format(
-                self.graph.get_node(node).output_name, 
-                self.graph.get_node(node).layer_name))
-        self.add_codes(1, "return {}".format(", ".join(outs)))
+            self.add_codes(
+                2, "# {} : {}".format(
+                    self.graph.get_node(node).output_name,
+                    self.graph.get_node(node).layer_name))
+        input_code = "self.inputs = {}".format([str(s) for s in self.inputs])
+        output_code = "self.outputs = [{}]".format(", ".join(outs))
+        self.add_codes(2, input_code)
+        self.add_codes(2, output_code)
 
         # write python code to file "my_model.py"
         filew = open(self.save_dir + "/mymodel.py", 'w')
         filew.write(self.body_code)
         filew.close()
 
-        # file "save_var.list" records name of dumped variables 
+        # file "save_var.list" records name of dumped variables
         filew = open(self.save_dir + "/save_var.list", 'w')
         for var in self.save_var_set:
             filew.write(var + '\n')
@@ -277,13 +288,11 @@ class PaddleEmitter(object):
             shape = [shape[0], shape[3], shape[1], shape[2]]
 
         param_attr = {
-            "name":"\'{}\'".format(node.ref_name),
-            "shape":shape,
-            "dtype":"\'{}\'".format(node.dtype),
-            "append_batch_size":False
+            "name": "\'{}\'".format(node.ref_name),
+            "shape": shape,
+            "dtype": "\'{}\'".format(node.dtype),
+            "append_batch_size": False
         }
-        node.code.add_str("# placeholder[{}]:\t{}".format(node.output_name, 
-            node.layer_name))
         node.code.add_layer("data", None, node.output_name, param_attr)
 
     def emit_const(self, node):
@@ -295,27 +304,27 @@ class PaddleEmitter(object):
         except:
             return []
 
-        node.code.add_str("#{} {} {}".format(node.layer_name, 
-            node.ref_name, value.shape))
-        if len(shape) == 0 or (len(shape) ==1 and shape[0] < 2):
+        node.code.add_str("#{} {} {}".format(node.layer_name, node.ref_name,
+                                             value.shape))
+        if len(shape) == 0 or (len(shape) == 1 and shape[0] < 2):
             param_attr = {
-                "shape":[1],
-                "value":value,
-                "dtype":"\'{}\'".format(dtype),
+                "shape": [1],
+                "value": value,
+                "dtype": "\'{}\'".format(dtype),
             }
-            node.code.add_layer("fill_constant", None, 
-                node.output_name, param_attr)
+            node.code.add_layer("fill_constant", None, node.output_name,
+                                param_attr)
         else:
             param_attr = {
-                "shape":shape,
-                "name":"\'{}\'".format(node.ref_name),
-                "dtype":"\'{}\'".format(dtype)
+                "shape": shape,
+                "name": "\'{}\'".format(node.ref_name),
+                "dtype": "\'{}\'".format(dtype)
             }
             if node.dtype.startswith('int'):
                 param_attr["default_initializer"] = \
                 "fluid.initializer.Constant(0)"
-            node.code.add_layer("create_parameter", None, 
-                node.output_name, param_attr)
+            node.code.add_layer("create_parameter", None, node.output_name,
+                                param_attr)
             self.export_weights(value, node.ref_name, self.save_dir)
 
     def emit_conv2d(self, node):
@@ -346,11 +355,11 @@ class PaddleEmitter(object):
                                 kernel.ref_name, self.save_dir)
 
         conv2d_param = {
-             "num_filters":kernel_num,
-             "filter_size":[k_h, k_w],
-             "stride":strides,
-             "param_attr":"\'{}\'".format(kernel.ref_name),
-             "bias_attr":False
+            "num_filters": kernel_num,
+            "filter_size": [k_h, k_w],
+            "stride": strides,
+            "param_attr": "\'{}\'".format(kernel.ref_name),
+            "bias_attr": False
         }
 
         if padding_mode == SAME:
@@ -358,54 +367,50 @@ class PaddleEmitter(object):
             pad_w = self.compute_padding_size(input_w, k_w, strides[1])
             if len(set(pad_h)) == 1 and len(set(pad_w)) == 1:
                 conv2d_param["padding"] = [pad_h[0], pad_w[0]]
-                node.code.add_layer("conv2d", data.ref_name, 
-                    node.output_name, conv2d_param)
+                node.code.add_layer("conv2d", data.ref_name, node.output_name,
+                                    conv2d_param)
             else:
-                pad_param = {"paddings":pad_h + pad_w}
-                node.code.add_layer("pad2d", data.ref_name, 
-                    node.output_name, pad_param)
-                node.code.add_layer("conv2d", node.output_name, 
-                    node.output_name, conv2d_param)
+                pad_param = {"paddings": pad_h + pad_w}
+                node.code.add_layer("pad2d", data.ref_name, node.output_name,
+                                    pad_param)
+                node.code.add_layer("conv2d", node.output_name,
+                                    node.output_name, conv2d_param)
         else:
-            node.code.add_layer("conv2d", data.ref_name, 
-                node.output_name, conv2d_param)
+            node.code.add_layer("conv2d", data.ref_name, node.output_name,
+                                conv2d_param)
 
     def emit_variablev2(self, node):
         shape = list(self.infer.get_tensor_shape(node.layer))
 
-        node.code.add_str("# variable[{}]:\t{}".format(node.output_name, 
-            node.layer_name))
+        node.code.add_str("# variable[{}]:\t{}".format(node.output_name,
+                                                       node.layer_name))
 
         if node.layer_name in self.weights:
-            self.export_weights(self.weights[node.layer_name], 
-                node.ref_name, self.save_dir)
+            self.export_weights(self.weights[node.layer_name], node.ref_name,
+                                self.save_dir)
 
         param_attr = {
-            "name":"\'{}\'".format(node.ref_name),
-            "shape":shape,
-            "dtype":"\'{}\'".format(node.dtype)
+            "name": "\'{}\'".format(node.ref_name),
+            "shape": shape,
+            "dtype": "\'{}\'".format(node.dtype)
         }
         if node.dtype.startswith('int'):
             param_attr["default_initializer"] = "fluid.initializer.Constant(0)"
-        node.code.add_layer("create_parameter", None, 
-            node.output_name, param_attr)
+        node.code.add_layer("create_parameter", None, node.output_name,
+                            param_attr)
 
     def emit_biasadd(self, node):
         data = node.inputs[0]
         bias = node.inputs[1]
 
         if bias.layer_name in self.weights:
-            self.export_weights(self.weights[bias.layer_name], 
-                bias.ref_name, self.save_dir)
+            self.export_weights(self.weights[bias.layer_name], bias.ref_name,
+                                self.save_dir)
 
         self.emit_variablev2(bias)
-        param_attr = {
-            "x":data.ref_name, 
-            "y":bias.ref_name,
-            "axis":1
-        }
-        node.code.add_layer("elementwise_add", None, 
-            node.output_name, param_attr)
+        param_attr = {"x": data.ref_name, "y": bias.ref_name, "axis": 1}
+        node.code.add_layer("elementwise_add", None, node.output_name,
+                            param_attr)
 
     def emit_relu(self, node):
         data = node.inputs[0]
@@ -424,25 +429,27 @@ class PaddleEmitter(object):
             pool_size = node.get_attr("ksize")[1:3]
 
         pool_param = {
-            "pool_size":pool_size,
-            "pool_type":"\'max\'",
-            "pool_stride":strides
+            "pool_size": pool_size,
+            "pool_type": "\'max\'",
+            "pool_stride": strides
         }
 
         if padding_mode == SAME:
-            pad_h = self.compute_padding_size(input_h, pool_size[0], strides[0])
-            pad_w = self.compute_padding_size(input_w, pool_size[1], strides[1])
+            pad_h = self.compute_padding_size(input_h, pool_size[0],
+                                              strides[0])
+            pad_w = self.compute_padding_size(input_w, pool_size[1],
+                                              strides[1])
             pad_right = pad_w[0] + pad_w[1]
             pad_bottom = pad_h[0] + pad_h[1]
             padding = [0, pad_right, 0, pad_bottom]
-            pad_param = {"paddings":padding}
-            node.code.add_layer("pad2d", data.ref_name, 
-                node.output_name, pad_param)
-            node.code.add_layer("pool2d", node.output_name, 
-                node.output_name, pool_param)
+            pad_param = {"paddings": padding}
+            node.code.add_layer("pad2d", data.ref_name, node.output_name,
+                                pad_param)
+            node.code.add_layer("pool2d", node.output_name, node.output_name,
+                                pool_param)
         else:
-            node.code.add_layer("pool2d", data.ref_name, 
-                node.output_name, pool_param)
+            node.code.add_layer("pool2d", data.ref_name, node.output_name,
+                                pool_param)
 
     def emit_squeeze(self, node):
         data = node.inputs[0]
@@ -452,9 +459,9 @@ class PaddleEmitter(object):
             for i in range(0, len(axis)):
                 if axis[i] > 0:
                     axis[i] = (axis[i] + 1) % 4 + int((axis[i] + 1) / 4)
-        param_attr = {"axes":axis}
-        node.code.add_layer("squeeze", data.ref_name, 
-            node.output_name, param_attr)
+        param_attr = {"axes": axis}
+        node.code.add_layer("squeeze", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_add(self, node):
         return self.elementwise(node, "add")
@@ -463,17 +470,17 @@ class PaddleEmitter(object):
         data = node.inputs[0]
         reduce_idx = node.inputs[1]
         reduce_idx.code.clear()
-        idxs = list(self.infer.get_const_tensor_value(
-            reduce_idx.layer).flatten())
+        idxs = list(
+            self.infer.get_const_tensor_value(reduce_idx.layer).flatten())
         data_shape_len = data.shape_dim_size
         keep_dims = node.layer.attr['keep_dims'].b
         if node.data_format == NHWC and data_shape_len == 4:
             for i in range(len(idxs)):
                 if idxs[i] > 0:
                     idxs[i] = (idxs[i] + 1) % 4 + int((idxs[i] + 1) / 4)
-        param_attr = {"dim":list(idxs), "keep_dim":keep_dims}
-        node.code.add_layer("reduce_mean", data.ref_name, 
-            node.output_name, param_attr)
+        param_attr = {"dim": list(idxs), "keep_dim": keep_dims}
+        node.code.add_layer("reduce_mean", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_fusedbatchnorm(self, node):
         data = node.inputs[0]
@@ -507,15 +514,15 @@ class PaddleEmitter(object):
                                 moving_variance.ref_name, self.save_dir)
 
         param_attr = {
-            "epsilon":epsilon,
-            "param_attr":"\'{}\'".format(gamma.ref_name),
-            "bias_attr":"\'{}\'".format(beta.ref_name),
-            "moving_mean_name":"\'{}\'".format(moving_mean.ref_name),
-            "moving_variance_name":"\'{}\'".format(moving_variance.ref_name),
+            "epsilon": epsilon,
+            "param_attr": "\'{}\'".format(gamma.ref_name),
+            "bias_attr": "\'{}\'".format(beta.ref_name),
+            "moving_mean_name": "\'{}\'".format(moving_mean.ref_name),
+            "moving_variance_name": "\'{}\'".format(moving_variance.ref_name),
             "is_test": not is_training
         }
-        node.code.add_layer("batch_norm", data.ref_name, 
-            node.output_name, param_attr)
+        node.code.add_layer("batch_norm", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_concatv2(self, node):
         input_shape_len = node.inputs[0].shape_dim_size
@@ -525,12 +532,12 @@ class PaddleEmitter(object):
         if axis < 0:
             axis = input_shape_len + axis
         if node.data_format == NHWC and input_shape_len == 4:
-            if axis >0:
+            if axis > 0:
                 axis = (axis + 1) % 4 + int((axis + 1) / 4)
         num_tensor = len(node.inputs) - 1
         input_list = [input.ref_name for input in node.inputs[:num_tensor]]
         input_list = "[{}]".format(", ".join(input_list))
-        param_attr = {"axis":axis}
+        param_attr = {"axis": axis}
         node.code.add_layer("concat", input_list, node.output_name, param_attr)
 
     def emit_avgpool(self, node):
@@ -547,30 +554,34 @@ class PaddleEmitter(object):
             input_h, input_w = input_shape[1:3]
 
         param_attr = {
-            "pool_size":pool_size,
-            "pool_stride":strides,
-            "pool_type":"\'avg\'"
+            "pool_size": pool_size,
+            "pool_stride": strides,
+            "pool_type": "\'avg\'"
         }
 
         if padding_mode == SAME:
-            pad_h = self.compute_padding_size(input_h, pool_size[0], strides[0])
-            pad_w = self.compute_padding_size(input_w, pool_size[1], strides[0])
+            pad_h = self.compute_padding_size(input_h, pool_size[0],
+                                              strides[0])
+            pad_w = self.compute_padding_size(input_w, pool_size[1],
+                                              strides[0])
             if len(set(pad_h)) == 1 and len(set(pad_w)) == 1:
                 padding = [pad_h[0], pad_w[0]]
                 param_attr["pool_padding"] = padding
             else:
-                pad_param = {"paddings":pad_h + pad_w}
-                node.code.add_layer("pad2d", data.ref_name, 
-                    node.output_name, pad_param)
-                node.code.add_layer("pool2d", node.output_name, 
-                    node.output_name, param_attr)
-        node.code.add_layer("pool2d", data.ref_name, node.output_name, param_attr)
+                pad_param = {"paddings": pad_h + pad_w}
+                node.code.add_layer("pad2d", data.ref_name, node.output_name,
+                                    pad_param)
+                node.code.add_layer("pool2d", node.output_name,
+                                    node.output_name, param_attr)
+        node.code.add_layer("pool2d", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_rsqrt(self, node):
         data = node.inputs[0]
-        pow_param = {"factor":-1.0}
+        pow_param = {"factor": -1.0}
         node.code.add_layer("sqrt", data.ref_name, node.output_name)
-        node.code.add_layer("pow", node.output_name, node.output_name, pow_param)
+        node.code.add_layer("pow", node.output_name, node.output_name,
+                            pow_param)
 
     def emit_mul(self, node):
         return self.elementwise(node, "mul")
@@ -581,34 +592,34 @@ class PaddleEmitter(object):
         axis = self.get_axis(data1, data2)
         data1_shape = list(self.infer.get_tensor_shape(data1.layer))
         data2_shape = list(self.infer.get_tensor_shape(data2.layer))
-        param_attr = {"x":data1.ref_name, "y":data2.ref_name, "axis":axis}
+        param_attr = {"x": data1.ref_name, "y": data2.ref_name, "axis": axis}
         if len(data1_shape) == 4 and len(data2_shape) == 4 \
             and node.data_format == NHWC:
             if data1_shape[-1] != data2_shape[-1]:
-                node.code.add_layer("transpose", data1.ref_name, 
-                    "temp1", {"perm":[0, 2, 3, 1]})
-                node.code.add_layer("transpose", data2.ref_name, 
-                    "temp2", {"perm":[0, 2, 3, 1]})
-                param_attr = {"x":"temp1", "y":"temp2", "axis":-1}
-                node.code.add_layer("elementwise_sub", None, 
-                    node.output_name, param_attr)
-                node.code.add_layer("transpose", node.output_name, 
-                    node.output_name, {"perm":[0, 3, 1, 2]})
+                node.code.add_layer("transpose", data1.ref_name, "temp1",
+                                    {"perm": [0, 2, 3, 1]})
+                node.code.add_layer("transpose", data2.ref_name, "temp2",
+                                    {"perm": [0, 2, 3, 1]})
+                param_attr = {"x": "temp1", "y": "temp2", "axis": -1}
+                node.code.add_layer("elementwise_sub", None, node.output_name,
+                                    param_attr)
+                node.code.add_layer("transpose", node.output_name,
+                                    node.output_name, {"perm": [0, 3, 1, 2]})
         else:
-            node.code.add_layer("elementwise_sub", None, 
-                node.output_name, param_attr)
+            node.code.add_layer("elementwise_sub", None, node.output_name,
+                                param_attr)
 
     def emit_shape(self, node):
         data = node.inputs[0]
         input_shape_len = data.shape_dim_size
         if input_shape_len == 4 and node.data_format == NHWC:
-            param = {"perm":[0, 2, 3, 1]}
-            node.code.add_layer("transpose", data.ref_name, 
-                node.output_name, param)
+            param = {"perm": [0, 2, 3, 1]}
+            node.code.add_layer("transpose", data.ref_name, node.output_name,
+                                param)
             node.code.add_layer("shape", node.output_name, node.output_name)
         else:
             node.code.add_layer("shape", data.ref_name, node.output_name)
-        param = {"dtype":"\'int32\'"}
+        param = {"dtype": "\'int32\'"}
         node.code.add_layer("cast", node.output_name, node.output_name, param)
 
     def emit_pad(self, node):
@@ -619,7 +630,7 @@ class PaddleEmitter(object):
         padding = tensor_util.MakeNdarray(padding).astype('int32')
         if node.data_format == NHWC and padding.shape[0] == 4:
             padding = padding[[0, 3, 1, 2]]
-        param_attr = {"paddings":list(padding.flatten())}
+        param_attr = {"paddings": list(padding.flatten())}
         node.code.add_layer("pad", data.ref_name, node.output_name, param_attr)
 
     def emit_stridedslice(self, node):
@@ -633,18 +644,14 @@ class PaddleEmitter(object):
 
         begin = list(self.infer.get_const_tensor_value(begin.layer).flatten())
         end = list(self.infer.get_const_tensor_value(end.layer).flatten())
-        strides = list(self.infer.get_const_tensor_value(
-            strides.layer).flatten())
+        strides = list(
+            self.infer.get_const_tensor_value(strides.layer).flatten())
 
         for i in range(len(strides)):
             assert strides[i] == 1
-        param_attr = {
-            "axes":range(len(begin)),
-            "starts":begin,
-            "ends":end
-        }
-        node.code.add_layer("slice", data.ref_name, 
-            node.output_name, param_attr)
+        param_attr = {"axes": range(len(begin)), "starts": begin, "ends": end}
+        node.code.add_layer("slice", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_resizenearestneighbor(self, node):
         data = node.inputs[0]
@@ -654,11 +661,11 @@ class PaddleEmitter(object):
 
         resize_shape = list(self.infer.get_shape_tensor(resize_shape.layer))
         param_attr = {
-            "align_corners":align_corners,
-            "out_shape":resize_shape
-            }
-        node.code.add_layer("resize_nearest", data.ref_name, 
-            node.output_name, param_attr)
+            "align_corners": align_corners,
+            "out_shape": resize_shape
+        }
+        node.code.add_layer("resize_nearest", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_maximum(self, node):
         return self.elementwise(node, "max")
@@ -683,20 +690,20 @@ class PaddleEmitter(object):
 
         shape = self.infer.get_shape_tensor(shape.layer, output_shape)
 
-        reshape_param = {"shape":list(shape)}
+        reshape_param = {"shape": list(shape)}
         if node.data_format == NHWC and input_shape_len == 4:
-            param_attr = {"perm":[0, 2, 3, 1]}
-            node.code.add_layer("transpose", data.ref_name, 
-                node.output_name, param_attr)
-            node.code.add_layer("reshape", node.output_name, 
-                node.output_name, reshape_param)
+            param_attr = {"perm": [0, 2, 3, 1]}
+            node.code.add_layer("transpose", data.ref_name, node.output_name,
+                                param_attr)
+            node.code.add_layer("reshape", node.output_name, node.output_name,
+                                reshape_param)
             if len(shape) == 4:
-                param_attr = {"perm":[0, 3, 1, 2]}
-                node.code.add_layer("transpose", node.output_name, 
-                    node.output_name, param_attr)
+                param_attr = {"perm": [0, 3, 1, 2]}
+                node.code.add_layer("transpose", node.output_name,
+                                    node.output_name, param_attr)
         else:
-            node.code.add_layer("reshape", data.ref_name, 
-                node.output_name, reshape_param)
+            node.code.add_layer("reshape", data.ref_name, node.output_name,
+                                reshape_param)
 
     def emit_conv2dbackpropinput(self, node):
         output_shape = node.inputs[0]
@@ -712,10 +719,6 @@ class PaddleEmitter(object):
         if node.data_format == NHWC:
             strides = node.get_attr("strides")[1:3]
 
-        if strides[0] > k_h or strides[1] > k_w:
-            raise Exception("Paddle cannot process the situation now[kernel's" \
-            " height/width less than the corresponding stride]")
-
         padding = [0, 0]
         if padding_mode == SAME:
             padding = [int(val) for val in [(k_h - strides[0]) / 2, \
@@ -730,23 +733,25 @@ class PaddleEmitter(object):
 
         output_shape = list(self.infer.get_shape_tensor(output_shape.layer))
         if node.data_format == NHWC and len(output_shape) == 4:
-            output_shape = [output_shape[0], output_shape[3], 
-                output_shape[1], output_shape[2]]
+            output_shape = [
+                output_shape[0], output_shape[3], output_shape[1],
+                output_shape[2]
+            ]
 
         param_attr = {
-            "num_filters":k_num,
-            "filter_size":[k_h, k_w],
-            "padding":padding,
-            "stride":strides,
-            "param_attr":"\'{}\'".format(kernel.ref_name),
-            "bias_attr":False
+            "num_filters": k_num,
+            "filter_size": [k_h, k_w],
+            "padding": padding,
+            "stride": strides,
+            "param_attr": "\'{}\'".format(kernel.ref_name),
+            "bias_attr": False
         }
-        node.code.add_layer("conv2d_transpose", data.ref_name, 
-            node.output_name, param_attr)
+        node.code.add_layer("conv2d_transpose", data.ref_name,
+                            node.output_name, param_attr)
         if padding_mode == SAME:
-            param_attr = {"shape":list(output_shape)}
-            node.code.add_layer("crop", node.output_name, 
-                node.output_name, param_attr)
+            param_attr = {"shape": list(output_shape)}
+            node.code.add_layer("crop", node.output_name, node.output_name,
+                                param_attr)
 
     def emit_depthwiseconv2dnative(self, node):
         data = node.inputs[0]
@@ -772,12 +777,12 @@ class PaddleEmitter(object):
             self.export_weights(self.weights[kernel.layer_name],
                                 kernel.ref_name, self.save_dir)
         conv_param = {
-            "num_filters":in_channels,
-            "filter_size":[k_h, k_w],
-            "stride":strides,
-            "groups":groups,
-            "param_attr":"\'{}\'".format(kernel.ref_name),
-            "bias_attr":False
+            "num_filters": in_channels,
+            "filter_size": [k_h, k_w],
+            "stride": strides,
+            "groups": groups,
+            "param_attr": "\'{}\'".format(kernel.ref_name),
+            "bias_attr": False
         }
         if padding_mode == SAME:
             pad_h = self.compute_padding_size(input_h, k_h, strides[0])
@@ -785,17 +790,17 @@ class PaddleEmitter(object):
             if len(set(pad_h)) == 1 and len(set(pad_w)) == 1:
                 padding = [pad_h[0], pad_w[0]]
                 conv_param["padding"] = padding
-                node.code.add_layer("conv2d", data.ref_name, 
-                    node.output_name, conv_param)
+                node.code.add_layer("conv2d", data.ref_name, node.output_name,
+                                    conv_param)
             else:
-                pad_param = {"paddings":pad_h + pad_w}
-                node.code.add_layer("pad2d", data.ref_name, 
-                    node.output_name, pad_param)
-                node.code.add_layer("conv2d", node.output_name, 
-                    node.output_name, conv_param)
+                pad_param = {"paddings": pad_h + pad_w}
+                node.code.add_layer("pad2d", data.ref_name, node.output_name,
+                                    pad_param)
+                node.code.add_layer("conv2d", node.output_name,
+                                    node.output_name, conv_param)
         else:
-            node.code.add_layer("conv2d", data.ref_name, 
-                node.output_name, conv_param)
+            node.code.add_layer("conv2d", data.ref_name, node.output_name,
+                                conv_param)
 
     def emit_softmax(self, node):
         data = node.inputs[0]
@@ -807,10 +812,10 @@ class PaddleEmitter(object):
         transpose_a = node.get_attr('transpose_a')
         transpose_b = node.get_attr('transpose_b')
         param_attr = {
-            "x":data0.ref_name,
-            "y":data1.ref_name,
-            "transpose_x":transpose_a,
-            "transpose_y":transpose_b
+            "x": data0.ref_name,
+            "y": data1.ref_name,
+            "transpose_x": transpose_a,
+            "transpose_y": transpose_b
         }
         node.code.add_layer("matmul", None, node.output_name, param_attr)
 
@@ -822,21 +827,21 @@ class PaddleEmitter(object):
         if node.data_format == NHWC and len(perm) == 4:
             if perm == [0, 3, 1, 2]:
                 self.graph.set_data_format(node, NCHW)
-                node.code.add_str("{} = {}".format(node.output_name, 
-                    data.ref_name))
+                node.code.add_str("{} = {}".format(node.output_name,
+                                                   data.ref_name))
             else:
                 raise Exception("Unexpected situation in OP transpose")
         elif node.data_format == NCHW and len(perm) == 4:
             if perm == [0, 2, 3, 1]:
                 self.graph.set_data_format(node, NHWC)
-                node.code.add_str("{} = {}".format(node.output_name, 
-                    data.ref_name))
+                node.code.add_str("{} = {}".format(node.output_name,
+                                                   data.ref_name))
             else:
                 raise Exception("Unexpected situation in OP transpose")
         else:
-            param_attr = {"perm":perm}
-            node.code.add_layer("transpose", data.ref_name, 
-                node.output_name, param_attr)
+            param_attr = {"perm": perm}
+            node.code.add_layer("transpose", data.ref_name, node.output_name,
+                                param_attr)
 
     def emit_randomuniform(self, node):
         shape = node.inputs[0]
@@ -846,20 +851,21 @@ class PaddleEmitter(object):
         batch_index = list(numpy.argwhere(shape < 0).flatten())
         shape = list(shape)
         param_attr = {
-            "shape":shape,
-            "dtype":"\'float32\'",
-            "min":0.00001,
-            "max":0.99999
+            "shape": shape,
+            "dtype": "\'float32\'",
+            "min": 0.00001,
+            "max": 0.99999
         }
         if len(batch_index) > 1:
             raise Exception("More than one dimension value less than zero")
         if len(batch_index) == 0:
-            node.code.add_layer("uniform_random", None, 
-                node.output_name, param_attr)
+            node.code.add_layer("uniform_random", None, node.output_name,
+                                param_attr)
         else:
             param_attr["input_dim_idx"] = batch_index[0]
-            node.code.add_layer("uniform_random_batch_size_like", 
-                self.batch_node.ref_name, node.output_name, param_attr)
+            node.code.add_layer("uniform_random_batch_size_like",
+                                self.batch_node.ref_name, node.output_name,
+                                param_attr)
 
     def emit_floor(self, node):
         data = node.inputs[0]
@@ -870,10 +876,8 @@ class PaddleEmitter(object):
         node.code.add_layer("exp", data.ref_name, node.output_name)
 
     def emit_floordiv(self, node):
-        data1 = node.inputs[0]
-        data2 = node.inputs[1]
         self.emit_div(node)
-        param = {"dtype":"\'float32\'"}
+        param = {"dtype": "\'float32\'"}
         node.code.add_layer("cast", node.output_name, node.output_name, param)
         node.code.add_layer("floor", node.output_name, node.output_name)
 
@@ -883,22 +887,18 @@ class PaddleEmitter(object):
         axis = self.get_axis(data1, data2)
         data1_shape = self.infer.get_tensor_shape(data1.layer)
         data2_shape = self.infer.get_tensor_shape(data2.layer)
-        div_param = {
-            "x":data1.ref_name,
-            "y":data2.ref_name,
-            "axis":axis
-        }
+        div_param = {"x": data1.ref_name, "y": data2.ref_name, "axis": axis}
         if len(data1_shape) == 4 and len(data2_shape) == 4 \
             and node.data_format == NHWC:
             if data1_shape[-1] != data2_shape[-1]:
-                perm = {"perm":[0, 2, 3, 1]}
+                perm = {"perm": [0, 2, 3, 1]}
                 node.code.add_layer("transpose", data1.ref_name, "temp1", perm)
                 node.code.add_layer("transpose", data2.ref_name, "temp2", perm)
                 div_param["x"] = "temp1"
                 div_param["y"] = "temp2"
                 div_param["axis"] = -1
-        node.code.add_layer("elementwise_div", None, 
-            node.output_name, div_param)
+        node.code.add_layer("elementwise_div", None, node.output_name,
+                            div_param)
 
     def emit_realdiv(self, node):
         return self.emit_div(node)
@@ -921,45 +921,48 @@ class PaddleEmitter(object):
         if node.data_format == NHWC and len(input_shape) == 4:
             begin = [begin[0], begin[3], begin[1], begin[2]]
             size = [size[0], size[3], size[1], size[2]]
-            input_shape = [input_shape[0], input_shape[3], 
-                input_shape[1], input_shape[2]]
+            input_shape = [
+                input_shape[0], input_shape[3], input_shape[1], input_shape[2]
+            ]
 
         for i in range(len(size)):
             if size[i] < 0:
                 size[i] = input_shape[i] - begin[i]
-        param_attr = {"shape":size, "offsets":begin}
-        node.code.add_layer("crop", data.ref_name, node.output_name, param_attr)
+        param_attr = {"shape": size, "offsets": begin}
+        node.code.add_layer("crop", data.ref_name, node.output_name,
+                            param_attr)
 
     def emit_sum(self, node):
         data = node.inputs[0]
         reduce_idx = node.inputs[1]
         reduce_idx.code.clear()
-        idxs = tensor_util.MakeNdarray(reduce_idx.layer.attr['value'].tensor
-            ).astype('int32').flatten()
+        idxs = tensor_util.MakeNdarray(
+            reduce_idx.layer.attr['value'].tensor).astype('int32').flatten()
         data_shape_len = data.shape_dim_size
         keep_dims = node.layer.attr['keep_dims'].b
         if node.data_format == NHWC and data_shape_len == 4:
             for i in range(idxs.shape[0]):
                 if idxs[i] > 0:
                     idxs[i] = (idxs[i] + 1) % 4 + int((idxs[i] + 1) / 4)
-        param = {"dim":list(idxs), "keep_dim":keep_dims}
-        node.code.add_layer("reduce_sum", data.ref_name, node.output_name, param)
+        param = {"dim": list(idxs), "keep_dim": keep_dims}
+        node.code.add_layer("reduce_sum", data.ref_name, node.output_name,
+                            param)
 
     def emit_max(self, node):
         data = node.inputs[0]
         reduce_idx = node.inputs[1]
         reduce_idx.code.clear()
-        idxs = tensor_util.MakeNdarray(reduce_idx.layer.attr['value'].tensor
-            ).astype('int32').flatten()
+        idxs = tensor_util.MakeNdarray(
+            reduce_idx.layer.attr['value'].tensor).astype('int32').flatten()
         data_shape_len = data.shape_dim_size
         keep_dims = node.layer.attr['keep_dims'].b
         if node.data_format == NHWC and data_shape_len == 4:
             for i in range(idxs.shape[0]):
                 if idxs[i] > 0:
                     idxs[i] = (idxs[i] + 1) % 4 + int((idxs[i] + 1) / 4)
-        param = {"dim":list(idxs), "keep_dim":keep_dims}
-        node.code.add_layer("reduce_max", data.ref_name, 
-            node.output_name, param)
+        param = {"dim": list(idxs), "keep_dim": keep_dims}
+        node.code.add_layer("reduce_max", data.ref_name, node.output_name,
+                            param)
 
     def emit_fill(self, node):
         shape = node.inputs[0]
@@ -976,13 +979,14 @@ class PaddleEmitter(object):
             shape = [shape[0], shape[3], shape[1], shape[2]]
 
         param = {
-            "shape":shape,
-            "dtype":"\'{}\'".format(value.dtype),
-            "value":value
+            "shape": shape,
+            "dtype": "\'{}\'".format(value.dtype),
+            "value": value
         }
         if shape[0] < 0:
-            node.code.add_layer("fill_constant_batch_size_like", 
-                self.batch_node.ref_name, node.output_name, param)
+            node.code.add_layer("fill_constant_batch_size_like",
+                                self.batch_node.ref_name, node.output_name,
+                                param)
         else:
             node.code.add_layer("fill_constant", None, node.output_name, param)
 
@@ -1006,9 +1010,9 @@ class PaddleEmitter(object):
         data = node.inputs[0]
         expand_times = node.inputs[1]
         expand_times.code.clear()
-        expand_times = list(self.infer.get_const_tensor_value(
-            expand_times.layer))
-        param = {"expand_times":expand_times}
+        expand_times = list(
+            self.infer.get_const_tensor_value(expand_times.layer))
+        param = {"expand_times": expand_times}
         node.code.add_layer("expand", data.ref_name, node.output_name, param)
 
     def emit_splitv(self, node):
@@ -1021,16 +1025,13 @@ class PaddleEmitter(object):
         split_dim = self.infer.get_const_tensor_value(split_dim.layer)
         input_shape = self.infer.get_tensor_shape(data.layer)
         if split_dim < 0:
-            split_dim += len(input_shape) 
-        
+            split_dim += len(input_shape)
+
         index = numpy.argwhere(num_sections < 0).flatten()
         if index.shape[0] > 1:
             raise Exception("More than one dimension less than 0")
         if index.shape[0] == 1:
-            num_sections[index[0]] = input_shape[split_dim] - numpy.sum(num_sections) + num_sections[index[0]]
-        param = {
-            "num_or_sections":list(num_sections),
-            "dim":split_dim
-        }
+            num_sections[index[0]] = input_shape[split_dim] - numpy.sum(
+                num_sections) + num_sections[index[0]]
+        param = {"num_or_sections": list(num_sections), "dim": split_dim}
         node.code.add_layer("split", data.ref_name, node.output_name, param)
-

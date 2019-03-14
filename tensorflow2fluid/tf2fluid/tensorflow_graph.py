@@ -16,6 +16,7 @@ from graph import GraphNode, Graph
 from tensorflow.core.framework import attr_value_pb2
 from utils import *
 
+
 class TensorflowGraphNode(GraphNode):
     dtype_map = {1: "float32", 3: "int32", 9: "int64"}
 
@@ -64,18 +65,13 @@ class TensorflowGraphNode(GraphNode):
                 return val if isinstance(val, bytes) else val
         else:
             return default_value
-    
+
     def clear_code(self):
         self.code.clear()
 
 
 class TensorflowGraph(Graph):
-    useless_type = [
-        'identity', 
-        'placeholderwithdefault', 
-        'switch', 
-        'merge'
-        ]
+    useless_type = ['identity', 'placeholderwithdefault', 'switch', 'merge']
 
     def __init__(self, tf_graph):
         super(TensorflowGraph, self).__init__(tf_graph)
@@ -84,7 +80,8 @@ class TensorflowGraph(Graph):
     def build(self, input_format):
         skip_node = set(['const'])
         for i, layer in enumerate(self.tf_graph.node):
-            self.node_map[layer.name] = TensorflowGraphNode(layer, input_format)
+            self.node_map[layer.name] = TensorflowGraphNode(
+                layer, input_format)
 
         for i, layer in enumerate(self.tf_graph.node):
             if layer.op.lower() in skip_node:
@@ -94,22 +91,22 @@ class TensorflowGraph(Graph):
                         ':')[0] in self.node_map:
                     pred_node = self.node_map[pred.split(':')[0]]
                     if pred_node.layer_type == "switch":
-                        self._make_connection(pred_node, 
-                            self.node_map[layer.name])
+                        self._make_connection(pred_node,
+                                              self.node_map[layer.name])
                     elif pred_node.layer_type == "split" or \
                         pred_node.layer_type == "splitv":
                         self.node_map[pred] = TensorflowGraphNode(
                             pred_node.layer, input_format, pred)
-                        self._make_connection(self.node_map[pred], 
-                            self.node_map[layer.name])
+                        self._make_connection(self.node_map[pred],
+                                              self.node_map[layer.name])
                         self._make_connection(pred_node, self.node_map[pred])
                     else:
                         raise Exception("Unsupported situation(name:[{}], \
                             OP[{}])".format(node.layer_name, node.layer_type))
 
                 elif pred in self.node_map:
-                    self._make_connection(self.node_map[pred], 
-                        self.node_map[layer.name])
+                    self._make_connection(self.node_map[pred],
+                                          self.node_map[layer.name])
 
                 else:
                     raise Exception("input: {} not in node_map".format(pred))
