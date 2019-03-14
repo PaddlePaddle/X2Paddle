@@ -33,6 +33,8 @@ python src/convert.py --pb_file tf_model.pb \
                       --save_dir translated_paddle_model
 ```
 ### 加载模型并预测  
+本目录下提供了[model_loader.py](tf2fluid/model_loader.py)，可以辅助用户简单的加载模型和预测，和dump模型，用户可直接参考其实现  
+
 ``` python
 # coding:utf-8
 # 代码运行目录 X2Paddle/tensorflow2fluid
@@ -51,6 +53,8 @@ results = model.inference(feed_dict={model.inputs[0]:data})
 for res in results:
     print(res.shape)
 ```
+
+使用转换后的模型主要注意，**模型转换后，计算结果与原模型存在一定精度的diff，因此务必检查模型转换前后，在输入同样的数据前提下,diff是否符合预期**  
 
 ### 序列化模型结构  
 tensorflow2fluid转换后的模型结构以python代码定义形式供用户直观阅读或修改，如若需要将模型结构和参数均序列化存储，可以上面的示例代码中，调用如下代码即可，序列化的模型结构和参数如何加载可见PaddlePaddle使用文档中的[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
