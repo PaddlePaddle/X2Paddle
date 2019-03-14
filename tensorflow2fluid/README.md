@@ -41,11 +41,16 @@ import tf2fluid.model_loader as ml
 # 加载模型
 model = ml.ModelLoader("translated_paddle_model", use_cuda=True)
 
-# 注意
-data = numpy.random.rand(5, 3, 224, 224)
-import tf2fluid.model_loader as ml
-import tf2fluid.model_loader as ml
+# 随机生成数据用于模型预测
+# 注意Paddle CV模型输入格式为NCHW ！！！
+data = numpy.random.rand(5, 3, 224, 224).astype('float32')
+results = model.inference(feed_dict={model.inputs[0]:data})
+
+# 返回的results为list，元素为np.array
+for res in results:
+    print(res.shape)
 ```
+
 ### 参数说明  
 |tf2fluid参数|说明|
 |-----------|-----------------------------------------------|
