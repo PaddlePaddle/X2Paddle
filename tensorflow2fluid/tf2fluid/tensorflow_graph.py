@@ -76,6 +76,7 @@ class TensorflowGraph(Graph):
     def __init__(self, tf_graph):
         super(TensorflowGraph, self).__init__(tf_graph)
         self.tf_graph = tf_graph
+        self.identity_relation = dict()
 
     def build(self, input_format):
         skip_node = set(['const'])
@@ -131,6 +132,7 @@ class TensorflowGraph(Graph):
             current_node = self.node_map[name]
             if current_node.layer_type in self.useless_type:
                 input = current_node.inputs[0]
+                self.identity_relation[current_node.layer.name] = input.layer.name
                 for node in current_node.outputs:
                     for k in range(0, len(node.inputs)):
                         if node.inputs[k] == current_node:
