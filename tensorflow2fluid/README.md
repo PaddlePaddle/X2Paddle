@@ -5,7 +5,6 @@
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。
 > <a href="#环境依赖">`环境依赖`</a>
 > <a href="#使用方法">`使用方法`</a>
-> <a href="#测试模型">`测试模型`</a>
 
 **我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！**
 
@@ -22,6 +21,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 <a id="使用方法">
          
 ## 使用方法
+本目录下提供了demo示例，展示如何将VGG_16模型转换为PaddlePaddle模型，详见[vgg_translate_tutorial](vgg_translate_tutorial.ipynb)
 ### 转换模型
 ```
 python tf2fluid/convert.py --pb_file tf_model.pb \
