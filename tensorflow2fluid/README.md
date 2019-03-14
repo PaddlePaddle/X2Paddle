@@ -76,7 +76,7 @@ model.save_inference_model("new_model_dir")
 ### 转换后模型文件说明  
 文件|作用
 :------------------:|:-----------------------------------------------:
-my_model.py|基于PaddlePaddle实现的模型网络结构python代码
+mymodel.py|基于PaddlePaddle实现的模型网络结构python代码
 ref_name.info|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
 save_var.list|模型载入过程中的变量list
