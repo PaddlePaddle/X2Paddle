@@ -54,7 +54,7 @@ Tensorflow：第一个返回值为`step_output`。当`num_proj`非空时，由`h
 
 PaddlePaddle：第一个返回值为`hidden_state`，不涉及输出变换。
 
-##### `cell_state`
+##### cell_state
 Tensorflow：第二个返回值为`cell_state`。`cell_state`由真实的`cell_state`与`hidden_state`一起构成：当`state_id_tuple`为`True`时，返回真实的`cell_state`与`hidden_state`组成的`tuple`；反之，则返回`concat([cell_state, hidden_state], axis=1)`；
 
 PaddlePaddle：第二个返回值为真实的`cell_state`。
