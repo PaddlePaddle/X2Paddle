@@ -29,6 +29,7 @@ python src/convert.py --pb_file tf_model.pb \
                       --output_nodes outputs \
                       --input_shape None,224,224,3 \
                       --input_format NHWC \
+                      --use_cuda True \
                       --save_dir translated_paddle_model
 ```
 ### 加载模型并预测  
