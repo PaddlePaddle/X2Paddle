@@ -51,6 +51,12 @@ for res in results:
     print(res.shape)
 ```
 
+### 序列化模型结构  
+tensorflow2fluid转换后的模型结构以python代码定义形式供用户直观阅读或修改，如若需要将模型结构和参数均序列化存储，可以上面的示例代码中，调用如下代码即可，序列化的模型结构和参数如何加载可见PaddlePaddle使用文档中的[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
+``` python
+model.save_inference_model("new_model_dir")
+```
+
 ### 参数说明  
 |tf2fluid参数|说明|
 |-----------|-----------------------------------------------|
