@@ -40,6 +40,7 @@ python src/convert.py --pb_file tf_model.pb \
 |input_shape|输入tensor的shape(batch维度以None表示)，shape之间以空格分隔，shape内各维度以逗号分隔|
 |input_format|输入数据格式，NHWC/NCHW/OTHER|
 |output_nodes|输出tensor名，多个输出时以空格分隔|
+|use_cuda|转换过程中是否使用GPU，默认True|
 |save_dir|转换后的模型保存路径|
 
 目前支持tensorflow保存的checkpoint模型和将参数及模型结构序列化存储的pb模型，前者须指定meta_file和ckpt_dir，后者则指定pb_file
@@ -48,12 +49,12 @@ python src/convert.py --pb_file tf_model.pb \
 文件|作用
 :------------------:|:-----------------------------------------------:
 my_model.py|基于PaddlePaddle实现的模型网络结构python代码
-ref_name.txt|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
+ref_name.info|my_model.py中各tensor与原TensorFlow模型中的tensor对应关系
 const_\*/params_\*|转换后的模型参数文件
 save_var.list|模型载入过程中的变量list
 
 ### 加载转换后的模型并用于预测
-本目录下提示的[paddle_model_loader.py](paddle_model_loader.py)可用于加载转换后的模型
+本目录下的[model_loader.py](tf2fluid/model_loader.py)可用于加载转换后的模型
 
 使用转换后的模型主要注意，**模型转换后，计算结果与原模型存在一定精度的diff，因此务必检查模型转换前后，在输入同样的数据前提下,diff是否符合预期**
 
