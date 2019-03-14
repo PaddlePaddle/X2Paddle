@@ -3,8 +3,6 @@
 
 
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。
-> <a href="#环境依赖">`环境依赖`</a>
-> <a href="#使用方法">`使用方法`</a>
 
 **我们计划专门梳理出指南文档，对比TensorFlow与PaddlePaddle的差异，帮助TensorFlow用户快速上手PaddlePaddle的使用，文档后续会整理在doc目录下，欢迎有需求的同学关注！**
 
@@ -97,6 +95,17 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 |目标检测| [YOLO-Small]    | [code](https://github.com/gliese581gg/YOLO_tensorflow) | 1.40E-06 |
 |       | [YOLO-V3]       | [code](https://github.com/mystic123/tensorflow-yolo-v3) | 6.20E-04 |
 |语义分割| [Unet]          | [code](https://github.com/jakeret/tf_unet) | 4.17E-07 |
+
+| 模型类别 | 模型          | Code   | 最大diff |
+| -------- | ------------- | ------ | -------- |
+| 图像分类 | VGG_16        | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py) | 1.04E-05 |
+|          | VGG_19        | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py) | 9.07E-06 |
+|          | ResNet V1 50  | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py) | 1.31E-06 |
+|          | ResNet V1 101 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py) | 4.74E-07 |
+|          | Inception V3  | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py) | 1.55E-04 |
+| 目标检测 | YOLO-Small    | [code](https://github.com/gliese581gg/YOLO_tensorflow) | 1.40E-06 |
+|          | YOLO-V3       | [code](https://github.com/mystic123/tensorflow-yolo-v3) | 6.20E-04 |
+| 语义分割 | Unet          | [code](https://github.com/jakeret/tf_unet) | 4.17E-07 |
 
 ## Link
 
