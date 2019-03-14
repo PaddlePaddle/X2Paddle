@@ -1,3 +1,0 @@
-paddlepaddle
-tensorflow
-flake8
