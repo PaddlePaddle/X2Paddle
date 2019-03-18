@@ -152,14 +152,14 @@ class Graph(object):
                 data_shape = '--'
                 out_shape = node.output_shape or '--'
                 s.append('{:<20} {:<30} {:>20} {:>20}'.format(
-                    node.kind, node.name, data_shape, tuple(out_shape)))
+                    node.kind, node.name, data_shape, str(tuple(out_shape))))
             else:
                 for d in node.data:
                     #data_shape = node.data[0].shape if node.data else '--'
                     data_shape = d.shape
                     out_shape = node.output_shape or '--'
                     s.append('{:<20} {:<30} {:>20} {:>20}'.format(
-                        node.kind, node.name, data_shape, tuple(out_shape)))
+                        node.kind, node.name, str(data_shape), str(tuple(out_shape))))
         return '\n'.join(s)
 
 

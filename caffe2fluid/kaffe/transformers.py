@@ -38,7 +38,7 @@ class DataInjector(object):
         caffe = get_caffe_resolver().caffe
         net = caffe.Net(self.def_path, self.data_path, caffe.TEST)
         data = lambda blob: blob.data
-        self.params = [(k, map(data, v)) for k, v in net.params.items()]
+        self.params = [(k, list(map(data, v))) for k, v in net.params.items()]
 
     def load_using_pb(self):
         data = get_caffe_resolver().NetParameter()
@@ -155,6 +155,9 @@ class DataReshaper(object):
                 continue
 
             transpose_order = self.map(node.kind)
+#             node_data = list(node.data)
+#             print(node)
+#             print(node_data)
             weights = node.data[0]
             if node.kind == NodeKind.InnerProduct:
                 # The FC layer connected to the spatial layer needs to be

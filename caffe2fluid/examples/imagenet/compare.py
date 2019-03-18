@@ -6,6 +6,7 @@
 
 import sys
 import os
+import functools
 
 
 def walk_dir(rootdir):
@@ -28,11 +29,11 @@ def calc_diff(f1, f2):
     d1 = d1.flatten()
     d2 = d2.flatten()
 
-    d1_num = reduce(lambda x, y: x * y, d1.shape)
-    d2_num = reduce(lambda x, y: x * y, d2.shape)
+    d1_num = functools.reduce(lambda x, y: x * y, d1.shape)
+    d2_num = functools.reduce(lambda x, y: x * y, d2.shape)
     if d1_num != d2_num:
-        print d1.shape
-        print d2.shape
+        print(d1.shape)
+        print(d2.shape)
         assert (d1_num == d2_num), "their shape is not consistent"
 
     try:
@@ -54,7 +55,7 @@ def compare(path1, path2, no_exception):
         print('[max_df:%.4e, sq_df:%.4e] when compare %s <=> %s' %
               (max_df, sq_df, os.path.basename(f1), os.path.basename(f2)))
         if no_exception is False:
-            assert (max_df < 1e-5), \
+            assert (max_df < 1e-4), \
                     'max_df is too large with value[%.6e]' % (max_df)
             assert (sq_df < 1e-10), \
                     'sq_df is too large with value[%.6e]' % (sq_df)

@@ -1,8 +1,9 @@
 import re
 import numbers
 from collections import namedtuple
-
-import custom_layers
+import sys
+sys.path.append('~/paddlepaddle/X2Paddle_v2.0/caffe2fluid/kaffe/custom_layers')
+from . import custom_layers
 from .shapes import *
 
 LAYER_DESCRIPTORS = {

@@ -57,7 +57,7 @@ def build_model(net_file, net_name):
 
     fluid = import_fluid()
     inputs_dict = MyNet.input_shapes()
-    input_name = inputs_dict.keys()[0]
+    input_name = list(inputs_dict.keys())[0]
     input_shape = inputs_dict[input_name]
     images = fluid.layers.data(
         name=input_name, shape=input_shape, dtype='float32')
@@ -222,8 +222,8 @@ def infer(model_path, imgfile, net_file=None, net_name=None, debug=True):
         feed_shapes = ret['feed_shapes']
         net = ret['net']
 
-    input_name = feed_names[0]
-    input_shape = feed_shapes[0]
+    input_name = list(feed_names)[0]
+    input_shape = list(feed_shapes)[0]
 
     np_images = load_data(imgfile, input_shape)
     results = exe.run(program=program,
@@ -249,7 +249,7 @@ def caffe_infer(prototxt, caffemodel, datafile):
     import caffe
 
     net = caffe.Net(prototxt, caffemodel, caffe.TEST)
-    input_layer = net.blobs.keys()[0]
+    input_layer = list(net.blobs.keys())[0]
     print('got name of input layer is:%s' % (input_layer))
     input_shape = list(net.blobs[input_layer].data.shape[1:])
 
@@ -266,7 +266,7 @@ def caffe_infer(prototxt, caffemodel, datafile):
     for k, v in net.blobs.items():
         k = k.replace('/', '_')
         names.append(k)
-        results.append(v.data.copy())
+        results.append(v.data[0].copy())
 
     dump_path = 'results.caffe'
     dump_results(results, names, dump_path)
