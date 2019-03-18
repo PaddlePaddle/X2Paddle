@@ -29,14 +29,14 @@ fi
 
 mkdir -p $results_root
 
-prototxt="models.caffe/$model_name/${model_name}.prototxt"
-caffemodel="models.caffe/${model_name}/${model_name}.caffemodel"
+prototxt="$2/${model_name}.prototxt"
+caffemodel="$2/${model_name}.caffemodel"
 
 #1, dump layers' results from paddle
 paddle_results="$results_root/${model_name}.paddle"
 rm -rf $paddle_results
 rm -rf "results.paddle"
-bash ./tools/run.sh $model_name ./models.caffe/$model_name ./models/$model_name
+bash ./tools/run.sh $model_name $2 $3
 if [[ $? -ne 0 ]] || [[ ! -e "results.paddle" ]];then
     echo "not found paddle's results, maybe failed to convert"
     exit 1
@@ -47,7 +47,7 @@ mv results.paddle $paddle_results
 caffe_results="$results_root/${model_name}.caffe"
 rm -rf $caffe_results
 rm -rf "results.caffe"
-PYTHON=`which cfpython`
+PYTHON=`which python`
 if [[ -z $PYTHON ]];then
     PYTHON=`which python`
 fi

@@ -42,7 +42,7 @@ class MyNet(object):
     def convert(cls, npy_model, fluid_path, outputs=None):
         fluid = import_fluid()
         shapes = cls.input_shapes()
-        input_name = shapes.keys()[0]
+        input_name = list(shapes.keys())[0]
         feed_data = {}
         for name, shape in shapes.items():
             data_layer = fluid.layers.data(
@@ -157,5 +157,5 @@ def generate_main_code(net_name):
 if __name__ == "__main__":
     """ just for testing
     """
-    print generate_net_code('Attribute', "{'data': [3, 277, 277]}")
-    print generate_main_code('Attribute')
+    print(generate_net_code('Attribute', "{'data': [3, 277, 277]}"))
+    print(generate_main_code('Attribute'))

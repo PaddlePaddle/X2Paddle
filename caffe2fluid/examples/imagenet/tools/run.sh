@@ -10,6 +10,8 @@
 #
 
 #set -x
+
+
 if [[ $# -lt 3 ]];then
     echo "usage:"
     echo "  bash $0 [model_name] [cf_model_path] [pd_model_path] [only_convert]"
@@ -21,7 +23,6 @@ else
     pd_model_path=$3
     only_convert=$4
 fi
-
 proto_file=$cf_model_path/${model_name}.prototxt
 caffemodel_file=$cf_model_path/${model_name}.caffemodel
 weight_file=$pd_model_path/${model_name}.npy
@@ -41,7 +42,7 @@ if [[ ! -e $pd_model_path ]];then
     mkdir $pd_model_path
 fi
 
-PYTHON=`which cfpython`
+PYTHON=`which python`
 if [[ -z $PYTHON ]];then
     PYTHON=`which python`
 fi
@@ -60,7 +61,7 @@ else
 fi
 
 if [[ -z $only_convert ]];then
-    PYTHON=`which pdpython`
+    PYTHON=`which python`
     if [[ -z $PYTHON ]];then
         PYTHON=`which python`
     fi

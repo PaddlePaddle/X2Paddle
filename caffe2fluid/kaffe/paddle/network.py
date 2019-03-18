@@ -2,6 +2,8 @@ import sys
 import os
 import math
 import numpy as np
+from past.builtins import basestring    
+
 
 
 def import_fluid():
@@ -108,7 +110,7 @@ class Network(object):
                 continue
 
             layer = self.layers[op_name]
-            for param_name, data in data_dict[op_name].iteritems():
+            for param_name, data in data_dict[op_name].items():    
                 try:
                     name = '%s_%s' % (op_name, param_name)
                     v = fluid.global_scope().find_var(name)

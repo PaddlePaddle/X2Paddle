@@ -1,8 +1,8 @@
 import re
 import numbers
 from collections import namedtuple
-
-import custom_layers
+import sys
+from . import custom_layers
 from .shapes import *
 
 LAYER_DESCRIPTORS = {
