@@ -38,4 +38,4 @@ A demo to show converting caffe models trained on 'imagenet' using caffe2fluid
     bash ./tools/diff.sh alexnet ../../models/ ../../models
     ```
     * Make sure your caffemodel stored in '../../models/alexnet.prototxt|caffemodel*'
-    * The results will be stored in '*./results/resnet.paddle|caffe*'
+    * The results will be stored in '*./results/alexnet.paddle|caffe*'
