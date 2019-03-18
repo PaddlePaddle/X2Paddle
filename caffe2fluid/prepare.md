@@ -14,6 +14,8 @@
 > # 安装Caffe
 > conda install caffe-gpu
 > # 测试是否已经完成Caffe和PaddlePaddle，直接在终端输入python命令，同时输入"import caffe"和"import paddle.fluid"，若无出错则表示已将安装成功
+> # 安装Python的future模块
+> pip install future
 > # 退出环境
 > source deactivate
 > # 为了更便利地使用这一环境，需要将环境名与环境路径相匹配
