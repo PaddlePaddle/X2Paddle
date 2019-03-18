@@ -4,19 +4,20 @@
 from .register import get_registered_layers
 #custom layer import begins
 
-import axpy
-import flatten
-import argmax
-import reshape
-import roipooling
-import priorbox
-import permute
-import detection_out
-import normalize
-import select
-import crop
-import power
-import reduction
+from . import axpy
+from . import flatten
+from . import argmax
+from . import argmax
+from . import reshape
+from . import roipooling
+from . import priorbox
+from . import permute
+from . import detection_out
+from . import normalize
+from . import select
+from . import crop
+from . import power
+from . import reduction
 
 #custom layer import ends
 

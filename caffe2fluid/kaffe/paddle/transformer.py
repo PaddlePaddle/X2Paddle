@@ -1,5 +1,5 @@
 import numpy as np
-
+from past.builtins import basestring
 from ..errors import KaffeError, print_stderr
 from ..graph import GraphBuilder, NodeMapper
 from ..layers import NodeKind
@@ -34,6 +34,8 @@ class PaddleNode(object):
         '''Emits the Python source for this node.'''
         # Format positional arguments
         args = map(self.format, self.args)
+        args = list(args)
+
         # Format any keyword arguments
         if self.kwargs:
             args += [self.pair(k, v) for k, v in self.kwargs]
@@ -335,7 +337,9 @@ class Transformer(object):
         ]
 
         self.graph = graph.transformed(transformers)
-
+        
+        
+            
         #for the purpose of recording name mapping because of fused nodes
         trace = SubNodeFuser.traced_names()
         chg2real = {}
@@ -372,11 +376,14 @@ class Transformer(object):
                 # Convert parameters to dictionaries
                 ParameterNamer(),
             ]
+            
             self.graph = self.graph.transformed(transformers)
+            
             self.params = {
                 node.name: node.data
                 for node in self.graph.nodes if node.data
             }
+            
             self.params['caffe2fluid_name_trace'] = self.graph.get_name_trace()
 
         return self.params
