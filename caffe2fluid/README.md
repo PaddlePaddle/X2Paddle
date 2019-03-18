@@ -3,7 +3,8 @@
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
 2. 通过扩展此工具也可以支持Caffe的自定义图层转换。
 3. `examples/imagenet/tools`中提供了工具可以用于对此Caffe和Fluid预测后输出结果的差异。
-## [准备工作](https://github.com/PaddlePaddle/X2Paddle/blob/master/caffe2fluid/prepare.md)
+## 准备工作(https://github.com/PaddlePaddle/X2Paddle/blob/master/caffe2fluid/prepare.md)
+该部分主要介绍了使用此工具所需的环境安装。[详情](https://github.com/PaddlePaddle/X2Paddle/blob/master/caffe2fluid/prepare.md)
 ## 如何使用
 1. 如果你的python中没有`pycaffe`模块，需要在`./proto`中加入`caffepb`，有以下两种方法可以实现这一操作。
 > ```shell
