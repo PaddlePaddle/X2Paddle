@@ -6,7 +6,7 @@ A demo to show converting caffe models trained on 'imagenet' using caffe2fluid
 
 1. Prepare python environment
 
-2. Download caffe model to "models.caffe/xxx" which contains "xxx.caffemodel" and "xxx.prototxt"
+2. Download caffe model to "../../models/xxx" which contains "xxx.caffemodel" and "xxx.prototxt"
 
 3. Convert the Caffe model to Fluid model
     - generate fluid code and weight file
@@ -28,14 +28,14 @@ A demo to show converting caffe models trained on 'imagenet' using caffe2fluid
 
 5. convert model and do inference together
    ```
-    bash ./tools/run.sh alexnet ./models.caffe/alexnet ./models/alexnet
+    bash ./tools/run.sh alexnet ../../models ../../models
     ```
-    * Assume the Caffe model is stored in '*./models.caffe/alexnet/alexnet.prototxt|caffemodel*'
-    * converted model will be stored as '*./models/alexnet/alexnet.py|npy*'
+    * Assume the Caffe model is stored in '../../models/alexnet.prototxt|caffemodel*'
+    * converted model will be stored as '../../models/alexnet.py|npy*'
 
 6. test the difference with caffe's results(need pycaffe installed)
    ```
     bash ./tools/diff.sh alexnet ../../models/ ../../models
     ```
-    * Make sure your caffemodel stored in '*./models.caffe/resnet*'
+    * Make sure your caffemodel stored in '../../models/alexnet.prototxt|caffemodel*'
     * The results will be stored in '*./results/resnet.paddle|caffe*'
