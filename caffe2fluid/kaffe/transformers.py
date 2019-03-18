@@ -155,9 +155,6 @@ class DataReshaper(object):
                 continue
 
             transpose_order = self.map(node.kind)
-#             node_data = list(node.data)
-#             print(node)
-#             print(node_data)
             weights = node.data[0]
             if node.kind == NodeKind.InnerProduct:
                 # The FC layer connected to the spatial layer needs to be
