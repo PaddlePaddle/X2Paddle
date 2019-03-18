@@ -35,7 +35,7 @@ A demo to show converting caffe models trained on 'imagenet' using caffe2fluid
 
 6. test the difference with caffe's results(need pycaffe installed)
    ```
-    bash ./tools/diff.sh resnet
+    bash ./tools/diff.sh alexnet ../../models/ ../../models
     ```
     * Make sure your caffemodel stored in '*./models.caffe/resnet*'
     * The results will be stored in '*./results/resnet.paddle|caffe*'
