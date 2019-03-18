@@ -82,6 +82,8 @@ model.save_inference_model("new_model_dir")
 |save_dir|转换后的模型保存路径|
 
 目前支持tensorflow保存的checkpoint模型和将参数及模型结构序列化存储的pb模型，前者须指定meta_file和ckpt_dir，后者则指定pb_file
+FAQ：输入tensor名和输出tensor名是什么？  
+TensorFlow模型在infer时，一般调用代码形如`sess.run([output], {input:data})`，其中output即为输出tensor，input则为输入tensor，在进行模型转换时，需提供这input和output对应的`tensor name`，如在[vgg_translate_tutorial](vgg_translate_tutorial.ipynb)中转换VGG_16模型，输入的tensor名为 "inputs", 输出的tensor名为 "vgg_16/fc8/squeezed"
 
 ### 转换后模型文件说明  
 文件|作用
