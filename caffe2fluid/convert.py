@@ -42,7 +42,6 @@ def convert(def_path, caffemodel_path, data_output_path, code_output_path,
         if code_output_path:
             print_stderr('Saving source...')
             with open(code_output_path, 'wb') as src_out:
-#                 print(type(transformer.transform_source()))
                 src_out.write(str.encode(transformer.transform_source()))
         print_stderr('set env variable before using converted model '\
                 'if used custom_layers:')

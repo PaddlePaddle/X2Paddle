@@ -42,7 +42,7 @@ class MyNet(object):
     def convert(cls, npy_model, fluid_path, outputs=None):
         fluid = import_fluid()
         shapes = cls.input_shapes()
-        input_name = list(shapes.keys())[0]    #need to review
+        input_name = list(shapes.keys())[0]
         feed_data = {}
         for name, shape in shapes.items():
             data_layer = fluid.layers.data(

@@ -2,7 +2,6 @@ import re
 import numbers
 from collections import namedtuple
 import sys
-sys.path.append('~/paddlepaddle/X2Paddle_v2.0/caffe2fluid/kaffe/custom_layers')
 from . import custom_layers
 from .shapes import *
 

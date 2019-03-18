@@ -55,7 +55,7 @@ def compare(path1, path2, no_exception):
         print('[max_df:%.4e, sq_df:%.4e] when compare %s <=> %s' %
               (max_df, sq_df, os.path.basename(f1), os.path.basename(f2)))
         if no_exception is False:
-            assert (max_df < 1e-4), \
+            assert (max_df < 1e-5), \
                     'max_df is too large with value[%.6e]' % (max_df)
             assert (sq_df < 1e-10), \
                     'sq_df is too large with value[%.6e]' % (sq_df)

@@ -110,7 +110,7 @@ class Network(object):
                 continue
 
             layer = self.layers[op_name]
-            for param_name, data in data_dict[op_name].items():    #need to review
+            for param_name, data in data_dict[op_name].items():    
                 try:
                     name = '%s_%s' % (op_name, param_name)
                     v = fluid.global_scope().find_var(name)
