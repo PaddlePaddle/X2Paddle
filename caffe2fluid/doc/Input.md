@@ -2,17 +2,17 @@
 ### [Input](http://caffe.berkeleyvision.org/tutorial/layers/input.html)
 ```
 layer {
-	name: "input"
-	type: "Input"
-	top: "input"	
-	input_param{
-		shape{
-			dim: 10
-			dim: 3
-			dim: 227
-			dim: 227
-		}
+    name: "input"
+    type: "Input"
+    top: "input"	
+    input_param{
+        shape{
+	    dim: 10
+	    dim: 3
+	    dim: 227
+	    dim: 227
 	}
+    }
 }
 ```
 
@@ -20,13 +20,13 @@ layer {
 ### [paddle.fluid.layers.data](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-20-data)
 ```python
 paddle.fluid.layers.data(
-	name, 
-	shape, 
-	append_batch_size=True, 
-	dtype='float32', 
-	lod_level=0, 
-	type=VarType.LOD_TENSOR, 
-	stop_gradient=True
+    name, 
+    shape, 
+    append_batch_size=True, 
+    dtype='float32', 
+    lod_level=0, 
+    type=VarType.LOD_TENSOR, 
+    stop_gradient=True
 )
 ```  
 
@@ -35,19 +35,19 @@ paddle.fluid.layers.data(
 Caffe：输入的shape中每一个维度的大小都需要详细定义。  
 PaddlePaddle：可以根据设置设置`append_batch_size`来确定是否将数据第一个维度的大小加入到shape中，若该参数为True，输入数据第一个维度的大小则由传入数据决定，若该参数为False，则shape的第一个维度为输入数据第一个维度的大小。   
 Caffe示例：  
-```  
+``` 
 layer{
-	name: "input"
-	type: "Input"
-	top: "input"	
-	input_param{
-		shape{
-			dim: 10
-			dim: 3
-			dim: 227
-			dim: 227
-		}
+    name: "input"
+    type: "Input"
+    top: "input"	
+    input_param{
+    	shape{
+	    dim: 10
+	    dim: 3
+	    dim: 227
+	    dim: 227
 	}
+    }
 }
 #数据shape为[10,3,227,227]
 ```  
