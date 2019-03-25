@@ -17,6 +17,7 @@ from tensorflow_graph import TensorflowGraph
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.tools import strip_unused_lib
 from tensorflow.python.framework import dtypes
+import logging
 import numpy
 
 
@@ -212,7 +213,7 @@ class ModelInfer(object):
     def get_tensor_shape(self, layer):
         shape = layer.attr['_output_shapes'].list.shape[0]
         shape = numpy.array([dim.size for dim in shape.dim])
-        if numpy.argwhere(shape < 0).shape[0] <= 1:
+        if numpy.argwhere(shape < 0).shape[0] <= 1 and len(shape) != 0:
             return shape
         tensor_name = layer.name
         if len(tensor_name.split(':')) < 2:

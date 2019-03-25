@@ -179,7 +179,14 @@ class PaddleEmitter(object):
         desc_size = tensor_desc.ByteSize()
         filew.write(struct.pack('i', desc_size))
         filew.write(tensor_desc.SerializeToString())
-        tensor_size = reduce(lambda x, y: x * y, shape)
+        if len(shape) == 0:
+            if weight.size == 1:
+                tensor_size = 1
+                weight = numpy.array([weight])
+            else:
+                tensor_size = 0
+        else:
+            tensor_size = reduce(lambda x, y: x * y, shape)
         weight = weight.flatten()
         for i in range(0, tensor_size):
             filew.write(
@@ -426,7 +433,7 @@ class PaddleEmitter(object):
     def emit_maxpool(self, node):
         data = node.inputs[0]
         padding_mode = node.get_attr("padding")
-        input_shape = list(self.infer.get_tensor_shape(node.layer))
+        input_shape = list(self.infer.get_tensor_shape(data.layer))
         input_h, input_w = input_shape[2:4]
         strides = node.get_attr("strides")[2:4]
         pool_size = node.get_attr("ksize")[2:4]
@@ -438,7 +445,7 @@ class PaddleEmitter(object):
         pool_param = {
             "pool_size": pool_size,
             "pool_type": "\'max\'",
-            "pool_stride": strides
+            "pool_stride": strides,
         }
 
         if padding_mode == SAME:
@@ -446,10 +453,17 @@ class PaddleEmitter(object):
                                               strides[0])
             pad_w = self.compute_padding_size(input_w, pool_size[1],
                                               strides[1])
-            pad_right = pad_w[0] + pad_w[1]
-            pad_bottom = pad_h[0] + pad_h[1]
-            padding = [0, pad_right, 0, pad_bottom]
-            pad_param = {"paddings": padding}
+#            pad_right = pad_w[0] + pad_w[1]
+#            pad_bottom = pad_h[0] + pad_h[1]
+            if (pad_h[0] + pad_h[1]) % 2 != 0:
+                pad_h[1] += pad_h[0]
+                pad_h[0] = 0
+            if (pad_w[0] + pad_w[1]) % 2 != 0:
+                pad_w[1] += pad_w[0]
+                pad_w[0] = 0
+            #padding = [0, pad_bottom, 0, pad_right]
+            padding = pad_h + pad_w
+            pad_param = {"paddings": padding, "pad_value":-1000000.0}
             node.code.add_layer("pad2d", data.ref_name, node.output_name,
                                 pad_param)
             node.code.add_layer("pool2d", node.output_name, node.output_name,
@@ -1050,3 +1064,14 @@ class PaddleEmitter(object):
         dim = self.infer.get_const_tensor_value(dim.layer)
         param = {"axes":[dim]}
         node.code.add_layer("unsqueeze", data.ref_name, node.output_name, param)
+
+    def emit_cast(self, node):
+        data = node.inputs[0]
+        dtype_map = {1: "float32", 3: "int32", 9: "int64"}
+        dtype = node.get_attr("DstT")
+        if dtype in dtype_map:
+            dtype = dtype_map[dtype]
+        else:
+            raise Exception("Unknow dtype: {}".format(dtype))
+        param = {"dtype":"\'{}\'".format(dtype)}
+        node.code.add_layer("cast", data.ref_name, node.output_name, param)
