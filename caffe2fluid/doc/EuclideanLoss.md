@@ -4,11 +4,11 @@
 ### [EuclideanLoss](http://caffe.berkeleyvision.org/tutorial/layers/euclideanloss.html)
 ```
 layer {
-	name: "loss"
-	type: "EuclideanLoss"
-	bottom: "pred"
-	bottom: "label"
-	top: "loss"
+    name: "loss"
+    type: "EuclideanLoss"
+    bottom: "pred"
+    bottom: "label"
+    top: "loss"
 }
 ```
 
@@ -16,8 +16,8 @@ layer {
 ### [paddle.fluid.layers.square_error_cost](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-167-square_error_cost)
 ```python
 paddle.fluid.layers.square_error_cost(
-	input,
-	label
+    input,
+    label
 )
 ```  
 
