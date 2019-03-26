@@ -3,31 +3,31 @@
 ### [Pooling](http://caffe.berkeleyvision.org/tutorial/layers/pooling.html)
 ```
 layer{
-	name: "pool"
-	type: "Pooling"
-	bottom: "conv"
-	top: "pool"
-	pooling_param{
-		pool: MAX
-		kernel_size: 3	#必填项
-		stride: 1
-		pad: 0
-	}
+    name: "pool"
+    type: "Pooling"
+    bottom: "conv"
+    top: "pool"
+    pooling_param{
+	pool: MAX
+	kernel_size: 3	#必填项
+	stride: 1
+	pad: 0
+    }
 }
 ```
 ### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-115-pool2d)
 ```python
 paddle.fluid.layers.pool2d(
-	input,
-	pool_size,
-	pool_type = 'max',
-	pool_stride = 1,
-	pool_padding = 0,
-	global_pooling = False,
-	use_cudnn = True,
-	ceil_mode = False,
-	name = None,
-	exclusive = True
+    input,
+    pool_size,
+    pool_type = 'max',
+    pool_stride = 1,
+    pool_padding = 0,
+    global_pooling = False,
+    use_cudnn = True,
+    ceil_mode = False,
+    name = None,
+    exclusive = True
 )
 ```  
   
@@ -70,18 +70,18 @@ PaddlePaddle：使用了一个`exclusive`参数，其代表在进行平均池化
 # 输入shape：(1,3,228,228)  
 # 输出shape：(1,3,114,114)
 layer{
-	name: "pool"
-	type: "Pooling"
-	bottom: "conv"
-	top: "pool"
-	pooling_param{
-		pool: MAX
-		kernel_size: 3	
-		stride: 2
-	}
+    name: "pool"
+    type: "Pooling"
+    bottom: "conv"
+    top: "pool"
+    pooling_param{
+	pool: MAX
+	kernel_size: 3	
+	stride: 2
+    }
 }
 ```  
-```  
+``` python
 # PaddlePaddle示例：  
 # 输入shape：(1,3,228,228)  
 # 输出shape：(1,3,113,113)
