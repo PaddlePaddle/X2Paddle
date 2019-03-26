@@ -4,16 +4,16 @@
 ### [SofmaxWithLoss](http://caffe.berkeleyvision.org/tutorial/layers/softmaxwithloss.html)
 ```
 layer {
-	name: "loss"
-	type: "SoftmaxWithLoss"
-	bottom: "pred"
-	bottom: "label"
-	top: "loss"
-	loss_param{
-		ignore_label: -1
-		normalize: 0
-		normalization: FULL
-	}
+    name: "loss"
+    type: "SoftmaxWithLoss"
+    bottom: "pred"
+    bottom: "label"
+    top: "loss"
+    loss_param{
+	ignore_label: -1
+	normalize: 0
+	normalization: FULL
+    }
 }
 ```
 
@@ -21,12 +21,12 @@ layer {
 ### [paddle.fluid.layers.softmax_with_cross_entropy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-164-softmax_with_cross_entropy)
 ```python
 paddle.fluid.layers.softmax_with_cross_entropy(
-	logits,
-	label,
-	soft_label = False,
-	ignore_index = -100,
-	numeric_stable_mode = False, 
-	return_softmax = False
+    logits,
+    label,
+    soft_label = False,
+    ignore_index = -100,
+    numeric_stable_mode = False, 
+    return_softmax = False
 )
 ```  
 
@@ -53,22 +53,22 @@ PaddlePaddle：输出是每个样本的loss所组成的一个向量，同时如�
 # label输入shape：(100,1)  
 # 输出shape：()
 layer {
-	name: "loss"
-	type: "SoftmaxWithLoss"
-	bottom: "pred"
-	bottom: "label"
-	top: "loss"
-	loss_param{
-		ignore_label: -1
-		normalize: 0
-		normalization: FULL
+    name: "loss"
+    type: "SoftmaxWithLoss"
+    bottom: "pred"
+    bottom: "label"
+    top: "loss"
+    loss_param{
+	ignore_label: -1
+	normalize: 0
+	normalization: FULL
 
-	}
+    }
 }
 ```
 
   
-```  
+```python  
 # PaddlePaddle示例：
 # pred输入shape：(100,10)  
 # label输入shape：(100,1)  
