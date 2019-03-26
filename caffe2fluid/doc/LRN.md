@@ -4,16 +4,16 @@
 ### [LRN](http://caffe.berkeleyvision.org/tutorial/layers/lrn.html)
 ```
 layer {
-	name: "lrn"
-	type: "LRN"
-	bottom: "data"
-	top: "lrn"	
-	lrn_parame{
-		loal_size: 5
-		alphe: 1
-		beta: 5
-		norm_region: 'ACROSS_CHANNELS'
-	}
+    name: "lrn"
+    type: "LRN"
+    bottom: "data"
+    top: "lrn"	
+    lrn_parame{
+	loal_size: 5
+	alphe: 1
+	beta: 5
+	norm_region: 'ACROSS_CHANNELS'
+    }
 }
 ```
 
@@ -21,12 +21,12 @@ layer {
 ### [paddle.fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-99-lrn)
 ```python
 paddle.fluid.layers.lrn(
-	input, 
-	n=5, 
-	k=1.0, 
-	alpha=0.0001, 
-	beta=0.75, 
-	name=None
+    input, 
+    n=5, 
+    k=1.0, 
+    alpha=0.0001, 
+    beta=0.75, 
+    name=None
 )
 ```  
 
