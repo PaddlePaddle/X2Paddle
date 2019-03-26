@@ -19,7 +19,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.elementwise_sum](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-61-elementwise_add)[paddle.fluid.layers.elementwise_max](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-63-elementwise_max)[paddle.fluid.layers.elementwise_mul](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-65-elementwise_mul)
+### [paddle.fluid.layers.elementwise_sum](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-61-elementwise_add)、[paddle.fluid.layers.elementwise_max](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-63-elementwise_max)、[paddle.fluid.layers.elementwise_mul](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-65-elementwise_mul)
 ```python
 paddle.fluid.layers.elementwise_sum(
     x, 
