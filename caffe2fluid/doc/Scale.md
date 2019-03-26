@@ -4,23 +4,23 @@
 ### [Scale](http://caffe.berkeleyvision.org/tutorial/layers/scale.html)
 ```
 layer {
-	name: "scale"
-	type: "Scale"
-	bottom: "data"
-	top: "scale"
-	scale_param{
-		axis: 1
-		num_axes: 1
-    	filter{
-			type: "constant"
-			value: 2
-		}
-		bias_term: true
-		bias_filter{
-			type: "constant"
-			value: 0.5
-		}
-  }
+    name: "scale"
+    type: "Scale"
+    bottom: "data"
+    top: "scale"
+    scale_param{
+	axis: 1
+	num_axes: 1
+        filter{
+	    type: "constant"
+	    value: 2
+	}
+        bias_term: true
+        bias_filter{
+	    type: "constant"
+	    value: 0.5
+        }
+    }
 }
 ```
 
@@ -28,12 +28,12 @@ layer {
 ### [paddle.fluid.layers.scale](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-137-scale)
 ```python
 paddle.fluid.layers.scale(
-	x, 
-	scale=1.0, 
-	bias=0.0, 
-	bias_after_scale=True, 
-	act=None, 
-	name=None
+    x, 
+    scale=1.0,  
+    bias=0.0, 
+    bias_after_scale=True, 
+    act=None, 
+    name=None
 )
 ```  
 
