@@ -4,11 +4,11 @@
 ### [SigmoidCrossEntropyLoss](http://caffe.berkeleyvision.org/tutorial/layers/sigmoidcrossentropyloss.html)
 ```
 layer {
-	name: "loss"
-	type: "SigmoidCrossEntropyLoss"
-	bottom: "pred"
-	bottom: "label"
-	top: "loss"
+    name: "loss"
+    type: "SigmoidCrossEntropyLoss"
+    bottom: "pred"
+    bottom: "label"
+    top: "loss"
 }
 ```
 
@@ -16,11 +16,11 @@ layer {
 ### [paddle.fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-158-sigmoid_cross_entropy_with_logits)
 ```python
 paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
-	x, 
-	label, 
-	ignore_index=-100, 
-	name=None, 
-	normalize=False
+    x, 
+    label, 
+    ignore_index=-100, 
+    name=None, 
+    normalize=False
 )
 ```  
 
