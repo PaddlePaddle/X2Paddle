@@ -4,18 +4,18 @@
 ### [Reshape](http://caffe.berkeleyvision.org/tutorial/layers/reshape.html)
 ```
 layer {
-	name: "reshape"
-	type: "Reshape"
-	bottom: "data"
-	top: "reshape"
-	reshape_param{
-		shape{
-			dim: 1
-			...
-		}
-		axis: 0
-		num_axes: -1
+    name: "reshape"
+    type: "Reshape"
+    bottom: "data"
+    top: "reshape"
+    reshape_param{
+	shape{
+	    dim: 1
+	    ...
 	}
+	axis: 0
+	num_axes: -1
+    }
 }
 ```
 
@@ -23,12 +23,12 @@ layer {
 ### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-130-reshape)
 ```python
 paddle.fluid.layers.reshape(
-	x, 
-	shape, 
-	actual_shape=None, 
-	act=None, 
-	inplace=False, 
-	name=None
+    x, 
+    shape, 
+    actual_shape=None, 
+    act=None, 
+    inplace=False, 
+    name=None
 )
 ```  
 
@@ -52,33 +52,33 @@ PaddlePaddle：可以通过设置`act`对reshpe后的tensor变量执行非线性
 # Caffe示例：  
 # 输入shape：(2,4,6)
 layer {
-	name: "reshape"
-	type: "Reshape"
-	bottom: "data"
-	top: "reshape"
-	reshape_param{
-		shape{
-			dim: 3
-			dim: 2
-		}
-		axis: 2
-		num_axes: 1
+    name: "reshape"
+    type: "Reshape"
+    bottom: "data"
+    top: "reshape"
+    reshape_param{
+	shape{
+	    dim: 3
+	    dim: 2
 	}
+	axis: 2
+	num_axes: 1
+    }
 }
 # 输出shape：(2,4,3,2）
 layer {
-	name: "reshape"
-	type: "Reshape"
-	bottom: "data"
-	top: "reshape"
-	reshape_param{
-		shape{
-			dim: 3
-			dim: 2
-			dim: 4
-		}
-		axis: 1
+    name: "reshape"
+    type: "Reshape"
+    bottom: "data"
+    top: "reshape"
+    reshape_param{
+	shape{
+	    dim: 3
+	    dim: 2
+	    dim: 4
 	}
+	axis: 1
+    }
 }
 # 输出shape：(2,3,2,4)
 
