@@ -4,10 +4,10 @@
 ### [Softmax](http://caffe.berkeleyvision.org/tutorial/layers/softmax.html)
 ```
 layer {
-	name: "softmax"
-	type: "Softmax"
-	bottom: "fc"
-	top: "softmax"	
+    name: "softmax"
+    type: "Softmax"
+    bottom: "fc"
+    top: "softmax"	
 }
 ```
 
@@ -15,9 +15,9 @@ layer {
 ### [paddle.fluid.layers.softmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-163-softmax)
 ```python
 paddle.fluid.layers.softmax(
-	input, 
-	use_cudnn=True, 
-	name=None
+    input, 
+    use_cudnn=True, 
+    name=None
 )
 ```  
 
