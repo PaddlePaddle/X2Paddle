@@ -4,15 +4,15 @@
 ### [Power](http://caffe.berkeleyvision.org/tutorial/layers/power.html)
 ```
 layer {
-	name: "power"
-	type: "Power"
-	bottom: "data"
-	top: "power"	
-	power_param{
-		power: 1
-		scale: 1
-		shift: 0
-	}
+    name: "power"
+    type: "Power"
+    bottom: "data"
+    top: "power"	
+    power_param{
+	power: 1
+	scale: 1
+	shift: 0
+    }
 }
 ```
 
@@ -20,9 +20,9 @@ layer {
 ### [paddle.fluid.layers.power](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-117-pow)
 ```python
 paddle.fluid.layers.power(
-	x,
-	factor = 1.0,
-	name = None
+    x,
+    factor = 1.0,
+    name = None
 )
 ```  
 
