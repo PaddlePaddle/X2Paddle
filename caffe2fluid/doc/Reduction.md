@@ -9,9 +9,9 @@ layer {
     bottom: "reduce"
     top: “reduce"
     reduction_param{
-		    operation: SUM
-		    axis: 1
-		    coeff: 2
+        operation: SUM
+	axis: 1
+	coeff: 2
     }
 }
 ```
@@ -47,15 +47,15 @@ PaddlePaddle：只会缩减`dim`中list定义的维度，并根据`keep_dim`确�
 # Caffe示例：  
 # 输入shape：(30，3，6，8)
 layer {
-	name: "reduce"
-	type: "Reduction"
-	bottom: "reduce"
-	top: “reduce"
-	reduction_param{
-		operation: SUM
-		axis: 2
-		coeff: 2
-	}
+    name: "reduce"
+    type: "Reduction"
+    bottom: "reduce"
+    top: “reduce"
+    reduction_param{
+	operation: SUM
+	axis: 2
+	coeff: 2
+    }
 }
 # 输出shape：(30,3,)
 ```  
