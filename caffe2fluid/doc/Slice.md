@@ -4,18 +4,18 @@
 ### [Slice](http://caffe.berkeleyvision.org/tutorial/layers/slice.html)
 ```
 layer {
-	name: "slice"
-	type: "Slice"
-	bottom: "data"
-	top: "out1"
-	top: "out2"
-	top: "out3"
-	slice_param{
-		axis: 1
-		alice_point: 1
-		alice_point: 2
-		# slice_dim: 1
-	}
+    name: "slice"
+    type: "Slice"
+    bottom: "data"
+    top: "out1"
+    top: "out2"
+    top: "out3"
+    slice_param{
+	axis: 1
+	alice_point: 1
+	alice_point: 2
+	# slice_dim: 1
+    }
 }
 ```
 
@@ -23,10 +23,10 @@ layer {
 ### [paddle.fluid.layers.slice](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-160-slice)
 ```python
 paddle.fluid.layers.slice(
-	input, 
-	axes, 
-	starts, 
-	ends
+    input, 
+    axes, 
+    starts, 
+    ends
 )
 ```  
 
@@ -45,17 +45,17 @@ PaddlePaddle：如果传递给`starts`或`end`的值大于n（此维度中的元
 # Caffe示例：  
 # 输入shape：(2,6)
 layer {
-	name: "slice"
-	type: "Slice"
-	bottom: "data"
-	top: "out1"
-	top: "out2"
-	top: "out3"
-	slice_param{
-		axis: 1	#使用-1效果相同
-		alice_point: 1
-		alice_point: 2
-	}
+    name: "slice"
+    type: "Slice"
+    bottom: "data"
+    top: "out1"
+    top: "out2"
+    top: "out3"
+    slice_param{
+	axis: 1	#使用-1效果相同
+	alice_point: 1
+	alice_point: 2
+    }
 }
 # 输出3个数组，第一个shape：(2,1)，第二个shape：(2,1)，第三个shape：(2,4)
 ```  
