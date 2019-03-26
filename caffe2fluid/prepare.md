@@ -2,7 +2,7 @@
 ## 1.[安装Anaconda（linux python=3.7 anaconda=3.）](https://docs.anaconda.com/anaconda/install/)
 ## 2.创建Python环境
 
-在使用Caffe2Fluid这一工具时需要同时使用Caffe和PaddlePaddle，我们需要创建一个环境在安装了Caffe和PaddlePaddle的同时，不出现一俩影响问题。
+在使用Caffe2Fluid这一工具时需要同时使用Caffe和PaddlePaddle，我们需要创建一个环境在安装了Caffe和PaddlePaddle的同时，不出现包不兼容的问题。
 > ```shell
 > # 创建名为caffe_paddle的环境，python版本指定为3.5
 > conda create -n caffe-paddle python=3.5
