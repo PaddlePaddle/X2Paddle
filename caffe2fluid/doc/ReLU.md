@@ -4,13 +4,13 @@
 ### [ReLU](http://caffe.berkeleyvision.org/tutorial/layers/relu.html)
 ```
 layer {
-	name: "relu"
-	type: "ReLU"
-	bottom: "data"
-	top: "relu"
-	relu_param{
-		negative_slope: 0
-	}	
+    name: "relu"
+    type: "ReLU"
+    bottom: "data"
+    top: "relu"
+    relu_param{
+	negative_slope: 0
+    }	
 }
 ```
 
@@ -18,16 +18,16 @@ layer {
 ### [paddle.fluid.layers.relu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-128-relu)
 ```python
 paddle.fluid.layers.relu(
-	x, 
-	name=None
+    x, 
+    name=None
 )
 ```
 和  
-```
+```python
 paddle.fluid.layers.leaky_relu(
-	x, 
-	alpha = 0.02,
-	name=None
+    x, 
+    alpha = 0.02,
+    name=None
 )
 ```
 
