@@ -4,15 +4,15 @@
 ### [ArgMax](http://caffe.berkeleyvision.org/tutorial/layers/argmax.html)
 ```
 layer {
-	name: "argmax"
-	type: "ArgMax"
-	bottom: "data"
-	top: "argmax"	
-	argmax_param{
-		out_max_val: false
-		top_k: 1
-		axis: 0
-	}
+    name: "argmax"
+    type: "ArgMax"
+    bottom: "data"
+    top: "argmax"	
+    argmax_param{
+	out_max_val: false
+	top_k: 1
+	axis: 0
+    }
 }
 ```
 
@@ -20,8 +20,8 @@ layer {
 ### [paddle.fluid.layers.argmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-204-argmax)
 ```
 paddle.fluid.layers.argmax(
-	x,
-	axis = 0
+    x,
+    axis = 0
 )
 ```  
 
