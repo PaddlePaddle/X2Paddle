@@ -59,7 +59,7 @@ layer {
 }
 # 输出3个数组，第一个shape：(2,1)，第二个shape：(2,1)，第三个shape：(2,4)
 ```  
-```  
+```python
 # PaddlePaddle示例：  
 # 输入shape：(2,6)
 output1 = paddle.fluid.layers.slice(input = inputs, axes = [1], starts= [1], ends = [3])
