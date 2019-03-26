@@ -4,14 +4,14 @@
 ### [Flatten](http://caffe.berkeleyvision.org/tutorial/layers/flatten.html)
 ```
 layer {
-	name: "flatten"
-	type: "Flatten"
-	bottom: "data"
-	top: "flatten"
-	flatten_param{
-		axis: 1
-		end_axis: -1
-	}
+    name: "flatten"
+    type: "Flatten"
+    bottom: "data"
+    top: "flatten"
+    flatten_param{
+	axis: 1
+	end_axis: -1
+    }
 }
 ```
 
@@ -19,9 +19,9 @@ layer {
 ### [paddle.fluid.layers.flatten](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-72-flatten)
 ```python
 paddle.fluid.layers.flatten(
-	x,
-	axis = 1,
-	name = None
+    x,
+    axis = 1,
+    name = None
 )
 ```  
 
@@ -34,25 +34,25 @@ PaddlePaddle：只有一个参数`axis`,其取值范围为[0,n]，小于等于`a
 # Caffe代码示例：
 # 输入shape：(10,3,5,5)  
 layer {
-	name: "flatten"
-	type: "Flatten"
-	bottom: "data"
-	top: "flatten"
-	flatten_param{
-		axis: 1
-		end_axis: -2
-	}
+    name: "flatten"
+    type: "Flatten"
+    bottom: "data"
+    top: "flatten"
+    flatten_param{
+	axis: 1
+	end_axis: -2
+    }
 }
 # 输出shape：(10,15,10）
 layer {
-	name: "flatten"
-	type: "Flatten"
-	bottom: "data"
-	top: "flatten"
-	flatten_param{
-		axis: 1
-		end_axis: -2
-	}
+    name: "flatten"
+    type: "Flatten"
+    bottom: "data"
+    top: "flatten"
+    flatten_param{
+	axis: 1
+	end_axis: -2
+    }
 }
 # 输出shape：(10,3,5,1,5）
 
