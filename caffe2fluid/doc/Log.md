@@ -10,8 +10,8 @@ layer {
     top: "log"
     log_param{
         base: -1
-		    scale: 1
-		    shift: 0
+        scale: 1
+	shift: 0
     }
 }
 ```
@@ -36,4 +36,4 @@ log_base(shift+scale \times x),\quad base>0
 \end{cases}
 $$              
              
-PaddlePaddle：计算公式为：$$y=ln(x)$$。 
+PaddlePaddle：计算公式为：$$y=ln(x)$$
