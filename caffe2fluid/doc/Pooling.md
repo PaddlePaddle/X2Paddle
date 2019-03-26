@@ -53,10 +53,6 @@ Caffe：提供了三种池化方式——最大池化、均值池化和随机池
 PaddlePaddle：提供了两种池化方式——最大池化和均值池化。
  
 
-#### 部分参数类型的差异  
-Caffe：若`kernel_h`和`kernel_w`的大小一样则可以只用`kernel_size`来表示，例如`kernel_h = 3`和`kernel_w = 3`可以用`kernel_size = 3`这一条语句来取代。  
-PaddlePaddle：使用`pool_size`的类型可以是`int`、`list`和`tuple`，当它是一个元组或列表是，元组或列表内都是包含两个数——卷积核的高度和宽度。
-
 
 #### 其他差异  
 Caffe：无`exclusive`参数。  
