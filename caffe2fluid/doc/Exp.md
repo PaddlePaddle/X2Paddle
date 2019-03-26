@@ -4,15 +4,15 @@
 ### [Exp](http://caffe.berkeleyvision.org/tutorial/layers/exp.html)
 ```
 layer {
-	name: "exp"
-	type: "Exp"
-	bottom: "data"
-	top: "exp"	
-	exp_param{
-		base: -1
-		scale: 1
-		shift: 0
-	}
+    name: "exp"
+    type: "Exp"
+    bottom: "data"
+    top: "exp"	
+    exp_param{
+	base: -1
+	scale: 1
+	shift: 0
+    }
 }
 ```
 
@@ -20,8 +20,8 @@ layer {
 ### [paddle.fluid.layers.exp](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-186-exp)
 ```python
 paddle.fluid.layers.exp(
-	x,
-	name = None
+    x,
+    name = None
 )
 ```  
 
