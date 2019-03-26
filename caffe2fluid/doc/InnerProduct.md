@@ -2,32 +2,32 @@
 ### [InnerProduct](http://caffe.berkeleyvision.org/tutorial/layers/innerproduct.html)
 ```
 layer{
-	name: "fc"
-	type: "InnerProduct"
-	bottom: "data"
-	top: "fc"
-	#卷积核的局部学习率和权值衰减因子
-	param{
-		lr_mult: 1
-		decay_mult: 1
+    name: "fc"
+    type: "InnerProduct"
+    bottom: "data"
+    top: "fc"
+    #卷积核的局部学习率和权值衰减因子
+    param{
+	lr_mult: 1
+	decay_mult: 1
+    }
+    #偏置项的局部学习率和权值衰减因子
+    param{
+	lr_mult: 2
+	decay_mult: 0
+    }
+    InnerProduct{
+	num_output: 20	#必填项
+	bias_term: True
+	weight_filler {
+	    type: "gaussian"
+	    value: 0.01
 	}
-	#偏置项的局部学习率和权值衰减因子
-	param{
-		lr_mult: 2
-		decay_mult: 0
+	bias_filler {
+	    type: "constant"
+	    value: 0
 	}
-	InnerProduct{
-		num_output: 20	#必填项
-		bias_term: True
-		weight_filler {
-			type: "gaussian"
-			value: 0.01
-		}
-		bias_filler {
-			type: "constant"
-			value: 0
-		}
-	}
+    }
 }
 ```
 
@@ -35,14 +35,14 @@ layer{
 ### [paddle.fluid.layers.fc](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-71-fc)
 ```python
 paddle.fluid.layers.fc(
-	input,
-	size,
-	num_flatten_dims=1,
-	param_attr=None,
-	bias_attr=None,
-	act=None,
-	is_test=False,
-	name=None
+    input,
+    size,
+    num_flatten_dims=1,
+    param_attr=None,
+    bias_attr=None,
+    act=None,
+    is_test=False,
+    name=None
 )
 ```  
 
