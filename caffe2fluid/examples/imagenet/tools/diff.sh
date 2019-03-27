@@ -27,22 +27,43 @@ if [[ -n $1 ]];then
     model_name=$1
 fi
 
+if [[ $# -lt 5 ]];then
+    echo "usage:"
+    echo "  bash $0 [model_name] [cf_prototxt_path] [cf_model_path] [pd_py_path] [pd_npy_path] [imagfile] [only_convert]"
+    echo "  eg: bash $0 alexnet ./models/alexnet.prototxt ./models/alexnet.caffemodel ./models/alexnet.py ./models/alexnet.npy"
+    exit 1
+else
+    model_name=$1
+    cf_prototxt_path=$2
+    cf_model_path=$3
+    pd_py_path=$4
+    pd_npy_path=$5
+    only_convert=$7
+fi
+
+
 mkdir -p $results_root
 
-prototxt="$2/${model_name}.prototxt"
-caffemodel="$2/${model_name}.caffemodel"
+prototxt=$cf_prototxt_path
+caffemodel=$cf_model_path
+if [[ -n $6 ]];then
+    imgfile=$6
+else
+    imgfile="data/65.jpeg"
+fi
 
 #1, dump layers' results from paddle
 paddle_results="$results_root/${model_name}.paddle"
 rm -rf $paddle_results
 rm -rf "results.paddle"
-bash ./tools/run.sh $model_name $2 $3
+bash ./tools/run2.sh $model_name $cf_prototxt_path $cf_model_path $pd_py_path $pd_npy_path $imgfile
 if [[ $? -ne 0 ]] || [[ ! -e "results.paddle" ]];then
     echo "not found paddle's results, maybe failed to convert"
     exit 1
 fi
 mv results.paddle $paddle_results
 
+    
 #2, dump layers' results from caffe
 caffe_results="$results_root/${model_name}.caffe"
 rm -rf $caffe_results
@@ -51,7 +72,7 @@ PYTHON=`which python`
 if [[ -z $PYTHON ]];then
     PYTHON=`which python`
 fi
-$PYTHON ./infer.py caffe $prototxt $caffemodel $paddle_results/data.npy
+$PYTHON ./infer.py caffe $prototxt $caffemodel $imgfile
 if [[ $? -ne 0 ]] || [[ ! -e "results.caffe" ]];then
     echo "not found caffe's results, maybe failed to do inference with caffe"
     exit 1
