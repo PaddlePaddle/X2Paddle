@@ -38,8 +38,8 @@ python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 ## 模型转换前后差异对比
 模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（运行环境依赖caffe和paddlepaddle）
 ```
-
-bash tools/diff.sh alexnet
+cd examples/imagenet
+bash tools/diff.sh alexnet ../../ ../../
 ```
 ## 要点
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
