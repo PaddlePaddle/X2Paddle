@@ -3,13 +3,14 @@
 
 caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
-## 环境安装
+## 环境依赖
 
-> python2/python3  
-> caffe-gpu   
-> paddlepaddle == 1.3.0  
+> numpy
+> protobuf
+> future
 
-建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)
+**caffe2fluid的运行仅依赖上述条件**
+但建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)
 
 ## 使用方法
 
@@ -39,7 +40,7 @@ python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 模型的加载及预测可参考PaddlePaddle官方文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
 ### 模型转换前后差异对比
-模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（运行环境依赖caffe和paddlepaddle）
+模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（**运行环境依赖caffe和paddlepaddle**）
 ```
 cd examples/imagenet
 bash tools/diff.sh alexnet ../../ ../../
