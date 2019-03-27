@@ -41,6 +41,30 @@ python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 cd examples/imagenet
 bash tools/diff.sh alexnet ../../ ../../
 ```
+
+# 自定义层转换
+在模型转换中遇到未支持的自定义层，用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换，实现方式如下流程，
+1. 在`kaffe/custom_layers`下实现自定义层，例如mylayer.py
+> - 实现`shape_func(input_shape, [other_caffe_params])`，计算输出的大小
+> - 实现`layer_func(input_shape, [other_caffe_params])`，构造一个PaddlePaddle Fluid层
+> - 注册这两个函数 `register(kind=`MyType`, shape=shape_func, layer=layer_func)`
+也可参考`kaffe/cusom_layers`下的其它自定义层实现
+
+2. 添加`import mylayer`至`kaffe/custom_layers/__init__.py`
+
+3. 准备你的pycaffe作为你的定制版本（与以前的env准备相同）
+> 选择一：编译你自己的caffe.proto来代替proto/caffe.proto
+> 选择二：更换你的pycaffe到特定的版本
+
+4. 按照之前步骤，将Caffe模型转换为PaddlePaddle模型
+
+5. 配置环境变量
+```
+export CAFFE2FLUID_CUSTOM_LAYERS=/path/to/caffe2fluid/kaffe
+```
+# 模型测试
+目前
+# 模型测试
 ## 要点
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
 2. 通过扩展此工具也可以支持Caffe的自定义图层转换。
