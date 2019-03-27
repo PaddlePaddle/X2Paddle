@@ -6,7 +6,7 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 > caffe-gpu   
 > paddlepaddle == 1.3.0  
 
-建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](#prepare.md)
+建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)
 
 # 使用方法
 
