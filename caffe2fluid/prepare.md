@@ -2,7 +2,7 @@
 caffe2fluid在如下环境配置中进行测试，用户可按如下流程配置自己的环境，也可根据自己需求配置，满足caffe2fluid运行对环境的依赖即可。
 
 ## 1. 安装Anaconda
-可直接参考官网安装文档
+可直接参考官网安装文档  
 [Linux下安装](https://docs.anaconda.com/anaconda/install/linux/)  
 [Mac下安装](https://docs.anaconda.com/anaconda/install/mac-os/)
 
