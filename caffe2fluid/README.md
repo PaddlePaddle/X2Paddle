@@ -5,6 +5,7 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
 ## 环境依赖
 
+> python >= 2.7
 > numpy  
 > protobuf  
 > future  
