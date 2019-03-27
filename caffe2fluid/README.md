@@ -25,16 +25,22 @@ python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
 
 2. 可通过如下方式，将模型网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
 ```
-# model_save_dir ： 指定序列化后的模型保存路径
-python convert.py alexnet.py alexnet.npy model_save_dir
+# fluid_model ： 指定序列化后的模型保存路径
+python convert.py alexnet.py alexnet.npy fluid_model
 ```
 也可在保存时，指定保存模型的输出
 ```
 # 模型的输出为fc8和prob层
-python convert.py alexnet.py alexnet.npy model_save_dir fc8,prob
+python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 ```
+模型的加载及预测可参考PaddlePaddle官方文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
 ## 模型转换前后差异对比
+模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（运行环境依赖caffe和paddlepaddle）
+```
+
+bash tools/diff.sh alexnet
+```
 ## 要点
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
 2. 通过扩展此工具也可以支持Caffe的自定义图层转换。
