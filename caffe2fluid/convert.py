@@ -42,6 +42,7 @@ def convert(def_path, caffemodel_path, data_output_path, code_output_path,
         if code_output_path:
             print_stderr('Saving source...')
             with open(code_output_path, 'wb') as src_out:
+                s = sys.version
                 if s.startswith('2'):
                     src_out.write(transformer.transform_source())
                 else:
