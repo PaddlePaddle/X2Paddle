@@ -1,5 +1,9 @@
 # 环境安装
-## 1.[安装Anaconda（linux python=3.7 anaconda=3.）](https://docs.anaconda.com/anaconda/install/)
+caffe2fluid在如下环境配置中进行测试，用户可按如下流程配置自己的环境，也可根据自己需求配置，满足caffe2fluid运行对环境的依赖即可。
+
+## 1. 安装Anaconda
+下载Anaconda，选择版本信息为『linux python=3.7 anaconda=3.』，官方下载地址[https://docs.anaconda.com/anaconda/install/](https://docs.anaconda.com/anaconda/install/)
+
 ## 2.创建Python环境
 
 在使用Caffe2Fluid这一工具时需要同时使用Caffe和PaddlePaddle，我们需要创建一个环境在安装了Caffe和PaddlePaddle的同时，不出现包不兼容的问题。
