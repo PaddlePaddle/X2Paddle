@@ -31,7 +31,7 @@ pip uninstall protobuf
 pip install protobuf==3.6.0
 
 source deactivate
-> ```
+```
 
 ## 3. 在创建的python环境中使用caffe2fluid
 在第2步安装中，需要注意到这两行命令
