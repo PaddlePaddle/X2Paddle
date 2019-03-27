@@ -23,15 +23,12 @@ conda install caffe-gpu
 
 # 安装Python的future模块
 pip install future
-# 退出环境
+
+
+# 注意：由于protobuf版本问题，安装框架过程应先安装PaddlePaddle，再安装Caffe。
+# 如若先安装了Caffe，则可以在安装PaddlePaddle后执行下述命令解决
+pip uninstall protobuf
+pip install protobuf==3.6.0
+
 source deactivate
-> # 为了更便利地使用这一环境，需要将环境名与环境路径相匹配
-> vim ~/.bashrc
-> alias caffe-paddle=“Anaconda安装路径/envs/caffe-paddle/bin/python"
->source ~/.bashrc
-> ```
-注意：由于protobuf版本问题，安装框架过程应先安装PaddlePaddle，再安装Caffe。如若先安装了Caffe，则可以在安装PaddlePaddle后执行下述命令行。
-> ```shell
-> pip uninstall protobuf
-> pip install protobuf==3.6.0
 > ```
