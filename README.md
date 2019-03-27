@@ -10,6 +10,6 @@ X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型
 
 **tensorflow2fluid**: TensorFlow model to PaddlePaddle，支持将Tensorflow模型转至PaddlePaddle fluid可加载预测模型
 
-**[caffe2fluid使用文档](https://github.com/PaddlePaddle/X2Paddle/tree/master/caffe2fluid)**
+**[caffe2fluid使用文档](caffe2fluid)**
 
-**[tensorflow2fluid使用文档](https://github.com/PaddlePaddle/X2Paddle/tree/master/tensorflow2fluid)**
+**[tensorflow2fluid使用文档](tensorflow2fluid)**
