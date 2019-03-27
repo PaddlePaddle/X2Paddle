@@ -6,7 +6,7 @@ caffe2fluid在如下环境配置中进行测试，用户可按如下流程配置
 [Linux下安装](https://docs.anaconda.com/anaconda/install/linux/)  
 [Mac下安装](https://docs.anaconda.com/anaconda/install/mac-os/)
 
-## 2.创建Python环境
+## 2.创建python环境
 通过使用anaconda，创建python环境，在创建的python环境中安装Caffe和PaddlePaddle，创建的环境可以独立于系统环境，对创建环境的修改，也不会影响其它环境或系统的依赖。
 ```shell
 # 创建名为caffe_paddle的环境，python版本指定为3.5
@@ -32,3 +32,12 @@ pip install protobuf==3.6.0
 
 source deactivate
 > ```
+
+## 3. 在创建的python环境中使用caffe2fluid
+在第2步安装中，需要注意到这两行命令
+```shell
+source activate caffe-paddle
+source deactivate
+```
+**1. 第一行表示激活创建的环境，在使用caffe2fluid时需执行该行命令进入环境**  
+**2. 第二行表示退出环境**
