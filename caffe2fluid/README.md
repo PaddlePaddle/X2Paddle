@@ -1,6 +1,9 @@
+# caffe2fluid
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+
 caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
-# 环境安装
+## 环境安装
 
 > python2/python3  
 > caffe-gpu   
@@ -8,9 +11,9 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
 建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)
 
-# 使用方法
+## 使用方法
 
-## 模型转换
+### 模型转换
 1. Caffe模型转换为PaddlePaddle模型代码和参数文件（参数以numpy形式保存）
 
 ```
@@ -35,14 +38,14 @@ python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 ```
 模型的加载及预测可参考PaddlePaddle官方文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
-## 模型转换前后差异对比
+### 模型转换前后差异对比
 模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（运行环境依赖caffe和paddlepaddle）
 ```
 cd examples/imagenet
 bash tools/diff.sh alexnet ../../ ../../
 ```
 
-# 自定义层转换
+## 自定义层转换
 在模型转换中遇到未支持的自定义层，用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换，实现方式如下流程，
 1. 在`kaffe/custom_layers`下实现自定义层，例如mylayer.py
 > - 实现`shape_func(input_shape, [other_caffe_params])`，计算输出的大小
@@ -62,7 +65,7 @@ bash tools/diff.sh alexnet ../../ ../../
 ```
 export CAFFE2FLUID_CUSTOM_LAYERS=/path/to/caffe2fluid/kaffe
 ```
-# 模型测试
+## 模型测试
 caffe2fluid在如下模型上通过测试
 - [Lenet](https://github.com/ethereon/caffe-tensorflow/blob/master/examples/mnist)
 - [ResNet(ResNet-50,ResNet-101,ResNet-152)](https://onedrive.live.com/?authkey=%21AAFW2-FVoxeVRck&id=4006CBB8476FF777%2117887&cid=4006CBB8476FF777)
