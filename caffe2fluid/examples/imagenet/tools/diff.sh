@@ -56,7 +56,7 @@ fi
 paddle_results="$results_root/${model_name}.paddle"
 rm -rf $paddle_results
 rm -rf "results.paddle"
-bash ./tools/run2.sh $model_name $cf_prototxt_path $cf_model_path $pd_py_path $pd_npy_path $imgfile
+bash ./tools/run.sh $model_name $cf_prototxt_path $cf_model_path $pd_py_path $pd_npy_path $imgfile
 if [[ $? -ne 0 ]] || [[ ! -e "results.paddle" ]];then
     echo "not found paddle's results, maybe failed to convert"
     exit 1
