@@ -2,26 +2,29 @@
 caffe2fluid在如下环境配置中进行测试，用户可按如下流程配置自己的环境，也可根据自己需求配置，满足caffe2fluid运行对环境的依赖即可。
 
 ## 1. 安装Anaconda
-下载Anaconda，选择版本信息为『linux python=3.7 anaconda=3.』，官方下载地址[https://docs.anaconda.com/anaconda/install/](https://docs.anaconda.com/anaconda/install/)
+可直接参考官网安装文档
+[Linux下安装](https://docs.anaconda.com/anaconda/install/linux/)  
+[Mac下安装](https://docs.anaconda.com/anaconda/install/mac-os/)
 
 ## 2.创建Python环境
+通过使用anaconda，创建python环境，在创建的python环境中安装Caffe和PaddlePaddle，创建的环境可以独立于系统环境，对创建环境的修改，也不会影响其它环境或系统的依赖。
+```shell
+# 创建名为caffe_paddle的环境，python版本指定为3.5
+conda create -n caffe-paddle python=3.5
 
-在使用Caffe2Fluid这一工具时需要同时使用Caffe和PaddlePaddle，我们需要创建一个环境在安装了Caffe和PaddlePaddle的同时，不出现包不兼容的问题。
-> ```shell
-> # 创建名为caffe_paddle的环境，python版本指定为3.5
-> conda create -n caffe-paddle python=3.5
->
-> # 环境创建完后，激活环境
-> source activate caffe-paddle
-> # 安装PaddlePaddle
-> pip install paddlepaddle-gpu
-> # 安装Caffe
-> conda install caffe-gpu
-> # 测试是否已经完成Caffe和PaddlePaddle，直接在终端输入python命令，同时输入"import caffe"和"import paddle.fluid"，若无出错则表示已将安装成功
-> # 安装Python的future模块
-> pip install future
-> # 退出环境
-> source deactivate
+# 激活环境
+source activate caffe-paddle
+
+# 安装PaddlePaddle和caffe
+# 安装后，可在python中执行"import caffe"和
+# "import paddle.fluid"，判断是否已经安装成功
+pip install paddlepaddle-gpu
+conda install caffe-gpu
+
+# 安装Python的future模块
+pip install future
+# 退出环境
+source deactivate
 > # 为了更便利地使用这一环境，需要将环境名与环境路径相匹配
 > vim ~/.bashrc
 > alias caffe-paddle=“Anaconda安装路径/envs/caffe-paddle/bin/python"
