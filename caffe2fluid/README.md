@@ -28,7 +28,7 @@ python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
 # fluid_model ： 指定序列化后的模型保存路径
 python convert.py alexnet.py alexnet.npy fluid_model
 ```
-也可在保存时，指定保存模型的输出
+或者也可在保存时，指定保存模型的输出
 ```
 # 模型的输出为fc8和prob层
 python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
