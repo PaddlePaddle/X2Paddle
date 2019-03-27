@@ -6,7 +6,7 @@ tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型
 
 ## 环境安装
 
-工具开发过程中，我们在如下环境配置中测试模型转换，建议使用anaconda
+工具开发过程中，我们在如下环境配置中测试模型转换，建议使用[anaconda](https://docs.anaconda.com/anaconda/install)
 
 > python == 2.7 or 3.6
 
