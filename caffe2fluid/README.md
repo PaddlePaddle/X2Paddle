@@ -1,4 +1,33 @@
-该工具主要用于将Caffe模型转换为Fluid模型。
+caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
+
+# 环境安装
+
+> python2/python3  
+> caffe-gpu   
+> paddlepaddle == 1.3.0  
+
+建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](#prepare.md)
+
+# 使用方法
+
+1. Caffe模型转换为PaddlePaddle模型代码和参数文件（参数以numpy形式保存）
+
+```
+# alexnet.prototxt : caffe模型配置文件
+# --caffemodel : caffe保存模型的路径
+# --data-output-path : 转换后模型参数保存路径
+# --code-output-path : 转换后模型代码保存路径
+python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
+				          --data-output-path alexnet.npy \
+					  --code-output-path alexnet.py
+```
+
+2. 将网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
+```
+# model_save_dir ： 指定序列化后的模型保存路径
+python convert.py alexnet.py alexnet.npy model_save_dir
+```
+2. 将网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
 ## 要点
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
 2. 通过扩展此工具也可以支持Caffe的自定义图层转换。
