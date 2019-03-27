@@ -10,6 +10,7 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
 # 使用方法
 
+## 模型转换
 1. Caffe模型转换为PaddlePaddle模型代码和参数文件（参数以numpy形式保存）
 
 ```
@@ -22,12 +23,18 @@ python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
 					  --code-output-path alexnet.py
 ```
 
-2. 将网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
+2. 可通过如下方式，将模型网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
 ```
 # model_save_dir ： 指定序列化后的模型保存路径
 python convert.py alexnet.py alexnet.npy model_save_dir
 ```
-2. 将网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
+也可在保存时，指定保存模型的输出
+```
+# 模型的输出为fc8和prob层
+python convert.py alexnet.py alexnet.npy model_save_dir fc8,prob
+```
+
+## 模型转换前后差异对比
 ## 要点
 1. 将Caffe模型及其对应的网络结构代码转换为Fluid模型和代码。
 2. 通过扩展此工具也可以支持Caffe的自定义图层转换。
