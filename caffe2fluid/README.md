@@ -19,8 +19,8 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 1. Caffe模型转换为PaddlePaddle模型代码和参数文件（参数以numpy形式保存）
 
 ```
-# alexnet.prototxt : caffe模型配置文件
-# --caffemodel : caffe保存模型的路径
+# alexnet.prototxt : caffe配置文件
+# --caffemodel : caffe模型的保存路径
 # --data-output-path : 转换后模型参数保存路径
 # --code-output-path : 转换后模型代码保存路径
 python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
@@ -43,8 +43,18 @@ python convert.py alexnet.py alexnet.npy fluid_model fc8,prob
 ### 模型转换前后差异对比
 模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（**运行环境依赖caffe和paddlepaddle**）
 ```
+# alexnet : caffe配置文件（.prototxt）中“name”的值
+# ./models/alexnet.prototxt : caffe配置文件路径
+# ./models/alexnet.caffemodel : caffe模型文件路径
+# ./models/alexnet.py : 转换后模型代码保存路径
+# ./models/alexnet.npy : 转换后模型参数保存路径
+# ./data/65.jpeg : 需要测试的图像数据
 cd examples/imagenet
-bash tools/diff.sh alexnet ../../ ../../
+bash tools/diff.sh alexnet ./models/alexnet.prototxt \
+			./models/alexnet.caffemodel \
+			./models/alexnet.py \
+			./models/alexnet.npy \
+			./data/65.jpeg
 ```
 
 ## 自定义层转换
