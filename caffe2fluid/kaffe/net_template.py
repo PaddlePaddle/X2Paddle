@@ -88,21 +88,20 @@ def main():
 
     import sys
     import os
-    filename = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-    if len(sys.argv) < 3:
-        print('usage:')
-        print('	python %s %s.npy [save_dir] [layer names seperated by comma]' \
-                % (sys.argv[0], filename))
-        print('	eg: python %s %s.npy ./fluid' % (sys.argv[0], filename))
-        print('	eg: python %s %s.npy ./fluid layer_name1,layer_name2' \
-                % (sys.argv[0], filename))
-        return 1
-
-    npy_weight = sys.argv[1]
-    fluid_model = sys.argv[2]
+    import argparse
+    filename = os.path.splitext(os.path.basename(sys.argv[0]))[0]    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--npy_path', help='Model\'s parameters  (.npy) path')
+    parser.add_argument('--model-param-path', help='The path of model and param which are convertd by .npy',
+                       default='./fluid')
+    parser.add_argument(
+        '--need-layers-name', help='The layers need to save (split by ,)')
+    args = parser.parse_args()
+    npy_weight = args.npy_path
+    fluid_model = args.model_param_path
     outputs = None
-    if len(sys.argv) >= 4:
-        outputs = sys.argv[3].split(',')
+    if len(sys.argv) >= 6:
+        outputs = args.need_layers_name.split(',')
 
     ret = MyNet.convert(npy_weight, fluid_model, outputs)
     if ret == 0:
@@ -113,7 +112,6 @@ def main():
         print('failed to convert model to fluid format')
 
     return ret
-
 
 def generate_net_code(net_name, inputs_info):
     """ generate framework of a custom net code which represent a subclass of Network
