@@ -6,27 +6,29 @@
 #       2, do inference(only in fluid) using this model
 #
 #usage:
-#   cd caffe2fluid/examples/imagenet && bash run.sh resnet50 ./models.caffe/resnet50 ./models/resnet50
+#   cd caffe2fluid/examples/imagenet && bash run.sh alexnet ./models/alexnet.prototxt ./models/alexnet.caffemodel ./models/alexnet.py ./models/alexnet.npy
 #
 
 #set -x
 
 
-if [[ $# -lt 3 ]];then
+if [[ $# -lt 5 ]];then
     echo "usage:"
-    echo "  bash $0 [model_name] [cf_model_path] [pd_model_path] [only_convert]"
-    echo "  eg: bash $0 resnet50 ./models.caffe/resnet50 ./models/resnet50"
+    echo "  bash $0 [model_name] [cf_prototxt_path] [cf_model_path] [pd_py_path] [pd_npy_path] [imagfile] [only_convert]"
+    echo "  eg: bash $0 alexnet ./models/alexnet.prototxt ./models/alexnet.caffemodel ./models/alexnet.py ./models/alexnet.npy"
     exit 1
 else
     model_name=$1
-    cf_model_path=$2
-    pd_model_path=$3
-    only_convert=$4
+    cf_prototxt_path=$2
+    cf_model_path=$3
+    pd_py_path=$4
+    pd_npy_path=$5
+    only_convert=$7
 fi
-proto_file=$cf_model_path/${model_name}.prototxt
-caffemodel_file=$cf_model_path/${model_name}.caffemodel
-weight_file=$pd_model_path/${model_name}.npy
-net_file=$pd_model_path/${model_name}.py
+proto_file=$cf_prototxt_path
+caffemodel_file=$cf_model_path
+weight_file=$pd_npy_path
+net_file=$pd_py_path
 
 if [[ ! -e $proto_file ]];then
     echo "not found prototxt[$proto_file]"
@@ -65,7 +67,11 @@ if [[ -z $only_convert ]];then
     if [[ -z $PYTHON ]];then
         PYTHON=`which python`
     fi
-    imgfile="data/65.jpeg"
+    if [[ -n $6 ]];then
+        imgfile=$6
+    else
+        imgfile="data/65.jpeg"
+    fi
     #FIX ME:
     #   only look the first line in prototxt file for the name of this network, maybe not correct
     net_name=`grep "name" $proto_file | head -n1 | perl -ne 'if(/^name\s*:\s*\"([^\"]+)\"/){ print $1."\n";}'`
