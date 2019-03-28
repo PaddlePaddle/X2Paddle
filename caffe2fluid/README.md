@@ -7,7 +7,7 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
 > python >= 2.7  
 > numpy  
-> protobuf  
+> protobuf >= 3.7.1  
 > future  
 
 **caffe2fluid的运行仅依赖上述条件**  
