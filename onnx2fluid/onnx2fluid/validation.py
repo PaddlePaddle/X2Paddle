@@ -95,8 +95,8 @@ def validate(fluid_model_filename,
         output_data = test_data['outputs'].tolist()
     else:
         test_data = np.load(golden_data_filename).tolist()
-        input_data = input_data['inputs']
-        output_data = output_data['outputs']
+        input_data = test_data['inputs']
+        output_data = test_data['outputs']
     input_data = _flatten_dict(input_data)
     output_data = _flatten_dict(output_data)
     logger.info('found %d I/O golden data, starting test ...', len(test_data))
