@@ -64,7 +64,7 @@ def main():
     """ main
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('def_path', help='Model definition (.prototxt) path')
+    parser.add_argument('--def_path', help='Model definition (.prototxt) path')
     parser.add_argument('--caffemodel', help='Model data (.caffemodel) path')
     parser.add_argument('--data-output-path', help='Converted data output path')
     parser.add_argument(
