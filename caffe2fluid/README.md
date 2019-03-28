@@ -20,23 +20,25 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
 
 ```
 # alexnet.prototxt : caffe配置文件
+# --def_path : caffe配置文件的保存路径
 # --caffemodel : caffe模型的保存路径
 # --data-output-path : 转换后模型参数保存路径
 # --code-output-path : 转换后模型代码保存路径
-python convert.py alexnet.prototxt --caffemodel alexnet.caffemodel \
-				          --data-output-path alexnet.npy \
-					  --code-output-path alexnet.py
+python convert.py --def_path alexnet.prototxt \
+		--caffemodel alexnet.caffemodel \
+		--data-output-path alexnet.npy \
+		--code-output-path alexnet.py
 ```
 
 2. 可通过如下方式，将模型网络结构和参数均序列化保存为PaddlePaddle框架支持加载的模型格式
 ```
-# fluid_model ： 指定序列化后的模型保存路径
-python alexnet.py alexnet.npy fluid_model
+# --model-param-path ： 指定序列化后的模型保存路径
+python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid_model
 ```
 或者也可在保存时，指定保存模型的输出
 ```
 # 模型的输出为fc8和prob层
-python alexnet.py alexnet.npy fluid_model fc8,prob
+python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid --need-layers-name fc8,prob
 ```
 模型的加载及预测可参考PaddlePaddle官方文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
