@@ -13,8 +13,7 @@ import os
 import sys
 
 
-def _flatten_dict(obj,
-                 out=None):
+def _flatten_dict(obj, out=None):
     assert isinstance(obj, dict)
     if out is None:
         out = type(obj)()
@@ -34,12 +33,13 @@ def _ensure_list(obj):
     return [obj]
 
 
-def validate(paddle_model_filename, golden_data_filename,
+def validate(fluid_model_filename,
+             golden_data_filename,
              model_func_name='inference',
              precision=1e-4,
              save_inference_model=False):
     """
-    inferece the converted Paddle model, validate with given golden data
+    inferece the converted Paddle fluid model, validate with given golden data
     """
 
     import numpy as np
@@ -52,17 +52,17 @@ def validate(paddle_model_filename, golden_data_filename,
     exe.run(fluid.default_startup_program())
 
     # load model
-    paddle_model_dir, basename = os.path.split(paddle_model_filename)
-    if basename == '__model__': # is desc model
+    fluid_model_dir, basename = os.path.split(fluid_model_filename)
+    if basename == '__model__':  # is desc model
         logger.debug('using desc file %s', basename)
-        prog, in_names, var_outs = fluid.io.load_inference_model(paddle_model_dir, exe)
-        out_names = var_outs # HINT: pass var if fetch ops already created
+        prog, _, var_outs = fluid.io.load_inference_model(fluid_model_dir, exe)
+        out_names = var_outs  # HINT: pass var if fetch ops already created
         logger.info('model load passed')
-    elif basename.endswith('.py'): # is python code
+    elif basename.endswith('.py'):  # is python code
         logger.debug('using python code file %s', basename)
         module_name, _ = os.path.splitext(basename)
         sys_path = sys.path.copy()
-        sys.path.append(paddle_model_dir)
+        sys.path.append(fluid_model_dir)
         try:
             module = importlib.import_module(module_name)
             func = getattr(module, model_func_name)
@@ -71,18 +71,21 @@ def validate(paddle_model_filename, golden_data_filename,
             module = importlib.import_module(module_name)
             func = getattr(module, model_func_name)
         sys.path = sys_path
-        logger.debug('from %s imported %s: %s', module_name, model_func_name, func)
+        logger.debug('from %s imported %s: %s', module_name, model_func_name,
+                     func)
 
         var_outs = func()
         var_outs = _ensure_list(var_outs)
-        out_names = [var.name for var in var_outs] # HINT: pass string to create fetch ops
+        out_names = [var.name for var in var_outs
+                     ]  # HINT: pass string to create fetch ops
         logger.info('import passed')
 
         prog = fluid.default_main_program()
-        fluid.io.load_persistables(executor=exe, dirname=paddle_model_dir, main_program=prog)
+        fluid.io.load_persistables(
+            executor=exe, dirname=fluid_model_dir, main_program=prog)
         logger.info('weight load passed')
     else:
-        raise ValueError('unsupported Paddle model')
+        raise ValueError('unsupported Paddle fluid model')
 
     # load data
     logger.info('using golden data %s', golden_data_filename)
@@ -100,10 +103,15 @@ def validate(paddle_model_filename, golden_data_filename,
 
     # DEBUG: reload test for python code
     if basename.endswith('.py') and save_inference_model:
-        fluid.io.save_inference_model(paddle_model_dir, input_data.keys(), var_outs, exe,
-                                      main_program=prog, export_for_deployment=True)
+        fluid.io.save_inference_model(
+            fluid_model_dir,
+            input_data.keys(),
+            var_outs,
+            exe,
+            main_program=prog,
+            export_for_deployment=True)
         logger.info('model re-save passed')
-        fluid.io.load_inference_model(paddle_model_dir, exe)
+        fluid.io.load_inference_model(fluid_model_dir, exe)
         logger.info('model re-load passed')
 
     # execute
@@ -124,49 +132,54 @@ def validate(paddle_model_filename, golden_data_filename,
     else:
         logger.info('accuracy not passed')
 
+
 #    globals().update(locals())
     return passed
 
-
 if __name__ == '__main__':
-    logging.basicConfig(
-            format='[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s',
-            level=logging.DEBUG,
-            )
-    logger = logging.getLogger('validation_test')
+    import argparse
 
-    model_rc_list = [
-            '../examples/t{}/model.py',
-            '../examples/t{}/__model__',
-            '../examples/t{}.embeded/model.py',
-            '../examples/t{}.embeded/__model__',
-    ]
+    parser = argparse.ArgumentParser(
+        description='onnx2fluid.validate',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        'model',
+        nargs=1,
+        help='path to model.py or __model__',
+    )
+    parser.add_argument(
+        '--debug',
+        '-d',
+        action='store_true',
+        help='enable debug logging and checking',
+    )
+    parser.add_argument(
+        '--test_data',
+        '-t',
+        type=str,
+        help='I/O golden data for validation, e.g. test.npy, test.npz',
+    )
+    parser.add_argument(
+        '--precision',
+        '-p',
+        type=int,
+        default=4,
+        help='assertion decimal for validation',
+    )
+    args = parser.parse_args()
 
-    import numpy as np
+    logging_format = '[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s'
+    logging_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(format=logging_format, level=logging_level)
 
-    idx_model = np.random.randint(1, 7)
-    model = np.random.choice(model_rc_list).format(idx_model)
-    precision = 10 ** (np.random.rand() * -4 - 2)
-    debug = False
+    debug = args.debug
+    fluid_model_filename = args.model[0]
+    golden_data_filename = args.test_data
+    precision = args.precision
 
-    model = '/tmp/export/model.py'
-#    model = '../examples/t1/__model__'
-#    model = '../examples/t1.embeded/model.py'
-#    model = '../examples/t1.embeded/__model__'
-    debug = True
-
-    logger.info('args: %s %.6f', model, precision)
-
-    data_dir, dir_name = os.path.split(os.path.split(model)[0])
-    data_pathname = os.path.splitext(dir_name)[0]
-
-    # proto debug test
-    from framework_pb2 import ProgramDesc
-    pd = ProgramDesc()
-    pd.ParseFromString(open(os.path.join(data_dir, dir_name, '__model__'), 'rb').read())
-
-    # validate
-#    validate(model, os.path.join(data_dir, data_pathname + '.npz'),
-#             precision=precision, save_inference_model=debug)
-    validate(model, '../examples/bvlc_alexnet/test_data_0.npz',
-             precision=precision, save_inference_model=debug)
+    validate(
+        fluid_model_filename,
+        golden_data_filename,
+        precision=precision,
+        save_inference_model=debug)
