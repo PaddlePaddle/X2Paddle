@@ -15,4 +15,3 @@ Date:    2019/02/22 10:25:46
 import setuptools
 
 setuptools.setup()
-

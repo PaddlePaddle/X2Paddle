@@ -24,8 +24,7 @@ def _ensure_tuple(obj):
     return (obj, )
 
 
-def _flatten_list(obj,
-                 out=None):
+def _flatten_list(obj, out=None):
     assert isinstance(obj, list)
     if out is None:
         out = type(obj)()
@@ -37,8 +36,7 @@ def _flatten_list(obj,
     return out
 
 
-def export_data(state_dict,
-                prefix=''):
+def export_data(state_dict, prefix=''):
     """
     export binary data with meta text for raw C++ inference engines
     """
@@ -65,10 +63,14 @@ def export_data(state_dict,
     fp.close()
 
 
-def export_onnx_with_validation(model, inputs, export_basepath,
-                                input_names=None, output_names=None,
+def export_onnx_with_validation(model,
+                                inputs,
+                                export_basepath,
+                                input_names=None,
+                                output_names=None,
                                 use_npz=True,
-                                *args, **kwargs):
+                                *args,
+                                **kwargs):
     """
     export PyTorch model to ONNX model and export sample inputs and outputs in a Numpy file
     """
@@ -95,12 +97,16 @@ def export_onnx_with_validation(model, inputs, export_basepath,
                 ret[key] = value
         return ret
 
-    torch_inputs = _ensure_tuple(inputs) # WORKAROUND: for torch.onnx
-    outputs = torch.onnx.export(model, torch_inputs, export_basepath + '.onnx',
-                      input_names=_flatten_list(input_names),
-                      output_names=_flatten_list(output_names),
-                      *args, **kwargs)
-    if outputs is None: # WORKAROUND: for torch.onnx
+    torch_inputs = _ensure_tuple(inputs)  # WORKAROUND: for torch.onnx
+    outputs = torch.onnx.export(
+        model,
+        torch_inputs,
+        export_basepath + '.onnx',
+        input_names=_flatten_list(input_names),
+        output_names=_flatten_list(output_names),
+        *args,
+        **kwargs)
+    if outputs is None:  # WORKAROUND: for torch.onnx
         outputs = model(*inputs)
     torch_outputs = _ensure_tuple(outputs)
 

@@ -22,4 +22,4 @@ output_data = data['outputs']
 inputs = Dict(zip(input_names, [input_data]))
 outputs = Dict(zip(output_name, [output_data]))
 
-np.savez(fn, inputs=inputs, outputs=outputs) # overwrite
+np.savez(fn, inputs=inputs, outputs=outputs)  # overwrite

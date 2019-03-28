@@ -21,7 +21,6 @@ import logging
 import shutil
 import zipfile
 
-
 __all__ = [
     'main',
 ]
@@ -42,7 +41,7 @@ def main(**kwargs):
     # imports
     convert = conversion.convert
 
-    logger = logging.getLogger('onnx2paddle')
+    logger = logging.getLogger('onnx2fluid')
     debug = kwargs.get('debug', False)
 
     # prepare arguments
@@ -58,13 +57,15 @@ def main(**kwargs):
     onnx_opset_pedantic = kwargs.get('pedantic', True)
 
     # convert
-    convert(filename, save_dir,
-            model_basename=model_basename,
-            model_func_name=model_func_name,
-            embed_params=embed_params,
-            onnx_opset_version=onnx_opset_version,
-            onnx_opset_pedantic=onnx_opset_pedantic,
-            debug=debug)
+    convert(
+        filename,
+        save_dir,
+        model_basename=model_basename,
+        model_func_name=model_func_name,
+        embed_params=embed_params,
+        onnx_opset_version=onnx_opset_version,
+        onnx_opset_pedantic=onnx_opset_pedantic,
+        debug=debug)
 
     # validate
     passed = True
@@ -80,21 +81,23 @@ def main(**kwargs):
 
         # in fact fluid can not fully clear the context
         # continuous validation may be inaccurate
-        precision = 10 ** -kwargs.get('precision', 4)
+        precision = 10**-kwargs.get('precision', 4)
 
         logger.info('starting validation on desc ...')
-        passed &= validate(shutil.os.path.join(save_dir, '__model__'),
-                           golden_data_filename,
-                           precision=precision,
-                           )
+        passed &= validate(
+            shutil.os.path.join(save_dir, '__model__'),
+            golden_data_filename,
+            precision=precision,
+        )
 
         logger.info('starting validation on code ...')
-        passed &= validate(shutil.os.path.join(save_dir, model_basename),
-                           golden_data_filename,
-                           model_func_name=model_func_name,
-                           precision=precision,
-                           save_inference_model=debug, # this overwrite desc file for test
-                           )
+        passed &= validate(
+            shutil.os.path.join(save_dir, model_basename),
+            golden_data_filename,
+            model_func_name=model_func_name,
+            precision=precision,
+            save_inference_model=debug,  # this overwrite desc file for test
+        )
 
     if not passed:
         logger.error('validation failed, exit')
@@ -112,20 +115,22 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     logging.basicConfig(
-            format='[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s',
-            level=logging.DEBUG,
-            )
+        format=
+        '[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s',
+        level=logging.DEBUG,
+    )
 
-#    main(model=['../examples/t5.onnx'],
-#         output_dir='/tmp/export/',
-#         embed_params=False,
-#         pedantic=False,
-#         test_data='../examples/t5.npz',
-#         debug=True)
+    #    main(model=['../examples/t5.onnx'],
+    #         output_dir='/tmp/export/',
+    #         embed_params=False,
+    #         pedantic=False,
+    #         test_data='../examples/t5.npz',
+    #         debug=True)
 
-    main(model=['../examples/shufflenet/model.onnx'],
-         output_dir='/tmp/export/',
-         embed_params=True,
-         pedantic=False,
-         test_data='../examples/shufflenet/test_data_set_0.npz',
-         debug=True)
+    main(
+        model=['../examples/inception_v2/model.onnx'],
+        output_dir='/tmp/export/',
+        embed_params=True,
+        pedantic=False,
+        test_data='../examples/inception_v2/test_data_set_2.npz',
+        debug=True)
