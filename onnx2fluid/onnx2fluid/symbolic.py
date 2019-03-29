@@ -19,7 +19,7 @@ from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 _logger = _logging.getLogger(__name__)
 
 ONNX_INT_MAX = 2**63 - 1
-FLUID_INT_MAX = 2**31 - 1
+FLUID_INT_MAX = 2**31 - 1  #
 
 DEFAULT_ONNX_OP_DOMAIN = ''
 DEFAULT_FLUID_OP_NAMESCOPE = '/'
@@ -186,13 +186,17 @@ def _shape_or_none(value_infos, val_name):
     return list(value_info['shape'])
 
 
-#def _maybe_const_value(value_infos, val_name):
-#    var_name = _make_var_name(val_name)
-#    if val_name not in value_infos:
-#        return var_name
-#    value_info = value_infos[val_name]
-#    assert value_info.get('remove_batch', False) == False, 'const value should not have batch dim'
-#    return value_info.get('const_value', var_name)
+def _const_weight_or_none(value_infos, val_name):
+    if val_name not in value_infos:
+        return None
+    value_info = value_infos[val_name]
+    const_value = value_info.get('const_value', None)
+    if const_value:
+        return const_value
+    get_weight_func = value_info.get('get_weight', None)
+    if get_weight_func:
+        return get_weight_func()
+    return None
 
 
 def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
@@ -253,7 +257,7 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     num_vars = len(var_outs)
     num_args = len(fluid_output_args)
     if num_vars < num_args:
-        assert fill_name_field, 'name required to naming dummy output variable'
+        assert fill_name_field, 'name required to name dummy output variables'
         for idx_out in range(num_vars, num_args):
             var_out = _make_var_name(name + '.' +
                                      fluid_output_args[idx_out].lower())
@@ -294,9 +298,8 @@ def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
         if pads[idx_dim] != pads[ndims + idx_dim]:
             symmetric = False
             break
-
     if symmetric:
-        return pads[:ndims], None
+        return pads[:ndims], val_name
 
     val_padded = val_name + '_padded'
     prog.Op(
@@ -315,13 +318,7 @@ def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
     return [0] * ndims, val_padded
 
 
-def _adaptive_pool(prog,
-                   pool_type,
-                   inputs,
-                   outputs,
-                   attrs,
-                   value_infos,
-                   name=''):
+def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
     # I/O
     val_x, = inputs
     val_y, = outputs[:1]
@@ -335,10 +332,6 @@ def _adaptive_pool(prog,
 
     # interpretation
     pool_size = attrs['output_size']  # required
-    output_shape = _shape_or_none(value_infos, val_y)
-    if output_shape is not None:
-        assert pool_size == output_shape[
-            2:], 'pool_size unmatches shape of Y'  # NC...
     poolnd = len(pool_size)
     assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
 
@@ -445,11 +438,9 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
 
     fluid_op = 'pool{}d'.format(poolnd)
     strides = attrs.get('strides', [1] * poolnd)  # optional
-    pads = attrs.get('pads', [0] * len(pool_size * 2))  # optional
-    paddings, val_x_padded = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    if val_x_padded:
-        val_x = val_x_padded
     ceil_mode = bool(attrs.get('ceil_mode', 0))  # optional
+    pads = attrs.get('pads', [0] * (poolnd * 2))  # optional
+    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
     var_x = _make_var_name(val_x)
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
@@ -506,17 +497,17 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
     spatial_scale = attrs['spatial_scale']  # required
     pooled_height, pooled_width = attrs['pooled_shape']  # required
     od_attrs = dict(
-        spatial_scale=spatial_scale,
         pooled_height=pooled_height,
         pooled_width=pooled_width,
+        spatial_scale=spatial_scale,
     )
     feature_attr = ''
     is_max_pool = fluid_op == 'roi_pool'
-    if 'sampling_ratio' in attrs:
+    if 'sampling_ratio' in attrs:  #
         sampling_ratio = attrs['sampling_ratio']
         od_attrs['sampling_ratio'] = sampling_ratio
         feature_attr += ', sampling_ratio={}'.format(sampling_ratio)
-    if 'output_channels' in attrs:
+    if 'output_channels' in attrs:  #
         output_channels = attrs['output_channels']
         od_attrs['output_channels'] = output_channels
         feature_attr += ', output_channels={}'.format(output_channels)
@@ -560,36 +551,20 @@ def _zeros_like(prog, val_ref, val_out, value_infos):
     )
 
 
-def AdaptiveAveragePool(prog,
-                        inputs,
-                        outputs,
-                        attrs,
-                        value_infos,
-                        name='',
-                        *args,
-                        **kwargs):
+def AdaptiveAveragePool(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
     aten::adaptive_avg_poolnd
     """
 
-    return _adaptive_pool(
-        prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
+    return _adaptive_pool(prog, 'avg', inputs, outputs, attrs, name=name)
 
 
-def AdaptiveMaxPool(prog,
-                    inputs,
-                    outputs,
-                    attrs,
-                    value_infos,
-                    name='',
-                    *args,
-                    **kwargs):
+def AdaptiveMaxPool(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
     aten::adaptive_max_poolnd
     """
 
-    return _adaptive_pool(
-        prog, 'max', inputs, outputs, attrs, value_infos, name=name)
+    return _adaptive_pool(prog, 'max', inputs, outputs, attrs, name=name)
 
 
 def AveragePool(prog,
@@ -734,9 +709,9 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     var_output = _make_var_name(val_output)
 
     # interpretation
-    dtype = attrs['to']
-    if not isinstance(dtype, np.dtype):
-        dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]  # required
+    dtype = attrs['to']  # required
+    if not isinstance(dtype, np.dtype):  # additional: possible np.dtype
+        dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
     output_dtype = _dtype_or_none(value_infos, val_output)
     if output_dtype:
         assert dtype == output_dtype, 'dtype of to unmatches output'
@@ -818,15 +793,16 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
 
-#    dtype = np.dtype('float32') # force to float32
+#    dtype = np.dtype('float32') # HINT: force to float32
     shape = attrs.get('shape', None)  # additional, maybe var_name
     if shape is None:
         shape = _shape_or_none(value_infos, val_output)
     if shape is None:
         shape = list(value.shape)
         _logger.warning(
-            'shape of %s not inferred, using value as 1-D tensor may lead to fails',
-            val_output)
+            'in (Constant -> %s): '
+            'shape of %s not inferred, '
+            'using value as 1-D tensor may lead to fails', outputs, val_output)
 
     # generation
     if value.size == 1:  # scalar
@@ -855,18 +831,27 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
 
     # I/O
-    val_input, = inputs
+    val_shape, = inputs
+    val_output, = outputs
 
-    is_const_shape = 'const_value' in value_infos[val_input]
-    if is_const_shape:
-        shape = _make_var_name(val_input)
-    else:
-        shape = value_infos[val_input]['get_weight']()
+    shape = _const_weight_or_none(value_infos, val_shape)
+    if shape is None:
+        shape = _shape_or_none(value_infos, val_output)
+    assert shape is not None, (
+        'given shape is neither const value nor deductible from output, '
+        'this is not supported')
     dtype = attrs['value'].dtype
     attrs = attrs.copy()
     attrs.update(dict(shape=shape, dtype=dtype))  # pass var_name
 
-    Constant(prog, [], outputs, attrs, value_infos)
+    prog.Op(
+        '',
+        'Constant',
+        [],
+        outputs,  # val
+        attrs,
+        value_infos,
+    )
 
 
 def Conv(prog,
@@ -903,13 +888,11 @@ def Conv(prog,
     num_out_channels = _shape(value_infos, val_w)[0]  # OI...
 
     fluid_op = 'conv{}d'.format(convnd)
-    strides = attrs.get('strides', [1] * convnd)  # optional
-    pads = attrs.get('pads', [0] * convnd * 2)  # optional
-    paddings, val_x_padded = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    if val_x_padded:
-        val_x = val_x_padded
-    dilations = attrs.get('dilations', [1] * convnd)  # optional
     num_groups = attrs.get('group', 1)  # optional
+    strides = attrs.get('strides', [1] * convnd)  # optional
+    dilations = attrs.get('dilations', [1] * convnd)  # optional
+    pads = attrs.get('pads', [0] * (convnd * 2))  # optional
+    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
     var_x = _make_var_name(val_x)
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
@@ -1014,13 +997,11 @@ def ConvTranspose(prog,
     num_out_channels = _shape(value_infos, val_w)[1]  # IO...
 
     fluid_op = 'conv{}d_transpose'.format(convnd)
-    strides = attrs.get('strides', [1] * convnd)  # optional
-    pads = attrs.get('pads', [0] * convnd * 2)  # optional
-    paddings, val_x_padded = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    if val_x_padded:
-        val_x = val_x_padded
-    dilations = attrs.get('dilations', [1] * convnd)  # optional
     num_groups = attrs.get('group', 1)  # optional
+    strides = attrs.get('strides', [1] * convnd)  # optional
+    dilations = attrs.get('dilations', [1] * convnd)  # optional
+    pads = attrs.get('pads', [0] * (convnd * 2))  # optional
+    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
     var_x = _make_var_name(val_x)
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
@@ -1090,7 +1071,7 @@ def ConvTranspose(prog,
         prog.VarDesc(var_y)
 
 
-# should not appears
+# should not appear
 #def Dropout(
 #        prog, inputs, outputs, value_infos,
 #        *args, **kwargs):
@@ -1154,10 +1135,16 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
         else:
             val_beta = name + '_beta'  # explicit variable
             val_vm = name + '_vm'  # explicit variable
-            vm_dtype = _dtype_or_none(value_infos, val_c)
-            if vm_dtype is None:
-                vm_dtype = np.dtype('float32')
-            beta = np.dtype(vm_dtype).type(beta)
+            if beta.is_integer():
+                vm_dtype = _dtype_or_none(value_infos, val_c)
+                if vm_dtype is None:
+                    vm_dtype = np.dtype('float32')
+                    _logger.warning(
+                        'in %s(%s -> Gemm -> %s): '
+                        'beta seems to be an interger, '
+                        'however dtype can not be inferred, '
+                        'still use float32', name, inputs, outputs)
+                beta = np.dtype(vm_dtype).type(beta)
             prog.Op(
                 '',
                 'Constant',
@@ -1429,13 +1416,15 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     var_reshaped = _make_var_name(val_reshaped)
 
     # interpretation
-    fluid_op = 'reshape'
-    is_const_shape = 'const_value' in value_infos[val_shape]
     var_shape = _make_var_name(val_shape)  # for code
-    if is_const_shape:
-        shape = value_infos[val_shape]['const_value']  # for desc
-    else:
-        shape = value_infos[val_shape]['get_weight']()  # for desc
+    shape = _const_weight_or_none(value_infos, val_shape)
+    is_const_shape = shape and 'const_value' in value_infos[val_shape]
+    if shape is None:
+        shape = _shape_or_none(value_infos, var_reshaped)
+    assert shape is not None, (
+        'given shape is neither const value nor deductible from output, '
+        'this is not supported')
+    fluid_op = 'reshape'
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
@@ -1457,7 +1446,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'Cast',
             [var_shape],
             [var_shape_int32],  # var
-            dict(to=np.dtype('int32')),
+            dict(to=np.dtype('int32')),  # use np.dtype
             value_infos=value_infos,
             name=(name + '_cast'),
         )
@@ -1593,26 +1582,25 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     var_output = _make_var_name(val_output)
 
     # interpretation
+    repeats = _const_weight_or_none(value_infos, val_repeats)
+    assert repeats is not None, 'only const repeats is supported'
     fluid_op = 'expand'
-    is_const_repeats = 'const_value' in value_infos[val_repeats]
-    if is_const_repeats:
-        code_repeats = _make_var_name(val_repeats)  # for code
-        repeats = value_infos[val_repeats]['const_value']  # for desc
-    else:
-        repeats = value_infos[val_input]['get_weight']()  # for desc
-        code_repeats = repeats  # for code
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
     prog.Code('{} = layers.{}({}'
               ', expand_times={}'
-              '{})'.format(
+              '{})'
+              ' # {} = {}'.format(
                   var_output,
                   fluid_op,
                   var_input,
                   # attrs
-                  code_repeats,
+                  repeats,
                   name_attr,
+                  # comment
+                  _make_var_name(val_repeats),
+                  repeats,
               ))
     prog.VarDesc(var_output)
     prog.OpDesc(

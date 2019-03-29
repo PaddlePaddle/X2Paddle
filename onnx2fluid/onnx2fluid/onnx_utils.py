@@ -26,6 +26,7 @@ __all__ = [
     'node_attrs',
     'node_topo',
     'node_iter',
+    'tensor_dtype',
     'tensor_shape',
     'graph_ops',
     'graph_weights',
@@ -92,13 +93,12 @@ def get_attribute_value2(attr):
     return value
 
 
-def node_attrs(node):
+def tensor_dtype(tensor):
     """
-    convert ONNX node attributes to dict
+    get ONNX tensor in np.dtype
     """
 
-    return {attr.name: get_attribute_value2(attr)
-            for attr in node.attribute}  # dict
+    return TENSOR_TYPE_TO_NP_TYPE[tensor.type.tensor_type.elem_type]
 
 
 def tensor_shape(tensor):
@@ -107,6 +107,15 @@ def tensor_shape(tensor):
     """
 
     return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
+
+
+def node_attrs(node):
+    """
+    convert ONNX node attributes to dict
+    """
+
+    return {attr.name: get_attribute_value2(attr)
+            for attr in node.attribute}  # dict
 
 
 def node_topo(nodes, topo='default'):
@@ -237,21 +246,21 @@ def inferred_model_value_info(model):
     value_info = Dict()
     for item in graph.value_info:
         value_info[item.name] = dict(
-            dtype=TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+            dtype=tensor_dtype(item),
             shape=tensor_shape(item),
             external=False,
         )
     for item in graph.input:
         assert item.name not in value_info
         value_info[item.name] = dict(
-            dtype=TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+            dtype=tensor_dtype(item),
             shape=tensor_shape(item),
             external=True,
         )
     for item in graph.output:
         #        assert item.name not in value_info, 'bypass-model not supported'
         value_info[item.name] = dict(
-            dtype=TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+            dtype=tensor_dtype(item),
             shape=tensor_shape(item),
             external=True,
         )
@@ -373,9 +382,9 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
         elif not keep_input_only and name in output_refs:
             ret_initializers.add().CopyFrom(initializer)
         else:
-            logger.debug('initializer %s(%s[%d]) stripped', name,
-                         TENSOR_TYPE_TO_NP_TYPE[initializer.data_type],
-                         len(initializer.raw_data))
+            dtype = TENSOR_TYPE_TO_NP_TYPE[initializer.data_type]
+            logger.debug('initializer %s(%s[%d]) stripped', name, dtype,
+                         len(initializer.raw_data) // dtype.itemsize)
 
     # strip inputs
     ret.graph.ClearField('input')
@@ -385,10 +394,8 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
         if name in input_refs or name in out_names:
             ret_inputs.add().CopyFrom(item)
         else:
-            logger.debug(
-                'input %s(%s%s) stripped', name,
-                TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
-                tensor_shape(item))
+            logger.debug('input %s(%s%s) stripped', name, tensor_dtype(item),
+                         tensor_shape(item))
     return ret
 
 

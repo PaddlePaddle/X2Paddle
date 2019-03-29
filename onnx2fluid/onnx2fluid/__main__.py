@@ -70,6 +70,22 @@ parser.add_argument(
     help='process non-standard ONNX ops, this may lead to fails',
 )
 parser.add_argument(
+    '--skip-version-conversion',
+    '-y',
+    action='store_true',
+    default=False,
+    help='skip ONNX op version conversion, workaround for RumtimeErrors',
+)
+parser.add_argument(
+    '--archive',
+    '-z',
+    nargs='?',
+    type=str,
+    default=None,
+    const='',
+    help='compress outputs to ZIP file if conversion successed',
+)
+parser.add_argument(
     '--precision',
     '-p',
     type=int,

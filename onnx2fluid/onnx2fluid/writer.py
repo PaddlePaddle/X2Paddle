@@ -8,9 +8,9 @@ Created on Sun Feb 24 20:44:43 2019
 
 from __future__ import division
 
-# import logging, os
-import logging
-import os
+import logging, os
+#import logging
+#import os
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -215,10 +215,6 @@ class Program(object):
         var_desc.persistable = persistable
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
 
-        # REMOVEIT: WORKAROUND: Netron: null.tensor error
-        tensor_desc = var_desc.type.lod_tensor.tensor
-        tensor_desc.data_type = self.Dtype(dummy_dtype)  # required
-
         if value_info and 'dtype' in value_info:
             tensor_desc = var_desc.type.lod_tensor.tensor
             tensor_desc.data_type = self.Dtype(value_info['dtype'])  # required
@@ -230,6 +226,9 @@ class Program(object):
                                                       not persistable)
                     if remove_batch:
                         tensor_desc.dims[0] = -1
+        else:  # REMOVEIT: WORKAROUND: Netron: null.tensor error
+            tensor_desc = var_desc.type.lod_tensor.tensor
+            tensor_desc.data_type = self.Dtype(dummy_dtype)  # required
 
         self.var_descs.append(var_desc)
 
