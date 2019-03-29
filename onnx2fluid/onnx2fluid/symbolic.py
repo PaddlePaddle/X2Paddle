@@ -250,20 +250,17 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
         arg_name,
     ))
 
-    for var_out in var_outs:
-        prog.VarDesc(var_out)
-
     # dummy var_out
     num_vars = len(var_outs)
     num_args = len(fluid_output_args)
     if num_vars < num_args:
         assert fill_name_field, 'name required to name dummy output variables'
         for idx_out in range(num_vars, num_args):
-            var_out = _make_var_name(name + '.' +
-                                     fluid_output_args[idx_out].lower())
+            var_out = name + '.' + fluid_output_args[idx_out]  # dummy output
             var_outs.append(var_out)
-            prog.VarDesc(var_out)
 
+    for var_out in var_outs:
+        prog.VarDesc(var_out)
     prog.OpDesc(fluid_op, (var_inps, *fluid_input_args),
                 (var_outs, *fluid_output_args), fluid_attrs)
 
@@ -301,7 +298,7 @@ def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
     if symmetric:
         return pads[:ndims], val_name
 
-    val_padded = val_name + '_padded'
+    val_padded = val_name + '_padded'  # explicit variable
     prog.Op(
         '',
         'Pad',
@@ -637,6 +634,8 @@ def BatchNormalization(prog,
     val_y, = outputs
     var_x = _make_var_name(val_x)
     var_y = _make_var_name(val_y)
+    var_saved_mean = name + '.saved_mean'  # dummy output
+    var_saved_variance = name + '.saved_variance'  # dummy output
 
     # interpretation
     fluid_op = 'batch_norm'
@@ -645,10 +644,10 @@ def BatchNormalization(prog,
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
         assert name != ''
-        var_scale = '{}.w_0'.format(name)
-        var_b = '{}.b_0'.format(name)
-        var_mean = '{}.w_1'.format(name)
-        var_var = '{}.w_2'.format(name)
+        var_scale = name + '.w_0'
+        var_b = name + '.b_0'
+        var_mean = name + '.w_1'
+        var_var = name + '.w_2'
         value_infos[val_scale].setdefault('embeded_as', []).append(var_scale)
         value_infos[val_b].setdefault('embeded_as', []).append(var_b)
         value_infos[val_mean].setdefault('embeded_as', []).append(var_mean)
@@ -663,8 +662,6 @@ def BatchNormalization(prog,
                       ', moving_mean_name={}, moving_variance_name={}').format(
                           repr(var_scale), repr(var_b), repr(var_mean),
                           repr(var_var))
-    var_saved_mean = '{}.saved_mean'.format(name)  # dropped var
-    var_saved_variance = '{}.saved_variance'.format(name)  # dropped var
 
     # generationvalue_infos
     prog.Code('{} = layers.{}({}, is_test=True, data_layout="NCHW"'
@@ -795,7 +792,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
 
 #    dtype = np.dtype('float32') # HINT: force to float32
-    shape = attrs.get('shape', None)  # additional, maybe var_name
+    shape = attrs.get('shape', None)  #
     if shape is None:
         shape = _shape_or_none(value_infos, val_output)
     if shape is None:
@@ -807,6 +804,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
     # generation
     if value.size == 1:  # scalar
+        value = value[0]
         fluid_op = 'fill_constant'
         prog.Code('{} = layers.{}(shape={}, dtype={}, value={})'.format(
             var_output,
@@ -814,12 +812,22 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             # attrs
             shape,
             repr(dtype.name),
-            value[0],  # shape can be list or var_name
+            value,
         ))
-        value_infos[val_output]['const_value'] = value[0]
+        value_infos[val_output]['const_value'] = value
         prog.VarDesc(var_output)
+        prog.OpDesc(
+            fluid_op,
+            ([], ),
+            ([var_output], 'Out'),
+            dict(
+                shape=shape,
+                dtype=dtype.name,
+                value=value,
+            ),
+        )
     else:  # list parameter -> const_value
-        prog.Code('{} = {}'.format(
+        prog.Code('# {} = {} # passed directly as literal'.format(
             var_output,
             value.tolist(),
         ))
@@ -834,6 +842,7 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # I/O
     val_shape, = inputs
     val_output, = outputs
+    var_shape = _make_var_name(val_shape)
 
     shape = _const_weight_or_none(value_infos, val_shape)
     if shape is None:
@@ -843,8 +852,9 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         'this is not supported')
     dtype = attrs['value'].dtype
     attrs = attrs.copy()
-    attrs.update(dict(shape=shape, dtype=dtype))  # pass var_name
+    attrs.update(dict(shape=shape, dtype=dtype))  # pass const
 
+    prog.Code('# shape:{}={} # const as literal'.format(var_shape, shape))
     prog.Op(
         '',
         'Constant',
@@ -898,10 +908,10 @@ def Conv(prog,
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
         assert name != ''
-        var_w = '{}.w_0'.format(name)
+        var_w = name + '.w_0'
         value_infos[val_w].setdefault('embeded_as', []).append(var_w)
         if has_bias:
-            var_b = '{}.b_0'.format(name)
+            var_b = name + '.b_0'
             value_infos[val_b].setdefault('embeded_as', []).append(var_b)
             param_attr = ''
         else:
@@ -935,7 +945,7 @@ def Conv(prog,
                   param_attr,
                   name_attr,
               ))
-    var_conv = _make_var_name(name + '.conv')  # hidden variable
+    var_conv = name + '.conv'  # hidden variable
     prog.OpDesc(
         fluid_op,
         ([var_x, var_w], 'Input', 'Filter'),  # , 'Bias', 'ResidualData'
@@ -951,8 +961,8 @@ def Conv(prog,
         prog.IntermediateOp(
             '',
             'Add',
-            [var_conv, var_b],
-            [var_y],  # var
+            [var_conv, var_b],  #
+            [val_y],
             dict(axis=1),
             value_infos=value_infos,
             name=(name + '.bias'),
@@ -1007,10 +1017,10 @@ def ConvTranspose(prog,
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
         assert name != ''
-        var_w = '{}.w_0'.format(name)
+        var_w = name + '.w_0'
         value_infos[val_w].setdefault('embeded_as', []).append(var_w)
         if has_bias:
-            var_b = '{}.b_0'.format(name)
+            var_b = name + '.b_0'
             value_infos[val_b].setdefault('embeded_as', []).append(var_b)
             param_attr = ''
         else:
@@ -1045,7 +1055,7 @@ def ConvTranspose(prog,
                   param_attr,
                   name_attr,
               ))
-    var_conv = _make_var_name(name + '.conv')  # hidden variable
+    var_conv = name + '.conv'  # hidden variable
     prog.OpDesc(
         fluid_op,
         ([var_x, var_w], 'Input', 'Filter'),  # , 'Bias', 'ResidualData'
@@ -1062,8 +1072,8 @@ def ConvTranspose(prog,
         prog.IntermediateOp(
             '',
             'Add',
-            [var_conv, var_b],
-            [var_y],  # var
+            [var_conv, var_b],  #
+            [val_y],
             dict(axis=1),
             value_infos=value_infos,
             name=(name + '.bias'),
@@ -1414,14 +1424,14 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     val_data, val_shape = inputs
     val_reshaped, = outputs
     var_data = _make_var_name(val_data)
+    var_shape = _make_var_name(val_shape)
     var_reshaped = _make_var_name(val_reshaped)
 
     # interpretation
-    var_shape = _make_var_name(val_shape)  # for code
     shape = _const_weight_or_none(value_infos, val_shape)
     is_const_shape = shape and 'const_value' in value_infos[val_shape]
     if shape is None:
-        shape = _shape_or_none(value_infos, var_reshaped)
+        shape = _shape_or_none(value_infos, val_reshaped)
     assert shape is not None, (
         'given shape is neither const value nor deductible from output, '
         'this is not supported')
@@ -1429,6 +1439,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
+    prog.Code('# shape:{}={} # const as literal'.format(var_shape, shape))
     if is_const_shape:
         prog.Code('{} = layers.{}({}'
                   ', shape={}'
@@ -1437,16 +1448,17 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       fluid_op,
                       var_data,
                       # attrs
-                      var_shape,
+                      shape,
                       name_attr,
                   ))
     else:
-        var_shape_int32 = var_shape + '_int32'
+        val_shape_int32 = val_shape + '_int32'  # explicit variable
+        var_shape_int32 = _make_var_name(val_shape_int32)
         prog.Op(
             '',
             'Cast',
-            [var_shape],
-            [var_shape_int32],  # var
+            [val_shape],
+            [val_shape_int32],  # var
             dict(to=np.dtype('int32')),  # use np.dtype
             value_infos=value_infos,
             name=(name + '_cast'),
@@ -1464,7 +1476,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       name_attr,
                   ))
     fluid_op = 'reshape2'
-    var_xshape = _make_var_name(name + '.xshape')
+    var_xshape = name + '.xshape'  # dummy output
     prog.VarDesc(var_reshaped)
     prog.VarDesc(var_xshape)
     if is_const_shape:
@@ -1580,6 +1592,7 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     val_input, val_repeats = inputs
     val_output, = outputs
     var_input = _make_var_name(val_input)
+    var_repeats = _make_var_name(val_repeats)
     var_output = _make_var_name(val_output)
 
     # interpretation
@@ -1589,6 +1602,7 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
+    prog.Code('# repeats:{}={} # const as literal'.format(var_repeats, repeats))
     prog.Code('{} = layers.{}({}'
               ', expand_times={}'
               '{})'

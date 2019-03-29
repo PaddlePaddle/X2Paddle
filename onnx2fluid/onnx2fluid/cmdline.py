@@ -84,13 +84,13 @@ def main(**kwargs):
 
         # in fact fluid can not fully clear the context
         # continuous validation may be inaccurate
-        precision = 10**-kwargs.get('precision', 4)
+        decimal = kwargs.get('precision', 3)
 
         logger.info('starting validation on desc ...')
         passed &= validate(
             shutil.os.path.join(save_dir, '__model__'),
             golden_data_filename,
-            precision=precision,
+            decimal=decimal,
         )
 
         logger.info('starting validation on code ...')
@@ -98,7 +98,7 @@ def main(**kwargs):
             shutil.os.path.join(save_dir, model_basename),
             golden_data_filename,
             model_func_name=model_func_name,
-            precision=precision,
+            decimal=decimal,
             save_inference_model=debug,  # this overwrite desc file for test
         )
 
@@ -131,12 +131,13 @@ if __name__ == '__main__':
         level=logging.DEBUG,
     )
 
-    #    main(model=['../examples/t5.onnx'],
-    #         output_dir='/tmp/export/',
-    #         embed_params=False,
-    #         pedantic=False,
-    #         test_data='../examples/t5.npz',
-    #         debug=True)
+    main(
+        model=['../examples/t1.onnx'],
+        output_dir='/tmp/export/',
+        embed_params=False,
+        pedantic=False,
+        test_data='../examples/t1.npz',
+        debug=True)
 
     main(
         model=['../examples/inception_v2/model.onnx'],
