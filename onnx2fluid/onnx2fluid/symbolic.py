@@ -413,6 +413,7 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
             global_pooling=True,
             adaptive=False,
             pooling_type=pool_type,
+            ksize=[-1, -1],
         ),
     )
 
