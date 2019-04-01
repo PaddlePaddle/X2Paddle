@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
 
-onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测。
+onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测，用户也可以通过将Pytorch模型导出为ONNX格式模型，再使用onnx2fluid将模型转为PaddlePaddle模型
 
 ## 环境安装
 
