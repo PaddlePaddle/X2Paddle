@@ -23,7 +23,11 @@ conda install -c conda-forge onnx
 ## 使用说明
          
 ```shell
+# 运行目录 X2Paddle/onnx2fluid
 python -m onnx2fluid -e -o /path/to/export/model /path/of/onnx/model
+
+# 按如下流程安装后，则不限定上述命令的运行目录
+python setup.py install
 ```
 **VGG19转换**
 ```shell
