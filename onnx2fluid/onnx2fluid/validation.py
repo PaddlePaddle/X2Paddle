@@ -86,7 +86,7 @@ def validate(fluid_model_filename,
             executor=exe, dirname=fluid_model_dir, main_program=prog)
         logger.info('weight load passed')
     else:
-        raise ValueError('unsupported Paddle fluid model')
+        raise ValueError('unsupported Paddle fluid model filename')
 
     # load data
     logger.info('using golden data %s', golden_data_filename)
