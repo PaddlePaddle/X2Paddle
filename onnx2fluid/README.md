@@ -17,7 +17,11 @@ onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测。
 ``` shell
 # 安装onnx
 # 安装也可参考https://github.com/onnx/onnx
-conda install -c conda-forge protobuf numpy
-pip install onnx
+conda install -c conda-forge onnx
 ```
+
+## 使用说明
          
+```shell
+python -m onnx2fluid -e -o /path/to/export/model /path/of/onnx/model
+```
