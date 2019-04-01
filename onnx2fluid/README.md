@@ -10,7 +10,7 @@ onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测。
 
 > python2 & python3
 
-> onnx == 1.12.0
+> onnx == 1.4.0
 
 > paddlepaddle == 1.3.0
 
