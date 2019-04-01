@@ -36,6 +36,7 @@ def _make_var_name(name):
 data_dir = os.path.dirname(sys.argv[1])
 input_names = sys.argv[2].split(':')
 output_name = sys.argv[3].split(':')
+squeeze_data = len(sys.argv) > 4
 
 # Load inputs
 inputs = []
@@ -43,7 +44,10 @@ for fn in glob(os.path.join(data_dir, 'input_*.pb')):
     tensor = onnx.TensorProto()
     with open(fn, 'rb') as f:
         tensor.ParseFromString(f.read())
-    inputs.append(numpy_helper.to_array(tensor))
+    tensor = numpy_helper.to_array(tensor)
+    while squeeze_data and tensor.ndim > 4 and tensor.shape[0] == 1:
+        tensor = tensor.squeeze(0)
+    inputs.append(tensor)
 
 # Load outputs
 outputs = []
@@ -51,7 +55,10 @@ for fn in glob(os.path.join(data_dir, 'output_*.pb')):
     tensor = onnx.TensorProto()
     with open(fn, 'rb') as f:
         tensor.ParseFromString(f.read())
-    outputs.append(numpy_helper.to_array(tensor))
+    tensor = numpy_helper.to_array(tensor)
+    while squeeze_data and tensor.ndim > 2 and tensor.shape[0] == 1:
+        tensor = tensor.squeeze(0)
+    outputs.append(tensor)
 
 inputs = Dict(zip(map(_make_var_name, input_names), inputs))
 outputs = Dict(zip(map(_make_var_name, output_name), outputs))

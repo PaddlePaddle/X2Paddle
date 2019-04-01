@@ -18,6 +18,7 @@ bvlc_alexnet()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -25,7 +26,7 @@ bvlc_alexnet()
     for npz in "$bn_tar"/*.npz
     do
         echo "converting $npz ..."
-        python convert_data_npz_0.py "$npz" data_0 prob_1
+        python convert_data_npz_0.py "$npz" data_0 prob_1 -s
         python -m onnx2fluid.validation $validate_flags1 -t "$npz"
         python -m onnx2fluid.validation $validate_flags2 -t "$npz"
     done
@@ -45,6 +46,7 @@ bvlc_googlenet()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -65,6 +67,7 @@ bvlc_reference_caffenet()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -85,6 +88,7 @@ bvlc_reference_rcnn_ilsvrc13()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -93,8 +97,8 @@ bvlc_reference_rcnn_ilsvrc13()
     do
         echo "converting $pb_dir"
         python convert_data_pb_0.py "$pb_dir" data_0 fc-rcnn_1
-        python -m onnx2fluid.validation $validate_flags1 -t $(dirname "$pb_dir/x").npz
-        python -m onnx2fluid.validation $validate_flags2 -t $(dirname "$pb_dir/x").npz
+        python -m onnx2fluid.validation $validate_flags1 -t $(dirname "$pb_dir/x").npz -p 0
+        python -m onnx2fluid.validation $validate_flags2 -t $(dirname "$pb_dir/x").npz -p 0
     done
 }
 
@@ -105,6 +109,7 @@ inception_v1()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -112,7 +117,7 @@ inception_v1()
     for npz in "$bn_tar"/*.npz
     do
         echo "converting $npz ..."
-        python convert_data_npz_0.py "$npz" data_0 prob_1
+        python convert_data_npz_0.py "$npz" data_0 prob_1 -s
         python -m onnx2fluid.validation $validate_flags1 -t "$npz"
         python -m onnx2fluid.validation $validate_flags2 -t "$npz"
     done
@@ -132,6 +137,7 @@ inception_v2()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -139,7 +145,7 @@ inception_v2()
     for npz in "$bn_tar"/*.npz
     do
         echo "converting $npz ..."
-        python convert_data_npz_0.py "$npz" data_0 prob_1
+        python convert_data_npz_0.py "$npz" data_0 prob_1 -s
         python -m onnx2fluid.validation $validate_flags1 -t "$npz"
         python -m onnx2fluid.validation $validate_flags2 -t "$npz"
     done
@@ -159,6 +165,7 @@ resnet50()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -166,7 +173,7 @@ resnet50()
     for npz in "$bn_tar"/*.npz
     do
         echo "converting $npz ..."
-        python convert_data_npz_0.py "$npz" gpu_0/data_0 gpu_0/softmaxout_1
+        python convert_data_npz_0.py "$npz" gpu_0/data_0 gpu_0/softmaxout_1 -s
         python -m onnx2fluid.validation $validate_flags1 -t "$npz"
         python -m onnx2fluid.validation $validate_flags2 -t "$npz"
     done
@@ -186,6 +193,7 @@ shufflenet()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -206,6 +214,7 @@ squeezenet()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -226,6 +235,7 @@ tiny_yolov2()
     fn_model="$bn_tar/model.onnx"
 
     http_get "https://onnxzoo.blob.core.windows.net/models/opset_8/tiny_yolov2/$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -246,6 +256,7 @@ vgg19()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -266,6 +277,7 @@ zfnet512()
     fn_model="$bn_tar/model.onnx"
 
     http_get "$base_url$fn_tar"
+    rm -rf "$bn_tar/"
     echo "extracting ..."
     tar xf "$fn_tar"
 
@@ -288,7 +300,7 @@ inception_v1
 inception_v2
 resnet50
 shufflenet
-squeezenet
-tiny_yolov2 # not supported
+squeezenet # softmax bug
+# tiny_yolov2 # not supported
 vgg19
 zfnet512
