@@ -11,5 +11,7 @@ X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型
 
 **[tensorflow2fluid](tensorflow2fluid)**: TensorFlow model to PaddlePaddle，支持将Tensorflow模型转至PaddlePaddle fluid可加载预测模型
 
+**[onnx2fluid](tensorflow2fluid)**: ONNX model to PaddlePaddle，支持将ONNX模型转至PaddlePaddle fluid可加载预测模型
+
 # 贡献代码
 clone代码至本地后，先运行`X2Paddle/commit-prepare.sh`配置代码提交环境
