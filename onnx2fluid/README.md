@@ -34,3 +34,4 @@ tar xzvf vgg19.tar.gz
 # 转换为PaddlePaddle模型
 python -m onnx2fluid -e -o paddle_model vgg19/model.onnx
 ```
+转换后的PaddlePaddle模型加载可参考文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
