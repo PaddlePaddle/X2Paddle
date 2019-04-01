@@ -25,3 +25,12 @@ conda install -c conda-forge onnx
 ```shell
 python -m onnx2fluid -e -o /path/to/export/model /path/of/onnx/model
 ```
+### VGG19转换
+```shell
+# 下载并解压onnx模型vgg19
+wget https://s3.amazonaws.com/download.onnx/models/opset_9/vgg19.tar.gz
+tar xzvf vgg19.tar.gz
+
+# 转换为PaddlePaddle模型
+python -m onnx2fluid -e -o paddle_model vgg19/model.onnx
+```
