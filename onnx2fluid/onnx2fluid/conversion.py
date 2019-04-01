@@ -8,9 +8,9 @@ Created on Mon Feb 25 09:50:35 2019
 
 from __future__ import division
 
-# import logging, shutil
-import logging
-import shutil
+import logging, shutil
+#import logging
+#import shutil
 
 __all__ = [
     'convert',
@@ -24,6 +24,7 @@ def convert(onnx_model_filename,
             embed_params=False,
             onnx_opset_version=9,
             onnx_opset_pedantic=True,
+            onnx_skip_version_conversion=False,
             debug=False):
     """
     convert an ONNX model to Paddle fluid Python code and desc pb
@@ -60,12 +61,13 @@ def convert(onnx_model_filename,
     try:
         logger.info('checking model ...')
         check_model(onnx_model)
-        logger.debug('using opset version: %d', onnx_opset_version)
-        if onnx_opset_pedantic:  # WORKAROUND: RuntimeError: No Adapter For OP
-            onnx_model = convert_version(onnx_model, onnx_opset_version)
-        else:  # TODO: add new argument for this option
+        if onnx_skip_version_conversion:  # WORKAROUND: RuntimeError: No Adapter For OP
+            logger.debug('assumed opset version: %d', onnx_opset_version)
             logger.warning(
                 'opset conversion skipped for onnx_opset_pedantic is OFF')
+        else:
+            logger.debug('using opset version: %d', onnx_opset_version)
+            onnx_model = convert_version(onnx_model, onnx_opset_version)
         onnx_model = polish_model(onnx_model)
     except ValidationError as e:
         if onnx_opset_pedantic:
@@ -152,16 +154,15 @@ def convert(onnx_model_filename,
                 logger.info(
                     'weight %s is shared between ops, more disk space will be consumed',
                     name)
-            logger.debug(
-                'saving weight %s with size of %d, in %d bytes, as %s ...',
-                name, weight.size, weight.nbytes, var_names)
+            logger.debug('saving weight %s(%s[%d], %dB) as %s ...', name,
+                         weight.dtype, weight.size, weight.nbytes, var_names)
             for var_name in var_names:  # multiple references
                 fluid_writer.write_weight(
                     weight, shutil.os.path.join(save_dir, var_name))
         else:
-            logger.debug(
-                'saving weight %s with size of %d, in %d bytes, to %s ...',
-                name, weight.size, weight.nbytes, make_var_name(name))
+            logger.debug('saving weight %s(%s[%d], %dB) to %s ...', name,
+                         weight.dtype, weight.size, weight.nbytes,
+                         make_var_name(name))
             fluid_writer.write_weight(
                 weight, shutil.os.path.join(save_dir, make_var_name(name)))
         fluid_writer.emit_param(fluid_program, name, value_info)
@@ -262,6 +263,13 @@ if __name__ == '__main__':
         dest='pedantic',
         help='process non-standard ONNX ops, this may lead to fails',
     )
+    parser.add_argument(
+        '--skip-version-conversion',
+        '-y',
+        action='store_true',
+        default=False,
+        help='skip ONNX op version conversion, workaround for RumtimeErrors',
+    )
     args = parser.parse_args()
 
     logging_format = '[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s'
@@ -273,10 +281,12 @@ if __name__ == '__main__':
     save_dir = args.output_dir
     embed_params = args.embed_params
     pedantic = args.pedantic
+    skip_version_conversion = args.skip_version_conversion
 
     convert(
         model_filename,
         save_dir,
         embed_params=embed_params,
         onnx_opset_pedantic=pedantic,
+        onnx_skip_version_conversion=skip_version_conversion,
         debug=debug)

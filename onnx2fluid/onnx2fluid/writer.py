@@ -8,9 +8,9 @@ Created on Sun Feb 24 20:44:43 2019
 
 from __future__ import division
 
-# import logging, os
-import logging
-import os
+import logging, os
+#import logging
+#import os
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -215,10 +215,6 @@ class Program(object):
         var_desc.persistable = persistable
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
 
-        # REMOVEIT: WORKAROUND: Netron: null.tensor error
-        tensor_desc = var_desc.type.lod_tensor.tensor
-        tensor_desc.data_type = self.Dtype(dummy_dtype)  # required
-
         if value_info and 'dtype' in value_info:
             tensor_desc = var_desc.type.lod_tensor.tensor
             tensor_desc.data_type = self.Dtype(value_info['dtype'])  # required
@@ -230,6 +226,9 @@ class Program(object):
                                                       not persistable)
                     if remove_batch:
                         tensor_desc.dims[0] = -1
+        else:  # REMOVEIT: WORKAROUND: Netron: null.tensor error
+            tensor_desc = var_desc.type.lod_tensor.tensor
+            tensor_desc.data_type = self.Dtype(dummy_dtype)  # required
 
         self.var_descs.append(var_desc)
 
@@ -329,7 +328,7 @@ class Writer(object):
         else:
             var_name = make_var_name(name)
             attr_name = make_attr_name(name)
-            prog.Code('# parameter: {}'.format(name))
+            prog.Code('# parameter {}: {}'.format(name, var_name))
             prog.Code('{} = ParamAttr(name={})'  # , trainable=True
                       .format(attr_name, repr(var_name)))
             prog.Code(
@@ -356,13 +355,13 @@ class Writer(object):
             if remove_batch:
                 shape = shape[1:]
 
-            prog.Code('# input: {}'.format(name))
+            prog.Code('# input {}: {}'.format(name, var_name))
             prog.Code((
                 '{} = layers.data(name={}, shape={}, dtype={}, '
                 'append_batch_size={})'  # , stop_gradient=True
             ).format(
                 var_name,
-                repr(name),
+                repr(var_name),
                 shape,
                 repr(value_info['dtype'].name),
                 remove_batch,
