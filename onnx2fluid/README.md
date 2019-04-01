@@ -1,4 +1,4 @@
-Onnx2Fluid
+onnx2fluid
 ===
 Inference model conversion from ONNX/PyTorch to Paddle fluid
 
