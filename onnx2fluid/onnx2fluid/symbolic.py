@@ -83,7 +83,7 @@ DEFAULT_OP_MAPPING = {
         'And': ['logical_and', ['X', 'Y'], ['Out']],
         'Div': ['elementwise_div', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Equal': ['equal', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
-        'Greater': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
+        'Greater': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), [1, 0], None, False],
         'Less': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
         'MatMul': ['matmul', ['X', 'Y'], ['Out']], # defaults excluded for transpose_x vs transpose_X
         'Max': ['elementwise_max', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
@@ -444,7 +444,7 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
-    prog.Code('{}{} = layers.{}({}, exclusive=True'
+    prog.Code('{} = layers.{}({}, exclusive=True'
               ', pool_size={}'
               ', pool_type={}'
               ', pool_stride={}'
@@ -452,7 +452,6 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
               ', ceil_mode={}'
               '{})'.format(
                   var_y,
-                  ', {}'.format(var_indices) if has_indices else '',
                   fluid_op,
                   var_x,
                   # attrs
@@ -529,7 +528,7 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
               ))
     prog.VarDesc(var_y)
     if is_max_pool:
-        var_argmax = _make_var_name(name + '.argmax')  # implicit variable
+        var_argmax = _make_var_name(name + '.argmax')  # hidden variable
         prog.VarDesc(var_argmax)
     prog.OpDesc(
         fluid_op,
@@ -664,7 +663,7 @@ def BatchNormalization(prog,
                           repr(var_scale), repr(var_b), repr(var_mean),
                           repr(var_var))
 
-    # generationvalue_infos
+    # generation
     prog.Code('{} = layers.{}({}, is_test=True, data_layout="NCHW"'
               ', momentum={}'
               ', epsilon={}'
@@ -804,7 +803,8 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             'using value as 1-D tensor may lead to fails', outputs, val_output)
 
     # generation
-    if value.size == 1:  # scalar
+    value = value.tolist()
+    if len(value) == 1:  # scalar
         value = value[0]
         fluid_op = 'fill_constant'
         prog.Code('{} = layers.{}(shape={}, dtype={}, value={})'.format(
@@ -815,7 +815,6 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             repr(dtype.name),
             value,
         ))
-        value_infos[val_output]['const_value'] = value
         prog.VarDesc(var_output)
         prog.OpDesc(
             fluid_op,
@@ -823,16 +822,15 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             ([var_output], 'Out'),
             dict(
                 shape=shape,
-                dtype=dtype.name,
+                dtype=prog.Dtype(dtype),
                 value=value,
             ),
         )
     else:  # list parameter -> const_value
         prog.Code('# {} = {} # passed directly as literal'.format(
-            var_output,
-            value.tolist(),
-        ))
-        value_infos[val_output]['const_value'] = value.tolist()
+            var_output, value))
+
+    value_infos[val_output]['const_value'] = value
 
 
 def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
@@ -1553,7 +1551,7 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        ([var_data], 'X'),
+        ([var_data], 'Input'),
         ([var_output], 'Out'),
         dict(
             axes=axes,
@@ -1615,17 +1613,13 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     prog.Code('# repeats:{}={} # const as literal'.format(var_repeats, repeats))
     prog.Code('{} = layers.{}({}'
               ', expand_times={}'
-              '{})'
-              ' # {} = {}'.format(
+              '{})'.format(
                   var_output,
                   fluid_op,
                   var_input,
                   # attrs
                   repeats,
                   name_attr,
-                  # comment
-                  _make_var_name(val_repeats),
-                  repeats,
               ))
     prog.VarDesc(var_output)
     prog.OpDesc(
