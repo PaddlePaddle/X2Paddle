@@ -18,6 +18,7 @@ import torch.nn.functional as F
 
 from onnx2fluid.torch_export_helper import export_onnx_with_validation
 
+prefix = 'sample_'
 idx = 0
 
 ######### example: RNN ########
@@ -38,7 +39,7 @@ idx = 0
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), 't' + str(idx),
+#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -59,7 +60,7 @@ idx = 0
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), 't' + str(idx),
+#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -83,7 +84,10 @@ yp = model(xb)
 idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
-    model, (xb, ), 't' + str(idx), ['x'], ['y'], verbose=True, training=False)
+    model, (xb, ),
+    prefix + str(idx), ['x'], ['y'],
+    verbose=True,
+    training=False)
 
 ######## example: compare ########
 
@@ -108,7 +112,7 @@ idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
     model, (xb0, xb1),
-    't' + str(idx), ['x0', 'x1'], ['ya', 'yb', 'yc'],
+    prefix + str(idx), ['x0', 'x1'], ['ya', 'yb', 'yc'],
     verbose=True,
     training=False)
 
@@ -131,7 +135,7 @@ idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
     model, (theta, ),
-    't' + str(idx), ['theta'], ['grid'],
+    prefix + str(idx), ['theta'], ['grid'],
     verbose=True,
     training=False)
 
@@ -157,7 +161,10 @@ yp = model(xb)
 idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
-    model, (xb, ), 't' + str(idx), ['x'], ['y'], verbose=True, training=False)
+    model, (xb, ),
+    prefix + str(idx), ['x'], ['y'],
+    verbose=True,
+    training=False)
 
 ######## example: conv2d ########
 
@@ -183,7 +190,10 @@ yp = model(xb)
 idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
-    model, (xb, ), 't' + str(idx), ['x'], ['y'], verbose=True, training=False)
+    model, (xb, ),
+    prefix + str(idx), ['x'], ['y'],
+    verbose=True,
+    training=False)
 
 ######### example: conv1d ########
 #
@@ -203,7 +213,7 @@ export_onnx_with_validation(
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), 't' + str(idx),
+#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -224,4 +234,7 @@ yp = model(xb)
 idx += 1
 print('index: ', idx)
 export_onnx_with_validation(
-    model, (xb, ), 't' + str(idx), ['y'], ['y'], verbose=True, training=False)
+    model, (xb, ),
+    prefix + str(idx), ['y'], ['y'],
+    verbose=True,
+    training=False)

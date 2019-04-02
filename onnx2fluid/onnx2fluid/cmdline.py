@@ -49,7 +49,8 @@ def main(**kwargs):
     basepath, _ = shutil.os.path.splitext(filename)
     save_dir = kwargs.get('output_dir', '')
     # model.onnx -> model/
-    save_dir = (save_dir.rstrip('/') if save_dir else basepath) + '/'
+    save_dir = (save_dir.rstrip(shutil.os.sep)
+                if save_dir else basepath) + shutil.os.sep
     model_basename = DEFAULT_MODEL_MODULE + '.py'
     model_func_name = DEFAULT_MODEL_FUNC
     embed_params = kwargs.get('embed_params', False)
@@ -109,7 +110,7 @@ def main(**kwargs):
     # create zip file
     if archive is not None:
         if archive == '':
-            archive = save_dir.rstrip('/') + '.zip'
+            archive = save_dir.rstrip(shutil.os.sep) + '.zip'
         logger.info('compressing file to %s ...', archive)
         shutil.sys.stderr.write('\n')
         shutil.sys.stderr.flush()

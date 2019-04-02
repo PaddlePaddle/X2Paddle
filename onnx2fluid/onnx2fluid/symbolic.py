@@ -69,6 +69,7 @@ DEFAULT_OP_MAPPING = {
         'Sin': ['sin', ['X'], ['Out']],
         'Squeeze': ['squeeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit squeeze2
         'Softplus': ['softplus', ['X'], ['Out']],
+        # FIXME: default axis = -1, reshape required before and after
         'Softmax': ['softmax', ['X'], ['Out'], dict(axis='')],
         'Softsign': ['softsign', ['X'], ['Out']],
         'Sqrt': ['sqrt', ['X'], ['Out']],
@@ -799,7 +800,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         shape = list(value.shape)
         _logger.warning(
             'in (Constant -> %s): '
-            'shape of %s not inferred, '
+            'attribute "shape" of %s not inferred, '
             'using value as 1-D tensor may lead to fails', outputs, val_output)
 
     # generation
@@ -1152,7 +1153,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                     vm_dtype = np.dtype('float32')
                     _logger.warning(
                         'in %s(%s -> Gemm -> %s): '
-                        'beta seems to be an interger, '
+                        'attribute "beta" seems to be an interger, '
                         'however dtype can not be inferred, '
                         'still use float32', name, inputs, outputs)
                 beta = np.dtype(vm_dtype).type(beta)
@@ -1432,9 +1433,17 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     is_const_shape = shape and 'const_value' in value_infos[val_shape]
     if shape is None:
         shape = _shape_or_none(value_infos, val_reshaped)
-    assert shape is not None, (
-        'given shape is neither const value nor deductible from output, '
-        'this is not supported')
+
+
+#    assert shape is not None, ('given shape is neither const value nor deductible from output, '
+#                               'this is not supported')
+    if shape is None:
+        shape = [1, -1]  # who knows
+        _logger.warning(
+            'in %s(%s -> Reshape -> %s): '
+            'input "shape" not inferred, use [1, -1] as dummy value, '
+            'the behavior of Paddle fluid maybe undefined', name, inputs,
+            outputs)
     fluid_op = 'reshape'
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
@@ -1574,6 +1583,7 @@ def Sum(prog, inputs, outputs, *args, **kwargs):
         '[' + ', '.join(var_inps) + ']',
         # attrs
     ))
+    fluid_op = 'sum'
     prog.VarDesc(var_sum)
     prog.OpDesc(
         fluid_op,
