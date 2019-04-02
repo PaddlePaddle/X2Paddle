@@ -26,6 +26,6 @@ paddle.fluid.layers.concat(
 ```  
 
 ### 功能差异
-#### 输入参数的差异
+#### 输入参数
 Caffe：只能在一个维度上进行复制。                    
 PaddlePaddle：`expand_times`为一个list或tuple，它存放的是每个维度复制的倍数。
