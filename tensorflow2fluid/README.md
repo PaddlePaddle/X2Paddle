@@ -125,7 +125,7 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 
 5. 模型转换失败，提示"Unsupported OP: XXX"?
 
-> 目前tf2fluid支持50个左右常见OP的转换，仍然在不断补充中，当出现如上提示时，即表示模型存在暂未支持的OP，用户可以直接在[tf2fluid/paddle_emitter.py]中仿照`emit_xxx`函数添加转换代码支持，或者也欢迎通过提ISSUE的方式让我们知道你的需求！
+> 目前tf2fluid支持50个左右常见OP的转换，仍然在不断补充中，当出现如上提示时，即表示模型存在暂未支持的OP，用户可以直接在[tf2fluid/paddle_emitter.py](tf2fluid/paddle_emitter.py)中仿照`emit_xxx`函数添加转换代码支持，或者也欢迎通过提ISSUE的方式让我们知道你的需求！
 
 ## Link
 
