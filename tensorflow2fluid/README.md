@@ -105,6 +105,18 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 |          | YOLO-V3       | [code](https://github.com/mystic123/tensorflow-yolo-v3) | 6.20E-04 |
 | 语义分割 | Unet          | [code](https://github.com/jakeret/tf_unet) | 4.17E-07 |
 
+## 注意事项
+1. 转换参数`input_format`的设定
+> TensorFlow中的CV模型，大多采用`NHWC`的输入格式，但同时也可以支持`NCHW`的格式输入；而在PaddlePaddle中，支持的是`NCHW`的格式。因此需要在转换模型时，指定TensorFlow模型的输入格式，转换过程中会根据输入格式，对输入数据，参数进行变换。
+
+2. 转换参数`input_shape`的设定
+
+> 在模型转换时，需设定输入数据的具体`shape`。因为转换过程中，涉及到较多参数的转换，因此模型转换完成应用到预测时，输入数据的`shape`也须与之前指定的一致，否则可能会出错。
+
+3. 转换参数`use_cuda`的设定
+
+> 受限于PaddlePaddle与TensorFlow部分OP上的实现差异，部分tensor参数（在TensorFlow中，这部分参数类型是tensor类型，但值保持不变）需要通过infer得到。因此模型转换过程中，同时也会加载tensorflow模型进行预测，消耗计算资源。在有GPU资源的的前提下，将`use_cuda`设为`True`有助于提升转换速度。
+
 ## Link
 
 本目录下部分代码参考了MMdnn-Tensorflow，对此表示感谢！
