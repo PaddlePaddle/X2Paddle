@@ -71,6 +71,6 @@ paddle.fluid.ParamAttr(
     do_model_average=False
 )
 ```
-#### 空洞卷积的使用
-Caffe：无法使用空洞卷积。                  
-PaddlePaddle：使用`dilation`来设置空洞卷积。
+#### 空洞卷积
+Caffe：无法使用空洞卷积；                  
+PaddlePaddle：使用`dilation`参数来设置空洞卷积。
