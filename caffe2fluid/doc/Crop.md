@@ -30,8 +30,8 @@ paddle.fluid.layers.crop(
 
 ### 功能差异
 #### 输出大小
-Caffe：输入为`data1`，裁剪的输出shape与`data2`(Variable类型)一致；              
-PaddlePaddle：`shape`支持python list的方式传入输出大小，同时也支持`Variable`类型的输入。当`shape`为`Variable`类型时，裁剪输出大小与`shape`参数的大小一致。
+Caffe：输入为`data1`，裁剪的输出大小与`data2`(Variable类型)一致；              
+PaddlePaddle：`shape`参数支持python list的方式传入输出大小，同时也支持`Variable`类型的输入。当`shape`为`Variable`类型时，用法与Caffe类似，裁剪输出大小与`shape`参数的大小一致。
 
 #### 裁剪偏移量
 Caffe：只需要设置需要裁剪的维度的偏移量。             
