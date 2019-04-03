@@ -40,5 +40,5 @@ paddle.fluid.layers.batch_norm(
 
 ### 功能差异
 #### 计算机制
-Caffe：`BatchNorm`仅做了归一化计算，需结合`Scale`层进行缩放变换； 
+Caffe：`BatchNorm`仅做了归一化计算，需结合`Scale`层进行缩放变换；  
 PaddlePaddle：包括归一化计算和缩放变换，`param_attr`和`bias_attr`即为缩放变换的设置参数。
