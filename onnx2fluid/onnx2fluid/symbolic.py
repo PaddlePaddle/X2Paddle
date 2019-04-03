@@ -77,7 +77,7 @@ DEFAULT_OP_MAPPING = {
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
         'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
-        'Transpose': ['transpose', ['X'], ['Out']], # FIXME: emit transpose2
+    #        'Transpose': ['transpose', ['X'], ['Out']],
         'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
@@ -1776,6 +1776,45 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
         ([var_input], 'X'),
         ([var_output], 'Out'),
         dict(expand_times=repeats),
+    )
+
+
+def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
+    """
+    onnx::Transpose-1:
+    """
+
+    # I/O
+    val_data, = inputs
+    val_transposed, = outputs
+    var_data = _make_var_name(val_data)
+    var_transposed = _make_var_name(val_transposed)
+
+    # interpretation
+    fluid_op = 'transpose'
+    perm = attrs['perm']  # required
+    name_attr = ', name={}'.format(repr(name)) if name else ''
+
+    # generation
+    prog.Code('{} = layers.{}({}'
+              ', perm={}'
+              '{})'.format(
+                  var_transposed,
+                  fluid_op,
+                  var_data,
+                  # attrs
+                  perm,
+                  name_attr,
+              ))
+    fluid_op = 'transpose2'
+    var_xshape = name + '.xshape'  # dummy output
+    prog.VarDesc(var_xshape)
+    prog.VarDesc(var_transposed)
+    prog.OpDesc(
+        fluid_op,
+        ([var_data], 'X'),
+        ([var_transposed, var_xshape], 'Out', 'XShape'),
+        dict(axis=perm),  # f**k you API
     )
 
 
