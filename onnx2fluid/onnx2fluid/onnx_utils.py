@@ -80,7 +80,7 @@ def build_value_refs(nodes):
 
 def get_attribute_value2(attr):
     """
-    get_attribute_value with tensor conversion
+    get_attribute_value enhanced
     """
 
     if attr.type == onnx.AttributeProto.TENSOR:
@@ -88,6 +88,9 @@ def get_attribute_value2(attr):
         data = attr.t.raw_data
         value = np.frombuffer(
             data, dtype=dtype, count=(len(data) // dtype.itemsize))
+    elif attr.type == onnx.AttributeProto.STRING:
+        value = attr.s
+        value = value.decode() if isinstance(value, bytes) else value
     else:
         value = get_attribute_value(attr)
     return value
@@ -127,8 +130,10 @@ def node_topo(nodes, topo='default'):
         return list(range(len(nodes)))
 
     node_topo = []
-    node_in_degrees = [len(node.input) for node in nodes]
-    node_out_degrees = [len(node.output) for node in nodes]
+    node_in_degrees = [len(set(node.input))
+                       for node in nodes]  # merge multiple references
+    node_out_degrees = [len(set(node.output))
+                        for node in nodes]  # merge multiple references
     input_refs, output_refs = build_value_refs(nodes)
 
     if topo == 'forward':
@@ -395,7 +400,7 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
             ret_inputs.add().CopyFrom(item)
         else:
             logger.debug('input %s(%s%s) stripped', name, tensor_dtype(item),
-                         tensor_shape(item))
+                         tuple(tensor_shape(item)))
     return ret
 
 
@@ -422,7 +427,7 @@ def optimize_model_cast(model):
         attrs = node_attrs(node)
         output_dtype = TENSOR_TYPE_TO_NP_TYPE[attrs['to']]
         input_name = node.input[0]
-        info = value_info.get('input_name', None)  # relax for un-inferrable
+        info = value_info.get(input_name, None)  # relax for un-inferrable
         if info is None:
             continue
         input_dtype = info.get('dtype', None)

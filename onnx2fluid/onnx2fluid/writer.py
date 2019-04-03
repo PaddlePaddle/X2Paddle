@@ -139,19 +139,34 @@ class Program(object):
             elif isinstance(value, str):
                 od_attr.type = framework_pb2.STRING
                 od_attr.s = value
-            elif isinstance(value, list) and len(value) > 0:
-                if isinstance(value, bool):  # bool.mro() = [bool, int, object]
-                    od_attr.type = framework_pb2.BOOLEANS
-                    od_attr.bools.extend(value)
-                elif isinstance(value[0], int):  # only cast to int32 list
-                    od_attr.type = framework_pb2.INTS
-                    od_attr.ints.extend(value)
-                elif isinstance(value[0], float):
-                    od_attr.type = framework_pb2.FLOATS
-                    od_attr.floats.extend(value)
-                elif isinstance(value[0], str):
-                    od_attr.type = framework_pb2.STRINGS
-                    od_attr.strings.extend(value)
+            elif isinstance(value, list):
+                if len(value) > 0:
+                    if isinstance(value,
+                                  bool):  # bool.mro() = [bool, int, object]
+                        od_attr.type = framework_pb2.BOOLEANS
+                        od_attr.bools.extend(value)
+                    elif isinstance(value[0], int):  # only cast to int32 list
+                        od_attr.type = framework_pb2.INTS
+                        od_attr.ints.extend(value)
+                    elif isinstance(value[0], float):
+                        od_attr.type = framework_pb2.FLOATS
+                        od_attr.floats.extend(value)
+                    elif isinstance(value[0], str):
+                        od_attr.type = framework_pb2.STRINGS
+                        od_attr.strings.extend(value)
+                    else:
+                        raise ValueError('unsupported attribute {} = {}'.format(
+                            key, value))
+                else:  # WORKAROUND: shape of scalars is []
+                    raise ValueError('unsupported attribute {} = {}'.format(
+                        key, value))
+
+
+#                    od_attr.type = framework_pb2.INTS
+#                    logger.warning('using attribute %s = %s as INTS', key, value)
+            else:
+                raise ValueError('unsupported attribute {} = {}'.format(
+                    key, value))
             od_attrs.append(od_attr)
         return od_attrs
 

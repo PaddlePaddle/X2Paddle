@@ -54,7 +54,7 @@ def validate(fluid_model_filename,
 
     # load model
     fluid_model_dir, basename = os.path.split(fluid_model_filename)
-    if basename == '__model__':  # is desc model
+    if basename == '__model__':  # is desc program
         logger.debug('using desc file %s', basename)
         prog, _, var_outs = fluid.io.load_inference_model(fluid_model_dir, exe)
         out_names = var_outs  # HINT: pass var if fetch ops already created
