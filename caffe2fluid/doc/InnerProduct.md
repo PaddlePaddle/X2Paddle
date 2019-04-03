@@ -47,16 +47,26 @@ paddle.fluid.layers.fc(
 ```  
 
 ### 功能差异
-#### 参数初始化的差异
-
-Caffe：第一个`param`负责设置卷积核的局部学习率和权值衰减因子，第二个`param`则负责设置偏置项的局部学习率和权值衰减因子；而卷积核和偏置项的在`convolution_param`中进行设置；是否使用偏置项可以使用`bias_term`进行设置。  
-PaddlePaddle：Caffe中的卷积核和偏置项的多处设置均分别在一个参数——`param_attr`/`bias_attr`中完成所有操作。二者的默认值为None，而ParamAttr是一个初始化结果，其可以通过`paddle.fluid.ParamAttr(name=None, initializer=None, learning_rate=1.0, regularizer=None, trainable=True, gradient_clip=None, do_model_average=False)`获得；bias_attr同时可以是设置为布尔型，用来表示是否使用偏置项。
-#### 参数格式的差异
+#### 参数初始化
+Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和权值衰减因子，其中第一个用于设置卷积核，第二个则用于设置偏值项；卷积核和偏置项的初始化参数在`convolution_param`中进行设置；是否使用偏置项可以使用`bias_term`进行设置。  
+PaddlePaddle：卷积核和偏置项的参数分别使用`param_attr`和`bias_attr`进行配置，配置参数如下所示，此外将`bias_attr`直接设为`False`表示不使用偏置项。
+```
+paddle.fluid.ParamAttr(
+    name=None, 
+    initializer=None, 
+    learning_rate=1.0, 
+    regularizer=None, 
+    trainable=True, 
+    gradient_clip=None, 
+    do_model_average=False
+)
+```
+#### 参数格式
 Caffe：输入参数的数据格式是`(filter_num, channel*height*width)`。  
-PaddlePaddle：在`num_flatten_dims=1`且维度为4的情况下，其输入参数的输入数据格式则是`(channel*height*width, filter_num)`，而其他不管什么情况PaddlePaddle的filter_num都始终应该放在第二维。
-#### 输入数据扁平化的差异
+PaddlePaddle：在`num_flatten_dims=1`且输入数据维度为4的情况下，其输入参数的数据格式是`(channel*height*width, filter_num)`；其他情况下输入参数的数据格式不一定是二维的，但是`filter_num`都始终放在第二维。
+#### 输入数据扁平化
 Caffe：将输入数据的第一维默认为batch size，其他剩余的几个维度扁平化压缩成一个向量进行全连接的计算。                     
-PaddlePaddle：通过设置`num_flatten_dims`的值，确认后`rank(input)-num_flatten_dim`个维度扁平化压缩成一个向量进行全连接计算。
+PaddlePaddle：通过设置`num_flatten_dims`的值，使`输入数据的维度-num_flatten_dim`个维度扁平化压缩成一个向量进行全连接计算。
 
 
 #### 其他差异
