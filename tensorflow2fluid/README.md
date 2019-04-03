@@ -3,6 +3,7 @@
 
 
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。  
+此外在[[doc](doc/接口速查表.md)]目录中整理了TensorFlow-PaddlePaddle的常用API对比分析。
 [环境安装](#环境安装)&nbsp;&nbsp;[使用方法](#使用方法)&nbsp;&nbsp;[验证模型](#验证模型)&nbsp;&nbsp;[注意事项](#注意事项)
 
 ## 环境安装
