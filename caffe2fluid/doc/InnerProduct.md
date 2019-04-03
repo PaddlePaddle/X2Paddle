@@ -48,8 +48,8 @@ paddle.fluid.layers.fc(
 
 ### 功能差异
 #### 参数初始化
-Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和权值衰减因子，其中第一个用于设置卷积核，第二个则用于设置偏值项；卷积核和偏置项的初始化参数在`convolution_param`中进行设置；是否使用偏置项可以使用`bias_term`进行设置。  
-PaddlePaddle：卷积核和偏置项的参数分别使用`param_attr`和`bias_attr`进行配置，配置参数如下所示，此外将`bias_attr`直接设为`False`表示不使用偏置项。
+Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和权值衰减因子，其中第一个用于设置权重，第二个则用于设置偏值项；权重和偏置项的初始化参数在`InnerProduct`中进行设置；是否使用偏置项可以使用`bias_term`进行设置。  
+PaddlePaddle：权重和偏置项的参数分别使用`param_attr`和`bias_attr`进行配置，配置参数如下所示，此外将`bias_attr`直接设为`False`表示不使用偏置项。
 ```
 paddle.fluid.ParamAttr(
     name=None, 
@@ -61,14 +61,11 @@ paddle.fluid.ParamAttr(
     do_model_average=False
 )
 ```
-#### 参数格式
-Caffe：输入参数的数据格式是`(filter_num, channel*height*width)`。  
-PaddlePaddle：在`num_flatten_dims=1`且输入数据维度为4的情况下，其输入参数的数据格式是`(channel*height*width, filter_num)`；其他情况下输入参数的数据格式不一定是二维的，但是`filter_num`都始终放在第二维。
-#### 输入数据扁平化
-Caffe：将输入数据的第一维默认为batch size，其他剩余的几个维度扁平化压缩成一个向量进行全连接的计算。                     
-PaddlePaddle：通过设置`num_flatten_dims`的值，使`输入数据的维度-num_flatten_dim`个维度扁平化压缩成一个向量进行全连接计算。
 
+#### 多维输入
+Caffe：将输入数据的第一维默认为batch size，其余维度压缩至一维后，得到新的二维输入进行全连接计算；                       
+PaddlePaddle：`[0, num_flatten_dims)`和`[num_flattens_dim, )`维上的数据分别被压缩至一维，得到新的二维输入进行全连接计算。
 
-#### 其他差异
+#### 其他
 Caffe：需要在另一个层中定义激活函数。  
 PaddlePaddle：可以通过设置`act`这一参数来确定输出的激活函数。
