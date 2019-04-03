@@ -3,7 +3,7 @@
 
 
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。  
-[环境安装](#环境安装)&nbsp;&nbsp;[使用方法](#使用方法)&nbsp;&nbsp;[支持模型](#支持模型)&nbsp;&nbsp;[注意事项](#注意事项)
+[环境安装](#环境安装)&nbsp;&nbsp;[使用方法](#使用方法)&nbsp;&nbsp;[验证模型](#验证模型)&nbsp;&nbsp;[注意事项](#注意事项)
 
 ## 环境安装
 
@@ -92,7 +92,7 @@ ref_name.info|my_model.py中各tensor与原TensorFlow模型中的tensor对应关
 const_\*/params_\*|转换后的模型参数文件
 save_var.list|模型载入过程中的变量list
 
-## 支持模型
+## 验证模型
 tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff  
 
 | 模型类别 | 模型          | Code   | 最大diff |
