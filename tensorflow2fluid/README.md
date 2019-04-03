@@ -119,6 +119,10 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 
 > 受限于PaddlePaddle与TensorFlow部分OP上的实现差异，部分tensor参数（在TensorFlow中，这部分参数类型是tensor类型，但值保持不变）需要通过infer得到。因此模型转换过程中，同时也会加载tensorflow模型进行预测，消耗计算资源。在有GPU资源的的前提下，将`use_cuda`设为`True`有助于提升转换速度。
 
+4. 模型转换前后diff对比
+
+> tensorflow2fluid仍在不断完善和测试中，用户转换完模型后，注意对比模型在转换前后的输出diff是否在可接受范围内。此外转换后的模型结构`mymodel.py`如存在构建失败，也可能是由于部分参数在特殊情况下未被考虑到，用户可以直接通过修改`mymodel.py`来解决。
+
 ## Link
 
 本目录下部分代码参考了MMdnn-Tensorflow，对此表示感谢！
