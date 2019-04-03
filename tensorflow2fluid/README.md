@@ -4,7 +4,7 @@
 
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。  
 此外在[[doc](doc/接口速查表.md)]目录中整理了TensorFlow-PaddlePaddle的常用API对比分析。  
-[环境安装](#环境安装)&nbsp;&nbsp;[使用方法](#使用方法)&nbsp;&nbsp;[验证模型](#验证模型)&nbsp;&nbsp;[注意事项](#注意事项)
+[环境安装](#环境安装)&nbsp;&nbsp;[使用方法](#使用方法)&nbsp;&nbsp;[验证模型](#验证模型)&nbsp;&nbsp;[常见问题](#常见问题)
 
 ## 环境安装
 
@@ -107,21 +107,25 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 |          | YOLO-V3       | [code](https://github.com/mystic123/tensorflow-yolo-v3) | 6.20E-04 |
 | 语义分割 | Unet          | [code](https://github.com/jakeret/tf_unet) | 4.17E-07 |
 
-## 注意事项
-1. 转换参数`input_format`的设定
+## 常见问题
+1. 转换参数`input_format`的设定？
 > TensorFlow中的CV模型，大多采用`NHWC`的输入格式，但同时也可以支持`NCHW`的格式输入；而在PaddlePaddle中，支持的是`NCHW`的格式。因此需要在转换模型时，指定TensorFlow模型的输入格式，转换过程中会根据输入格式，对输入数据，参数进行变换。
 
-2. 转换参数`input_shape`的设定
+2. 转换参数`input_shape`的设定？
 
 > 在模型转换时，需设定输入数据的具体`shape`。因为转换过程中，涉及到较多参数的转换，因此模型转换完成应用到预测时，输入数据的`shape`也须与之前指定的一致，否则可能会出错。
 
-3. 转换参数`use_cuda`的设定
+3. 转换参数`use_cuda`的设定？
 
 > 受限于PaddlePaddle与TensorFlow部分OP上的实现差异，部分tensor参数（在TensorFlow中，这部分参数类型是tensor类型，但值保持不变）需要通过infer得到。因此模型转换过程中，同时也会加载tensorflow模型进行预测，消耗计算资源。在有GPU资源的的前提下，将`use_cuda`设为`True`有助于提升转换速度。
 
-4. 模型转换前后diff对比
+4. 模型转换前后diff对比？
 
 > tensorflow2fluid仍在不断完善和测试中，用户转换完模型后，注意对比模型在转换前后的输出diff是否在可接受范围内。此外转换后的模型结构`mymodel.py`如存在构建失败的问题，可能是由于部分参数在特殊情况下未被考虑到导致，用户可以直接通过修改`mymodel.py`来解决。
+
+5. 模型转换失败，提示"Unsupported OP: XXX"?
+
+> 目前tf2fluid支持50个左右常见OP的转换，仍然在不断补充中，当出现如上提示时，即表示模型存在暂未支持的OP，用户可以直接在[tf2fluid/paddle_emitter.py]中仿照`emit_xxx`函数添加转换代码支持，或者也欢迎通过提ISSUE的方式让我们知道你的需求！
 
 ## Link
 
