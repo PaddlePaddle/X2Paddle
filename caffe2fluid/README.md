@@ -1,7 +1,7 @@
 # caffe2fluid
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc)]目录中整理了Caffe-PaddlePaddle的常用API对比分析。
+caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc/接口速查表.md)]目录中整理了Caffe-PaddlePaddle的常用API对比分析。
 
 ## 环境依赖
 
