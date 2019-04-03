@@ -48,7 +48,7 @@ paddle.fluid.layers.fc(
 
 ### 功能差异
 #### 参数初始化
-Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和权值衰减因子，其中第一个用于设置权重，第二个则用于设置偏值项；权重和偏置项的初始化参数在`InnerProduct`中进行设置；是否使用偏置项可以使用`bias_term`进行设置。  
+Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和权值衰减因子，其中第一个用于设置权重，第二个则用于设置偏值项；权重和偏置项的初始化参数在`InnerProduct`中进行设置；是否使用偏置项可以使用`bias_term`进行设置；  
 PaddlePaddle：权重和偏置项的参数分别使用`param_attr`和`bias_attr`进行配置，配置参数如下所示，此外将`bias_attr`直接设为`False`表示不使用偏置项。
 ```
 paddle.fluid.ParamAttr(
