@@ -3,6 +3,8 @@
 """
 ONNX to Paddle fluid symbolic translation
 
+TODO: move non-ONNX ops out to symbolic_aten.py, symbolic_caffe2.py ...
+
 Created on Mon Feb 25 09:33:43 2019
 
 @author: Macrobull
@@ -288,6 +290,17 @@ def _assign(prog, attrs):
         )
 
 
+def _zeros_like(prog, val_ref, val_out, value_infos):
+    prog.Op(
+        '',
+        'Sub',
+        [val_ref, val_ref],
+        [val_out],  # val
+        dict(axis=0),
+        value_infos,
+    )
+
+
 def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
     assert len(pads) & 1 == 0
     ndims = len(pads) // 2
@@ -331,7 +344,7 @@ def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
     # interpretation
     pool_size = attrs['output_size']  # required
     poolnd = len(pool_size)
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
 
     fluid_op = 'adaptive_pool{}d'.format(poolnd)
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -386,7 +399,7 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
         poolnd = len(input_shape) - 2  # NC...
     elif output_shape:
         poolnd = len(output_shape) - 2  # NC...
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
 
     fluid_op = 'pool{}d'.format(poolnd)
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -430,10 +443,10 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     # interpretation
     assert attrs.get(
         'auto_pad',
-        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET supported'  # optional
+        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET is supported'  # optional
     pool_size = attrs['kernel_shape']  # required
     poolnd = len(pool_size)
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
 
     fluid_op = 'pool{}d'.format(poolnd)
     strides = attrs.get('strides', [1] * poolnd)  # optional
@@ -538,14 +551,68 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
     )
 
 
-def _zeros_like(prog, val_ref, val_out, value_infos):
-    prog.Op(
-        '',
-        'Sub',
-        [val_ref, val_ref],
-        [val_out],  # val
-        dict(axis=0),
-        value_infos,
+def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
+
+    # I/O
+    val_x, val_scales = inputs
+    val_y, = outputs
+    var_x = _make_var_name(val_x)
+    var_y = _make_var_name(val_y)
+
+    # interpretation
+    # output shape
+    out_shape_ = _shape_or_none(value_infos, val_y)
+    if out_shape_ is not None:
+        assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
+        out_shape_ = out_shape_[2:]
+    # try scales
+    scales = _const_weight_or_none(value_infos, val_scales)
+    if scales is not None:
+        assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
+        assert scales[0] == 1 and scales[
+            1] == 1, 'only scale on (NC)HW supported'
+        assert scales[2] == scales[
+            3], 'only aspect-ratio-invariant scale supported'
+    scale = scales[2] if scales else None
+    # try input shape
+    if scale is None:
+        assert out_shape_, 'neither scales nor output shape is available'
+        out_shape = out_shape_
+    else:
+        out_shape = None
+        if out_shape_ is None:
+            in_shape = _shape_or_none(value_infos, val_x)
+            assert in_shape is not None, 'out_shape required but not inferrable'
+            assert len(in_shape) == 4, 'only 4-D Tensor as X and Y supported'
+            out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
+    mode = attrs.get('mode', 'nearest')
+    fluid_op = 'resize_{}'.format(mode)  # not sure bilinear will be linear?
+    name_attr = ', name={}'.format(repr(name)) if name else ''
+
+    # generation
+    prog.Code('{} = layers.{}({}'
+              ', scale={}'
+              ', out_shape={}'
+              '{})'.format(
+                  var_y,
+                  fluid_op,
+                  var_x,
+                  # attrs
+                  scale,
+                  out_shape,
+                  name_attr,
+              ))
+    fluid_op = '{}_interp'.format(mode)
+    prog.VarDesc(var_y)
+    prog.OpDesc(
+        fluid_op,
+        ([var_x], 'X'),
+        ([var_y], 'Out'),
+        dict(
+            interp_method=mode,
+            out_h=out_shape_[0],
+            out_w=out_shape_[1],
+        ),
     )
 
 
@@ -563,21 +630,6 @@ def AdaptiveMaxPool(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
 
     return _adaptive_pool(prog, 'max', inputs, outputs, attrs, name=name)
-
-
-def AveragePool(prog,
-                inputs,
-                outputs,
-                attrs,
-                value_infos,
-                name='',
-                *args,
-                **kwargs):
-    """
-    onnx::AveragePool-10:
-    """
-
-    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
 
 
 def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
@@ -614,6 +666,21 @@ def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
         ([var_grid], 'Output'),
         dict(output_shape=size),  # f**k you API
     )
+
+
+def AveragePool(prog,
+                inputs,
+                outputs,
+                attrs,
+                value_infos,
+                name='',
+                *args,
+                **kwargs):
+    """
+    onnx::AveragePool-10:
+    """
+
+    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
 
 
 def BatchNormalization(prog,
@@ -805,6 +872,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # generation
     value = value.tolist()
     if len(value) == 1:  # scalar
+        shape = [1]  # WORKAROUND: bad scalar support
         value = value[0]
         fluid_op = 'fill_constant'
         prog.Code('{} = layers.{}(shape={}, dtype={}, value={})'.format(
@@ -874,7 +942,7 @@ def Conv(prog,
          *args,
          **kwargs):
     """
-    onnx::ConstantOfShape-1:
+    onnx::Conv-1:
     """
 
     # I/O
@@ -888,13 +956,13 @@ def Conv(prog,
 
     # interpretation
     assert attrs.get(
-        'auto_pad',
-        'NOTSET') == 'NOTSET', 'only auto_pad == NOTSET supported'  # optional
+        'auto_pad', 'NOTSET'
+    ) == 'NOTSET', 'only auto_pad == NOTSET is supported'  # optional
     kernel_shape = _shape(value_infos, val_w)[2:]  # OI...
     assert kernel_shape == attrs[
         'kernel_shape'], 'kernel_shape in attr unmatches value_info'  # HW
     convnd = len(kernel_shape)
-    assert 2 <= convnd <= 3, 'only conv2d and conv3d supported'
+    assert 2 <= convnd <= 3, 'only conv2d and conv3d is supported'
     num_out_channels = _shape(value_infos, val_w)[0]  # OI...
 
     fluid_op = 'conv{}d'.format(convnd)
@@ -994,16 +1062,16 @@ def ConvTranspose(prog,
 
     # interpretation
     assert attrs.get(
-        'auto_pad',
-        'NOTSET') == 'NOTSET', 'only auto_pad == NOTSET supported'  # optional
-    assert sum(
-        attrs.get('output_padding',
-                  [])) == 0, 'only zero output_padding supported'  # optional ?
+        'auto_pad', 'NOTSET'
+    ) == 'NOTSET', 'only auto_pad == NOTSET is supported'  # optional
+    assert sum(attrs.get(
+        'output_padding',
+        [])) == 0, 'only zero output_padding is supported'  # optional ?
     kernel_shape = _shape(value_infos, val_w)[2:]  # IO...
     assert kernel_shape == attrs[
         'kernel_shape'], 'kernel_shape in attr unmatches value_info'  # HW
     convnd = len(kernel_shape)
-    assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose supported'
+    assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose is supported'
     num_out_channels = _shape(value_infos, val_w)[1]  # IO...
 
     fluid_op = 'conv{}d_transpose'.format(convnd)
@@ -1285,14 +1353,6 @@ def MaxRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args,
     _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, value_infos, name)
 
 
-def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
-    """
-    caffe2::RoiAlign
-    """
-
-    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, value_infos, name)
-
-
 def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
     onnx::Pad-2:
@@ -1502,132 +1562,20 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
         )
 
 
-def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
+def Resize(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
-    onnx::Slice-1:9
-    """
-
-    # I/O
-    val_data, = inputs
-    val_output, = outputs
-    var_data = _make_var_name(val_data)
-    var_output = _make_var_name(val_output)
-
-    # interpretation
-    fluid_op = 'slice'
-    axes = attrs['axes']  # required
-    starts = attrs['starts']  # required
-    ends = attrs['ends']  # required
-    shape = _shape_or_none(value_infos, val_data)
-    if shape:
-        #        ndims = len(shape)
-        #        for idx, value in enumerate(axes):
-        #            if value > ONNX_INT_MAX // 2:
-        #                axes[idx] = ndims + value - ONNX_INT_MAX - 1
-        #  FIXME: Paddle 1.3 Doc: '对于未知大小维度的末尾进行切片，则建议传入 INT_MAX' not works ?
-        for idx, value in enumerate(starts):
-            if value > ONNX_INT_MAX // 2:
-                value = value - ONNX_INT_MAX - 1
-                starts[idx] = shape[axes[idx]] + value
-        for idx, value in enumerate(ends):
-            if value > ONNX_INT_MAX // 2:
-                value = value - ONNX_INT_MAX - 1
-                ends[idx] = shape[axes[idx]] + value
-
-    # generation
-    prog.Code('{} = layers.{}({}'
-              ', axes={}'
-              ', starts={}'
-              ', ends={}'
-              ')'.format(
-                  var_output,
-                  fluid_op,
-                  var_data,
-                  # attrs
-                  axes,
-                  starts,
-                  ends,
-              ))
-    prog.VarDesc(var_output)
-    prog.OpDesc(
-        fluid_op,
-        ([var_data], 'Input'),
-        ([var_output], 'Out'),
-        dict(
-            axes=axes,
-            starts=starts,
-            ends=ends,
-        ),
-    )
-
-
-def Sum(prog, inputs, outputs, *args, **kwargs):
-    """
-    onnx::Sum-8:
+    onnx::Resize-10:
     """
 
-    # I/O
-    val_sum, = outputs
-    var_inps = [_make_var_name(val) for val in inputs]
-    var_sum = _make_var_name(val_sum)
-
-    # interpretation
-    fluid_op = 'sums'
-
-    # generation
-    prog.Code('{} = layers.{}({})'.format(
-        var_sum,
-        fluid_op,
-        '[' + ', '.join(var_inps) + ']',
-        # attrs
-    ))
-    fluid_op = 'sum'
-    prog.VarDesc(var_sum)
-    prog.OpDesc(
-        fluid_op,
-        (var_inps, *(['X'] * len(var_inps))),
-        ([var_sum], 'Out'),
-        dict(),
-    )
+    return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 
 
-def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
+def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
-    onnx::ConstantOfShape-6:
+    caffe2::RoiAlign
     """
 
-    # I/O
-    val_input, val_repeats = inputs
-    val_output, = outputs
-    var_input = _make_var_name(val_input)
-    var_repeats = _make_var_name(val_repeats)
-    var_output = _make_var_name(val_output)
-
-    # interpretation
-    repeats = _const_weight_or_none(value_infos, val_repeats)
-    assert repeats is not None, 'only const repeats is supported'
-    fluid_op = 'expand'
-    name_attr = ', name={}'.format(repr(name)) if name else ''
-
-    # generation
-    prog.Code('# repeats:{}={} # const as literal'.format(var_repeats, repeats))
-    prog.Code('{} = layers.{}({}'
-              ', expand_times={}'
-              '{})'.format(
-                  var_output,
-                  fluid_op,
-                  var_input,
-                  # attrs
-                  repeats,
-                  name_attr,
-              ))
-    prog.VarDesc(var_output)
-    prog.OpDesc(
-        fluid_op,
-        ([var_input], 'X'),
-        ([var_output], 'Out'),
-        dict(expand_times=repeats),
-    )
+    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, value_infos, name)
 
 
 #def Shape(
@@ -1660,6 +1608,65 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
 #                ([var_shape], 'Out'),
 #                dict(),
 #                )
+
+
+def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
+    """
+    onnx::Slice-1:9
+    """
+
+    # I/O
+    val_data, = inputs
+    val_output, = outputs
+    var_data = _make_var_name(val_data)
+    var_output = _make_var_name(val_output)
+
+    # interpretation
+    fluid_op = 'slice'
+    axes = attrs['axes']  # required
+    starts = attrs['starts']  # required
+    ends = attrs['ends']  # required
+    shape = _shape_or_none(value_infos, val_data)
+    if shape:
+        #        ndims = len(shape)
+        #        for idx, value in enumerate(axes):
+        #            if value > ONNX_INT_MAX // 2:
+        #                axes[idx] = ndims + value - ONNX_INT_MAX
+        #  FIXME: Paddle 1.3 Doc: '对于未知大小维度的末尾进行切片，则建议传入 INT_MAX' not works ?
+        for idx, value in enumerate(starts):
+            if value > ONNX_INT_MAX // 2:
+                value = value - ONNX_INT_MAX
+                starts[idx] = shape[axes[idx]] + value
+        for idx, value in enumerate(ends):
+            if value > ONNX_INT_MAX // 2:
+                value = value - ONNX_INT_MAX
+                ends[idx] = shape[axes[idx]] + value
+
+    # generation
+    prog.Code('{} = layers.{}({}'
+              ', axes={}'
+              ', starts={}'
+              ', ends={}'
+              ')'.format(
+                  var_output,
+                  fluid_op,
+                  var_data,
+                  # attrs
+                  axes,
+                  starts,
+                  ends,
+              ))
+    prog.VarDesc(var_output)
+    prog.OpDesc(
+        fluid_op,
+        ([var_data], 'Input'),
+        ([var_output], 'Out'),
+        dict(
+            axes=axes,
+            starts=starts,
+            ends=ends,
+        ),
+    )
 
 
 def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
@@ -1701,6 +1708,90 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
             sections=split,
         ),
     )
+
+
+def Sum(prog, inputs, outputs, *args, **kwargs):
+    """
+    onnx::Sum-8:
+    """
+
+    # I/O
+    val_sum, = outputs
+    var_inps = [_make_var_name(val) for val in inputs]
+    var_sum = _make_var_name(val_sum)
+
+    # interpretation
+    fluid_op = 'sums'
+
+    # generation
+    prog.Code('{} = layers.{}({})'.format(
+        var_sum,
+        fluid_op,
+        '[' + ', '.join(var_inps) + ']',
+        # attrs
+    ))
+    fluid_op = 'sum'
+    prog.VarDesc(var_sum)
+    prog.OpDesc(
+        fluid_op,
+        (var_inps, *(['X'] * len(var_inps))),
+        ([var_sum], 'Out'),
+        dict(),
+    )
+
+
+def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
+    """
+    onnx::Tile-1:
+    """
+
+    # I/O
+    val_input, val_repeats = inputs
+    val_output, = outputs
+    var_input = _make_var_name(val_input)
+    var_repeats = _make_var_name(val_repeats)
+    var_output = _make_var_name(val_output)
+
+    # interpretation
+    repeats = _const_weight_or_none(value_infos, val_repeats)
+    assert repeats is not None, 'only const repeats is supported'
+    fluid_op = 'expand'
+    name_attr = ', name={}'.format(repr(name)) if name else ''
+
+    # generation
+    prog.Code('# repeats:{}={} # const as literal'.format(var_repeats, repeats))
+    prog.Code('{} = layers.{}({}'
+              ', expand_times={}'
+              '{})'.format(
+                  var_output,
+                  fluid_op,
+                  var_input,
+                  # attrs
+                  repeats,
+                  name_attr,
+              ))
+    prog.VarDesc(var_output)
+    prog.OpDesc(
+        fluid_op,
+        ([var_input], 'X'),
+        ([var_output], 'Out'),
+        dict(expand_times=repeats),
+    )
+
+
+def Upsample(prog,
+             inputs,
+             outputs,
+             attrs,
+             value_infos,
+             name='',
+             *args,
+             **kwargs):
+    """
+    onnx::Upsample-9:9
+    """
+
+    return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 
 
 if __name__ == '__main__':

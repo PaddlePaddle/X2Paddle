@@ -158,9 +158,12 @@ class Program(object):
                         raise ValueError('unsupported attribute {} = {}'.format(
                             key, value))
                 else:  # WORKAROUND: shape of scalars is []
-                    od_attr.type = framework_pb2.INTS
-                    logger.warning('using attribute %s = %s as INTS', key,
-                                   value)
+                    raise ValueError('unsupported attribute {} = {}'.format(
+                        key, value))
+
+
+#                    od_attr.type = framework_pb2.INTS
+#                    logger.warning('using attribute %s = %s as INTS', key, value)
             else:
                 raise ValueError('unsupported attribute {} = {}'.format(
                     key, value))
