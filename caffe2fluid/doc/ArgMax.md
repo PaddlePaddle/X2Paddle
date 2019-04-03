@@ -27,5 +27,5 @@ paddle.fluid.layers.argmax(
 
 ### 功能差异
 #### 计算机制
-Caffe：可通过`topk`和`out_max_val`参数得到前`k`的索引或数值；                            
+Caffe：可通过`top_k`和`out_max_val`参数设置得到前`k`的索引或数值；                            
 PaddlePaddle：只能输出最大值的索引；
