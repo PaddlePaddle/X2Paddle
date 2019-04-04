@@ -7,11 +7,11 @@ X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型
 
 ## [caffe2fluid](caffe2fluid)
 1. 支持将Caffe模型转至PaddlePaddle fluid可加载预测模型
-2. 提供Caffe-PaddlePaddle常用API的对比文档[[doc](caffe2fluid/doc/接口速查表.md)]
+2. 提供Caffe-PaddlePaddle常用API的对比文档[[doc](caffe2fluid/doc)]
 
 ## [tensorflow2fluid](tensorflow2fluid)
 1. 支持将TensorFlow模型转至PaddlePaddle fluid可加载预测模型
-2. 提供TensorFlow-PaddlePaddle常用API的对比文档[[doc](tensorflow2fluid/doc/接口速查表.md)]
+2. 提供TensorFlow-PaddlePaddle常用API的对比文档[[doc](tensorflow2fluid/doc)]
 
 ## [onnx2fluid](onnx2fluid)
 1. 支持将ONNX模型转至PaddlePaddle fluid可加载预测模型
