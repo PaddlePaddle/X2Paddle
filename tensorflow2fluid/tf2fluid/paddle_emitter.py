@@ -179,18 +179,7 @@ class PaddleEmitter(object):
         desc_size = tensor_desc.ByteSize()
         filew.write(struct.pack('i', desc_size))
         filew.write(tensor_desc.SerializeToString())
-        if len(shape) == 0:
-            if weight.size == 1:
-                tensor_size = 1
-                weight = numpy.array([weight])
-            else:
-                tensor_size = 0
-        else:
-            tensor_size = reduce(lambda x, y: x * y, shape)
-        weight = weight.flatten()
-        for i in range(0, tensor_size):
-            filew.write(
-                struct.pack(struct_write_format[str(weight.dtype)], weight[i]))
+        weight.tofile(filew)
         filew.close()
 
     @property
