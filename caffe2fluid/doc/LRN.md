@@ -32,7 +32,7 @@ paddle.fluid.layers.lrn(
 
 ### 功能差异
 #### 参数差异
-Caffe：参数`norm_region`支持`ACROSS_CHANNELS`和`WITHIN_CHANNEL`两种模式；
+Caffe：参数`norm_region`支持`ACROSS_CHANNELS`和`WITHIN_CHANNEL`两种模式；  
 PaddlePaddle：默认且仅支持`ACROSS_CHANNELS`模式。
 
 #### 计算机制
