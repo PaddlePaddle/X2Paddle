@@ -37,11 +37,11 @@ PaddlePaddle：默认且仅支持`ACROSS_CHANNELS`模式。
 
 #### 计算机制
 Caffe：在`ACROSS_CHANNELS`模式下，计算公式如下， 
-$$output(i,x,y)=input(i,x,y)/(1+\frac{\alpha}{n}\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2}}{input(j,x,y)^2})^\beta$$  
+$$output(i,x,y)=input(i,x,y)/(1+\frac{\alpha}{n}\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2})}{input(j,x,y)^2})^\beta$$  
 位移值固定为1，计算缩放参数的同时除以通道数目  
 
 PaddlePaddle：  
 计算机制：  
-$$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2}}{input(j,x,y)^2})^\beta$$  
+$$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2})}{input(j,x,y)^2})^\beta$$  
 能通过设置k来定义位移数。
 
