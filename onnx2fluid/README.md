@@ -47,14 +47,14 @@ cd examples
 sh onnx_model_zoo.sh
 ```
 目前测试脚本中已包含的测试模型如下，
-bvlc_alexnet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_alexnet.tar.gz)  	```shell
-[bvlc_googlenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_googlenet.tar.gz)  	onnx2fluid [-dexy] -o /path/to/export_dir/ /path/of/onnx/model.onnx
-[bvlc_reference_caffenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_caffenet.tar.gz)  	
-[bvlc_reference_rcnn_ilsvrc13](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_rcnn_ilsvrc13.tar.gz)  	optional arguments:
-[inception_v1](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v1.tar.gz)  	  --embed_params, -e    try to embed parameters for trainable Paddle fluid layers
-[inception_v2](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v2.tar.gz)  	  --no-pedantic, -x     process non-standard ONNX ops
-[resnet50](https://s3.amazonaws.com/download.onnx/models/opset_9/resnet50.tar.gz)  	  --skip-version-conversion, -y
-[shufflenet](https://s3.amazonaws.com/download.onnx/models/opset_9/shufflenet.tar.gz)  	                        skip ONNX op version conversion, workaround for
-[squeezenet](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz)  	                        RumtimeErrors
-[vgg19](https://s3.amazonaws.com/download.onnx/models/opset_9/vgg19.tar.gz)  	  --archive [ARCHIVE], -z [ARCHIVE]
+[bvlc_alexnet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_alexnet.tar.gz)  
+[bvlc_googlenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_googlenet.tar.gz)  
+[bvlc_reference_caffenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_caffenet.tar.gz)  
+[bvlc_reference_rcnn_ilsvrc13](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_rcnn_ilsvrc13.tar.gz)  
+[inception_v1](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v1.tar.gz)  
+[inception_v2](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v2.tar.gz)  
+[resnet50](https://s3.amazonaws.com/download.onnx/models/opset_9/resnet50.tar.gz)  
+[shufflenet](https://s3.amazonaws.com/download.onnx/models/opset_9/shufflenet.tar.gz)  
+[squeezenet](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz)  
+[vgg19](https://s3.amazonaws.com/download.onnx/models/opset_9/vgg19.tar.gz)  
 [zfnet512](https://s3.amazonaws.com/download.onnx/models/opset_9/zfnet512.tar.gz)
