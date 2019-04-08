@@ -31,11 +31,12 @@ paddle.fluid.layers.lrn(
 ```  
 
 ### 功能差异
-#### 计算机制
-Caffe：  
-计算机制：  
+#### 参数差异
+Caffe：参
+
+Caffe：计算公式如下， 
 $$output(i,x,y)=input(i,x,y)/(1+\frac{\alpha}{n}\sum_{j=max(0,i-\frac{n}{2})}{min(C,i+\frac{n}{2}}{input(j,x,y)^2})^\beta$$  
-位移数只能是1，同时在计算缩放参数时还除以累加通道数。  
+位移值固定为1，计算缩放参数的同时除以通道数目  
   
 
 
