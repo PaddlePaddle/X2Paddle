@@ -40,7 +40,7 @@ python -m onnx2fluid -o paddle_model vgg19/model.onnx
 转换后的PaddlePaddle模型加载可参考文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
 ## 模型测试
-[example](example)目录中集成了部分ONNX预训练模型的转换测试
+目录[examples](examples)中集成了部分ONNX预训练模型的转换测试
 ```shell
 cd examples
 # 测试和验证各onnx模型的转换
