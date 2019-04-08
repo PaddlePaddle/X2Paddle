@@ -32,17 +32,7 @@ paddle.fluid.layers.pool2d(
 ```  
   
 ### 功能差异
-#### 输出大小
-计算池化的输出高度和宽度有两种方式，分别为向上取整（ceil）和向下取整（floor），其计算方式如下列所示：
-
-**向上取整：**  
-	`H_out = (H_in-ksize[0]+2*padding[0])/strides[0]+1`  
-	`W_out = (W_in-ksize[1]+2*padding[1])/strides[1]+1`  
-
-**向下取整：**  
-	`H_out = (H_in-ksize[0]+2*padding[0]+strides[0]-1)/strides[0]+1`  
-	`W_out = (W_in-ksize[1]+2*padding[1]+strides[1]-1)/strides[1]+1`    
-
+#### 输出大小 
 Caffe：输出大小计算方式如下所示，
 ```
 H_out = (H_in-ksize[0]+2*padding[0])/strides[0]+1
