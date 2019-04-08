@@ -31,7 +31,7 @@ paddle.fluid.layers.lrn(
 ```  
 
 ### 功能差异
-#### 计算机制的差异
+#### 计算机制
 Caffe：  
 计算机制：  
 $$output(i,x,y)=input(i,x,y)/(1+\frac{\alpha}{n}\sum_{j=max(0,i-\frac{n}{2})}{min(C,i+\frac{n}{2}}{input(j,x,y)^2})^\beta$$  
