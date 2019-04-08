@@ -8,7 +8,7 @@ onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测，用
 
 工具开发过程中，我们在如下环境配置中测试模型转换:
 
-* python3.5+ (python2 working in progress)
+* python3.5+
 * onnx == 1.4.0
 * paddlepaddle == 1.3.0
 
@@ -20,38 +20,41 @@ onnx2fluid支持将onnx模型转换为PaddlePaddle模型，并用于预测，用
 conda install -c conda-forge onnx
 ```
 
-## Get started
-
-Test with pretrained models from ONNX repositories:
-
-``` shell
+## 使用说明
+```shell
+# 安装
+git clone https://github.com/PaddlePaddle/X2Paddle.git
+cd X2Paddle/onnx2fluid
 python setup.py install
+
+# 模型转换
+python -m onnx2fluid -o /path/to/export_dir/ /path/of/onnx/model.onnx
+```
+**示例：VGG19模型**
+```shell
+wget https://s3.amazonaws.com/download.onnx/models/opset_9/vgg19.tar.gz
+tar xzvf vgg19.tar.gz
+
+python -m onnx2fluid -o paddle_model vgg19/model.onnx
+```
+转换后的PaddlePaddle模型加载可参考文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
+
+## 模型测试
+[example](example)目录中集成了部分ONNX预训练模型的转换测试
+```shell
 cd examples
+# 测试和验证各onnx模型的转换
 sh onnx_model_zoo.sh
 ```
-
-Try exporting from PyTorch to Paddle fluid:
-
-``` shell
-python setup.py install
-cd examples
-python gen_some_samples.py
-onnx2fluid sample_1.onnx -t sample_1.npz
-```
-
-## 使用说明
-
-```shell
-onnx2fluid [-dexy] -o /path/to/export_dir/ /path/of/onnx/model.onnx
-
-optional arguments:
-  --embed_params, -e    try to embed parameters for trainable Paddle fluid layers
-  --no-pedantic, -x     process non-standard ONNX ops
-  --skip-version-conversion, -y
-                        skip ONNX op version conversion, workaround for
-                        RumtimeErrors
-  --archive [ARCHIVE], -z [ARCHIVE]
-                        compress outputs to ZIP file if conversion successed
-```
-
-转换后的PaddlePaddle模型加载可参考文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
+目前测试脚本中已包含的测试模型如下，
+bvlc_alexnet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_alexnet.tar.gz)  	```shell
+[bvlc_googlenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_googlenet.tar.gz)  	onnx2fluid [-dexy] -o /path/to/export_dir/ /path/of/onnx/model.onnx
+[bvlc_reference_caffenet](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_caffenet.tar.gz)  	
+[bvlc_reference_rcnn_ilsvrc13](https://s3.amazonaws.com/download.onnx/models/opset_9/bvlc_reference_rcnn_ilsvrc13.tar.gz)  	optional arguments:
+[inception_v1](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v1.tar.gz)  	  --embed_params, -e    try to embed parameters for trainable Paddle fluid layers
+[inception_v2](https://s3.amazonaws.com/download.onnx/models/opset_9/inception_v2.tar.gz)  	  --no-pedantic, -x     process non-standard ONNX ops
+[resnet50](https://s3.amazonaws.com/download.onnx/models/opset_9/resnet50.tar.gz)  	  --skip-version-conversion, -y
+[shufflenet](https://s3.amazonaws.com/download.onnx/models/opset_9/shufflenet.tar.gz)  	                        skip ONNX op version conversion, workaround for
+[squeezenet](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz)  	                        RumtimeErrors
+[vgg19](https://s3.amazonaws.com/download.onnx/models/opset_9/vgg19.tar.gz)  	  --archive [ARCHIVE], -z [ARCHIVE]
+[zfnet512](https://s3.amazonaws.com/download.onnx/models/opset_9/zfnet512.tar.gz)
