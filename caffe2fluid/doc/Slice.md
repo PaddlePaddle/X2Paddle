@@ -10,7 +10,7 @@ layer {
     top: "out1"
     top: "out2"
     top: "out3"
-    slice_param{
+    slice_param {
 	axis: 1
 	alice_point: 1
 	alice_point: 2
@@ -51,8 +51,8 @@ layer {
     top: "out1"
     top: "out2"
     top: "out3"
-    slice_param{
-	axis: 1	#使用-1效果相同
+    slice_param {
+	axis: 1    # 使用-1效果相同
 	alice_point: 1
 	alice_point: 2
     }
@@ -62,8 +62,8 @@ layer {
 ```python
 # PaddlePaddle示例：  
 # 输入shape：(2,6)
-output1 = paddle.fluid.layers.slice(input = inputs, axes = [1], starts= [1], ends = [3])
+output1 = paddle.fluid.layers.slice(input=inputs, axes=[1], starts=[1], ends=[3])
 # 输出shape：(2，2)
-output2 = paddle.fluid.layers.slice(input = inputs, axes = [0,1], starts= [0,1], ends = [1,3])
+output2 = paddle.fluid.layers.slice(input=inputs, axes=[0,1], starts=[0,1], ends=[1,3])
 # 输出shape：(1,2)
 ```  
