@@ -3,22 +3,22 @@
 
 ### [Convolution](http://caffe.berkeleyvision.org/tutorial/layers/convolution.html)
 ```
-layer{
+layer {
     name: "conv"
     type: "Convolution"
     bottom: "data"
     top: "conv"
     #卷积核的局部学习率和权值衰减因子
-    param{
+    param {
 	lr_mult: 1
 	decay_mult: 1
     }
     #偏置项的局部学习率和权值衰减因子
-    param{
+    param {
 	lr_mult: 2
 	decay_mult: 0
     }
-    convolution_param{
+    convolution_param {
 	num_output: 20	#必填项
 	kernel_size: 5	#必填项
 	stride: 1
@@ -48,11 +48,11 @@ paddle.fluid.layers.conv2d(
     padding = 0,
     dilation = 1,
     groups = None,
-    param_attr=None,
-    bias_attr=None,
-    use_cudnn=True,
-    act=None,
-    name=None
+    param_attr = None,
+    bias_attr = None,
+    use_cudnn = True,
+    act = None,
+    name = None
 )
 ```  
 
