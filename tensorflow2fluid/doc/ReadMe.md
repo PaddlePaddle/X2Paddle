@@ -5,7 +5,7 @@
 2. PaddlePaddle实现：部分接口提供了PaddlePaddle实现的示例代码，可供用户参考  
 3. 差异对比：接口存在差异，具体可查看差异对比文档  
 
-| 序号 | TensorFlow接口                                               | PaddlePaddle接口                                             | 备注                                                   |
+| 序号 | TensorFlow接口                                            | PaddlePaddle接口                                             | 备注                                                   |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
 | 1    | [tf.abs](https://www.tensorflow.org/api_docs/python/tf/abs)  | [fluid.layers.abs](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#abs) | 接口对应                                               |
 | 2    | [tf.add](https://www.tensorflow.org/api_docs/python/tf/add)  | [fluid.layers.elementwise_add](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#elementwise_add) | 接口对应                                               |
