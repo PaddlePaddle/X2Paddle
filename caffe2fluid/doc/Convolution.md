@@ -8,19 +8,19 @@ layer {
     type: "Convolution"
     bottom: "data"
     top: "conv"
-    #卷积核的局部学习率和权值衰减因子
+    # 卷积核的局部学习率和权值衰减因子
     param {
 	lr_mult: 1
 	decay_mult: 1
     }
-    #偏置项的局部学习率和权值衰减因子
+    # 偏置项的局部学习率和权值衰减因子
     param {
 	lr_mult: 2
 	decay_mult: 0
     }
     convolution_param {
-	num_output: 20	#必填项
-	kernel_size: 5	#必填项
+	num_output: 20    # 必填项
+	kernel_size: 5    # 必填项
 	stride: 1
 	pad: 0
 	group: 1
@@ -44,15 +44,15 @@ paddle.fluid.layers.conv2d(
     input,
     num_filters,
     output_size,
-    stride = 1,
-    padding = 0,
-    dilation = 1,
-    groups = None,
-    param_attr = None,
-    bias_attr = None,
-    use_cudnn = True,
-    act = None,
-    name = None
+    stride=1,
+    padding=0,
+    dilation=1,
+    groups=None,
+    param_attr=None,
+    bias_attr=None,
+    use_cudnn=True,
+    act=None,
+    name=None
 )
 ```  
 
