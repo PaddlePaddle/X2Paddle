@@ -2,11 +2,11 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-onnx2fluid supports converting ONNX model to PaddlePaddle Model for prediction. 
+onnx2fluid supports converting ONNX model to PaddlePaddle Model for prediction.
 
 ## Running Environment
 
-* python3.5+ (python2 working in progress)
+* python 3.5+ (python 2 working in progress)
 * onnx == 1.4.0
 * paddlepaddle == 1.3.0
 

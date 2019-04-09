@@ -5,9 +5,6 @@ Created on Fri Mar 22 11:19:45 2019
 
 @author: Macrobull
 
-Not all ops in this file are supported by both Pytorch and ONNX
-This only demostrates the conversion/validation workflow from Pytorch to ONNX to Paddle fluid
-
 """
 
 from __future__ import print_function
