@@ -1,37 +1,84 @@
-## SigmoidCrossEntropyLoss
+## SofmaxWithLoss
 
 
-### [SigmoidCrossEntropyLoss](http://caffe.berkeleyvision.org/tutorial/layers/sigmoidcrossentropyloss.html)
+### [SofmaxWithLoss](http://caffe.berkeleyvision.org/tutorial/layers/softmaxwithloss.html)
 ```
 layer {
     name: "loss"
-    type: "SigmoidCrossEntropyLoss"
+    type: "SoftmaxWithLoss"
     bottom: "pred"
     bottom: "label"
     top: "loss"
+    loss_param{
+	ignore_label: -1
+	normalize: 0
+	normalization: FULL
+    }
 }
 ```
 
 
-### [paddle.fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-158-sigmoid_cross_entropy_with_logits)
+### [paddle.fluid.layers.softmax_with_cross_entropy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-164-softmax_with_cross_entropy)
 ```python
-paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
-    x, 
-    label, 
-    ignore_index=-100, 
-    name=None, 
-    normalize=False
+paddle.fluid.layers.softmax_with_cross_entropy(
+    logits,
+    label,
+    soft_label = False,
+    ignore_index = -100,
+    numeric_stable_mode = False, 
+    return_softmax = False
 )
 ```  
 
 ### 功能差异
-#### 输入格式
-Caffe：输入的数据维度最大是4维`N*C*H*W`；                 
-PaddlePaddle：输入只能是2维`N*H`。
+#### 计算机制
+计算softmax的loss时，根据每个样本是否被分配至多个类别中可以分为两类——硬标签和软标签，具体如下：  
+  
+**硬标签：** 即one-hot label，每个样本仅分到一个类别中。在硬标签中，根据是否对未初始化的log概率进行预处理，又可以分为两类，预处理主要是完成对每个样本中的每个log概率减去该样本中的最大的log概率。  
+ 
+**软标签：** 每个样本至少被分配到一个类别中。  
+  
 
-#### 输出格式
-Caffe：输出的数据大小是`1*1*1*1`，即将所有位置上的loss取均值；                      
-PaddlePaddle：输出和输入大小一致，即`N*H`。
-#### 其他
-PaddlePaddle：可以通过设定`ignore_index`来确定忽略的目标值，同时它有一个`normalize`参数可以输出除以除去`ignore_index`对应目标外的目标数所得的结果。
+Caffe：只可以使用硬标签的输入，同时进行预处理操作。                     
+PaddlePaddle：可以使用`soft_label`来设置是使用软标签（True）还是硬标签（False）。将`numeric_stable_mode`设为True，同时在GPU环境下运行，可以在使用硬标签之前先进行预处理。此外，软标签和硬标签的label输入略有不同，当log概率的输入大小为`N*K`时（`N`代表batch size，`K`代表类别数量），软标签的输入大小为`N*K`，其重的数值数据类型为`float`或者`double`，每一个batch中的值都是0或者1（1代表属于这个类别，0则代表不属于）；硬标签的输入大小为`N*1`，其中的数值数据类型为`int`，每一个batch中的值都是大于等于0且小于K（代表属于某一个类别）。
+ 
+#### 输出结果
+Caffe：输出是对所有样本的loss进行归一化后的结果。
+```
+归一化形式:
+1. 当`normalization`是FULL或0时，整个loss取和后除以batch的大小.
+2. 当`normalization`是VALID或1时，整个loss取和后除以除`ignore_label`以外的样本数。
+3. 当`normalization`是NONE时，则loss取和.
+4. 当`normalization`未设置时，采用`normalize`的值进行判断，若`normalize==1`则归一化方式是VALID，若`normalize==0`则归一化方式是FULL。
+```
+PaddlePaddle：输出是每个样本的loss所组成的一个向量，同时如果将参数`return_softmax`设为True，则输出的是loss向量和softmax值组成的一个元组。
 
+### 代码示例
+```  
+# Caffe示例：
+# pred输入shape：(100,10)  
+# label输入shape：(100,1)  
+# 输出shape：()
+layer {
+    name: "loss"
+    type: "SoftmaxWithLoss"
+    bottom: "pred"
+    bottom: "label"
+    top: "loss"
+    loss_param{
+	ignore_label: -1
+	normalize: 0
+	normalization: FULL
+
+    }
+}
+```
+
+  
+```python  
+# PaddlePaddle示例：
+# pred输入shape：(100,10)  
+# label输入shape：(100,1)  
+# 输出shape：(10,1)
+softmaxwithloss= paddle.fluid.layers.softmax_with_cross_entropy(logits = logs, label = labels, soft_label=False, ignore_index=-100, numeric_stable_mode=False, return_softmax=False)
+```
