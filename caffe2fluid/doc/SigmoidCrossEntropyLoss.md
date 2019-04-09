@@ -6,7 +6,7 @@
 layer {
     name: "loss"
     type: "SigmoidCrossEntropyLoss"
-    bottom: "pred"
+    bottom: "x"
     bottom: "label"
     top: "loss"
 }
