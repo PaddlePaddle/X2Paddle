@@ -21,9 +21,9 @@ layer {
 paddle.fluid.layers.accuracy(
     input,
     label,
-    k = 1,
-    correct = None,
-    total = None
+    k=1,
+    correct=None,
+    total=None
 )
 ```  
 
