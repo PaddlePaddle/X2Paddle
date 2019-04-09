@@ -8,9 +8,9 @@ layer {
     type: "LRN"
     bottom: "data"
     top: "lrn"	
-    lrn_parame{
-	loal_size: 5
-	alphe: 1
+    lrn_param {
+	local_size: 5
+	alpha: 1
 	beta: 5
 	norm_region: 'ACROSS_CHANNELS'
     }
