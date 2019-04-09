@@ -9,8 +9,8 @@ layer {
     bottom: "num1"
     bottom: "num2"
     top: "prod"
-    eltwise_param{
-        operation: PROD	#还有MAX，SUM
+    eltwise_param {
+        operation: PROD    # 还有MAX，SUM
         stable_prod_grad: false
         # coeff: 1
         # coeff: -1
@@ -26,24 +26,25 @@ layer {
 paddle.fluid.layers.elementwise_sum(
     x, 
     y, 
-    axis = -1, 
-    act = None,
-    name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 和
 paddle.fluid.layers.elementwise_max(
     x, 
     y, 
-    axis = -1, 
-    act = None,
-    name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 和
 paddle.fluid.layers.elementwise_mul(
     x, 
     y, 
-    axis = -1, 
-    act = None,name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 ```  
 
