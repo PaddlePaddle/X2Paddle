@@ -9,7 +9,7 @@ layer {
     bottom: "data1"
     bottom: "data2"
     top: “crop"
-    crop_param{
+    crop_param {
         axis: 1
         offset: 0
         offset: 2
