@@ -8,9 +8,9 @@ layer {
     type: "Flatten"
     bottom: "data"
     top: "flatten"
-    flatten_param{
+    flatten_param {
         axis: 1
-	      end_axis: -1
+	end_axis: -1
     }
 }
 ```
