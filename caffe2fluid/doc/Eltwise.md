@@ -6,8 +6,8 @@
 layer {
     name: "eltwise"
     type: "Eltwise"
-    bottom: "num1"
-    bottom: "num2"
+    bottom: "data1"
+    bottom: "data2"
     top: "prod"
     eltwise_param {
         operation: PROD    # 还有MAX，SUM
