@@ -6,7 +6,7 @@
 layer {
     name: "loss"
     type: "EuclideanLoss"
-    bottom: "pred"
+    bottom: "input"
     bottom: "label"
     top: "loss"
 }
