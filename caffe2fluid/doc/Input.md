@@ -5,8 +5,8 @@ layer {
     name: "input"
     type: "Input"
     top: "input"	
-    input_param{
-        shape{
+    input_param {
+        shape {
 	    dim: 10
 	    dim: 3
 	    dim: 227
@@ -45,12 +45,12 @@ PaddlePaddle：需要强制定义输入数据的类型，同时可以通过设�
 ### 代码示例
 ``` 
 # Caffe示例：
-layer{
+layer {
     name: "input"
     type: "Input"
     top: "input"	
-    input_param{
-    	shape{
+    input_param {
+    	shape {
 	    dim: 10
 	    dim: 3
 	    dim: 227
