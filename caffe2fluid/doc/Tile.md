@@ -8,7 +8,7 @@ layer {
     type: "Tile"
     bottom: "data"
     top: "concat"
-    tile_param{
+    tile_param {
         axis: 1
         tiles: 2
     }
