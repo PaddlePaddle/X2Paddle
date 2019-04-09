@@ -6,10 +6,10 @@
 layer {
     name: "accuracy"
     type: "Accuracy"
-    bottom: "pred"
+    bottom: "input"
     bottom: "label"
     top: "accuracy"
-    include{
+    include {
 	phase: TEST
     }
 }
