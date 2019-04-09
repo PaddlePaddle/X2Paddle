@@ -77,11 +77,11 @@ DEFAULT_OP_MAPPING = {
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
         'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
-    #        'Transpose': ['transpose', ['X'], ['Out']],
+        #'Transpose': ['transpose', ['X'], ['Out']],
         'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    #        'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
+        #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
         'And': ['logical_and', ['X', 'Y'], ['Out']],
         'Div': ['elementwise_div', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Equal': ['equal', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
@@ -110,7 +110,7 @@ DEFAULT_OP_MAPPING = {
         'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
 }
 
-DEFAULT_IOA_CONSTRAINT = {
+DEFAULT_IOA_CONSTRAINTS = {
     'ArgMax': [
         (lambda i, o, a: a.get('keepdims', 1) == 1,
          'only keepdims = 0 is supported'),
@@ -217,8 +217,8 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
         fill_name_field,
     ) = info
 
-    if fluid_op in DEFAULT_IOA_CONSTRAINT:
-        for predicate, message in DEFAULT_IOA_CONSTRAINT[fluid_op]:
+    if fluid_op in DEFAULT_IOA_CONSTRAINTS:
+        for predicate, message in DEFAULT_IOA_CONSTRAINTS[fluid_op]:
             assert predicate(inputs, outputs, attrs), message
 
     # bypass if key absent, drop if mapped key is '' or '_'
@@ -552,7 +552,6 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
 
 
 def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
-
     # I/O
     val_x, val_scales = inputs
     val_y, = outputs

@@ -176,15 +176,12 @@ class Program(object):
         self.op_descs = []
         self.var_descs = []
 
-    def __str__(self):
+    def __repr__(self):
         return ('Program(code mutable: {}) with:\n'
                 'codes: {}\n'
                 'op_descs: {}\n'
                 'var_descs: {}\n').format(self.code_mutable, self.codes,
                                           self.op_descs, self.var_descs)
-
-    def __repr__(self):
-        return self.__str__()
 
     def Code(self, code):
         """

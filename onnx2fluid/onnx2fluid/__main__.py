@@ -88,8 +88,8 @@ parser.add_argument(
 parser.add_argument(
     '--precision',
     '-p',
-    type=int,
-    default=3,
+    type=float,
+    default=3.,
     help='assertion decimal for validation',
 )
 args = parser.parse_args()
