@@ -26,12 +26,12 @@ paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
 
 ### 功能差异
 #### 输入数据
-Caffe：输入的数据维度最大是4维（`N*C*H*W`）。                 
+Caffe：输入的数据维度最大是4维（`N*C*H*W`）；                 
 PaddlePaddle：输入只能是2维（`N*H`）。
 #### 输出结果
-Caffe：输出的数据大小是`1*1*1*1`，即将所有位置上的loss取均值。                      
+Caffe：输出的数据大小是`1*1*1*1`，即将所有位置上的loss取均值；                      
 PaddlePaddle：输出和输入大小一致，即`N*H`。
 #### 其他差异
-Caffe：无`ignore_index`和`normalize`参数。
+Caffe：无`ignore_index`和`normalize`参数；  
 PaddlePaddle：可以通过设定`ignore_index`来确定忽略的目标值，同时它有一个`normalize`参数进行归一化。
 
