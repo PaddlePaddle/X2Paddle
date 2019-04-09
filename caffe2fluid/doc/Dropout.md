@@ -8,7 +8,7 @@ layer {
     type: "Dropout"
     bottom: "data"
     top: “dropout"
-    dropout_param{
+    dropout_param {
 	dropout_ratio: 0.5
     }
 }
