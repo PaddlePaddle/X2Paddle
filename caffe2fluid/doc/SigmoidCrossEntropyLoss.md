@@ -31,19 +31,15 @@ paddle.fluid.layers.softmax_with_cross_entropy(
 ```  
 
 ### 功能差异
-#### 计算机制
-计算softmax的loss时，根据每个样本是否被分配至多个类别中可以分为两类——硬标签和软标签，具体如下：  
-  
-**硬标签：** 即one-hot label，每个样本仅分到一个类别中。在硬标签中，根据是否对未初始化的log概率进行预处理，又可以分为两类，预处理主要是完成对每个样本中的每个log概率减去该样本中的最大的log概率。  
- 
-**软标签：** 每个样本至少被分配到一个类别中。  
-  
-
-Caffe：只可以使用硬标签的输入，同时进行预处理操作。                     
-PaddlePaddle：可以使用`soft_label`来设置是使用软标签（True）还是硬标签（False）。将`numeric_stable_mode`设为True，同时在GPU环境下运行，可以在使用硬标签之前先进行预处理。此外，软标签和硬标签的label输入略有不同，当log概率的输入大小为`N*K`时（`N`代表batch size，`K`代表类别数量），软标签的输入大小为`N*K`，其重的数值数据类型为`float`或者`double`，每一个batch中的值都是0或者1（1代表属于这个类别，0则代表不属于）；硬标签的输入大小为`N*1`，其中的数值数据类型为`int`，每一个batch中的值都是大于等于0且小于K（代表属于某一个类别）。
+#### 输入格式
+Caffe: 采用硬标签方式输入，同时进行预处理操作；  
+PaddlePaddle：通过参数`soft_label`的设定，支持硬标签和软标签两种输入。  
+> 计算softmax的loss时，根据每个样本是否被分配至多个类别中可以分为两类——硬标签和软标签  
+> **硬标签：** 即one-hot label，每个样本仅分到一个类别中。在硬标签中，根据是否对未初始化的log概率进行预处理，又可以分为两类，预处理主要是完成对每个样本中的每个log概率减去该样本中的最大的log概率  
+> **软标签：** 每个样本至少被分配到一个类别中
  
 #### 输出结果
-Caffe：输出是对所有样本的loss进行归一化后的结果。
+Caffe：输出是对所有样本的loss进行归一化后的结果，归一化的方式由`normalization`和`normalize`参数决定；
 ```
 归一化形式:
 1. 当`normalization`是FULL或0时，整个loss取和后除以batch的大小.
@@ -80,5 +76,8 @@ layer {
 # pred输入shape：(100,10)  
 # label输入shape：(100,1)  
 # 输出shape：(10,1)
-softmaxwithloss= paddle.fluid.layers.softmax_with_cross_entropy(logits = logs, label = labels, soft_label=False, ignore_index=-100, numeric_stable_mode=False, return_softmax=False)
+softmaxwithloss= fluid.layers.softmax_with_cross_entropy(logits = logs, label = labels, 
+							soft_label=False, ignore_index=-100, 
+							numeric_stable_mode=False, 
+							return_softmax=False)
 ```
