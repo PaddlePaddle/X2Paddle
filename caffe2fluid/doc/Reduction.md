@@ -8,7 +8,7 @@ layer {
     type: "Reduction"
     bottom: "reduce"
     top: “reduce"
-    reduction_param{
+    reduction_param {
         operation: SUM
 	axis: 1
 	coeff: 2
@@ -54,7 +54,7 @@ layer {
     type: "Reduction"
     bottom: "reduce"
     top: “reduce"
-    reduction_param{
+    reduction_param {
 	operation: SUM
 	axis: 2
 	coeff: 2
