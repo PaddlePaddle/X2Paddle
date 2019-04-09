@@ -27,7 +27,7 @@ paddle.fluid.layers.reduce_sum(
     name=None
 )
 ```
-```
+```python
 paddle.fluid.layers.reduce_mean(
     input, 
     dim=None, 
