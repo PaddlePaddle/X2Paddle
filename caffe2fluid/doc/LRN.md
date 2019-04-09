@@ -12,7 +12,7 @@ layer {
 	local_size: 5
 	alpha: 1
 	beta: 5
-	norm_region: 'ACROSS_CHANNELS'
+	norm_region: "ACROSS_CHANNELS"
     }
 }
 ```
