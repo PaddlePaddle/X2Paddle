@@ -8,7 +8,7 @@ layer {
     type: "Log"
     bottom: "data"
     top: "log"
-    log_param{
+    log_param {
         base: -1
         scale: 1
 	shift: 0
