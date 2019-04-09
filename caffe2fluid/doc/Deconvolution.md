@@ -3,24 +3,24 @@
 
 ### [Deconvolution](http://caffe.berkeleyvision.org/tutorial/layers/deconvolution.html)
 ```
-layer{
+layer {
     name: "deconv"
     type: "Deconvolution"
     bottom: "data"
-    top: "conv"
-    #卷积核的局部学习率和权值衰减因子
-    param{
+    top: "deconv"
+    # 卷积核的局部学习率和权值衰减因子
+    param {
 	lr_mult: 1
 	decay_mult: 1
     }
-    #偏置项的局部学习率和权值衰减因子
-    param{
+    # 偏置项的局部学习率和权值衰减因子
+    param {
 	lr_mult: 2
 	decay_mult: 0
     }
-    convolution_param{
-	num_output: 20	#必填项
-	kernel_size: 3	#必填项
+    convolution_param {
+	num_output: 20    # 必填项
+	kernel_size: 3    # 必填项
 	stride: 1
 	pad: 0
 	group: 1
@@ -48,11 +48,11 @@ paddle.fluid.layers.conv2d_transpose(
     padding = 0,
     dilation = 1,
     groups = None,
-    param_attr=None,
-    bias_attr=None,
-    use_cudnn=True,
-    act=None,
-    name=None
+    param_attr = None,
+    bias_attr = None,
+    use_cudnn = True,
+    act = None,
+    name = None
 )
 ```  
 
@@ -62,13 +62,13 @@ Caffe：Layer定义中共有两个结构体`param`用于设置局部学习率和
 PaddlePaddle：卷积核和偏置项的参数分别使用`param_attr`和`bias_attr`进行配置，配置参数如下所示，此外将`bias_attr`直接设为`False`表示不使用偏置项。
 ```
 paddle.fluid.ParamAttr(
-    name=None, 
-    initializer=None, 
-    learning_rate=1.0, 
-    regularizer=None, 
-    trainable=True, 
-    gradient_clip=None, 
-    do_model_average=False
+    name = None, 
+    initializer = None, 
+    learning_rate = 1.0, 
+    regularizer = None, 
+    trainable = True, 
+    gradient_clip = None, 
+    do_model_average = False
 )
 ```
 #### 空洞卷积
