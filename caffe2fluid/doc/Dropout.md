@@ -23,7 +23,7 @@ paddle.fluid.layers.dropout(
     is_test=False, 
     seed=None, 
     name=None, 
-    dropout_implementation='downgrade_in_infer'
+    dropout_implementation="downgrade_in_infer"
 )
 ```  
 
