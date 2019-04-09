@@ -21,7 +21,7 @@ layer {
 ```python
 paddle.fluid.layers.argmax(
     x,
-    axis = 0
+    axis=0
 )
 ```  
 
