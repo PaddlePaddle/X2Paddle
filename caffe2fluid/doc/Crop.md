@@ -22,9 +22,9 @@ layer {
 ```python
 paddle.fluid.layers.crop(
     x, 
-    shape = None, 
-    offsets = None, 
-    name = None
+    shape=None, 
+    offsets=None, 
+    name=None
 )
 ```  
 
@@ -47,7 +47,7 @@ layer {
     bottom: "data1"
     bottom: "data2"
     top: ”crop"
-    crop_param{
+    crop_param {
         axis: 1
         offset: 0
         offset: 25
@@ -59,7 +59,7 @@ layer {
 ```python
 # PaddlePaddle示例：  
 # inputs1输入shape：(20，3，128，128)
-output1 = fluid.layers.crop(x = inputs1, shape=inputs2, offsets=[0,0,25,25])
+output1 = fluid.layers.crop(x=inputs1, shape=inputs2, offsets=[0,0,25,25])
 # 输出shape：(20，2，64，64)
-output = fluid.layers.crop(x = inputs1, shape=[20,2,64,64], offsets=[0,0,25,25])
+output = fluid.layers.crop(x=inputs1, shape=[20,2,64,64], offsets=[0,0,25,25])
 ```
