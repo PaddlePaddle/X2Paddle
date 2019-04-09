@@ -8,7 +8,7 @@ layer {
     type: "ArgMax"
     bottom: "data"
     top: "argmax"	
-    argmax_param{
+    argmax_param {
 	out_max_val: false
 	top_k: 1
 	axis: 0
