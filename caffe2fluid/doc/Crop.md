@@ -22,9 +22,9 @@ layer {
 ```python
 paddle.fluid.layers.crop(
     x, 
-    shape=None, 
-    offsets=None, 
-    name=None
+    shape = None, 
+    offsets = None, 
+    name = None
 )
 ```  
 
