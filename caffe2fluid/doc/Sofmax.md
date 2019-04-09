@@ -22,6 +22,6 @@ paddle.fluid.layers.softmax(
 ```  
 
 ### 功能差异
-#### 计算机制的差异
-Caffe：计算softmax之前，对每个样本中的每个值减去该样本中的最大值。                 
+#### 计算机制
+Caffe：计算softmax之前，对每个样本中的每个值减去该样本中的最大值;                 
 PaddlePaddle：省略了这一操作直接计算softmax。

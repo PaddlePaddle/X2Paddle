@@ -1,7 +1,7 @@
 # caffe2fluid
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-caffe2fluid用于将Caffe模型转换为PaddlePaddle模型
+caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc/接口速查表.md)]目录中整理了Caffe-PaddlePaddle的常用API对比分析。
 
 ## 环境依赖
 
@@ -46,16 +46,16 @@ python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid --need-layer
 模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（**运行环境依赖caffe和paddlepaddle**）
 ```
 # alexnet : caffe配置文件（.prototxt）中“name”的值
-# ./models/alexnet.prototxt : caffe配置文件路径
-# ./models/alexnet.caffemodel : caffe模型文件路径
-# ./models/alexnet.py : 转换后模型代码保存路径
-# ./models/alexnet.npy : 转换后模型参数保存路径
+# ../../alexnet.prototxt : caffe配置文件路径
+# ../../alexnet.caffemodel : caffe模型文件路径
+# ../../alexnet.py : 转换后模型代码保存路径
+# ../../alexnet.npy : 转换后模型参数保存路径
 # ./data/65.jpeg : 需要测试的图像数据
 cd examples/imagenet
-bash tools/diff.sh alexnet ./models/alexnet.prototxt \
-			./models/alexnet.caffemodel \
-			./models/alexnet.py \
-			./models/alexnet.npy \
+bash tools/diff.sh alexnet ../../alexnet.prototxt \
+			../../alexnet.caffemodel \
+			../../alexnet.py \
+			../../alexnet.npy \
 			./data/65.jpeg
 ```
 

@@ -63,8 +63,10 @@ layer{
 
 ``` python
 # PaddlePaddle示例：
-inputs1 = paddle.fluid.layers.data(name = 'data1', shape = [10,3,227,227], dtype = 'float32', append_batch_size = False)
 # 数据shape为[10,3,227,227]
-inputs2 = paddle.fluid.layers.data(name = 'data2', shape = [3,227,227], dtype = 'float32')
+inputs1 = paddle.fluid.layers.data(name='data1', shape=[10,3,227,227], 
+				dtype='float32', append_batch_size=False)
+
 # 数据shape为[-1,3,227,227]
+inputs2 = paddle.fluid.layers.data(name='data2', shape=[3,227,227], dtype='float32')
 ```  
