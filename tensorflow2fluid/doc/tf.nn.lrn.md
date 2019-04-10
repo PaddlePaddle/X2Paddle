@@ -36,11 +36,6 @@ $$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-n)}^{min(C,i+n+1)}{input(j
 PaddlePaddle：计算公式如下所示，
 $$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2})}{input(j,x,y)^2})^\beta$$ 
 
-
-### 代码示例
-```
-# x是shape为[3,2]的张量
-
-# out同样是shape[3,2]的张量，axis设置为1，表示将x中每个行向量做归一化
-out = fluid.layers.l2_normalize(x, axis=1)
-```
+#### 输入格式
+TensorFlow: 默认输入`NHWC`格式数据；  
+PaddlePaddle: 默认输入`NCHW`格式数据，
