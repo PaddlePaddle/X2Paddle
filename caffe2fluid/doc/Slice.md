@@ -14,7 +14,6 @@ layer {
 	axis: 1
 	alice_point: 1
 	alice_point: 2
-	# slice_dim: 1
     }
 }
 ```
@@ -38,7 +37,6 @@ PaddlePaddle：输入的`axes`、`starts`和`ends`等输入参数都是list类�
 Caffe：只能在一个维度上截取，但可以截取多个切片。            
 PaddlePaddle：可以在多个维度上截取，但只能截取到一个切片。
 #### 其他差异
-Caffe：可以使用`slice_dim`代替`axis`，但其值只能是正值。                
 PaddlePaddle：如果传递给`starts`或`end`的值大于n（此维度中的元素数目），则表示n。
 ### 代码示例
 ```  
