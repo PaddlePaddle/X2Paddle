@@ -34,7 +34,7 @@ paddle.fluid.layers.lrn(
 TensorFlow：计算公式如下所示，
 $$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-n)}^{min(C,i+n+1)}{input(j,x,y)^2})^\beta$$ 
 PaddlePaddle：计算公式如下所示，
-
+$$output(i,x,y)=input(i,x,y)/(k+\alpha\sum_{j=max(0,i-\frac{n}{2})}^{min(C,i+\frac{n}{2})}{input(j,x,y)^2})^\beta$$ 
 
 
 ### 代码示例
