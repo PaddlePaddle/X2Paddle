@@ -3,7 +3,7 @@
 
 # 简介
 
-X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型，同时我们目前维护了TensorFlow/Caffe与PaddlePaddle接口对比分析文档。欢迎用户通过ISSUE反馈使用问题和PR更新代码和文档。
+X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型，同时我们目前维护了TensorFlow/Caffe与PaddlePaddle接口对比分析文档。有任何使用问题可通过ISSUE的方式及时反馈，或者也可直接通过pull request的方式一起更新代码和文档。
 
 ## [caffe2fluid](caffe2fluid)
 1. 支持将Caffe模型转至PaddlePaddle fluid可加载预测模型
