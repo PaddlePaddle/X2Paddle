@@ -9,6 +9,9 @@ layer {
     bottom: "logits"
     bottom: "label"
     top: "loss"
+    softmax_param {
+        axis: 1
+    }
     loss_param {
 	ignore_label: -1
 	normalize: 0
@@ -31,8 +34,11 @@ paddle.fluid.layers.softmax_with_cross_entropy(
 ```  
 
 ### 功能差异
+#### 输入数据
+Caffe：输入数据（`x`）的维度最大是4维(`N*C*H*W`)；                 
+PaddlePaddle：输入数据(`x`和`label`)的维度只能是2维（`N*K`）。
 #### 输入格式
-Caffe: 采用硬标签方式输入，同时进行预处理操作；  
+Caffe: 采用硬标签方式输入，同时进行预处理操作(为了避免上溢出和下溢出，对输入的每个值减去batch中该位置上的最大值)。  
 PaddlePaddle：通过参数`soft_label`的设定，支持硬标签和软标签两种输入。  
 > 计算softmax的loss时，根据每个样本是否被分配至多个类别中可以分为两类——硬标签和软标签  
 > **硬标签：** 即one-hot label，每个样本仅分到一个类别中。在硬标签中，根据是否对未初始化的log概率进行预处理，又可以分为两类，预处理主要是完成对每个样本中的每个log概率减去该样本中的最大的log概率  
