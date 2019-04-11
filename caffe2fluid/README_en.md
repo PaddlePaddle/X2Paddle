@@ -69,7 +69,7 @@ In the model conversion, when encounter an unsupported custom layer, users can a
     - Register these two functions ```register(kind='MyType', shape=shape_func, layer=layer_func)```
     - Notes: more examples can be found in `kaffe/custom_layers`
 
-2. Add ```import mylayer``` to  `kaffe/custom_layers/\_\_init__.py`
+2. Add ```import mylayer``` to  `kaffe/custom_layers/__init__.py`
 
 3. Prepare your pycaffe as your customized version(same as previous env prepare)
     - (option1) replace `proto/caffe.proto` with your own caffe.proto and compile it
