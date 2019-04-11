@@ -11,7 +11,7 @@ This tool is used to convert a Caffe model to a Fluid model. In the [[doc](doc/R
 > future 
 
 **The running process of caffe2fluid only relies on above conditions.**  
-It is recommended to install the Caffe and PaddlePaddle in the environment for testing after converting the model. For environmental installation, please refer to [Installation Documentation](prepare.md)
+It is recommended to install the Caffe and PaddlePaddle in the environment for testing after converting the model. For environmental installation, please refer to [Installation Documentation](prepare_en.md)
 
 ## HowTo
 
