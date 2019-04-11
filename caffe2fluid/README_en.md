@@ -1,51 +1,68 @@
-### Caffe2Fluid
-This tool is used to convert a Caffe model to a Fluid model
+# caffe2fluid
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-### Key Features
-1. Convert caffe model to fluid model with codes of defining a network(useful for re-training)
+This tool is used to convert a Caffe model to a Fluid model. In the [[doc](doc/ReadMe.md)] directory, the common APIs of Caffe-PaddlePaddle are compared and analyzed.
 
-2. Pycaffe is not necessary when just want convert model without do caffe-inference
+## Prerequisites
 
-3. Caffe's customized layers convertion also be supported by extending this tool
+> python >= 2.7  
+> numpy  
+> protobuf >= 3.6.0  
+> future 
 
-4. A bunch of tools in `examples/imagenet/tools` are provided to compare the difference
+**The running process of caffe2fluid only relies on above conditions.**  
+It is recommended to install the Caffe and PaddlePaddle in the environment for testing after converting the model. For environmental installation, please refer to [Installation Documentation](prepare.md)
 
-### HowTo
-1. Prepare `caffepb.py` in `./proto` if your python has no `pycaffe` module, two options provided here:
-    - Generate pycaffe from caffe.proto
-        ```
-        bash ./proto/compile.sh
-        ```
+## HowTo
 
-    - Download one from github directly
-        ```
-        cd proto/ && wget https://raw.githubusercontent.com/ethereon/caffe-tensorflow/master/kaffe/caffe/caffepb.py
-        ```
+### Model Conversion
+1. Convert the Caffe's model to the PaddlePaddle's model code and parameter file (The parameters are saved as the form of numpy).
 
-2. Convert the Caffe model to Fluid model
-   - Generate fluid code and weight file
-       ```
-       python convert.py alexnet.prototxt \
-               --caffemodel alexnet.caffemodel \
-               --data-output-path alexnet.npy \
-               --code-output-path alexnet.py
-       ```
+```
+# --def_path : The path of Caffe's configuration file 
+# --caffemodel : The save path of Caffe's model file
+# --data-output-path : The save path of the model after converting
+# --code-output-path : The save path of the model code after converting
+python convert.py --def_path alexnet.prototxt \
+		--caffemodel alexnet.caffemodel \
+		--data-output-path alexnet.npy \
+		--code-output-path alexnet.py
+```
 
-   - Save weights as fluid model file
-       ```
-       # only infer the last layer's result
-       python alexnet.py alexnet.npy ./fluid
-       # infer these 2 layer's result
-       python alexnet.py alexnet.npy ./fluid fc8,prob
-       ```
+2. The model network structure and parameters can be serialized as the model format supported by the PaddlePaddle framework.
+```
+# --model-param-path ： The save path of PaddlePaddle's serialized model
+python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid_model
+```
+Or you can specify the output of the saved model when saving.
+```
+# The output of model is the fc8 layer and prob layer.
+python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid --need-layers-name fc8,prob
+```
+Model loading and prediction can refer to the [official PaddlePaddle document](http://www.paddlepaddle.org/documentation/docs/en/1.3/api_guides/low_level/inference_en.html).
 
-3. Use the converted model to infer
-    - See more details in `examples/imagenet/tools/run.sh`
+### Comparison of differences before and after model conversion
+After the model is converted, the difference between the converted model and the original model can be compared layer by layer (**the running environment depends on caffe and paddlepaddle**)
+```
+# alexnet : The value of "name" in the Caffe's configuration file (.prototxt)
+# ../../alexnet.prototxt : The path of Caffe's configuration file 
+# ../../alexnet.caffemodel : The save path of Caffe's model file
+# ../../alexnet.py : The save path of the model after converting
+# ../../alexnet.npy : The save path of the model code after converting
+# ./data/65.jpeg : The path of image which is need to reference
+cd examples/imagenet
+bash tools/diff.sh alexnet ../../alexnet.prototxt \
+			../../alexnet.caffemodel \
+			../../alexnet.py \
+			../../alexnet.npy \
+			./data/65.jpeg
+```
 
-4. Compare the inference results with caffe
-    - See more details in `examples/imagenet/tools/diff.sh`
 
-### How to convert custom layer
+
+## How to convert custom layer
+In the model conversion, when encounter an unsupported custom layer, users can add code to achieve a custom layer according to their needs. thus supporting the complete conversion of the model. The implementation is the following process.    
+
 1. Implement your custom layer in a file under `kaffe/custom_layers`, eg: mylayer.py
     - Implement ```shape_func(input_shape, [other_caffe_params])``` to calculate the output shape
     - Implement ```layer_func(inputs, name, [other_caffe_params])``` to construct a fluid layer
@@ -65,9 +82,8 @@ This tool is used to convert a Caffe model to a Fluid model
    export CAFFE2FLUID_CUSTOM_LAYERS=/path/to/caffe2fluid/kaffe
    ```
 
-6. Use the converted model when loading model in `xxxnet.py` and `xxxnet.npy`(no need if model is already in `fluid/model` and `fluid/params`)
-
 ### Tested models
+The caffe2fluid passed the test on the following model:
 - Lenet:
 [model addr](https://github.com/ethereon/caffe-tensorflow/blob/master/examples/mnist)
 
