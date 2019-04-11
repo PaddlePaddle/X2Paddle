@@ -15,13 +15,13 @@ conda create -n caffe-paddle python=3.5
 # 激活环境
 source activate caffe-paddle
 
-# 安装PaddlePaddle和caffe
+# 安装PaddlePaddle和Caffe
 # 安装后，可在python中执行"import caffe"和
 # "import paddle.fluid"，判断是否已经安装成功
 pip install paddlepaddle-gpu
 conda install caffe-gpu
 
-# 安装Python的future模块
+# 安装python的future模块
 pip install future
 
 
