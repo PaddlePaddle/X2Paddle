@@ -1,24 +1,22 @@
-# Caffe常用层速查表
+# Caffe-Fluid常用层对应表
 
-**备注说明**  
-1. 接口对应：即表示PaddlePaddle接口与Caffe层接口基本一致，但使用者需注意参数名及参数类型  
-2. PaddlePaddle实现：部分接口提供了PaddlePaddle实现的示例代码，可供用户参考  
-3. 差异对比：接口存在差异，具体可查看差异对比文档  
+本文档梳理了Caffe常用Layer与PaddlePaddle API对应关系和差异分析。根据文档对应关系，有Caffe使用经验的用户，可根据对应关系，快速熟悉PaddlePaddle的接口使用 。  
+
 
 | 序号 | Caffe层                                                      | PaddlePaddle接口                                             | 备注                                                         |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 1    | [AbsVal](http://caffe.berkeleyvision.org/tutorial/layers/absval.html) | [fluid.layers.abs](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-182-abs) | 接口对应                                                     |
+| 1    | [AbsVal](http://caffe.berkeleyvision.org/tutorial/layers/absval.html) | [fluid.layers.abs](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-182-abs) | 功能一致                                                     |
 | 2    | [Accuracy](http://caffe.berkeleyvision.org/tutorial/layers/accuracy.html) | [fluid.layers.accuracy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-253-accuracy) | [差异对比](Accuracy.md) |
 | 3    | [ArgMax](http://caffe.berkeleyvision.org/tutorial/layers/argmax.html) | [fluid.layers.argmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-204-argmax) | [差异对比](ArgMax.md) |
 | 4    | [BatchNorm](http://caffe.berkeleyvision.org/tutorial/layers/batchnorm.html) | [fluid.layers.batch_norm](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-36-batch_norm) | [差异对比](BatchNorm.md) |
-| 5    | [BNLL](http://caffe.berkeleyvision.org/tutorial/layers/bnll.html) | [fluid.layers.softplus](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-194-softplus) | 接口对应                                                     |
-| 6    | [Concat](http://caffe.berkeleyvision.org/tutorial/layers/concat.html) | [fluid.layers.concat](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-209-concat) | 接口对应                                                     |
+| 5    | [BNLL](http://caffe.berkeleyvision.org/tutorial/layers/bnll.html) | [fluid.layers.softplus](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-194-softplus) | 功能一致                                                     |
+| 6    | [Concat](http://caffe.berkeleyvision.org/tutorial/layers/concat.html) | [fluid.layers.concat](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-209-concat) | 功能一致                                                     |
 | 7    | [Convolution](http://caffe.berkeleyvision.org/tutorial/layers/convolution.html) | [fluid.layers.conv2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-45-conv2d) | [差异对比](Convolution.md) |
 | 8    | [Crop](http://caffe.berkeleyvision.org/tutorial/layers/crop.html) | [fluid.layers.crop](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-51-crop) | [差异对比](Crop.md) |
 | 9    | [Deconvolution](http://caffe.berkeleyvision.org/tutorial/layers/deconvolution.html) | [fluid.layers.conv2d_transpose](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-46-conv2d_transpose) | [差异对比](Deconvolution.md) |
 | 10   | [Dropout](http://caffe.berkeleyvision.org/tutorial/layers/dropout.html) | [fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-56-dropout) | [差异对比](Dropout.md) |
-| 11   | [Eltwise](http://caffe.berkeleyvision.org/tutorial/layers/eltwise.html) | -                                                            | [PaddlePaddle实现](Eltwise.md) |
-| 12   | [ELU](http://caffe.berkeleyvision.org/tutorial/layers/elu.html) | [fluid.layers.elu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-68-elu) | 接口对应                                                     |
+| 11   | [Eltwise](http://caffe.berkeleyvision.org/tutorial/layers/eltwise.html) | 无相应接口                                                      | [Paddle实现](https://github.com/PaddlePaddle/X2Paddle/blob/master/tensorflow2fluid/doc/Eltwise.md) |
+| 12   | [ELU](http://caffe.berkeleyvision.org/tutorial/layers/elu.html) | [fluid.layers.elu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-68-elu) | 功能一致                                                     |
 | 13   | [EuclideanLoss](http://caffe.berkeleyvision.org/tutorial/layers/euclideanloss.html) | [fluid.layers.square_error_cost](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-167-square_error_cost) | [差异对比](EuclideanLoss.md) |
 | 14   | [Exp](http://caffe.berkeleyvision.org/tutorial/layers/exp.html) | [fluid.layers.exp](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-186-exp) | [差异对比](Exp.md) |
 | 15   | [Flatten](http://caffe.berkeleyvision.org/tutorial/layers/flatten.html) | [fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-72-reshape) | [差异对比](Flatten.md) |
@@ -28,14 +26,14 @@
 | 19   | [LRN](http://caffe.berkeleyvision.org/tutorial/layers/lrn.html) | [fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-99-lrn) | [差异对比](LRN.md) |
 | 20   | [Pooling](http://caffe.berkeleyvision.org/tutorial/layers/pooling.html) | [fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-115-pool2d) | [差异对比](Pooling.md) |
 | 21   | [Power](http://caffe.berkeleyvision.org/tutorial/layers/power.html) | [fluid.layers.pow](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-117-pow) | [差异对比](Power.md) |
-| 22   | [PReLU](http://caffe.berkeleyvision.org/tutorial/layers/prelu.html) | [fluid.layers.prelu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-118-prelu) | 接口对应                                                     |
-| 23   | [Reduction](http://caffe.berkeleyvision.org/tutorial/layers/reduction.html) | -                                                            | [PaddlePaddle实现](Reduction.md) |
-| 24   | [ReLU](http://caffe.berkeleyvision.org/tutorial/layers/relu.html) | [fluid.layers.leaky_relu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-128-relu)                                                            | 接口对应 |
+| 22   | [PReLU](http://caffe.berkeleyvision.org/tutorial/layers/prelu.html) | [fluid.layers.prelu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-118-prelu) | 功能一致                                                     |
+| 23   | [Reduction](http://caffe.berkeleyvision.org/tutorial/layers/reduction.html) | 无相应接口                                                      | [Paddle实现](https://github.com/PaddlePaddle/X2Paddle/blob/master/tensorflow2fluid/doc/Reduction.md) |
+| 24   | [ReLU](http://caffe.berkeleyvision.org/tutorial/layers/relu.html) | [fluid.layers.leaky_relu](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-128-relu)                                                            | 功能一致 |
 | 25   | [Reshape](http://caffe.berkeleyvision.org/tutorial/layers/reshape.html) | [fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-130-reshape) | [差异对比](Reshape.md) |
 | 26   | [SigmoidCrossEntropyLoss](http://caffe.berkeleyvision.org/tutorial/layers/sigmoidcrossentropyloss.html) | [fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-158-sigmoid_cross_entropy_with_logits) | [差异对比](SigmoidCrossEntropyLoss.md) |
-| 27   | [Sigmoid](http://caffe.berkeleyvision.org/tutorial/layers/sigmoid.html) | [fluid.layers.sigmoid](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-192-sigmoid) | 接口对应                                                     |
+| 27   | [Sigmoid](http://caffe.berkeleyvision.org/tutorial/layers/sigmoid.html) | [fluid.layers.sigmoid](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-192-sigmoid) | 功能一致                                                     |
 | 28   | [Slice](http://caffe.berkeleyvision.org/tutorial/layers/slice.html) | [fluid.layers.slice](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-160-slice) | [差异对比](Slice.md) |
 | 29   | [SoftmaxWithLoss](http://caffe.berkeleyvision.org/tutorial/layers/softmaxwithloss.html) | [fluid.layers.softmax_with_cross_entropy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-164-softmax_with_cross_entropy) | [差异对比](SofmaxWithLoss.md) |
 | 30   | [Softmax](http://caffe.berkeleyvision.org/tutorial/layers/softmax.html) | [fluid.layers.softmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-163-softmax) | [差异对比](Sofmax.md) |
-| 31   | [TanH](http://caffe.berkeleyvision.org/tutorial/layers/tanh.html) | [fluid.layers.tanh](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-199-tanh) | 接口对应                                                     |
+| 31   | [TanH](http://caffe.berkeleyvision.org/tutorial/layers/tanh.html) | [fluid.layers.tanh](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-199-tanh) | 功能一致                                                     |
 | 32   | [Tile](http://caffe.berkeleyvision.org/tutorial/layers/tile.html) | [fluid.layers.expand](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-70-expand) | [差异对比](Tile.md) |
