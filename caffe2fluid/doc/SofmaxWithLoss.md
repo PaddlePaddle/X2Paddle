@@ -28,7 +28,7 @@ paddle.fluid.layers.softmax_with_cross_entropy(
     label,
     soft_label=False,
     ignore_index=-100,
-    numeric_stable_mode=False, 
+    numeric_stable_mode=True, 
     return_softmax=False
 )
 ```  
@@ -83,7 +83,7 @@ layer {
 # label输入shape：(100,1)  
 # 输出shape：(10,1)
 softmaxwithloss = fluid.layers.softmax_with_cross_entropy(logits=logs, label=labels, 
-							soft_label=False, ignore_index=-100, 
+							soft_label=True, ignore_index=-100, 
 							numeric_stable_mode=False, 
 							return_softmax=False)
 ```
