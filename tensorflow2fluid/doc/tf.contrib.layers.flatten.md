@@ -10,7 +10,7 @@ tf.contrib.layers.flatten(
 )
 ```
 
-### [paddle.fluid.layers.flatten](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#flatten)
+### [paddle.fluid.layers.flatten](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#flatten)
 
 ```python
 paddle.fluid.layers.flatten(
