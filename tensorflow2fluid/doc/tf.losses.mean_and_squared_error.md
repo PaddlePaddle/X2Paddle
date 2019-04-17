@@ -24,5 +24,5 @@ paddle.fluid.layers.square_error_cost(
 ### 功能差异
 
 #### 计算方式
-TensorFlow: 提供`weights`参数，通过传入`weights`参数的shape，可实现不同的加权方式；
+TensorFlow: 提供`weights`参数，通过传入`weights`参数的shape，可实现不同的加权方式；  
 PaddlePaddle：不支持加权。
