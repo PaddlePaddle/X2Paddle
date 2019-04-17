@@ -34,7 +34,7 @@ PaddlePaddle：实现方式支持`downgrade_in_infer`和`upscale_in_infer`两种
 ```
 1. downgrade_in_infer实现方式
     训练时： out = input * mask
-    预测时： out = input * dropout_prob
+    预测时： out = input * dropout_prob* (1.0 - dropout_prob)
 2. upscale_in_infer实现方式
     训练时： out = input * mask / (1.0 - dropout_prob)
     预测时： out = input
