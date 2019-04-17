@@ -1,6 +1,6 @@
-## tf.split
+## tf.pow
 
-### [tf.split](https://www.tensorflow.org/api_docs/python/tf/math/pow)
+### [tf.pow](https://www.tensorflow.org/api_docs/python/tf/math/pow)
 
 ```python
 tf.math.pow(
