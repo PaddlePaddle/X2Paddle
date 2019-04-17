@@ -12,7 +12,7 @@ tf.nn.softmax(
 ```
 
 
-### [paddle.fluid.layers.softmax(http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.softmax)
+### [paddle.fluid.layers.softmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.softmax)
 ``` python
 paddle.fluid.layers.softmax(
     input, 
@@ -24,4 +24,4 @@ paddle.fluid.layers.softmax(
 
 #### 计算方式
 TensorFlow: 通过`axis`参数，在指定维度上进行计算，如若`axis`为`None`，则表示在最后一维上进行计算；  
-PaddlePaddle：使用整个输入数据的L2范数。
+PaddlePaddle：仅在最后一维上进行计算。
