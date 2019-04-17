@@ -1,6 +1,6 @@
-## tf.softmax
+## tf.nn.softmax
 
-### [tf.softmax](https://www.tensorflow.org/api_docs/python/tf/nn/softmax)
+### [tf.nn.softmax](https://www.tensorflow.org/api_docs/python/tf/nn/softmax)
 
 ``` python
 tf.nn.softmax(
