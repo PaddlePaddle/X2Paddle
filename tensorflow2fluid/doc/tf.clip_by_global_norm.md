@@ -11,7 +11,7 @@ tf.clip_by_global_norm(
 )
 ```
 
-### [paddle.fluid.clip.GradientClipByGlobalNorm](http://paddlepaddle.org/documentation/docs/zh/develop/api_cn/clip_cn.html#gradientclipbyglobalnorm)
+### [paddle.fluid.clip.GradientClipByGlobalNorm](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/clip_cn.html#gradientclipbyglobalnorm)
 
 ```python
 paddle.fluid.clip.GradientClipByGlobalNorm(
