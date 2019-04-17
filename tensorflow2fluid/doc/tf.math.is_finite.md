@@ -1,7 +1,7 @@
 
 ## tf.math.is_finite
 
-### [tf.math.is_finite](https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/math/is_finite)
+### [tf.math.is_finite](https://www.tensorflow.org/api_docs/python/tf/math/is_finite)
 ``` python
 tf.math.is_finite(
     x,
