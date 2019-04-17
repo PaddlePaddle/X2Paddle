@@ -24,7 +24,7 @@ paddle.fluid.layers.pow(
 
 #### 参数类型
 
-TensorFlow：`x`与`y`为shape相同的tensor，执行element-wise函数求幂操作；  
+TensorFlow：`x`与`y`为shape相同的tensor，执行element-wise求幂操作；  
 
 PaddlePaddle：`x`为tensor，`factor`为浮点数，返回值为`x`每个元素执行按照`factor`执行求幂操作得到的tensor。
 
