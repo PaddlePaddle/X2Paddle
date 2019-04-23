@@ -15,7 +15,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-56-dropout)
+### [paddle.fluid.layers.dropout](hhttp://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-56-dropout)
 ```python
 paddle.fluid.layers.dropout(
     x, 
