@@ -18,7 +18,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-99-lrn)
+### [paddle.fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-101-lrn)
 ```python
 paddle.fluid.layers.lrn(
     input, 
