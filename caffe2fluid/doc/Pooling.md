@@ -15,7 +15,7 @@ layer{
     }
 }
 ```
-### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-115-pool2d)
+### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-119-pool2d)
 ```python
 paddle.fluid.layers.pool2d(
     input,
