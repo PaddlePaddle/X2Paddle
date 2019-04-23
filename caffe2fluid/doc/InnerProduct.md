@@ -32,7 +32,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.fc](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-71-fc)
+### [paddle.fluid.layers.fc](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-71-fc)
 ```python
 paddle.fluid.layers.fc(
     input,
