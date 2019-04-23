@@ -12,7 +12,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.softmax](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-163-softmax)
+### [paddle.fluid.layers.softmax](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-168-softmax)
 ```python
 paddle.fluid.layers.softmax(
     input, 
