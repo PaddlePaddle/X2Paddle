@@ -13,7 +13,7 @@ tf.nn.dropout(
 )
 ```
 
-### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-dropout)
+### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-dropout)
 ``` python
 paddle.fluid.layers.dropout(
     x, 

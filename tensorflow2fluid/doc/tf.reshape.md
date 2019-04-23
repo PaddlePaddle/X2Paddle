@@ -10,7 +10,7 @@ tf.reshape(
 )
 ```
 
-### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-reshape)
+### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-reshape)
 ``` python
 paddle.fluid.layers.reshape(
     x, 

@@ -14,7 +14,7 @@ tf.nn.avg_pool(
 ```
 
 
-### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/en/1.3/api/layers.html#permalink-116-pool2d)
+### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.pool2d)
 ``` python
 paddle.fluid.layers.pool2d(
     input,

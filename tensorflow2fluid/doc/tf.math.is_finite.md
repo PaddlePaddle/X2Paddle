@@ -9,7 +9,7 @@ tf.math.is_finite(
 )
 ```
 
-### [paddle.fluid.layers.isfinite](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.isfinite)
+### [paddle.fluid.layers.isfinite](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.isfinite)
 ``` python
 paddle.fluid.layers.isfinite(x)
 ```

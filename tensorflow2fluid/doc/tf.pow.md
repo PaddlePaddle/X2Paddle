@@ -10,7 +10,7 @@ tf.math.pow(
 )
 ```
 
-### [paddle.fluid.layers.pow](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#pow)
+### [paddle.fluid.layers.pow](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#pow)
 
 ```python
 paddle.fluid.layers.pow(

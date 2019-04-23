@@ -13,7 +13,7 @@ tf.math.l2_normalize(
 )
 ```
 
-### [paddle.fluid.layers.l2_normalize](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#l2-normalize)
+### [paddle.fluid.layers.l2_normalize](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#l2-normalize)
 
 ```python
 paddle.fluid.layers.l2_normalize(

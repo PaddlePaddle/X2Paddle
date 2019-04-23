@@ -11,7 +11,7 @@ tf.slice(
 )
 ```
 
-### [paddle.fluid.layers.slice](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-slice)
+### [paddle.fluid.layers.slice](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-slice)
 ``` python
 paddle.fluid.layers.slice(
     input, 

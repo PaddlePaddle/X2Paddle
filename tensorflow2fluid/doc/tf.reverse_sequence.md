@@ -14,7 +14,7 @@ tf.reverse_sequence(
 )
 ```
 
-### [paddle.fluid.layers.sequence_reverse](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#sequence_reverse)
+### [paddle.fluid.layers.sequence_reverse](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.sequence_reverse)
 
 ```python
 paddle.fluid.layers.sequence_reverse(
@@ -28,7 +28,7 @@ paddle.fluid.layers.sequence_reverse(
 #### 输入格式
 
 Tensorflow：`reverse_sequence`中，`input`是一个带padding的tensor，每个序列都会被填充到相同长度;  
-PaddlePaddle：`sequence_reverse`中，`x`是一个[LoDTensor](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/fluid_cn.html#lodtensor)，
+PaddlePaddle：`sequence_reverse`中，`x`是一个[LoDTensor](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/fluid_cn.html#lodtensor)，
 不需要进行填充；
 
 #### 参数类型
