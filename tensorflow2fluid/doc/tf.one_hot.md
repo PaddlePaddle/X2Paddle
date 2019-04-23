@@ -14,7 +14,7 @@ tf.one_hot(
 )
 ```
 
-### [paddle.fluid.layers.one_hot](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#one-hot)
+### [paddle.fluid.layers.one_hot](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#one-hot)
 ``` python
 layers.one_hot(;
     input, 

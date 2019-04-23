@@ -9,7 +9,7 @@ tf.print(
 )
 ```
 
-### [paddle.fluid.layers.Print](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#print)
+### [paddle.fluid.layers.Print](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#print)
 ```python
 paddle.fluid.layers.Print(
     input, 

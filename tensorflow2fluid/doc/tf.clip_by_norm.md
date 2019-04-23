@@ -12,7 +12,7 @@ tf.clip_by_norm(
 ```
 
 
-### [paddle.fluid.layers.clip_by_norm](http://paddlepaddle.org/documentation/docs/zh/develop/api_cn/layers_cn.html#paddle.fluid.layers.clip_by_norm)
+### [paddle.fluid.layers.clip_by_norm](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.clip_by_norm)
 ``` python
 paddle.fluid.layers.clip_by_norm(
     x, 

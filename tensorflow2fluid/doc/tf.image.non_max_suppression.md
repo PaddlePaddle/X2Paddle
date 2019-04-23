@@ -13,7 +13,7 @@ tf.image.non_max_suppression(
 )
 ```
 
-### [paddle.fluid.layers.multiclass_nms](http://paddlepaddle.org/documentation/docs/en/1.3/api/layers.html#permalink-245-multiclass_nms)
+### [paddle.fluid.layers.multiclass_nms](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.multiclass_nms)
 ``` python
 paddle.fluid.layers.multiclass_nms(
     bboxes, 
@@ -35,7 +35,7 @@ PaddlePaddle：相对比Tensorflow，还支持batch和多类别，`bboxes`的sha
 
 #### 输出格式
 TensorFlow: 返回shape为`[N]`的tensor，表示为`boxes`中选取的index集合，长度为`N`；  
-PaddlePaddle: 返回`[N, 6]`的[LodTensor](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/fluid_cn.html#lodtensor)，其中每行内容为`[lable, confidence, xmin, ymin, xmax, ymax]`。
+PaddlePaddle: 返回`[N, 6]`的[LodTensor](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/fluid_cn.html#lodtensor)，其中每行内容为`[lable, confidence, xmin, ymin, xmax, ymax]`。
 
 #### 参数差异
 TensorFlow: 在所有boxes中，根据其它参数条件，最终选出的boxes数量不超过`max_output_size`；  

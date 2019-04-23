@@ -12,7 +12,7 @@ tf.scatter_update(
 )
 ```
 
-### [paddle.fluid.layers.scatter](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#scatter)
+### [paddle.fluid.layers.scatter](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#scatter)
 
 ```python
 paddle.fluid.layers.scatter(

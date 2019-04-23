@@ -10,7 +10,7 @@ tf.placeholder(
 )
 ```
 
-### [paddle.fluid.layers.data](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-data)
+### [paddle.fluid.layers.data](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-data)
 ``` python
 paddle.fluid.layers.data(
     name, 

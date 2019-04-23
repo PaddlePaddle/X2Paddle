@@ -14,7 +14,7 @@ tf.nn.local_response_normalization(
 )
 ```
 
-### [paddle.fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.lrn)
+### [paddle.fluid.layers.lrn](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.lrn)
 
 ```python
 paddle.fluid.layers.lrn(

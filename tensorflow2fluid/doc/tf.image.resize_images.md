@@ -12,7 +12,7 @@ tf.image.resize_images(
 )
 ```
 
-### [paddle.fluid.layers.image_resize](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.image_resize)
+### [paddle.fluid.layers.image_resize](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.image_resize)
 ``` python
 paddle.fluid.layers.image_resize(
     input, 

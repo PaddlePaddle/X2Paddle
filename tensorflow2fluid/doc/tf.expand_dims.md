@@ -11,7 +11,7 @@ tf.expand_dims(
 )
 ```
 
-### [paddle.fluid.layers.unsqueeze](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#unsqueeze)
+### [paddle.fluid.layers.unsqueeze](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#unsqueeze)
 ``` python
 paddle.fluid.layers.unsqueeze(
     input, 
