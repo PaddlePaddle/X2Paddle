@@ -38,7 +38,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.conv2d_transpose](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-46-conv2d_transpose)
+### [paddle.fluid.layers.conv2d_transpose](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-46-conv2d_transpose)
 ```python
 paddle.fluid.layers.conv2d_transpose(
     input,
