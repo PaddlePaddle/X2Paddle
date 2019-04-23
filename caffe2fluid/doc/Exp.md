@@ -17,7 +17,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.exp](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-186-exp)
+### [paddle.fluid.layers.exp](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-196-exp)
 ```python
 paddle.fluid.layers.exp(
     x,
