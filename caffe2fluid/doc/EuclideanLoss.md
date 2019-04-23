@@ -13,7 +13,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.square_error_cost](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-167-square_error_cost)
+### [paddle.fluid.layers.square_error_cost](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-173-square_error_cost)
 ```python
 paddle.fluid.layers.square_error_cost(
     input,
