@@ -17,8 +17,8 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.reduce_sum](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-127-reduce_sum)
-### [paddle.fluid.layers.reduce_mean](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-124-reduce_mean)
+### [paddle.fluid.layers.reduce_sum](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-131-reduce_sum)
+### [paddle.fluid.layers.reduce_mean](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-128-reduce_mean)
 ```python
 paddle.fluid.layers.reduce_sum(
     input, 
