@@ -18,7 +18,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.crop](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-51-crop)
+### [paddle.fluid.layers.crop](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-51-crop)
 ```python
 paddle.fluid.layers.crop(
     x, 
