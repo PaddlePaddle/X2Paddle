@@ -17,9 +17,9 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.power](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-117-pow)
+### [paddle.fluid.layers.pow](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-121-pow)
 ```python
-paddle.fluid.layers.power(
+paddle.fluid.layers.pow(
     x,
     factor=1.0,
     name=None
