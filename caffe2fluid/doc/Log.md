@@ -17,7 +17,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.log](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-93-log)
+### [paddle.fluid.layers.log](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-95-log)
 ```python
 paddle.fluid.layers.log(
     x,
