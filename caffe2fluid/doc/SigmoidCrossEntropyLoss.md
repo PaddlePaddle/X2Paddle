@@ -13,7 +13,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-158-sigmoid_cross_entropy_with_logits)
+### [paddle.fluid.layers.sigmoid_cross_entropy_with_logits](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-163-sigmoid_cross_entropy_with_logits)
 ```python
 paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
     x, 
