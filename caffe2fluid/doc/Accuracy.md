@@ -16,7 +16,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.accuracy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-253-accuracy)
+### [paddle.fluid.layers.accuracy](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#accuracy)
 ```python
 paddle.fluid.layers.accuracy(
     input,
