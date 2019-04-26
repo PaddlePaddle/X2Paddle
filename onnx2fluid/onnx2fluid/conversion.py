@@ -9,8 +9,6 @@ Created on Mon Feb 25 09:50:35 2019
 from __future__ import division
 
 import logging, shutil
-#import logging
-#import shutil
 
 __all__ = [
     'convert',
@@ -25,7 +23,8 @@ def convert(onnx_model_filename,
             onnx_opset_version=9,
             onnx_opset_pedantic=True,
             onnx_skip_version_conversion=False,
-            debug=False):
+            debug=False,
+            **kwargs):
     """
     convert an ONNX model to Paddle fluid Python code and desc pb
     """
@@ -37,21 +36,14 @@ def convert(onnx_model_filename,
     from onnx.utils import polish_model
     from onnx.version_converter import convert_version
 
-    try:
-        from . import onnx_utils, writer
-    except ImportError:
-        import onnx_utils, writer
-
-    # imports
-    DEFAULT_OP_DOMAIN = onnx_utils.DEFAULT_OP_DOMAIN
-    graph_ops, graph_weights = onnx_utils.graph_ops, onnx_utils.graph_weights
-    inferred_model_value_info = onnx_utils.inferred_model_value_info
-    optimize_model_skip_op_for_inference = onnx_utils.optimize_model_skip_op_for_inference
-    optimize_model_strip_initializer = onnx_utils.optimize_model_strip_initializer
-    optimize_model_cast = onnx_utils.optimize_model_cast
-    optimize_model_slice = onnx_utils.optimize_model_slice
-    Program, Writer = writer.Program, writer.Writer
-    make_var_name = writer.make_var_name
+    from .onnx_utils import DEFAULT_OP_DOMAIN
+    from .onnx_utils import graph_ops, graph_weights
+    from .onnx_utils import inferred_model_value_info
+    from .onnx_utils import optimize_model_skip_op_for_inference
+    from .onnx_utils import optimize_model_strip_initializer
+    from .onnx_utils import optimize_model_cast, optimize_model_slice
+    from .writer import Program, Writer
+    from .writer import make_var_name
 
     logger = logging.getLogger('convert')
 
@@ -94,6 +86,8 @@ def convert(onnx_model_filename,
         model = onnx.shape_inference.infer_shapes(onnx_model)
         debug_model_filename, _ = shutil.os.path.splitext(onnx_model_filename)
         onnx.save(model, debug_model_filename + '.optimized_and_inffered.onnx')
+
+
 #        onnx.save(model, '/tmp/export/optimized_and_inffered.onnx')
 
 # I/O instances
@@ -218,11 +212,12 @@ def convert(onnx_model_filename,
 
     logger.info('conversion finished')
 
-
-#    globals().update(locals())
-
 if __name__ == '__main__':
+    del convert
+
     import argparse
+
+    from onnx2fluid.conversion import convert
 
     parser = argparse.ArgumentParser(
         description='onnx2fluid.convert',
@@ -280,7 +275,10 @@ if __name__ == '__main__':
 
     debug = args.debug
     model_filename = args.model[0]
+    basepath, _ = shutil.os.path.splitext(model_filename)
     save_dir = args.output_dir
+    save_dir = (save_dir.rstrip(shutil.os.sep)
+                if save_dir else basepath) + shutil.os.sep
     embed_params = args.embed_params
     pedantic = args.pedantic
     skip_version_conversion = args.skip_version_conversion

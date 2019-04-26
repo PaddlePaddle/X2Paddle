@@ -9,27 +9,17 @@ Created on Sun Feb 24 20:44:43 2019
 from __future__ import division
 
 import logging, os
-#import logging
-#import os
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-try:
-    from . import symbolic
-except ImportError:
-    import symbolic
-
-# imports
-make_var_name = symbolic._make_var_name
+from . import symbolic
+from .symbolic import _make_var_name as make_var_name
 
 try:
     import paddle.fluid.proto.framework_pb2 as framework_pb2
 except ImportError:
-    try:
-        from . import framework_pb2
-    except ImportError:
-        import framework_pb2
+    from . import framework_pb2
 
     logger.warning('importing paddle.fluid.proto.framework_pb2d failed,'
                    'using fallback framework_pb2')
@@ -176,15 +166,12 @@ class Program(object):
         self.op_descs = []
         self.var_descs = []
 
-    def __str__(self):
+    def __repr__(self):
         return ('Program(code mutable: {}) with:\n'
                 'codes: {}\n'
                 'op_descs: {}\n'
                 'var_descs: {}\n').format(self.code_mutable, self.codes,
                                           self.op_descs, self.var_descs)
-
-    def __repr__(self):
-        return self.__str__()
 
     def Code(self, code):
         """
@@ -218,11 +205,9 @@ class Program(object):
                 name,
                 persistable=False,
                 value_info=None,
-                remove_batch=None,
-                dummy_dtype='float32'):
+                remove_batch=None):
         """
         add VarDesc,
-        dummy_dtype: WORKAROUND for Netron viewer
         """
 
         var_desc = framework_pb2.VarDesc()
@@ -241,9 +226,6 @@ class Program(object):
                                                       not persistable)
                     if remove_batch:
                         tensor_desc.dims[0] = -1
-        else:  # REMOVEIT: WORKAROUND: Netron: null.tensor error
-            tensor_desc = var_desc.type.lod_tensor.tensor
-            tensor_desc.data_type = self.Dtype(dummy_dtype)  # required
 
         self.var_descs.append(var_desc)
 

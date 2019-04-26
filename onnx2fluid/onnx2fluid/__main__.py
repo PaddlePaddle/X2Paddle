@@ -16,10 +16,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-# import argparse, logging, sys
-import argparse
-import logging
-import sys
+import argparse, logging, sys
 
 parser = argparse.ArgumentParser(
     description='onnx2fluid',
@@ -86,11 +83,17 @@ parser.add_argument(
     help='compress outputs to ZIP file if conversion successed',
 )
 parser.add_argument(
-    '--precision',
+    '--atol',
     '-p',
-    type=int,
-    default=3,
-    help='assertion decimal for validation',
+    type=float,
+    default=1e-3,
+    help='assertion absolute tolerance for validation',
+)
+parser.add_argument(
+    '--rtol',
+    type=float,
+    default=1e-4,
+    help='assertion relative tolerance for validation',
 )
 args = parser.parse_args()
 
@@ -98,12 +101,6 @@ logging_format = '[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message
 logging_level = logging.DEBUG if args.debug else logging.INFO
 logging.basicConfig(format=logging_format, level=logging_level)
 
-try:
-    from . import cmdline
-except ImportError:
-    import cmdline
-
-# imports
-main = cmdline.main
+from .cmdline import main
 
 sys.exit(main(**args.__dict__))

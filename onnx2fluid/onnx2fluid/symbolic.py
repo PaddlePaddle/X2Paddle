@@ -13,7 +13,7 @@ Created on Mon Feb 25 09:33:43 2019
 from __future__ import division
 
 import logging as _logging
-import numpy as np
+import numpy as _np
 
 from collections import OrderedDict as _dict
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
@@ -77,11 +77,11 @@ DEFAULT_OP_MAPPING = {
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
         'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
-    #        'Transpose': ['transpose', ['X'], ['Out']],
+        #'Transpose': ['transpose', ['X'], ['Out']],
         'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    #        'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
+        #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
         'And': ['logical_and', ['X', 'Y'], ['Out']],
         'Div': ['elementwise_div', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Equal': ['equal', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
@@ -110,7 +110,7 @@ DEFAULT_OP_MAPPING = {
         'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
 }
 
-DEFAULT_IOA_CONSTRAINT = {
+DEFAULT_IOA_CONSTRAINTS = {
     'ArgMax': [
         (lambda i, o, a: a.get('keepdims', 1) == 1,
          'only keepdims = 0 is supported'),
@@ -164,7 +164,7 @@ def _make_var_name(name):
 
 
 def _dtype(value_infos, val_name):
-    return np.dtype(value_infos[val_name]['dtype'])
+    return _np.dtype(value_infos[val_name]['dtype'])
 
 
 def _dtype_or_none(value_infos, val_name):
@@ -173,7 +173,7 @@ def _dtype_or_none(value_infos, val_name):
     value_info = value_infos[val_name]
     if 'dtype' not in value_info:
         return None
-    return np.dtype(value_info['dtype'])
+    return _np.dtype(value_info['dtype'])
 
 
 def _shape(value_infos, val_name):
@@ -217,8 +217,8 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
         fill_name_field,
     ) = info
 
-    if fluid_op in DEFAULT_IOA_CONSTRAINT:
-        for predicate, message in DEFAULT_IOA_CONSTRAINT[fluid_op]:
+    if fluid_op in DEFAULT_IOA_CONSTRAINTS:
+        for predicate, message in DEFAULT_IOA_CONSTRAINTS[fluid_op]:
             assert predicate(inputs, outputs, attrs), message
 
     # bypass if key absent, drop if mapped key is '' or '_'
@@ -268,14 +268,13 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
                 (var_outs, *fluid_output_args), fluid_attrs)
 
 
-def _assign(prog, attrs):
-    mapping = attrs['mapping']  # additional
+def _assign(prog, mapping):
     fluid_op = 'assign'
 
     for val_dst, val_src in mapping.items():
         var_dst = _make_var_name(val_dst)
         var_src = _make_var_name(val_src)
-        prog.Code('{} = {}'.format(var_dst, var_src))
+        prog.Code('{} = {} # assign'.format(var_dst, var_src))
         #        prog.Code('{} = layers.{}({})'
         #                  .format(var_dst,
         #                          fluid_op,
@@ -552,7 +551,6 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
 
 
 def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
-
     # I/O
     val_x, val_scales = inputs
     val_y, = outputs
@@ -775,7 +773,7 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
     # interpretation
     dtype = attrs['to']  # required
-    if not isinstance(dtype, np.dtype):  # additional: possible np.dtype
+    if not isinstance(dtype, _np.dtype):  # additional: possible np.dtype
         dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
     output_dtype = _dtype_or_none(value_infos, val_output)
     if output_dtype:
@@ -852,13 +850,13 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
     # interpretation
     value = attrs['value']  # required
-    dtype = np.dtype(value.dtype)
+    dtype = _np.dtype(value.dtype)
     output_dtype = _dtype_or_none(value_infos, val_output)
     if output_dtype:
         assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
 
-#    dtype = np.dtype('float32') # HINT: force to float32
+#    dtype = _np.dtype('float32') # HINT: force to float32
     shape = attrs.get('shape', None)  #
     if shape is None:
         shape = _shape_or_none(value_infos, val_output)
@@ -1161,7 +1159,7 @@ def ConvTranspose(prog,
 #    val_output, = outputs[:1]
 #
 #    _assign(prog,
-#            dict(mapping=dict([(val_output, val_data)])),
+#            dict([(val_output, val_data)]),
 #            value_infos,
 #            )
 
@@ -1216,13 +1214,13 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             if beta.is_integer():
                 vm_dtype = _dtype_or_none(value_infos, val_c)
                 if vm_dtype is None:
-                    vm_dtype = np.dtype('float32')
+                    vm_dtype = _np.dtype('float32')
                     _logger.warning(
                         'in %s(%s -> Gemm -> %s): '
                         'attribute "beta" seems to be an interger, '
                         'however dtype can not be inferred, '
                         'still use float32', name, inputs, outputs)
-                beta = np.dtype(vm_dtype).type(beta)
+                beta = _np.dtype(vm_dtype).type(beta)
             prog.Op(
                 '',
                 'Constant',
@@ -1388,7 +1386,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
             mode)
         fluid_op = 'pad'
         pad2d_attr = ''
-    paddings = np.array(pads).reshape(
+    paddings = _np.array(pads).reshape(
         (-1, 2)).transpose().flatten().tolist()  # SSEE -> SESE
     od_attrs['paddings'] = paddings
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -1526,7 +1524,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'Cast',
             [val_shape],
             [val_shape_int32],  # var
-            dict(to=np.dtype('int32')),  # use np.dtype
+            dict(to=_np.dtype('int32')),  # use np.dtype
             value_infos=value_infos,
             name=(name + '_cast'),
         )
@@ -1841,7 +1839,9 @@ if __name__ == '__main__':
     )
     logger = _logging.getLogger('symbolic_test')
 
-    from writer import Program
+    import numpy as np
+
+    from onnx2fluid.writer import Program
 
     prog = Program()
     AdaptiveAveragePool(
