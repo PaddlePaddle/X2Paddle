@@ -33,7 +33,7 @@ def main(**kwargs):
     from .conversion import convert
 
     logger = logging.getLogger('onnx2fluid')
-    #    debug = kwargs.get('debug', False)
+    debug = kwargs.get('debug', False)
 
     # prepare arguments
     filename = kwargs.pop('model')[0]
@@ -49,15 +49,14 @@ def main(**kwargs):
     onnx_skip_version_conversion = kwargs.pop('skip_version_conversion', False)
 
     # convert
-    convert(
-        filename,
-        save_dir,
-        model_basename=model_basename,
-        model_func_name=model_func_name,
-        onnx_opset_version=onnx_opset_version,
-        onnx_opset_pedantic=onnx_opset_pedantic,
-        onnx_skip_version_conversion=onnx_skip_version_conversion,
-        **kwargs)
+    convert(filename,
+            save_dir,
+            model_basename=model_basename,
+            model_func_name=model_func_name,
+            onnx_opset_version=onnx_opset_version,
+            onnx_opset_pedantic=onnx_opset_pedantic,
+            onnx_skip_version_conversion=onnx_skip_version_conversion,
+            **kwargs)
 
     # validate
     passed = True
@@ -66,15 +65,16 @@ def main(**kwargs):
         from .validation import validate
 
         logger.info('starting validation on desc ...')
-        passed &= validate(
-            shutil.os.path.join(save_dir, '__model__'), golden_data_filename,
-            **kwargs)
+        passed &= validate(shutil.os.path.join(save_dir, '__model__'),
+                           golden_data_filename, **kwargs)
 
         logger.info('starting validation on code ...')
         passed &= validate(
             shutil.os.path.join(save_dir, model_basename),
             golden_data_filename,
             model_func_name=model_func_name,
+            save_inference_model=
+            debug,  # re-generate desc proto with python code when debug on
             **kwargs)
 
     if not passed:
@@ -111,19 +111,17 @@ if __name__ == '__main__':
 
     from onnx2fluid.cmdline import main
 
-    main(
-        model=['../examples/t1.onnx'],
-        output_dir='/tmp/export/',
-        embed_params=False,
-        pedantic=False,
-        test_data='../examples/t1.npz',
-        debug=True)
+    main(model=['../examples/t1.onnx'],
+         output_dir='/tmp/export/',
+         embed_params=False,
+         pedantic=False,
+         test_data='../examples/t1.npz',
+         debug=True)
 
-    main(
-        model=['../examples/inception_v2/model.onnx'],
-        output_dir='/tmp/export/',
-        embed_params=True,
-        pedantic=False,
-        skip_version_conversion=False,
-        test_data='../examples/inception_v2/test_data_set_2.npz',
-        debug=True)
+    main(model=['../examples/inception_v2/model.onnx'],
+         output_dir='/tmp/export/',
+         embed_params=True,
+         pedantic=False,
+         skip_version_conversion=False,
+         test_data='../examples/inception_v2/test_data_set_2.npz',
+         debug=True)
