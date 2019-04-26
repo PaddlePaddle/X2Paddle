@@ -8,7 +8,7 @@ layer {
     type: "Reshape"
     bottom: "data"
     top: "reshape"
-    reshape_param{
+    reshape_param {
 	shape{
 	    dim: 1
 	    ...
@@ -20,7 +20,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-130-reshape)
+### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-134-reshape)
 ```python
 paddle.fluid.layers.reshape(
     x, 
@@ -56,8 +56,8 @@ layer {
     type: "Reshape"
     bottom: "data"
     top: "reshape"
-    reshape_param{
-	shape{
+    reshape_param {
+	shape {
 	    dim: 3
 	    dim: 2
 	}
@@ -71,8 +71,8 @@ layer {
     type: "Reshape"
     bottom: "data"
     top: "reshape"
-    reshape_param{
-	shape{
+    reshape_param {
+	shape {
 	    dim: 3
 	    dim: 2
 	    dim: 4
@@ -83,7 +83,7 @@ layer {
 # 输出shape：(2,3,2,4)
 
 ```  
-``` 
+```python 
 # PaddlePaddle示例：  
 # 输入shape：(2,4,6)
 output1 = paddle.fluid.layers.reshape(x = inputs , shape = [2,4,-1,3])

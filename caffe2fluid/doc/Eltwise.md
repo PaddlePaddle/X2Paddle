@@ -6,11 +6,11 @@
 layer {
     name: "eltwise"
     type: "Eltwise"
-    bottom: "num1"
-    bottom: "num2"
+    bottom: "data1"
+    bottom: "data2"
     top: "prod"
-    eltwise_param{
-        operation: PROD	#还有MAX，SUM
+    eltwise_param {
+        operation: PROD    # 还有MAX，SUM
         stable_prod_grad: false
         # coeff: 1
         # coeff: -1
@@ -19,31 +19,32 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.elementwise_sum](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-61-elementwise_add)
-### [paddle.fluid.layers.elementwise_max](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-63-elementwise_max)
-### [paddle.fluid.layers.elementwise_mul](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-65-elementwise_mul)
+### [paddle.fluid.layers.elementwise_add](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-61-elementwise_add)
+### [paddle.fluid.layers.elementwise_max](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-63-elementwise_max)
+### [paddle.fluid.layers.elementwise_mul](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-65-elementwise_mul)
 ```python
-paddle.fluid.layers.elementwise_sum(
+paddle.fluid.layers.elementwise_add(
     x, 
     y, 
-    axis = -1, 
-    act = None,
-    name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 和
 paddle.fluid.layers.elementwise_max(
     x, 
     y, 
-    axis = -1, 
-    act = None,
-    name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 和
 paddle.fluid.layers.elementwise_mul(
     x, 
     y, 
-    axis = -1, 
-    act = None,name = None
+    axis=-1, 
+    act=None,
+    name=None
 )
 ```  
 

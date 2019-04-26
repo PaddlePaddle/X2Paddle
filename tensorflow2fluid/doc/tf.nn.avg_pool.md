@@ -14,29 +14,30 @@ tf.nn.avg_pool(
 ```
 
 
-### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/en/1.3/api/layers.html#permalink-116-pool2d)
+### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.pool2d)
 ``` python
 paddle.fluid.layers.pool2d(
-    input, 
-    pool_size=-1, 
-    pool_type='max', 
-    pool_stride=1, 
-    pool_padding=0, 
-    global_pooling=False, 
-    use_cudnn=True, 
-    ceil_mode=False, 
-    name=None, 
+    input,
+    pool_size=-1,
+    pool_type='max',
+    pool_stride=1,
+    pool_padding=0,
+    global_pooling=False,
+    use_cudnn=True,
+    ceil_mode=False,
+    name=None,
     exclusive=True)
 ```
 ### 功能差异
 
 #### 输入格式
-TensorFlow: 默认为`NHWC`的数据输入格式，同时也可通过修改`data_format`参数，支持`NCHW`的输入；  
+TensorFlow: 默认为`NHWC`的数据输入格式，同时也可通过修改`data_format`参数，支持`NCHW`的输入；
 PaddlePaddle：只支持`NCHW`的数据输入格式。
 
 #### Padding机制
 
-Tensorflow: 存在`SAME`和`VALID`两种padding方式。当为`SAME`时，padding的size计算方式如下伪代码所示，需要注意的是，当计算得到的`pad_size`为奇数时，右侧与下方相对比左侧和上方会多1个size；
+Tensorflow: 存在`SAME`和`VALID`两种padding方式。当为`SAME`时，padding的size计算方式如下伪代码所示，需要注意的是，当计算得到的`pad_size`为奇
+数时，右侧与下方相对比左侧和上方会多1个size；
 ``` python
 # 计算在width上的padding size
 # height上的padding计算方式同理

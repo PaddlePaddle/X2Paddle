@@ -5,29 +5,29 @@
 layer{
     name: "pool"
     type: "Pooling"
-    bottom: "conv"
+    bottom: "data"
     top: "pool"
-    pooling_param{
+    pooling_param {
 	pool: MAX
-	kernel_size: 3	#必填项
+	kernel_size: 3    # 必填项
 	stride: 1
 	pad: 0
     }
 }
 ```
-### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-115-pool2d)
+### [paddle.fluid.layers.pool2d](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-119-pool2d)
 ```python
 paddle.fluid.layers.pool2d(
     input,
     pool_size,
-    pool_type = 'max',
-    pool_stride = 1,
-    pool_padding = 0,
-    global_pooling = False,
-    use_cudnn = True,
-    ceil_mode = False,
-    name = None,
-    exclusive = True
+    pool_type='max',
+    pool_stride=1,
+    pool_padding=0,
+    global_pooling=False,
+    use_cudnn=True,
+    ceil_mode=False,
+    name=None,
+    exclusive=True
 )
 ```  
   
@@ -64,9 +64,9 @@ PaddlePaddle：`exclusive`参数为`True`的情况下，`avg`平均池化过程�
 layer{
     name: "pool"
     type: "Pooling"
-    bottom: "conv"
+    bottom: "data"
     top: "pool"
-    pooling_param{
+    pooling_param {
 	pool: MAX
 	kernel_size: 3	
 	stride: 2
@@ -77,7 +77,9 @@ layer{
 # PaddlePaddle示例：  
 # 输入shape：(1,3,228,228)  
 # 输出shape：(1,3,113,113)
-pool1 = paddle.fluid.layers.pool2d(input = inputs , pool_size = 3, pool_type = 'max', pool_stride = 2, ceil_mode=False)
+pool1 = paddle.fluid.layers.pool2d(input = inputs , pool_size = 3, 
+                                   pool_type = 'max', pool_stride = 2, 
+				   ceil_mode=False)
 ```  
 
 

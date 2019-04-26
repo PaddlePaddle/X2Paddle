@@ -1,7 +1,7 @@
 
 ## tf.math.is_finite
 
-### [tf.math.is_finite](https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/math/is_finite)
+### [tf.math.is_finite](https://www.tensorflow.org/api_docs/python/tf/math/is_finite)
 ``` python
 tf.math.is_finite(
     x,
@@ -9,7 +9,7 @@ tf.math.is_finite(
 )
 ```
 
-### [paddle.fluid.layers.isfinite](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.isfinite)
+### [paddle.fluid.layers.isfinite](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.isfinite)
 ``` python
 paddle.fluid.layers.isfinite(x)
 ```

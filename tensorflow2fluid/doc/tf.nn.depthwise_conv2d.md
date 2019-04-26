@@ -14,7 +14,7 @@ tf.nn.depthwise_conv2d(
 )
 ```
 
-### [paddle.fluid.layers.conv2d](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
+### [paddle.fluid.layers.conv2d](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
 
 ```python
 paddle.fluid.layers.conv2d(
@@ -65,7 +65,7 @@ PaddlePaddle：`padding`参数表示在输入图像四周padding的size大小
 
 #### 参数差异
 Tensorflow：普通2维卷积使用`tf.layers.conv2d`  
-PaddlePaddle：仍使用本接口，可参考在文档[tf.layers.conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/doc/tensorflow2fluid/doc/tf.layers.conv2d.md)中
+PaddlePaddle：仍使用本接口，可参考在文档[tf.layers.conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/master/tensorflow2fluid/doc/tf.layers.conv2d.md)中
 
 ### 代码示例
 

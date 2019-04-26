@@ -15,7 +15,7 @@ tf.nn.dynamic_rnn(
 )
 ```
 
-### [paddle.fluid.layers.DynamicRNN](http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/api_guides/low_level/layers/control_flow.html#dynamicrnn)
+### [paddle.fluid.layers.DynamicRNN](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_cn/api_guides/low_level/layers/control_flow.html#dynamicrnn)
 ``` python
 paddle.fluid.layers.DynamicRNN(name=None)
 ```
@@ -28,7 +28,7 @@ PaddlePaddle: 使用`paddle.fluid.layers.DynamicRNN`类实现类似功能 ，通
 #### 输入格式
 TensorFlow: `tf.nn.dynamic_rnn`输入为序列数据，批输入中的每个序列需要填充到相同的长度
 PaddlePaddle: 使用
-[LoDTensor](http://www.paddlepaddle.org/documentation/docs/zh/1.2/user_guides/howto/basic_concept/lod_tensor.html)表示一个批输入，用户在使用时不需要进行填充操作。
+[LoDTensor](http://www.paddlepaddle.org/documentation/docs/zh/1.4/user_guides/howto/basic_concept/lod_tensor.html)表示一个批输入，用户在使用时不需要进行填充操作。
 
 ### 代码示例
 
@@ -74,5 +74,5 @@ state = fluid.layers.sequence_last_step(outputs)
 ### 其他
 
 为了简化用户定义动态RNN的过程，paddle有如下op可供选择：
-- [paddle.fluid.layers.dynamic_lstm](http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#dynamic-lstm)：相当于  `tf.nn.dynamic_rnn`结合`tf.nn.rnn_cell.LSTMCell`
-- [paddle.fluid.layers.dynamic_gru](http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#dynamic-gru)：相当于`tf.nn.dynamic_rnn`结合`tf.nn.rnn_cell.GRUCell`
+- [paddle.fluid.layers.dynamic_lstm](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#dynamic-lstm)：相当于  `tf.nn.dynamic_rnn`结合`tf.nn.rnn_cell.LSTMCell`
+- [paddle.fluid.layers.dynamic_gru](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#dynamic-gru)：相当于`tf.nn.dynamic_rnn`结合`tf.nn.rnn_cell.GRUCell`

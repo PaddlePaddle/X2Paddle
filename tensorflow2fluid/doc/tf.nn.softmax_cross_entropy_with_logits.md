@@ -12,7 +12,7 @@ tf.nn.softmax_cross_entropy_with_logits(
 )
 ```
 
-### [paddle.fluid.layers.softmax_with_cross_entropy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#softmax-with-cross-entropy)
+### [paddle.fluid.layers.softmax_with_cross_entropy](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#softmax-with-cross-entropy)
 ```python
 paddle.fluid.layers.softmax_with_cross_entropy(
     logits, 

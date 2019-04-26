@@ -8,15 +8,15 @@ layer {
     type: "Flatten"
     bottom: "data"
     top: "flatten"
-    flatten_param{
+    flatten_param {
         axis: 1
-	      end_axis: -1
+	end_axis: -1
     }
 }
 ```
 
 
-### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-72-reshape)
+### [paddle.fluid.layers.reshape](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-134-reshape)
 ```python
 paddle.fluid.layers.reshape(
     x, 

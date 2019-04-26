@@ -11,7 +11,7 @@ tf.math.top_k(
 )
 ```
 
-### [paddle.fluid.layers.topk](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#topk)
+### [paddle.fluid.layers.topk](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#topk)
 ``` python
 paddle.fluid.layers.topk(
     input, 
@@ -23,7 +23,7 @@ paddle.fluid.layers.topk(
 ### 功能差异
 #### 参数差异
 TensorFlow: 通过设置`sorted`参数，对返回的值与下标设置是否进行降序排序；`k`默认为1。  
-PaddlePaddle: 对返回的`top-k` tensor进行降序排序；`k`没有默认值，必须设置。
+PaddlePaddle: 对返回的top-k tensor进行降序排序；`k`没有默认值，必须设置。
 
 ### 代码示例
 ```python

@@ -16,7 +16,7 @@ tf.matmul(
 )
 ```
 
-### [paddle.fluid.layers.matmul](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#matmul)
+### [paddle.fluid.layers.matmul](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#matmul)
 ``` python
 paddle.fluid.layers.matmul(
     x, 

@@ -13,7 +13,7 @@ tf.nn.dropout(
 )
 ```
 
-### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-dropout)
+### [paddle.fluid.layers.dropout](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-dropout)
 ``` python
 paddle.fluid.layers.dropout(
     x, 
@@ -36,7 +36,7 @@ PaddlePaddle：暂无此设置。
 
 #### 实现方式
 TensorFlow：在训练时，被保留的单元输出要乘上`1/keep_prob`的系数，而在测试时，直接关闭dropout。
-PaddlePaddle：通过设置`dropout_implementation`有不同的实现。当设置为`downgrade_in_infer`时，在训练时，保留单元直接被输出，而测试时所有单元乘以`1-dropout_prob`的系数；当设置为`upgrade_in_train`时，则与tensorflow的实现一致。
+PaddlePaddle：通过设置`dropout_implementation`有不同的实现。当设置为`downgrade_in_infer`时，在训练时，保留单元直接被输出，而测试时所有单元乘以`1-dropout_prob`的系数；当设置为`upscale_in_train`时，则与tensorflow的实现一致。
 
 ### 代码示例
 ```python

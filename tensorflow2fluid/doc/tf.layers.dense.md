@@ -21,7 +21,7 @@ tf.layers.dense(
 )
 ```
 
-### [paddle.fluid.layers.fc](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#fc)
+### [paddle.fluid.layers.fc](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#fc)
 ``` python
 paddle.fluid.layers.fc(
     input, 

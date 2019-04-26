@@ -12,7 +12,7 @@ tf.split(
 )
 ```
 
-### [paddle.fluid.layers.split](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#split)
+### [paddle.fluid.layers.split](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#split)
 
 ```python
 paddle.fluid.layers.split(

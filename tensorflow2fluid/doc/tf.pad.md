@@ -12,7 +12,7 @@ tf.pad(
 )
 ```
 
-### [paddle.fluid.layers.pad](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#cn-api-fluid-layers-pad)
+### [paddle.fluid.layers.pad](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#cn-api-fluid-layers-pad)
 ``` python
 paddle.fluid.layers.pad(
     x, 

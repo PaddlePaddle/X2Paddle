@@ -1,7 +1,7 @@
 # caffe2fluid
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 
-caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc/接口速查表.md)]目录中整理了Caffe-PaddlePaddle的常用API对比分析。
+caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc/ReadMe.md)]目录中整理了Caffe-PaddlePaddle的常用API对比分析。
 
 ## 环境依赖
 
@@ -11,7 +11,7 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc
 > future  
 
 **caffe2fluid的运行仅依赖上述条件**  
-但建议在环境中安装好caffe和paddlepaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)
+但建议在环境中安装好Caffe和PaddlePaddle，便于转换模型后测试。环境安装可参考[安装文档](prepare.md)。
 
 ## 使用方法
 
@@ -19,9 +19,8 @@ caffe2fluid用于将Caffe模型转换为PaddlePaddle模型，此外在[[doc](doc
 1. Caffe模型转换为PaddlePaddle模型代码和参数文件（参数以numpy形式保存）
 
 ```
-# alexnet.prototxt : caffe配置文件
-# --def_path : caffe配置文件的保存路径
-# --caffemodel : caffe模型的保存路径
+# --def_path : Caffe配置文件的保存路径
+# --caffemodel : Caffe模型的保存路径
 # --data-output-path : 转换后模型参数保存路径
 # --code-output-path : 转换后模型代码保存路径
 python convert.py --def_path alexnet.prototxt \
@@ -43,11 +42,11 @@ python alexnet.py --npy_path alexnet.npy --model-param-path ./fluid --need-layer
 模型的加载及预测可参考PaddlePaddle官方文档[加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.3/api_guides/low_level/inference.html#id4)
 
 ### 模型转换前后差异对比
-模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（**运行环境依赖caffe和paddlepaddle**）
+模型转换后，可通过如下方式，逐层对比转换后的模型与原模型的计算结果差异（**运行环境依赖Caffe和paddlepaddle**）
 ```
-# alexnet : caffe配置文件（.prototxt）中“name”的值
-# ../../alexnet.prototxt : caffe配置文件路径
-# ../../alexnet.caffemodel : caffe模型文件路径
+# alexnet : Caffe配置文件（.prototxt）中“name”的值
+# ../../alexnet.prototxt : Caffe配置文件路径
+# ../../alexnet.caffemodel : Caffe模型文件路径
 # ../../alexnet.py : 转换后模型代码保存路径
 # ../../alexnet.npy : 转换后模型参数保存路径
 # ./data/65.jpeg : 需要测试的图像数据

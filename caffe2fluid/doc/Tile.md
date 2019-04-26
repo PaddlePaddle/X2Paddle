@@ -8,7 +8,7 @@ layer {
     type: "Tile"
     bottom: "data"
     top: "concat"
-    tile_param{
+    tile_param {
         axis: 1
         tiles: 2
     }
@@ -16,7 +16,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.concat](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-70-expand)
+### [paddle.fluid.layers.concat](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-219-concat)
 ```python
 paddle.fluid.layers.concat(
     x, 

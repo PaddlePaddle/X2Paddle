@@ -102,8 +102,8 @@ class TensorflowGraph(Graph):
                                               self.node_map[layer.name])
                         self._make_connection(pred_node, self.node_map[pred])
                     else:
-                        raise Exception("Unsupported situation(name:[{}], \
-                            OP[{}])".format(node.layer_name, node.layer_type))
+                        raise Exception("\nUnsupported situation(name:[{}]," \
+                            "OP[{}])".format(layer.name, layer.op))
 
                 elif pred in self.node_map:
                     self._make_connection(self.node_map[pred],

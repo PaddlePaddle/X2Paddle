@@ -14,14 +14,15 @@ tf.losses.sigmoid_cross_entropy(
 )
 ```
 
-### [paddle.fluid.layers.sigmoid_cross_entropy_with_logit](http://paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#sigmoid_cross_entropy_with_logits)
+### [paddle.fluid.layers.sigmoid_cross_entropy_with_logit](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#sigmoid_cross_entropy_with_logits)
 
 ```python
 paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
     x, 
     label, 
-    name=None
-)
+    ignore_index=-100, 
+    name=None, 
+    normalize=False)
 ```
 
 ### 功能差异
@@ -31,10 +32,18 @@ paddle.fluid.layers.sigmoid_cross_entropy_with_logits(
 Tensorflow：通过控制`reduction`参数，返回结果可以是rank为0的tensor，也可以是shape与`logits`相同的tensor;  
 PaddlePaddle：固定返回shape与`x`相同的tensor，表示每个样本在每个标签上的损失。
 
-#### 其他
+#### 调权与平滑
 
 Tensorflow：通过`weights`，可以设置不同样本、不同label的权重；通过`label_smoothing`，可以控制对label进行平滑；  
 PaddlePaddle：不支持调权与平滑功能。
+
+#### 忽略标签
+Tensorflow：不支持；  
+PaddlePaddle：通过设置`ignore_index`可以指定被忽略的标签，不影响梯度。
+
+#### 归一化
+Tensorflow：不支持；
+PaddlePaddle：通过设置`normalize`，各样本损失函数会除以除去`ignore_index`外的样本数。
 
 ### 代码示例
 ```

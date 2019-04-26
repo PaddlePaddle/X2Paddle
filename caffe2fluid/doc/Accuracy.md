@@ -6,24 +6,24 @@
 layer {
     name: "accuracy"
     type: "Accuracy"
-    bottom: "pred"
+    bottom: "input"
     bottom: "label"
     top: "accuracy"
-    include{
+    include {
 	phase: TEST
     }
 }
 ```
 
 
-### [paddle.fluid.layers.accuracy](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-253-accuracy)
+### [paddle.fluid.layers.accuracy](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#accuracy)
 ```python
 paddle.fluid.layers.accuracy(
     input,
     label,
-    k = 1,
-    correct = None,
-    total = None
+    k=1,
+    correct=None,
+    total=None
 )
 ```  
 

@@ -17,7 +17,7 @@ tf.while_loop(
 )
 ```
 
-### [paddle.fluid.layers.While](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#while)
+### [paddle.fluid.layers.While](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#while)
 ```python
 paddle.fluid.layers.While(
     cond, 

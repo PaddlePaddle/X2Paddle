@@ -22,7 +22,7 @@ tf.nn.rnn_cell.LSTMCell(
 )
 ```
 
-### [paddle.fluid.layers.lstm_unit](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#lstm-unit)
+### [paddle.fluid.layers.lstm_unit](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#lstm-unit)
 
 ```python
 paddle.fluid.layers.lstm_unit(
@@ -41,7 +41,7 @@ paddle.fluid.layers.lstm_unit(
 #### 使用方式
 TensorFlow：首先定义`LSTMCell`对象，定义对象时只需要指定单元数`num_units`；由于`LSTMCell`内部定义了`__call__`方法，因而其对象是可调用对象，直接使用`step_output, cur_state = cell(step_input, last_state)`的形式，可以计算得到当前步的输出与状态;  
 
-PaddlePaddle：提供op形式的调用接口，通常与[paddle.fluid.layers.DynamicRNN](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#dynamicrnn)配合使用，以获取序列中的单步输入。**注意，`lstm_unit`通过`cell_t_prev`最后一个维度来确定lstm的单元数，同时要求`hidden_t_prev`与`cell_t_prev`最后的维度相同。**
+PaddlePaddle：提供op形式的调用接口，通常与[paddle.fluid.layers.DynamicRNN](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#dynamicrnn)配合使用，以获取序列中的单步输入。**注意，`lstm_unit`通过`cell_t_prev`最后一个维度来确定lstm的单元数，同时要求`hidden_t_prev`与`cell_t_prev`最后的维度相同。**
 
 #### 窥孔连接
 

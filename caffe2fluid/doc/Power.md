@@ -8,7 +8,7 @@ layer {
     type: "Power"
     bottom: "data"
     top: "power"	
-    power_param{
+    power_param {
 	power: 1
 	scale: 1
 	shift: 0
@@ -17,12 +17,12 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.power](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-117-pow)
+### [paddle.fluid.layers.pow](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-121-pow)
 ```python
-paddle.fluid.layers.power(
+paddle.fluid.layers.pow(
     x,
-    factor = 1.0,
-    name = None
+    factor=1.0,
+    name=None
 )
 ```  
 

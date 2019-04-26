@@ -8,7 +8,7 @@ layer {
     type: "BatchNorm"
     bottom: "data"
     top: "bn"
-    batch_norm_param{
+    batch_norm_param {
         use_global_stats: true
     	moving_average_fraction: 0.999
     	eps: 0.00001
@@ -17,7 +17,7 @@ layer {
 ```
 
 
-### [paddle.fluid.layers.batch_norm](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-36-batch_norm)
+### [paddle.fluid.layers.batch_norm](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#permalink-36-batch_norm)
 ```python
 paddle.fluid.layers.batch_norm(
     input, 

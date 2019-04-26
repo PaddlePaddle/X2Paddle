@@ -15,7 +15,7 @@ tf.nn.conv2d(
 )
 ```
 
-### [paddle.fluid.layers.conv2d](http://www.paddlepaddle.org/documentation/docs/zh/1.2/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
+### [paddle.fluid.layers.conv2d](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#paddle.fluid.layers.conv2d)
 
 ```python
 paddle.fluid.layers.conv2d(
@@ -37,7 +37,7 @@ paddle.fluid.layers.conv2d(
 ### 功能差异
 
 `tf.nn.conv2d`中的参数`filter`为具体的tensor，而`paddle.fluid.layers.conv2d`参数中则声明卷积核的`size`，函数内部创建卷积核tensor。也可通过如下代码示例，自行创建并复用卷积核  
-需要注意的是PaddlePaddle中的输入、输出以及卷积核的格式与tensorflow存在部分差异，可参考[tf.layers.conv2d](tf.layers.conv2d.md)
+需要注意的是PaddlePaddle中的输入、输出以及卷积核的格式与tensorflow存在部分差异，可参考[tf.layers.conv2d](https://github.com/PaddlePaddle/X2Paddle/blob/master/tensorflow2fluid/doc/tf.layers.conv2d.md)
 
 ### 代码示例  
 ```python

@@ -16,7 +16,7 @@ tf.contrib.rnn.GRUCell(
 
 ```
 
-### [paddle.fluid.layers.gru_unit](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#gru-unit)
+### [paddle.fluid.layers.gru_unit](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#gru-unit)
 
 ```python
 paddle.fluid.layers.gru_unit(
@@ -43,7 +43,7 @@ on Sequence Modeling](https://arxiv.org/pdf/1412.3555.pdf)。
 #### 使用方式
 TensorFlow：首先定义`GRUCell`对象，定义对象时只需要指定单元数`num_units`；由于`GRUCell`内部定义了`__call__`方法，因而其对象是可调用对象，直接使用`step_output, cur_state = cell(step_input, last_state)`的形式，可以计算得到当前步的输出与状态;  
 
-PaddlePaddle：提供op形式的调用接口，通常与[paddle.fluid.layers.DynamicRNN](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#dynamicrnn)配合使用，以获取序列中的单步输入。**注意，为了提高`gru_unit`的计算效率，用户在使用该接口时需要遵从如下约定：假设要指定的GRU单元数为`num_units`，则`size`以及`input.shape[-1]`必须为`3*num_units`，`hidden.shape[-1]`为`num_units`，见如下代码示例小节。**
+PaddlePaddle：提供op形式的调用接口，通常与[paddle.fluid.layers.DynamicRNN](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#dynamicrnn)配合使用，以获取序列中的单步输入。**注意，为了提高`gru_unit`的计算效率，用户在使用该接口时需要遵从如下约定：假设要指定的GRU单元数为`num_units`，则`size`以及`input.shape[-1]`必须为`3*num_units`，`hidden.shape[-1]`为`num_units`，见如下代码示例小节。**
 
 #### 返回值
 TensorFlow：返回一个二元组，分别是当前时刻的输出值与隐藏状态，实际上输出值与隐藏状态为相同的tensor；  
