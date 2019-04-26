@@ -6,9 +6,7 @@ Created on Wed Mar 27 11:50:03 2019
 @author: Macrobull
 """
 
-# import os, sys
-import os
-import sys
+import os, sys
 import numpy as np
 import onnx
 import onnx.numpy_helper as numpy_helper

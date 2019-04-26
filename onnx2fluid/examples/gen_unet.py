@@ -4,7 +4,6 @@
 Created on Fri Mar 22 11:19:45 2019
 
 @author: Macrobull
-
 """
 
 from __future__ import print_function

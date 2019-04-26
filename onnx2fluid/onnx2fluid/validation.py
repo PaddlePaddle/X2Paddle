@@ -8,11 +8,6 @@ Created on Fri Mar 22 12:17:19 2019
 
 import importlib, logging, os, sys
 
-#import importlib
-#import logging
-#import os
-#import sys
-
 
 def _flatten_dict(obj, out=None):
     assert isinstance(obj, dict)
@@ -37,8 +32,10 @@ def _ensure_list(obj):
 def validate(fluid_model_filename,
              golden_data_filename,
              model_func_name='inference',
-             decimal=3,
-             save_inference_model=False):
+             atol=1e-3,
+             rtol=1e-4,
+             save_inference_model=False,
+             **kwargs):
     """
     inference the converted Paddle fluid model, validate with given golden data
     """
@@ -125,7 +122,13 @@ def validate(fluid_model_filename,
     for (name, truth), output in zip(output_data.items(), outputs):
         logger.info('testing output {} ...'.format(name))
         try:
-            np.testing.assert_almost_equal(output, truth, decimal=decimal)
+            np.testing.assert_allclose(
+                output,
+                truth,
+                rtol=rtol,
+                atol=atol,
+                equal_nan=False,
+                verbose=True)
         except AssertionError as e:
             passed = False
             logger.error('failed: %s\n', e)
@@ -134,9 +137,8 @@ def validate(fluid_model_filename,
     else:
         logger.info('accuracy not passed')
 
-
-#    globals().update(locals())
     return passed
+
 
 if __name__ == '__main__':
     import argparse
@@ -163,11 +165,17 @@ if __name__ == '__main__':
         help='I/O golden data for validation, e.g. test.npy, test.npz',
     )
     parser.add_argument(
-        '--precision',
+        '--atol',
         '-p',
         type=float,
-        default=3.,
-        help='assertion decimal for validation',
+        default=1e-3,
+        help='assertion absolute tolerance for validation',
+    )
+    parser.add_argument(
+        '--rtol',
+        type=float,
+        default=1e-4,
+        help='assertion relative tolerance for validation',
     )
     args = parser.parse_args()
 
@@ -178,10 +186,11 @@ if __name__ == '__main__':
     debug = args.debug
     fluid_model_filename = args.model[0]
     golden_data_filename = args.test_data
-    decimal = args.precision
+    atol, rtol = args.atol, args.rtol
 
     validate(
         fluid_model_filename,
         golden_data_filename,
-        decimal=decimal,
+        atol=atol,
+        rtol=rtol,
         save_inference_model=debug)
