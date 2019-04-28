@@ -22,7 +22,6 @@ __all__ = [
     'main',
 ]
 
-DEFAULT_ONNX_OPSET_VERSION = 9
 DEFAULT_MODEL_MODULE = 'model'
 DEFAULT_MODEL_FUNC = 'inference'
 
@@ -30,6 +29,7 @@ DEFAULT_MODEL_FUNC = 'inference'
 def main(**kwargs):
     """主程序入口"""
 
+    from .conversion import DEFAULT_ONNX_OPSET_VERSION
     from .conversion import convert
 
     logger = logging.getLogger('onnx2fluid')
@@ -44,9 +44,9 @@ def main(**kwargs):
                 if save_dir else basepath) + shutil.os.sep
     model_basename = DEFAULT_MODEL_MODULE + '.py'
     model_func_name = DEFAULT_MODEL_FUNC
-    onnx_opset_version = DEFAULT_ONNX_OPSET_VERSION
     onnx_opset_pedantic = kwargs.pop('pedantic', True)
-    onnx_skip_version_conversion = kwargs.pop('skip_version_conversion', False)
+    skip_version_conversion = kwargs.pop('skip_version_conversion', False)
+    onnx_opset_version = None if skip_version_conversion else DEFAULT_ONNX_OPSET_VERSION
 
     # convert
     convert(filename,
@@ -55,7 +55,6 @@ def main(**kwargs):
             model_func_name=model_func_name,
             onnx_opset_version=onnx_opset_version,
             onnx_opset_pedantic=onnx_opset_pedantic,
-            onnx_skip_version_conversion=onnx_skip_version_conversion,
             **kwargs)
 
     # validate
@@ -69,13 +68,12 @@ def main(**kwargs):
                            golden_data_filename, **kwargs)
 
         logger.info('starting validation on code ...')
-        passed &= validate(
-            shutil.os.path.join(save_dir, model_basename),
-            golden_data_filename,
-            model_func_name=model_func_name,
-            save_inference_model=
-            debug,  # re-generate desc proto with python code when debug on
-            **kwargs)
+        # this re-generate desc proto with Python code when debug on
+        passed &= validate(shutil.os.path.join(save_dir, model_basename),
+                           golden_data_filename,
+                           model_func_name=model_func_name,
+                           save_inference_model=debug,
+                           **kwargs)
 
     if not passed:
         logger.error('validation failed, exit')

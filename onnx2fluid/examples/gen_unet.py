@@ -21,10 +21,10 @@ class double_conv(nn.Module):
 
     def __init__(self, in_ch, out_ch):
         super(double_conv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, 3, padding=1), nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True), nn.Conv2d(out_ch, out_ch, 3, padding=1),
-            nn.BatchNorm2d(out_ch), nn.ReLU(inplace=True))
+        self.conv = nn.Sequential(nn.Conv2d(in_ch, out_ch, 3, padding=1),
+                                  nn.BatchNorm2d(out_ch), nn.ReLU(inplace=True),
+                                  nn.Conv2d(out_ch, out_ch, 3, padding=1),
+                                  nn.BatchNorm2d(out_ch), nn.ReLU(inplace=True))
 
     def forward(self, x):
         x = self.conv(x)
@@ -58,8 +58,8 @@ class up(nn.Module):
         #  would be a nice idea if the upsampling could be learned too,
         #  but my machine do not have enough memory to handle all those weights
         if bilinear:
-            self.up = nn.Upsample(
-                scale_factor=2, mode='bilinear')  #, align_corners=True)
+            self.up = nn.Upsample(scale_factor=2,
+                                  mode='bilinear')  #, align_corners=True)
         else:
             self.up = nn.ConvTranspose2d(in_ch // 2, in_ch // 2, 2, stride=2)
 
@@ -131,8 +131,7 @@ model = UNet(3, 80)
 model.eval()
 xb = torch.rand((1, 3, 512, 512))
 yp = model(xb)
-export_onnx_with_validation(
-    model, (xb, ),
-    'sample_unet', ['image'], ['pred'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb],
+                            'sample_unet', ['image'], ['pred'],
+                            verbose=True,
+                            training=False)

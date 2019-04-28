@@ -92,7 +92,7 @@ parser.add_argument(
 parser.add_argument(
     '--rtol',
     type=float,
-    default=1e-4,
+    default=1e-2,
     help='assertion relative tolerance for validation',
 )
 args = parser.parse_args()

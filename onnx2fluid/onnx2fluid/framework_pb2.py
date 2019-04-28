@@ -28,30 +28,66 @@ _ATTRTYPE = _descriptor.EnumDescriptor(
     filename=None,
     file=DESCRIPTOR,
     values=[
-        _descriptor.EnumValueDescriptor(
-            name='INT', index=0, number=0, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FLOAT', index=1, number=1, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='STRING', index=2, number=2, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='INTS', index=3, number=3, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FLOATS', index=4, number=4, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='STRINGS', index=5, number=5, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='BOOLEAN', index=6, number=6, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='BOOLEANS', index=7, number=7, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='BLOCK', index=8, number=8, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='LONG', index=9, number=9, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='BLOCKS', index=10, number=10, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='LONGS', index=11, number=11, options=None, type=None),
+        _descriptor.EnumValueDescriptor(name='INT',
+                                        index=0,
+                                        number=0,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FLOAT',
+                                        index=1,
+                                        number=1,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='STRING',
+                                        index=2,
+                                        number=2,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='INTS',
+                                        index=3,
+                                        number=3,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FLOATS',
+                                        index=4,
+                                        number=4,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='STRINGS',
+                                        index=5,
+                                        number=5,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='BOOLEAN',
+                                        index=6,
+                                        number=6,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='BOOLEANS',
+                                        index=7,
+                                        number=7,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='BLOCK',
+                                        index=8,
+                                        number=8,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='LONG',
+                                        index=9,
+                                        number=9,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='BLOCKS',
+                                        index=10,
+                                        number=10,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='LONGS',
+                                        index=11,
+                                        number=11,
+                                        options=None,
+                                        type=None),
     ],
     containing_type=None,
     options=None,
@@ -80,53 +116,111 @@ _VARTYPE_TYPE = _descriptor.EnumDescriptor(
     filename=None,
     file=DESCRIPTOR,
     values=[
-        _descriptor.EnumValueDescriptor(
-            name='BOOL', index=0, number=0, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='INT16', index=1, number=1, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='INT32', index=2, number=2, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='INT64', index=3, number=3, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FP16', index=4, number=4, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FP32', index=5, number=5, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FP64', index=6, number=6, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='SIZE_T', index=7, number=19, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='UINT8', index=8, number=20, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='INT8', index=9, number=21, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_TENSOR', index=10, number=7, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='SELECTED_ROWS', index=11, number=8, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FEED_MINIBATCH', index=12, number=9, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='FETCH_LIST', index=13, number=10, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='STEP_SCOPES', index=14, number=11, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_RANK_TABLE', index=15, number=12, options=None,
-            type=None),
-        _descriptor.EnumValueDescriptor(
-            name='LOD_TENSOR_ARRAY',
-            index=16,
-            number=13,
-            options=None,
-            type=None),
-        _descriptor.EnumValueDescriptor(
-            name='PLACE_LIST', index=17, number=14, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='READER', index=18, number=15, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='RAW', index=19, number=17, options=None, type=None),
-        _descriptor.EnumValueDescriptor(
-            name='TUPLE', index=20, number=18, options=None, type=None),
+        _descriptor.EnumValueDescriptor(name='BOOL',
+                                        index=0,
+                                        number=0,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='INT16',
+                                        index=1,
+                                        number=1,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='INT32',
+                                        index=2,
+                                        number=2,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='INT64',
+                                        index=3,
+                                        number=3,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FP16',
+                                        index=4,
+                                        number=4,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FP32',
+                                        index=5,
+                                        number=5,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FP64',
+                                        index=6,
+                                        number=6,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='SIZE_T',
+                                        index=7,
+                                        number=19,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='UINT8',
+                                        index=8,
+                                        number=20,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='INT8',
+                                        index=9,
+                                        number=21,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='LOD_TENSOR',
+                                        index=10,
+                                        number=7,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='SELECTED_ROWS',
+                                        index=11,
+                                        number=8,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FEED_MINIBATCH',
+                                        index=12,
+                                        number=9,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='FETCH_LIST',
+                                        index=13,
+                                        number=10,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='STEP_SCOPES',
+                                        index=14,
+                                        number=11,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='LOD_RANK_TABLE',
+                                        index=15,
+                                        number=12,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='LOD_TENSOR_ARRAY',
+                                        index=16,
+                                        number=13,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='PLACE_LIST',
+                                        index=17,
+                                        number=14,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='READER',
+                                        index=18,
+                                        number=15,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='RAW',
+                                        index=19,
+                                        number=17,
+                                        options=None,
+                                        type=None),
+        _descriptor.EnumValueDescriptor(name='TUPLE',
+                                        index=20,
+                                        number=18,
+                                        options=None,
+                                        type=None),
     ],
     containing_type=None,
     options=None,
@@ -1480,11 +1574,10 @@ DESCRIPTOR.enum_types_by_name['AttrType'] = _ATTRTYPE
 Version = _reflection.GeneratedProtocolMessageType(
     'Version',
     (_message.Message, ),
-    dict(
-        DESCRIPTOR=_VERSION,
-        __module__='framework_pb2'
-        # @@protoc_insertion_point(class_scope:paddle.framework.proto.Version)
-    ))
+    dict(DESCRIPTOR=_VERSION,
+         __module__='framework_pb2'
+         # @@protoc_insertion_point(class_scope:paddle.framework.proto.Version)
+         ))
 _sym_db.RegisterMessage(Version)
 
 OpDesc = _reflection.GeneratedProtocolMessageType(
@@ -1601,11 +1694,10 @@ _sym_db.RegisterMessage(VarType.Tuple)
 VarDesc = _reflection.GeneratedProtocolMessageType(
     'VarDesc',
     (_message.Message, ),
-    dict(
-        DESCRIPTOR=_VARDESC,
-        __module__='framework_pb2'
-        # @@protoc_insertion_point(class_scope:paddle.framework.proto.VarDesc)
-    ))
+    dict(DESCRIPTOR=_VARDESC,
+         __module__='framework_pb2'
+         # @@protoc_insertion_point(class_scope:paddle.framework.proto.VarDesc)
+         ))
 _sym_db.RegisterMessage(VarDesc)
 
 BlockDesc = _reflection.GeneratedProtocolMessageType(

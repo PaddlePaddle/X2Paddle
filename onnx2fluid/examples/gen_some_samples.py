@@ -39,7 +39,7 @@ idx = 0
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
+#export_onnx_with_validation(model, [xb], prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -61,7 +61,7 @@ idx = 0
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
+#export_onnx_with_validation(model, [xb], prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -85,11 +85,10 @@ xb = torch.rand((2, 3))
 yp = model(xb)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (xb, ),
-    prefix + str(idx), ['x'], ['y'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb],
+                            prefix + str(idx), ['x'], ['y'],
+                            verbose=True,
+                            training=False)
 
 ######## example: compare ########
 
@@ -113,11 +112,10 @@ xb1 = torch.rand((2, 3))
 ya, yb, yc = model(xb0, xb1)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (xb0, xb1),
-    prefix + str(idx), ['x0', 'x1'], ['ya', 'yb', 'yc'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb0, xb1],
+                            prefix + str(idx), ['x0', 'x1'], ['ya', 'yb', 'yc'],
+                            verbose=True,
+                            training=False)
 
 ######## example: affine_grid ########
 
@@ -137,11 +135,10 @@ theta = torch.rand((2, 2, 3))
 grid = model(theta)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (theta, ),
-    prefix + str(idx), ['theta'], ['grid'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, (theta, ),
+                            prefix + str(idx), ['theta'], ['grid'],
+                            verbose=True,
+                            training=False)
 
 ######## example: conv2d_transpose ########
 
@@ -165,11 +162,10 @@ xb = torch.rand((2, 3, 4, 5))
 yp = model(xb)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (xb, ),
-    prefix + str(idx), ['x'], ['y'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb],
+                            prefix + str(idx), ['x'], ['y'],
+                            verbose=True,
+                            training=False)
 
 ######## example: conv2d ########
 
@@ -195,11 +191,10 @@ xb = torch.rand((2, 3, 4, 5))
 yp = model(xb)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (xb, ),
-    prefix + str(idx), ['x'], ['y'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb],
+                            prefix + str(idx), ['x'], ['y'],
+                            verbose=True,
+                            training=False)
 
 ######### example: conv1d ########
 #
@@ -220,7 +215,7 @@ export_onnx_with_validation(
 #yp = model(xb)
 #idx += 1
 #print('index: ', idx)
-#export_onnx_with_validation(model, (xb, ), prefix + str(idx),
+#export_onnx_with_validation(model, [xb], prefix + str(idx),
 #                            ['x'], ['y'],
 #                            verbose=True, training=False)
 
@@ -241,8 +236,7 @@ xb = torch.rand((2, 3))
 yp = model(xb)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(
-    model, (xb, ),
-    prefix + str(idx), ['y'], ['y'],
-    verbose=True,
-    training=False)
+export_onnx_with_validation(model, [xb],
+                            prefix + str(idx), ['y'], ['y'],
+                            verbose=True,
+                            training=False)

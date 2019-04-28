@@ -9,23 +9,22 @@ Created on Fri Mar 22 12:17:19 2019
 import importlib, logging, os, sys
 
 
-def _flatten_dict(obj, out=None):
+def flatten_dict(obj, out=None):
     assert isinstance(obj, dict)
     if out is None:
         out = type(obj)()
     for key, value in obj.items():
         if isinstance(value, dict):
-            _flatten_dict(value, out)
+            flatten_dict(value, out)
         else:
             assert key not in out
             out[key] = value
     return out
 
 
-def _ensure_list(obj):
-    for cls in [list, set, tuple]:
-        if isinstance(obj, cls):
-            return list(obj)
+def ensure_list(obj):
+    if isinstance(obj, (list, tuple, set)):
+        return list(obj)
     return [obj]
 
 
@@ -33,12 +32,12 @@ def validate(fluid_model_filename,
              golden_data_filename,
              model_func_name='inference',
              atol=1e-3,
-             rtol=1e-4,
+             rtol=1e-3,
              save_inference_model=False,
              **kwargs):
     """
-    inference the converted Paddle fluid model, validate with given golden data
-    """
+	inference the converted Paddle fluid model, validate with given golden data
+	"""
 
     import numpy as np
     import paddle.fluid as fluid
@@ -56,8 +55,8 @@ def validate(fluid_model_filename,
         prog, _, var_outs = fluid.io.load_inference_model(fluid_model_dir, exe)
         out_names = var_outs  # HINT: pass var if fetch ops already created
         logger.info('model load passed')
-    elif basename.endswith('.py'):  # is python code
-        logger.debug('using python code file %s', basename)
+    elif basename.endswith('.py'):  # is Python code
+        logger.debug('using code file %s', basename)
         module_name, _ = os.path.splitext(basename)
         sys_path = sys.path.copy()
         sys.path.append(fluid_model_dir)
@@ -73,14 +72,15 @@ def validate(fluid_model_filename,
                      func)
 
         var_outs = func()
-        var_outs = _ensure_list(var_outs)
+        var_outs = ensure_list(var_outs)
         out_names = [var.name for var in var_outs
                      ]  # HINT: pass string to create fetch ops
         logger.info('import passed')
 
         prog = fluid.default_main_program()
-        fluid.io.load_persistables(
-            executor=exe, dirname=fluid_model_dir, main_program=prog)
+        fluid.io.load_persistables(executor=exe,
+                                   dirname=fluid_model_dir,
+                                   main_program=prog)
         logger.info('weight load passed')
     else:
         raise ValueError('unsupported Paddle fluid model filename')
@@ -95,20 +95,19 @@ def validate(fluid_model_filename,
         test_data = np.load(golden_data_filename, encoding='bytes').tolist()
         input_data = test_data['inputs']
         output_data = test_data['outputs']
-    input_data = _flatten_dict(input_data)
-    output_data = _flatten_dict(output_data)
+    input_data = flatten_dict(input_data)
+    output_data = flatten_dict(output_data)
     logger.info('found %d I/O golden data, starting test ...',
                 len(input_data) + len(output_data))
 
-    # DEBUG: reload test for python code
+    # DEBUG: reload test for Python code
     if basename.endswith('.py') and save_inference_model:
-        fluid.io.save_inference_model(
-            fluid_model_dir,
-            input_data.keys(),
-            var_outs,
-            exe,
-            main_program=prog,
-            export_for_deployment=True)
+        fluid.io.save_inference_model(fluid_model_dir,
+                                      input_data.keys(),
+                                      var_outs,
+                                      exe,
+                                      main_program=prog,
+                                      export_for_deployment=True)
         logger.info('model re-save passed')
         fluid.io.load_inference_model(fluid_model_dir, exe)
         logger.info('model re-load passed')
@@ -122,13 +121,12 @@ def validate(fluid_model_filename,
     for (name, truth), output in zip(output_data.items(), outputs):
         logger.info('testing output {} ...'.format(name))
         try:
-            np.testing.assert_allclose(
-                output,
-                truth,
-                rtol=rtol,
-                atol=atol,
-                equal_nan=False,
-                verbose=True)
+            np.testing.assert_allclose(output,
+                                       truth,
+                                       rtol=rtol,
+                                       atol=atol,
+                                       equal_nan=False,
+                                       verbose=True)
         except AssertionError as e:
             passed = False
             logger.error('failed: %s\n', e)
@@ -174,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--rtol',
         type=float,
-        default=1e-4,
+        default=1e-2,
         help='assertion relative tolerance for validation',
     )
     args = parser.parse_args()
@@ -188,9 +186,8 @@ if __name__ == '__main__':
     golden_data_filename = args.test_data
     atol, rtol = args.atol, args.rtol
 
-    validate(
-        fluid_model_filename,
-        golden_data_filename,
-        atol=atol,
-        rtol=rtol,
-        save_inference_model=debug)
+    validate(fluid_model_filename,
+             golden_data_filename,
+             atol=atol,
+             rtol=rtol,
+             save_inference_model=debug)

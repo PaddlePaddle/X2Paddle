@@ -14,20 +14,21 @@ __all__ = [
     'convert',
 ]
 
+DEFAULT_ONNX_OPSET_VERSION = 9
+
 
 def convert(onnx_model_filename,
             save_dir,
             model_basename='model.py',
             model_func_name='inference',
             embed_params=False,
-            onnx_opset_version=9,
+            onnx_opset_version=None,
             onnx_opset_pedantic=True,
-            onnx_skip_version_conversion=False,
             debug=False,
             **kwargs):
     """
-    convert an ONNX model to Paddle fluid Python code and desc pb
-    """
+	convert an ONNX model to Paddle fluid Python code and desc pb
+	"""
 
     import onnx
 
@@ -50,11 +51,13 @@ def convert(onnx_model_filename,
     # prepare onnx model
     logger.info('loading model: %s ...', onnx_model_filename)
     onnx_model = onnx.load(onnx_model_filename)
+
     try:
         logger.info('checking model ...')
         check_model(onnx_model)
-        if onnx_skip_version_conversion:  # WORKAROUND: RuntimeError: No Adapter For OP
-            logger.debug('assumed opset version: %d', onnx_opset_version)
+        if onnx_opset_version is None:  # WORKAROUND: RuntimeError: No Adapter For OP
+            logger.debug('assumed opset version: %d',
+                         DEFAULT_ONNX_OPSET_VERSION)
             logger.warning(
                 'opset conversion skipped for onnx_opset_pedantic is OFF')
         else:
@@ -68,6 +71,7 @@ def convert(onnx_model_filename,
             logger.warning('due to onnx_opset_pedantic is OFF')
             logger.warning('the ONNX model sanity checking error is suppressed')
             logger.warning('value_info inferring may be uncompleted')
+
     # onnx model optimization
     logger.info('model has %d ops', len(onnx_model.graph.node))
     logger.info('optimizing model ...')
@@ -87,10 +91,7 @@ def convert(onnx_model_filename,
         debug_model_filename, _ = shutil.os.path.splitext(onnx_model_filename)
         onnx.save(model, debug_model_filename + '.optimized_and_inffered.onnx')
 
-
-#        onnx.save(model, '/tmp/export/optimized_and_inffered.onnx')
-
-# I/O instances
+    # I/O instances
     onnx_graph = onnx_model.graph
     fluid_program = Program()
     fluid_writer = Writer()
@@ -114,8 +115,8 @@ def convert(onnx_model_filename,
     # op set conversion
     #    topo = 'backward' if embed_params else 'forward'
     topo = 'forward'
-    for name, domain, op_type, inputs, outputs, attrs in graph_ops(
-            onnx_graph, topo=topo):
+    for name, domain, op_type, inputs, outputs, attrs in graph_ops(onnx_graph,
+                                                                   topo=topo):
         logger.debug('translating op %s %s::%s ...', name, domain, op_type)
         if domain == DEFAULT_OP_DOMAIN:
             domain = ''
@@ -139,6 +140,24 @@ def convert(onnx_model_filename,
     fluid_program.codes = []
     logger.info('%d ops in, %d ops out', len(onnx_graph.node),
                 len(fluid_program.op_descs))
+
+    # shape-inference
+    for name, value_info in graph_value_infos.items():
+        var_name = make_var_name(name)
+        fluid_program.VarTypeInfo(var_name, value_info,
+                                  remove_batch=False)  # shape-infer only
+    bad_var_names = []
+    for var_name, var_desc in fluid_program.var_descs.items():
+        if not var_desc.type.lod_tensor.HasField('tensor'):
+            bad_var_names.append(var_name)
+    if len(bad_var_names) > 0:
+        logger.warning('type info not infered for var %s ...',
+                       ', '.join(bad_var_names[:5]))
+        logger.warning('this causes little problem for PaddlePaddle, '
+                       'but Paddle Mobile may not infer correctly')
+        logger.warning(
+            'please consider adding option -d to invoke PaddlePaddle shape-inference'
+        )
 
     # weight writer
     for name, weight in graph_weights(onnx_graph):
@@ -173,9 +192,10 @@ def convert(onnx_model_filename,
             value_info = graph_value_infos[name]
             assert value_info['external']
             external_inputs.append(name)
-    fluid_writer.emit_inputs(
-        fluid_program, external_inputs, graph_value_infos,
-        remove_batch=False)  # TODO:
+    fluid_writer.emit_inputs(fluid_program,
+                             external_inputs,
+                             graph_value_infos,
+                             remove_batch=False)  # TODO:
     input_codes = fluid_program.codes
     fluid_program.codes = []
     logger.info('%d inputs converted', len(external_inputs))
@@ -206,11 +226,12 @@ def convert(onnx_model_filename,
     fluid_writer.write_desc_file(
         desc_filename,
         op_descs=fluid_program.op_descs,
-        var_descs=fluid_program.var_descs,
+        var_descs=list(fluid_program.var_descs.values()),
     )
     logger.info('program saved to %s', desc_filename)
 
     logger.info('conversion finished')
+
 
 if __name__ == '__main__':
     del convert
@@ -283,10 +304,9 @@ if __name__ == '__main__':
     pedantic = args.pedantic
     skip_version_conversion = args.skip_version_conversion
 
-    convert(
-        model_filename,
-        save_dir,
-        embed_params=embed_params,
-        onnx_opset_pedantic=pedantic,
-        onnx_skip_version_conversion=skip_version_conversion,
-        debug=debug)
+    convert(model_filename,
+            save_dir,
+            embed_params=embed_params,
+            onnx_opset_pedantic=pedantic,
+            onnx_skip_version_conversion=skip_version_conversion,
+            debug=debug)
