@@ -44,6 +44,8 @@ def irepr(obj, to='_'):
 
 
 def flatten_list(obj, out=None):
+    assert isinstance(obj, list), 'list type required'
+
     if out is None:
         out = type(obj)()
     for item in obj:
@@ -56,12 +58,12 @@ def flatten_list(obj, out=None):
 
 def make_attr_name(name):
     """
-	make a valid code name for ParamAttr
-	"""
+    make a valid code name for ParamAttr
+    """
 
-    if name == '':
-        raise ValueError('name should not be empty')
-    for s in ' \\|/:':  #
+    assert name != '', 'name should not be empty'
+
+    for s in ' \\|/:-':  #
         name = name.replace(s, '_')
     if not name.startswith('_'):
         name = '_' + name
@@ -70,8 +72,8 @@ def make_attr_name(name):
 
 class Program(object):
     """
-	fluid Python code and ProgramDesc wrapper
-	"""
+    fluid Python code and ProgramDesc wrapper
+    """
 
     DTYPE_TO_FRAMEWORK_DTYPE = {
         'bool': framework_pb2.VarType.BOOL,
@@ -88,8 +90,8 @@ class Program(object):
     @staticmethod
     def Dtype(dtype):
         """
-		convert dtype to fulid framework dtype
-		"""
+        convert dtype to fulid framework dtype
+        """
 
         dtype = np.dtype(dtype).name
         return Program.DTYPE_TO_FRAMEWORK_DTYPE[dtype]
@@ -97,8 +99,8 @@ class Program(object):
     @staticmethod
     def OpDescVars(vals, *keys):
         """
-		make (OpDesc.Var)s
-		"""
+        make (OpDesc.Var)s
+        """
 
         od_vars = []
         for idx, key in enumerate(keys):
@@ -112,8 +114,8 @@ class Program(object):
     @staticmethod
     def OpDescAttrs(attrs):
         """
-		make (OpDesc.Attr)s
-		"""
+        make (OpDesc.Attr)s
+        """
 
         od_attrs = []
         for key, value in attrs.items():
@@ -178,8 +180,8 @@ class Program(object):
 
     def Code(self, code):
         """
-		add Python code
-		"""
+        add Python code
+        """
 
         if self.code_mutable:
             self.codes.append(code)
@@ -190,16 +192,16 @@ class Program(object):
                output_val_keys=None,
                attrs=None):
         """
-		add OpDesc
-		"""
+        add OpDesc
+        """
 
         desc = framework_pb2.OpDesc()
         desc.type = op_type
-        if input_val_keys is not None:
+        if input_val_keys:
             desc.inputs.extend(self.OpDescVars(*input_val_keys))
-        if output_val_keys is not None:
+        if output_val_keys:
             desc.outputs.extend(self.OpDescVars(*output_val_keys))
-        if attrs is not None:
+        if attrs:
             desc.attrs.extend(self.OpDescAttrs(attrs))
         self.op_descs.append(desc)
         return desc
@@ -210,8 +212,8 @@ class Program(object):
                 value_info=None,
                 remove_batch=None):
         """
-		add VarDesc,
-		"""
+        add VarDesc,
+        """
 
         assert var_name not in self.var_descs, 'var naming conflicted'
 
@@ -220,13 +222,16 @@ class Program(object):
         var_desc.persistable = persistable
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
         self.var_descs[var_name] = var_desc
+
         if value_info:
-            self.VarTypeInfo(var_name, value_info, remove_batch=remove_batch)
+            self.VarTypeShapeInfo(var_name,
+                                  value_info,
+                                  remove_batch=remove_batch)
 
     def Op(self, domain, op_type, *args, **kwargs):
         """
-		convert an ONNX op and add it to program
-		"""
+        convert an ONNX op and add it to program
+        """
 
         if domain != '':  # TODO: symbolic file routing by domain
             raise ValueError('only default domain supported')
@@ -242,8 +247,8 @@ class Program(object):
 
     def IntermediateOp(self, domain, op_type, *args, **kwargs):
         """
-		convert an intermediate ONNX op declaring in desc program only
-		"""
+        convert an intermediate ONNX op declaring in desc program only
+        """
 
         code_mutable = self.code_mutable
         self.code_mutable = False
@@ -255,10 +260,10 @@ class Program(object):
         else:
             self.code_mutable = code_mutable
 
-    def VarTypeInfo(self, var_name, value_info, remove_batch=None):
+    def VarTypeShapeInfo(self, var_name, value_info, remove_batch=None):
         """
-		set value_info for var
-		"""
+        set value_info for var
+        """
 
         if var_name not in self.var_descs:
             return
@@ -284,8 +289,8 @@ class Program(object):
 
 class Writer(object):
     """
-	fluid code and desc writter
-	"""
+    fluid code and desc writter
+    """
 
     #	CODE_INDENT = ' ' * 4
     CODE_INDENT = '\t'
@@ -293,8 +298,8 @@ class Writer(object):
     @staticmethod
     def header_code(func_name, info=''):
         """
-		Python header codes
-		"""
+        Python header codes
+        """
 
         codes = []
         codes.append('"""')
@@ -315,8 +320,8 @@ class Writer(object):
     def emit_op(prog, name, domain, op_type, inputs, outputs, attrs,
                 value_infos, *args, **kwargs):
         """
-		emit an ONNX op into program
-		"""
+        emit an ONNX op into program
+        """
 
         prog.Code('# {}, {}::{}: {} -> {}, {}'.format(name, domain, op_type,
                                                       inputs, outputs,
@@ -334,8 +339,8 @@ class Writer(object):
     @staticmethod
     def emit_param(prog, name, value_info):
         """
-		emit an ONNX weight into program
-		"""
+        emit an ONNX weight into program
+        """
 
         if value_info.get('embeded_as', []):
             var_names = value_info['embeded_as']
@@ -359,8 +364,8 @@ class Writer(object):
     @staticmethod
     def emit_inputs(prog, names, value_infos, remove_batch=None):
         """
-		emit ONNX inputs into program
-		"""
+        emit ONNX inputs into program
+        """
 
         for idx, name in enumerate(names):
             var_name = make_var_name(name)
@@ -396,8 +401,8 @@ class Writer(object):
     @staticmethod
     def emit_outputs(prog, names):  #, value_infos
         """
-		emit ONNX outputs into program
-		"""
+        emit ONNX outputs into program
+        """
 
         code = 'return '
         for idx, name in enumerate(names):
@@ -416,8 +421,8 @@ class Writer(object):
     @staticmethod
     def add_codes(codes, others, indent):
         """
-		flatten codes in program
-		"""
+        flatten codes in program
+        """
 
         for code in flatten_list(others):
             codes.append(Writer.CODE_INDENT * indent + code)
@@ -426,11 +431,10 @@ class Writer(object):
     @staticmethod
     def write_weight(weight, filename):
         """
-		write single weight in fluid desc
-		"""
+        write single weight in fluid desc
+        """
 
-        if not isinstance(weight, np.ndarray):
-            raise TypeError('weight is not an ndarray')
+        assert isinstance(weight, np.ndarray), 'weight is not an ndarray'
 
         tensor_desc = framework_pb2.VarType.TensorDesc()
         tensor_desc.data_type = Program.Dtype(weight.dtype)
@@ -448,12 +452,11 @@ class Writer(object):
     @staticmethod
     def write_weights(weights, save_dir):
         """
-		write multiple weights in each fluid desc
-		"""
+        write multiple weights in each fluid desc
+        """
 
         for name, weight in weights.items():
-            if not isinstance(weights, dict):
-                raise TypeError('dict type weights required')
+            assert isinstance(weights, dict), 'dict type weights required'
 
             var_name = make_var_name(name)
             filename = os.path.join(save_dir, var_name)
@@ -463,8 +466,8 @@ class Writer(object):
     @staticmethod
     def write_code_file(filename, header_code, *body_codes):
         """
-		write Python code to file
-		"""
+        write Python code to file
+        """
 
         codes = []
         Writer.add_codes(codes, header_code, 0)
@@ -481,8 +484,8 @@ class Writer(object):
     @staticmethod
     def write_desc_file(filename, op_descs, var_descs):
         """
-		write desc program to file
-		"""
+        write desc program to file
+        """
 
         prog_desc = framework_pb2.ProgramDesc()
         block_desc = prog_desc.blocks.add()

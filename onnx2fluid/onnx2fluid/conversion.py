@@ -27,8 +27,8 @@ def convert(onnx_model_filename,
             debug=False,
             **kwargs):
     """
-	convert an ONNX model to Paddle fluid Python code and desc pb
-	"""
+    convert an ONNX model to Paddle fluid Python code and desc pb
+    """
 
     import onnx
 
@@ -141,23 +141,22 @@ def convert(onnx_model_filename,
     logger.info('%d ops in, %d ops out', len(onnx_graph.node),
                 len(fluid_program.op_descs))
 
-    # shape-inference
+    # type-shape inference
     for name, value_info in graph_value_infos.items():
         var_name = make_var_name(name)
-        fluid_program.VarTypeInfo(var_name, value_info,
-                                  remove_batch=False)  # shape-infer only
+        fluid_program.VarTypeShapeInfo(var_name, value_info,
+                                       remove_batch=False)  # shape-infer only
     bad_var_names = []
     for var_name, var_desc in fluid_program.var_descs.items():
         if not var_desc.type.lod_tensor.HasField('tensor'):
             bad_var_names.append(var_name)
     if len(bad_var_names) > 0:
-        logger.warning('type info not infered for var %s ...',
+        logger.warning('type-shape not infered for var %s ...',
                        ', '.join(bad_var_names[:5]))
         logger.warning('this causes little problem for PaddlePaddle, '
                        'but Paddle Mobile may not infer correctly')
-        logger.warning(
-            'please consider adding option -d to invoke PaddlePaddle shape-inference'
-        )
+        logger.warning('please consider running onnx2fluid.validation with -i '
+                       'to invoke PaddlePaddle type-shape inference')
 
     # weight writer
     for name, weight in graph_weights(onnx_graph):
@@ -233,12 +232,8 @@ def convert(onnx_model_filename,
     logger.info('conversion finished')
 
 
-if __name__ == '__main__':
-    del convert
-
+def main():
     import argparse
-
-    from onnx2fluid.conversion import convert
 
     parser = argparse.ArgumentParser(
         description='onnx2fluid.convert',
@@ -310,3 +305,11 @@ if __name__ == '__main__':
             onnx_opset_pedantic=pedantic,
             onnx_skip_version_conversion=skip_version_conversion,
             debug=debug)
+
+
+if __name__ == '__main__':
+    del convert
+
+    from onnx2fluid.conversion import convert
+
+    main()

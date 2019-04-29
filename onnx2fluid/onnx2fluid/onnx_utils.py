@@ -44,8 +44,8 @@ DEFAULT_OP_DOMAIN = 'ai.onnx'
 
 def print_pb_structure(message, loop_iterative=False, depth=0):
     """
-	print pb fields in its structure
-	"""
+    print pb fields in its structure
+    """
 
     if hasattr(message, 'DESCRIPTOR') and hasattr(message.DESCRIPTOR, 'fields'):
         for field in message.DESCRIPTOR.fields:
@@ -65,8 +65,8 @@ def print_pb_structure(message, loop_iterative=False, depth=0):
 
 def build_value_refs(nodes):
     """
-	build op reference of inputs and outputs
-	"""
+    build op reference of inputs and outputs
+    """
 
     input_refs = Dict()
     output_refs = Dict()
@@ -80,8 +80,8 @@ def build_value_refs(nodes):
 
 def get_attribute_value2(attr):
     """
-	get_attribute_value enhanced
-	"""
+    get_attribute_value enhanced
+    """
 
     if attr.type == onnx.AttributeProto.TENSOR:
         dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
@@ -99,24 +99,24 @@ def get_attribute_value2(attr):
 
 def tensor_dtype(tensor):
     """
-	get ONNX tensor in np.dtype
-	"""
+    get ONNX tensor in np.dtype
+    """
 
     return TENSOR_TYPE_TO_NP_TYPE[tensor.type.tensor_type.elem_type]
 
 
 def tensor_shape(tensor):
     """
-	get ONNX tensor shape
-	"""
+    get ONNX tensor shape
+    """
 
     return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
 
 
 def node_attrs(node):
     """
-	convert ONNX node attributes to dict
-	"""
+    convert ONNX node attributes to dict
+    """
 
     return {attr.name: get_attribute_value2(attr)
             for attr in node.attribute}  # dict
@@ -124,8 +124,8 @@ def node_attrs(node):
 
 def node_topo(nodes, topo='default'):
     """
-	build indices with given topology to an ONNX node graph
-	"""
+    build indices with given topology to an ONNX node graph
+    """
 
     if topo == 'default':
         return list(range(len(nodes)))
@@ -192,8 +192,8 @@ def node_topo(nodes, topo='default'):
 
 def node_iter(nodes, indices=None):
     """
-	generator for ONNX node graph with given indices
-	"""
+    generator for ONNX node graph with given indices
+    """
 
     if indices is None:
         indices = range(len(nodes))
@@ -210,7 +210,7 @@ def node_iter(nodes, indices=None):
         if name == '':
             name = 'op_' + str(index)
         else:  # make_op_name
-            for s in ' \\|/:':  #
+            for s in ' \\|/:-':  #
                 name = name.replace(s, '_')
         if domain == '':
             domain = DEFAULT_OP_DOMAIN
@@ -220,8 +220,8 @@ def node_iter(nodes, indices=None):
 
 def graph_ops(graph, topo='default'):
     """
-	generator for ONNX node graph with given topology
-	"""
+    generator for ONNX node graph with given topology
+    """
 
     if not isinstance(graph, onnx.GraphProto):
         logger.error('graph is not a GraphProto instance')
@@ -232,8 +232,8 @@ def graph_ops(graph, topo='default'):
 
 def graph_weights(graph):
     """
-	generator for weights of an ONNX model
-	"""
+    generator for weights of an ONNX model
+    """
 
     if not isinstance(graph, onnx.GraphProto):
         logger.error('graph is not a GraphProto instance')
@@ -247,8 +247,8 @@ def graph_weights(graph):
 
 def inferred_model_value_info(model):
     """
-	collect value/type info for an ONNX model
-	"""
+    collect value/type info for an ONNX model
+    """
 
     model = infer_shapes(model)
     graph = model.graph
@@ -278,8 +278,8 @@ def inferred_model_value_info(model):
 
 def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
     """
-	skip nodes between src_output_name -> dst_input_name and connect this pair
-	"""
+    skip nodes between src_output_name -> dst_input_name and connect this pair
+    """
 
     processed = 0
     for next_idx in input_refs[src_output_name]:
@@ -293,8 +293,8 @@ def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
 
 def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
     """
-	skip nodes between dst_output_name -> src_input_name and connect this pair
-	"""
+    skip nodes between dst_output_name -> src_input_name and connect this pair
+    """
 
     processed = 0
     for prev_idx in output_refs[src_input_name]:
@@ -308,8 +308,8 @@ def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
 
 def optimize_model_skip_op_for_inference(model, op_list=None):
     """
-	skip ops can be bypassed for inference
-	"""
+    skip ops can be bypassed for inference
+    """
     if op_list is None:
         op_list = ('Dropout', 'Identity')
 
@@ -369,8 +369,8 @@ def optimize_model_skip_op_for_inference(model, op_list=None):
 
 def optimize_model_strip_initializer(model, keep_input_only=True):
     """
-	strip weights for inference
-	"""
+    strip weights for inference
+    """
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
@@ -410,8 +410,8 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
 
 def optimize_model_cast(model):
     """
-	strip cascade and unecessary onnx::Cast-9:
-	"""
+    strip cascade and unecessary onnx::Cast-9:
+    """
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
@@ -467,8 +467,8 @@ def optimize_model_cast(model):
 
 def optimize_model_slice(model):
     """
-	strip cascade and unecessary onnx::Slice-1:9
-	"""
+    strip cascade and unecessary onnx::Slice-1:9
+    """
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)

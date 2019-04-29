@@ -17,14 +17,14 @@ from glob import glob
 
 def make_var_name(name):
     """
-	make a valid variable name in Python code
-	"""
+    make a valid variable name in Python code
+    """
 
     if name == '':
         return '_'
     if name[0].isdigit():
         return 'var_' + name
-    for s in ' \\|/:':  #
+    for s in ' \\|/:-':  #
         name = name.replace(s, '_')
     if name.startswith('_'):
         name = 'var' + name

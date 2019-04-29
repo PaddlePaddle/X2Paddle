@@ -311,7 +311,7 @@ resnet100_arcface()
 	echo "extracting ..."
 	tar xf "$fn_tar"
 
-	python -m onnx2fluid -o /tmp/export/ "$fn_model" -y
+	python -m onnx2fluid $convert_flags "$fn_model" -y
 	for pb_dir in "$bn_tar"/*/
 	do
 		echo "converting $pb_dir ..."

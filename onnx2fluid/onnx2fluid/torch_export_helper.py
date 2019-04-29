@@ -25,7 +25,8 @@ def ensure_tuple(obj):
 
 
 def flatten_list(obj, out=None):
-    assert isinstance(obj, list)
+    assert isinstance(obj, list), 'list type required'
+
     if out is None:
         out = type(obj)()
     for item in obj:
@@ -38,11 +39,11 @@ def flatten_list(obj, out=None):
 
 def export_data(state_dict, prefix=''):
     """
-	export binary data with meta text for raw C++ inference engines
-	"""
+    export binary data with meta text for raw C++ inference engines
+    """
 
     def str_(obj):
-        if isinstance(obj, (tuple, list)):
+        if isinstance(obj, (tuple, list, set)):
             return str(obj)[1:-1].replace(' ', '')
         return str(obj)
 
@@ -72,8 +73,8 @@ def export_onnx_with_validation(model,
                                 *args,
                                 **kwargs):
     """
-	export PyTorch model to ONNX model and export sample inputs and outputs in a Numpy file
-	"""
+    export PyTorch model to ONNX model and export sample inputs and outputs in a Numpy file
+    """
 
     is_tuple_or_list = lambda x: isinstance(x, (tuple, list))
 

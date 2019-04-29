@@ -41,74 +41,74 @@ DEFAULT_OP_MAPPING_FIELD_VALUES['FILL_NAME_FIELD'] = True
 DEFAULT_OP_MAPPING_VALUES = list(DEFAULT_OP_MAPPING_FIELD_VALUES.values())
 
 DEFAULT_OP_MAPPING = {
-    ## nil ops ##
-    'RandomUniform':
-   ['uniform_random', [], ['Out'], dict(high='max', low='min'),
-    dict(), None, None, False],
-    'RandomNormal':
-   ['gaussian_random', [], ['Out'], dict(scale='std'),
-    dict(), None, None, False],
-    ## unary ops ##
-    'Abs': ['abs', ['X'], ['Out']],
-    'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims='')],
-    'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims='')],
-    'Ceil': ['ceil', ['X'], ['Out']],
-    'Clip': ['clip', ['X'], ['Out']], # attrs bypassed
-    'Cos': ['cos', ['X'], ['Out']],
-    'Elu': ['elu', ['X'], ['Out']],
-    'Exp': ['exp', ['X'], ['Out']],
-    'Flatten': ['flatten', ['X'], ['Out']], # attrs bypassed, FIXME: emit flatten2
-    'Floor': ['floor', ['X'], ['Out']],
-    'Gather': ['gather', ['X'], ['Out'], dict(axis='')],
-    'LeakyRelu': ['leaky_relu', ['X'], ['Out']],
-    'Log': ['log', ['X'], ['Out']],
-    'LRN': ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k')], #
-    'Reciprocal': ['reciprocal', ['X'], ['Out']],
-    'Relu': ['relu', ['X'], ['Out']],
-    'Selu': ['selu', ['X'], ['Out'], dict(gamma='scale')],
-    'Shape': ['shape', ['X'], ['Out']], # FIXME: out is int64 vs int32
-    'Shrink': ['softshrink', ['X'], ['Out'], dict(bias='', labmd='')],
-    'Sigmoid': ['sigmoid', ['X'], ['Out']],
-    'Sin': ['sin', ['X'], ['Out']],
-    'Squeeze': ['squeeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit squeeze2
-    'Softplus': ['softplus', ['X'], ['Out']],
-    # FIXME: default axis = -1, reshape required before and after
-    'Softmax': ['softmax', ['X'], ['Out'], dict(axis='')],
-    'Softsign': ['softsign', ['X'], ['Out']],
-    'Sqrt': ['sqrt', ['X'], ['Out']],
-    'Tanh': ['tanh', ['X'], ['Out']],
-    'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
-    #'Transpose': ['transpose', ['X'], ['Out']],
-    'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
-    ## binary ops ##
-    'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
-    'And': ['logical_and', ['X', 'Y'], ['Out']],
-    'Div': ['elementwise_div', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    'Equal': ['equal', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
-    'Greater': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), [1, 0], None, False],
-    'Less': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
-    'MatMul': ['matmul', ['X', 'Y'], ['Out']], # defaults excluded for transpose_x vs transpose_X
-    'Max': ['elementwise_max', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    'Min': ['elementwise_min', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    'Not': ['logical_not', ['X', 'Y'], ['Out']],
-    'OneHot': # assuming values=[0, 1], axis=-1 and drop them
-   ['one_hot', ['Input', 'Depth'], ['Out'], dict(axis=''), dict(),
-    [0, 1], None, False],
-    'Or': ['logical_or', ['X', 'Y'], ['Out']],
-    'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)], # TODO: pow for scalar exponent
-    'Sub': ['elementwise_sub', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
-    'Xor': ['logical_xor', ['X', 'Y'], ['Out']],
-    # reduce ops
-    'ReduceMax': ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-    'ReduceMean': ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-    'ReduceMin': ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-    'ReduceProd': ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-    'ReduceSum': ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-    # other ops
-    'Scatter': ['scatter', ['X', 'Index', 'Updates'], ['Out']],
-    'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
+        ## nil ops ##
+        'RandomUniform':
+            ['uniform_random', [], ['Out'], dict(high='max', low='min'),
+             dict(), None, None, False],
+        'RandomNormal':
+            ['gaussian_random', [], ['Out'], dict(scale='std'),
+             dict(), None, None, False],
+        ## unary ops ##
+        'Abs': ['abs', ['X'], ['Out']],
+        'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims='')],
+        'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims='')],
+        'Ceil': ['ceil', ['X'], ['Out']],
+        'Clip': ['clip', ['X'], ['Out']], # attrs bypassed
+        'Cos': ['cos', ['X'], ['Out']],
+        'Elu': ['elu', ['X'], ['Out']],
+        'Exp': ['exp', ['X'], ['Out']],
+        'Flatten': ['flatten', ['X'], ['Out']], # attrs bypassed, FIXME: emit flatten2
+        'Floor': ['floor', ['X'], ['Out']],
+        'Gather': ['gather', ['X'], ['Out'], dict(axis='')],
+        'LeakyRelu': ['leaky_relu', ['X'], ['Out']],
+        'Log': ['log', ['X'], ['Out']],
+        'LRN': ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k')], #
+        'Reciprocal': ['reciprocal', ['X'], ['Out']],
+        'Relu': ['relu', ['X'], ['Out']],
+        'Selu': ['selu', ['X'], ['Out'], dict(gamma='scale')],
+        'Shape': ['shape', ['X'], ['Out']], # FIXME: out is int64 vs int32
+        'Shrink': ['softshrink', ['X'], ['Out'], dict(bias='', labmd='')],
+        'Sigmoid': ['sigmoid', ['X'], ['Out']],
+        'Sin': ['sin', ['X'], ['Out']],
+        'Squeeze': ['squeeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit squeeze2
+        'Softplus': ['softplus', ['X'], ['Out']],
+        # FIXME: default axis = -1, reshape required before and after
+        'Softmax': ['softmax', ['X'], ['Out'], dict(axis='')],
+        'Softsign': ['softsign', ['X'], ['Out']],
+        'Sqrt': ['sqrt', ['X'], ['Out']],
+        'Tanh': ['tanh', ['X'], ['Out']],
+        'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
+        #'Transpose': ['transpose', ['X'], ['Out']],
+        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
+        ## binary ops ##
+        'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
+        'And': ['logical_and', ['X', 'Y'], ['Out']],
+        'Div': ['elementwise_div', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Equal': ['equal', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
+        'Greater': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), [1, 0], None, False],
+        'Less': ['less_than', ['X', 'Y'], ['Out'], dict(), dict(), None, None, False],
+        'MatMul': ['matmul', ['X', 'Y'], ['Out']], # defaults excluded for transpose_x vs transpose_X
+        'Max': ['elementwise_max', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Min': ['elementwise_min', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Not': ['logical_not', ['X', 'Y'], ['Out']],
+        'OneHot': # assuming values=[0, 1], axis=-1 and drop them
+            ['one_hot', ['Input', 'Depth'], ['Out'], dict(axis=''), dict(),
+             [0, 1], None, False],
+        'Or': ['logical_or', ['X', 'Y'], ['Out']],
+        'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)], # TODO: pow for scalar exponent
+        'Sub': ['elementwise_sub', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Xor': ['logical_xor', ['X', 'Y'], ['Out']],
+        # reduce ops
+        'ReduceMax': ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        'ReduceMean': ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        'ReduceMin': ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        'ReduceProd': ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        'ReduceSum': ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        # other ops
+        'Scatter': ['scatter', ['X', 'Index', 'Updates'], ['Out']],
+        'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
 }
 
 DEFAULT_IOA_CONSTRAINTS = {
@@ -146,14 +146,14 @@ DEFAULT_IOA_CONSTRAINTS = {
 
 def _make_var_name(name):
     """
-	make a valid variable name in Python code and in filesystem
-	"""
+    make a valid variable name in Python code and in filesystem
+    """
 
     if name == '':
         return '_'
     if name[0].isdigit():
         return 'var_' + name
-    for s in ' \\|/:':  #
+    for s in ' \\|/:-':  #
         name = name.replace(s, '_')
     if name.startswith('_'):
         name = 'var' + name
@@ -191,12 +191,22 @@ def _const_weight_or_none(value_infos, val_name):
         return None
     value_info = value_infos[val_name]
     const_value = value_info.get('const_value', None)
-    if const_value:
+    if const_value is not None:
         return const_value
     get_weight_func = value_info.get('get_weight', None)
-    if get_weight_func:
+    if get_weight_func is not None:
         return get_weight_func()
     return None
+
+
+def _check_embeddable(value_infos, *val_names):
+    keyword = 'get_weight'
+    for val_name in val_names:
+        if keyword not in value_infos[val_name]:
+            _logger.warning('parameter %s not embeddable for some ops',
+                            val_name)
+            return False
+    return True
 
 
 def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
@@ -391,9 +401,9 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     input_shape = _shape_or_none(value_infos, val_x)
     output_shape = _shape_or_none(value_infos, val_y)
     assert input_shape is not None or output_shape is not None, 'poolnd not inferred'  # NC...
-    if input_shape:
+    if input_shape is not None:
         poolnd = len(input_shape) - 2  # NC...
-    elif output_shape:
+    elif output_shape is not None:
         poolnd = len(output_shape) - 2  # NC...
     assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
 
@@ -568,7 +578,7 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
             1] == 1, 'only scale on (NC)HW supported'
         assert scales[2] == scales[
             3], 'only aspect-ratio-invariant scale supported'
-    scale = scales[2] if scales else None
+    scale = None if scales is None else scales[2]
     # try input shape
     if scale is None:
         assert out_shape_, 'neither scales nor output shape is available'
@@ -613,24 +623,24 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
 
 def AdaptiveAveragePool(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	aten::adaptive_avg_poolnd
-	"""
+    aten::adaptive_avg_poolnd
+    """
 
     return _adaptive_pool(prog, 'avg', inputs, outputs, attrs, name=name)
 
 
 def AdaptiveMaxPool(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	aten::adaptive_max_poolnd
-	"""
+    aten::adaptive_max_poolnd
+    """
 
     return _adaptive_pool(prog, 'max', inputs, outputs, attrs, name=name)
 
 
 def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	aten::affine_grid
-	"""
+    aten::affine_grid
+    """
 
     # I/O
     val_theta, = inputs
@@ -672,8 +682,8 @@ def AveragePool(prog,
                 *args,
                 **kwargs):
     """
-	onnx::AveragePool-10:
-	"""
+    onnx::AveragePool-10:
+    """
 
     return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
 
@@ -688,8 +698,8 @@ def BatchNormalization(prog,
                        *args,
                        **kwargs):
     """
-	onnx::BatchNormalization-9:
-	"""
+    onnx::BatchNormalization-9:
+    """
 
     # I/O
     val_x, val_scale, val_b, val_mean, val_var = inputs
@@ -705,15 +715,18 @@ def BatchNormalization(prog,
     epsilon = attrs.get('epsilon', 1e-5)  # optional
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
+        embed_params = _check_embeddable(value_infos, val_scale, val_b,
+                                         val_mean, val_var)
+    if embed_params:
         assert name != ''
         var_scale = name + '.w_0'
         var_b = name + '.b_0'
         var_mean = name + '.w_1'
         var_var = name + '.w_2'
-        value_infos[val_scale].setdefault('embeded_as', []).append(var_scale)
-        value_infos[val_b].setdefault('embeded_as', []).append(var_b)
-        value_infos[val_mean].setdefault('embeded_as', []).append(var_mean)
-        value_infos[val_var].setdefault('embeded_as', []).append(var_var)
+        value_infos[val_scale]['embeded_as'].append(var_scale)
+        value_infos[val_b]['embeded_as'].append(var_b)
+        value_infos[val_mean]['embeded_as'].append(var_mean)
+        value_infos[val_var]['embeded_as'].append(var_var)
         param_attr = ''
     else:
         var_scale = _make_var_name(val_scale)
@@ -760,8 +773,8 @@ def BatchNormalization(prog,
 
 def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
-	onnx::Cast-9:
-	"""
+    onnx::Cast-9:
+    """
 
     # I/O
     val_input, = inputs
@@ -774,7 +787,7 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     if not isinstance(dtype, _np.dtype):  # additional: possible np.dtype
         dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
     output_dtype = _dtype_or_none(value_infos, val_output)
-    if output_dtype:
+    if output_dtype is not None:
         assert dtype == output_dtype, 'dtype of to unmatches output'
 
     fluid_op = 'cast'
@@ -804,8 +817,8 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
 def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	onnx::Concat-4:
-	"""
+    onnx::Concat-4:
+    """
 
     # I/O
     val_concat_result, = outputs
@@ -839,11 +852,11 @@ def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
 
 def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
-	onnx::Constant-9:
-	"""
+    onnx::Constant-9:
+    """
 
     # I/O
-    assert len(inputs) == 0
+    assert len(inputs) == 0, 'constant op accept no inputs'
     val_output, = outputs
     var_output = _make_var_name(val_output)
 
@@ -851,7 +864,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     value = attrs['value']  # required
     dtype = _np.dtype(value.dtype)
     output_dtype = _dtype_or_none(value_infos, val_output)
-    if output_dtype:
+    if output_dtype is not None:
         assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
 
@@ -900,8 +913,8 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
 def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
-	onnx::ConstantOfShape-9:
-	"""
+    onnx::ConstantOfShape-9:
+    """
 
     # I/O
     val_shape, = inputs
@@ -939,8 +952,8 @@ def Conv(prog,
          *args,
          **kwargs):
     """
-	onnx::Conv-1:
-	"""
+    onnx::Conv-1:
+    """
 
     # I/O
     val_x, val_w = inputs[:2]
@@ -971,12 +984,15 @@ def Conv(prog,
     var_x = _make_var_name(val_x)
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
+        embed_params = (_check_embeddable(value_infos, val_w) and not has_bias
+                        or _check_embeddable(value_infos, val_b))
+    if embed_params:
         assert name != ''
         var_w = name + '.w_0'
-        value_infos[val_w].setdefault('embeded_as', []).append(var_w)
+        value_infos[val_w]['embeded_as'].append(var_w)
         if has_bias:
             var_b = name + '.b_0'
-            value_infos[val_b].setdefault('embeded_as', []).append(var_b)
+            value_infos[val_b]['embeded_as'].append(var_b)
             param_attr = ''
         else:
             param_attr = ', bias_attr=False'
@@ -1046,8 +1062,8 @@ def ConvTranspose(prog,
                   *args,
                   **kwargs):
     """
-	onnx::ConvTranspose-1:
-	"""
+    onnx::ConvTranspose-1:
+    """
 
     # I/O
     val_x, val_w = inputs[:2]
@@ -1081,12 +1097,15 @@ def ConvTranspose(prog,
     var_x = _make_var_name(val_x)
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
+        embed_params = (_check_embeddable(value_infos, val_w) and not has_bias
+                        or _check_embeddable(value_infos, val_b))
+    if embed_params:
         assert name != ''
         var_w = name + '.w_0'
-        value_infos[val_w].setdefault('embeded_as', []).append(var_w)
+        value_infos[val_w]['embeded_as'].append(var_w)
         if has_bias:
             var_b = name + '.b_0'
-            value_infos[val_b].setdefault('embeded_as', []).append(var_b)
+            value_infos[val_b]['embeded_as'].append(var_b)
             param_attr = ''
         else:
             param_attr = ', bias_attr=False'
@@ -1167,8 +1186,8 @@ def ConvTranspose(prog,
 
 def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
-	onnx::Gemm-9:
-	"""
+    onnx::Gemm-9:
+    """
 
     # due to fluid fc don't support transposed weight, we use matmul + ew_add
     val_a, val_b, val_c = inputs
@@ -1259,8 +1278,8 @@ def GlobalAveragePool(prog,
                       *args,
                       **kwargs):
     """
-	onnx::GlobalAveragePool-1:
-	"""
+    onnx::GlobalAveragePool-1:
+    """
 
     return _global_pool(prog,
                         'avg',
@@ -1280,8 +1299,8 @@ def GlobalMaxPool(prog,
                   *args,
                   **kwargs):
     """
-	onnx::GlobalMaxPool-1:
-	"""
+    onnx::GlobalMaxPool-1:
+    """
 
     return _global_pool(prog,
                         'max',
@@ -1295,8 +1314,8 @@ def GlobalMaxPool(prog,
 def MaxPool(prog, inputs, outputs, attrs, value_infos, name='', *args,
             **kwargs):
     """
-	onnx::MaxPool-10:
-	"""
+    onnx::MaxPool-10:
+    """
 
     return _pool(prog, 'max', inputs, outputs, attrs, value_infos, name=name)
 
@@ -1304,16 +1323,16 @@ def MaxPool(prog, inputs, outputs, attrs, value_infos, name='', *args,
 def MaxRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args,
                **kwargs):
     """
-	onnx::MaxRoiPool-1:
-	"""
+    onnx::MaxRoiPool-1:
+    """
 
     _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, value_infos, name)
 
 
 def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
-	onnx::Pad-2:
-	"""
+    onnx::Pad-2:
+    """
 
     # I/O
     val_data, = inputs
@@ -1330,9 +1349,9 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     assume_pad2d = False
     if len(pads) == 4:
         assume_pad2d |= mode != 'constant'
-        if data_shape:
+        if data_shape is not None:
             assume_pad2d |= data_shape and len(data_shape) == 4  # NCHW
-        if output_shape:
+        if output_shape is not None:
             assume_pad2d |= output_shape and len(output_shape) == 4  # NCHW
     od_attrs = {'pad_value': value}
     if assume_pad2d:
@@ -1383,8 +1402,8 @@ def PRelu(prog,
           *args,
           **kwargs):
     """
-	onnx::PRelu-9:
-	"""
+    onnx::PRelu-9:
+    """
 
     # I/O
     val_x, val_slope = inputs
@@ -1405,9 +1424,11 @@ def PRelu(prog,
     fluid_op = 'prelu'
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
+        embed_params = _check_embeddable(value_infos, val_slope)
+    if embed_params:
         assert name != ''
         var_slope = name + '.w_0'
-        value_infos[val_slope].setdefault('embeded_as', []).append(var_slope)
+        value_infos[val_slope]['embeded_as'].append(var_slope)
         param_attr = ''
     else:
         var_slope = _make_var_name(val_slope)
@@ -1436,16 +1457,16 @@ def PRelu(prog,
 
 def PsRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
-	caffe2::PsRoiPool
-	"""
+    caffe2::PsRoiPool
+    """
 
     _roi_pool(prog, 'psroi_pool', inputs, outputs, attrs, value_infos, name)
 
 
 def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
-	onnx::Reshape-5:
-	"""
+    onnx::Reshape-5:
+    """
 
     # I/O
     val_data, val_shape = inputs
@@ -1474,6 +1495,8 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
+    val_shape_int32 = val_shape + '_int32'  # explicit variable
+    var_shape_int32 = _make_var_name(val_shape_int32)
     prog.Code('# shape:{}={} # const as literal'.format(var_shape, shape))
     if is_const_shape:
         prog.Code('{} = layers.{}({}'
@@ -1487,8 +1510,6 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       name_attr,
                   ))
     else:
-        val_shape_int32 = val_shape + '_int32'  # explicit variable
-        var_shape_int32 = _make_var_name(val_shape_int32)
         prog.Op(
             '',
             'Cast',
@@ -1514,34 +1535,26 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     var_xshape = name + '.xshape'  # dummy output
     prog.VarDesc(var_reshaped)
     prog.VarDesc(var_xshape)
-    if is_const_shape:
-        prog.OpDesc(
-            fluid_op,
-            ([var_data], 'X'),
-            ([var_reshaped, var_xshape], 'Out', 'XShape'),
-            {'shape': shape},
-        )
-    else:
-        prog.OpDesc(
-            fluid_op,
-            ([var_data, var_shape_int32], 'X', 'Shape'),
-            ([var_reshaped, var_xshape], 'Out', 'XShape'),
-            {'shape': shape},
-        )
+    prog.OpDesc(
+        fluid_op,
+        ([var_data, var_shape_int32], 'X', 'Shape'),
+        ([var_reshaped, var_xshape], 'Out', 'XShape'),
+        {'shape': shape},
+    )
 
 
 def Resize(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
-	onnx::Resize-10:
-	"""
+    onnx::Resize-10:
+    """
 
     return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 
 
 def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
-	caffe2::RoiAlign
-	"""
+    caffe2::RoiAlign
+    """
 
     _roi_pool(prog, 'roi_align', inputs, outputs, attrs, value_infos, name)
 
@@ -1580,8 +1593,8 @@ def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
 
 def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
-	onnx::Slice-1:9
-	"""
+    onnx::Slice-1:9
+    """
 
     # I/O
     val_data, = inputs
@@ -1595,7 +1608,7 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     starts = attrs['starts']  # required
     ends = attrs['ends']  # required
     shape = _shape_or_none(value_infos, val_data)
-    if shape:
+    if shape is not None:
         #        ndims = len(shape)
         #        for idx, value in enumerate(axes):
         #            if value > ONNX_INT_MAX // 2:
@@ -1639,8 +1652,8 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
 
 def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	onnx::Split-2:
-	"""
+    onnx::Split-2:
+    """
 
     # I/O
     val_input, = inputs
@@ -1680,8 +1693,8 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
 
 def Sum(prog, inputs, outputs, *args, **kwargs):
     """
-	onnx::Sum-8:
-	"""
+    onnx::Sum-8:
+    """
 
     # I/O
     val_sum, = outputs
@@ -1710,8 +1723,8 @@ def Sum(prog, inputs, outputs, *args, **kwargs):
 
 def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
-	onnx::Tile-1:
-	"""
+    onnx::Tile-1:
+    """
 
     # I/O
     val_input, val_repeats = inputs
@@ -1749,8 +1762,8 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
 
 def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
-	onnx::Transpose-1:
-	"""
+    onnx::Transpose-1:
+    """
 
     # I/O
     val_data, = inputs
@@ -1795,8 +1808,8 @@ def Upsample(prog,
              *args,
              **kwargs):
     """
-	onnx::Upsample-9:9
-	"""
+    onnx::Upsample-9:9
+    """
 
     return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 

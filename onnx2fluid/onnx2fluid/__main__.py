@@ -95,6 +95,14 @@ parser.add_argument(
     default=1e-2,
     help='assertion relative tolerance for validation',
 )
+parser.add_argument(
+    '--infer_inputs',
+    '-i',
+    nargs='?',
+    default=None,
+    const='',
+    help='perform type-shape inference with given input names and re-save model',
+)
 args = parser.parse_args()
 
 logging_format = '[%(levelname)8s]%(name)s::%(funcName)s:%(lineno)04d: %(message)s'

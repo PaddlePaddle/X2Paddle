@@ -60,19 +60,28 @@ def main(**kwargs):
     # validate
     passed = True
     golden_data_filename = kwargs.pop('test_data', '')
-    if golden_data_filename:
+    infer_inputs = kwargs.pop('infer_inputs', None)
+    if golden_data_filename or infer_inputs:
         from .validation import validate
+
+        save_inference_model = infer_inputs is not None
+        inference_input_names = infer_inputs.split(
+            ',') if infer_inputs else None
 
         logger.info('starting validation on desc ...')
         passed &= validate(shutil.os.path.join(save_dir, '__model__'),
-                           golden_data_filename, **kwargs)
+                           golden_data_filename=golden_data_filename,
+                           save_inference_model=save_inference_model,
+                           inference_input_names=inference_input_names,
+                           **kwargs)
 
         logger.info('starting validation on code ...')
         # this re-generate desc proto with Python code when debug on
         passed &= validate(shutil.os.path.join(save_dir, model_basename),
-                           golden_data_filename,
+                           golden_data_filename=golden_data_filename,
                            model_func_name=model_func_name,
-                           save_inference_model=debug,
+                           save_inference_model=save_inference_model,
+                           inference_input_names=inference_input_names,
                            **kwargs)
 
     if not passed:
