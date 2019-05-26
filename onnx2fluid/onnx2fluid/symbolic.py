@@ -203,8 +203,7 @@ def _check_embeddable(value_infos, *val_names):
     keyword = 'get_weight'
     for val_name in val_names:
         if keyword not in value_infos[val_name]:
-            _logger.warning('parameter %s not embeddable for some ops',
-                            val_name)
+            _logger.warning('parameter %s not embeddable', val_name)
             return False
     return True
 
@@ -240,9 +239,9 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     fluid_attrs = default_attrs.copy()
     fluid_attrs.update(mapped_attrs)  # as new attrs
 
-    val_inps = inputs if input_perm is None else map(lambda i: inputs[i],
+    val_inps = inputs if input_perm is None else map(inputs.__getitem__,
                                                      input_perm)
-    val_outs = outputs if output_perm is None else map(lambda i: outputs[i],
+    val_outs = outputs if output_perm is None else map(outputs.__getitem__,
                                                        output_perm)
     var_inps = [_make_var_name(val) for val in val_inps]
     var_outs = [_make_var_name(val) for val in val_outs]
@@ -578,7 +577,7 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
             1] == 1, 'only scale on (NC)HW supported'
         assert scales[2] == scales[
             3], 'only aspect-ratio-invariant scale supported'
-    scale = None if scales is None else scales[2]
+    scale = scales and scales[2]
     # try input shape
     if scale is None:
         assert out_shape_, 'neither scales nor output shape is available'
@@ -717,6 +716,10 @@ def BatchNormalization(prog,
     if embed_params:
         embed_params = _check_embeddable(value_infos, val_scale, val_b,
                                          val_mean, val_var)
+        if not embed_params and name:
+            _logger.warning('for op  %s(%s -> BatchNormalization -> %s)', name,
+                            inputs, outputs)
+            _logger.warning('broken Python code will be generated')
     if embed_params:
         assert name != ''
         var_scale = name + '.w_0'
@@ -875,7 +878,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     if shape is None:
         shape = list(value.shape)
         _logger.warning(
-            'in (Constant -> %s): '
+            'in op (Constant -> %s): '
             'attribute "shape" of %s not inferred, '
             'using value as 1-D tensor may lead to fails', outputs, val_output)
 
@@ -986,6 +989,10 @@ def Conv(prog,
     if embed_params:
         embed_params = (_check_embeddable(value_infos, val_w) and not has_bias
                         or _check_embeddable(value_infos, val_b))
+        if not embed_params and name:
+            _logger.warning('for op  %s(%s -> Conv -> %s)', name, inputs,
+                            outputs)
+            _logger.warning('broken Python code will be generated')
     if embed_params:
         assert name != ''
         var_w = name + '.w_0'
@@ -1099,6 +1106,10 @@ def ConvTranspose(prog,
     if embed_params:
         embed_params = (_check_embeddable(value_infos, val_w) and not has_bias
                         or _check_embeddable(value_infos, val_b))
+        if not embed_params and name:
+            _logger.warning('for op  %s(%s -> ConvTranspose -> %s)', name,
+                            inputs, outputs)
+            _logger.warning('broken Python code will be generated')
     if embed_params:
         assert name != ''
         var_w = name + '.w_0'
@@ -1167,23 +1178,6 @@ def ConvTranspose(prog,
         prog.VarDesc(var_y)
 
 
-# should not appear
-#def Dropout(
-#        prog, inputs, outputs, value_infos,
-#        *args, **kwargs):
-#    """
-#    onnx::Dropout-7:9
-#    """
-#
-#    val_data, = inputs
-#    val_output, = outputs[:1]
-#
-#    _assign(prog,
-#            dict([(val_output, val_data)]),
-#            value_infos,
-#            )
-
-
 def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
     onnx::Gemm-9:
@@ -1236,7 +1230,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 if vm_dtype is None:
                     vm_dtype = _np.dtype('float32')
                     _logger.warning(
-                        'in %s(%s -> Gemm -> %s): '
+                        'in op %s(%s -> Gemm -> %s): '
                         'attribute "beta" seems to be an interger, '
                         'however dtype can not be inferred, '
                         'still use float32', name, inputs, outputs)
@@ -1425,6 +1419,10 @@ def PRelu(prog,
     name_attr = ', name={}'.format(repr(name)) if name else ''
     if embed_params:
         embed_params = _check_embeddable(value_infos, val_slope)
+        if not embed_params and name:
+            _logger.warning('for op  %s(%s -> PRelu -> %s)', name, inputs,
+                            outputs)
+            _logger.warning('broken Python code will be generated')
     if embed_params:
         assert name != ''
         var_slope = name + '.w_0'
@@ -1487,7 +1485,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     if shape is None:
         shape = [1, -1]  # who knows
         _logger.warning(
-            'in %s(%s -> Reshape -> %s): '
+            'in op %s(%s -> Reshape -> %s): '
             'input "shape" not inferred, use [1, -1] as dummy value, '
             'the behavior of Paddle fluid maybe undefined', name, inputs,
             outputs)

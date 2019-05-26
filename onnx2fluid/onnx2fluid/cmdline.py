@@ -33,7 +33,7 @@ def main(**kwargs):
     from .conversion import convert
 
     logger = logging.getLogger('onnx2fluid')
-    debug = kwargs.get('debug', False)
+    #    debug = kwargs.get('debug', False)
 
     # prepare arguments
     filename = kwargs.pop('model')[0]
@@ -65,8 +65,7 @@ def main(**kwargs):
         from .validation import validate
 
         save_inference_model = infer_inputs is not None
-        inference_input_names = infer_inputs.split(
-            ',') if infer_inputs else None
+        inference_input_names = infer_inputs and infer_inputs.split(',')
 
         logger.info('starting validation on desc ...')
         passed &= validate(shutil.os.path.join(save_dir, '__model__'),
@@ -85,7 +84,7 @@ def main(**kwargs):
                            **kwargs)
 
     if not passed:
-        logger.error('validation failed, exit')
+        logger.fatal('validation failed, exit')
         return
 
     # create zip file

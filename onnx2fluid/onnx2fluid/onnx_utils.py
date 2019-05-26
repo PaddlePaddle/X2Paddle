@@ -11,9 +11,11 @@ from __future__ import division
 import logging
 import numpy as np
 import onnx
+import onnx.optimizer as optimizer
 
 from collections import OrderedDict as Dict  # as default dict
-from onnx.helper import get_attribute_value, make_attribute
+from onnx.checker import check_model
+from onnx.helper import get_attribute_value, make_attribute, strip_doc_string
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 from onnx.numpy_helper import to_array
 from onnx.shape_inference import infer_shapes
@@ -23,14 +25,16 @@ logger = logging.getLogger(__name__)
 __all__ = [
     'print_pb_structure',
     'build_value_refs',
+    'tensor_dtype',
+    'tensor_shape',
     'node_attrs',
     'node_topo',
     'node_iter',
-    'tensor_dtype',
-    'tensor_shape',
     'graph_ops',
     'graph_weights',
     'inferred_model_value_info',
+    'polish_model',
+    'polish_and_save',
     'optimize_model_skip_op_for_inference',
     'optimize_model_strip_initializer',
     'optimize_model_cast',
@@ -110,7 +114,7 @@ def tensor_shape(tensor):
     get ONNX tensor shape
     """
 
-    return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
+    return tuple([dim.dim_value for dim in tensor.type.tensor_type.shape.dim])
 
 
 def node_attrs(node):
@@ -195,10 +199,7 @@ def node_iter(nodes, indices=None):
     generator for ONNX node graph with given indices
     """
 
-    if indices is None:
-        indices = range(len(nodes))
-
-    for index in indices:
+    for index in indices or range(len(nodes)):
         node = nodes[index]
         name = node.name
         domain = node.domain
@@ -306,6 +307,48 @@ def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
     return processed
 
 
+def polish_model(model, extras=True):
+    """
+    polish_model enhanced for inference
+    """
+
+    check_model(model)
+    strip_doc_string(model)
+    passes = optimizer.get_available_passes()
+    passes = list(filter(lambda name: not name.startswith('split_'), passes))  #
+    logger.debug('builtin optimizations to perform in ONNX:\n\t%s', passes)
+    model = optimizer.optimize(model, passes=passes)
+    if extras:
+        for optimize in (
+                optimize_model_skip_op_for_inference,
+                optimize_model_strip_initializer,
+                optimize_model_cast,
+                optimize_model_slice,
+        ):
+            model = optimize(model)
+    model = infer_shapes(model)
+    check_model(model)
+    return model
+
+
+def polish_and_save(model_filename,
+                    suffix='.polished',
+                    save_filename=None,
+                    *args,
+                    **kwargs):
+    """
+    run polish_model and save
+    """
+
+    model = onnx.load(model_filename)
+    model = polish_model(model, *args, **kwargs)
+    save_filename = save_filename or model_filename.replace(
+        '.onnx', suffix + '.onnx')
+    onnx.save(model, save_filename)
+    logger.info('polished model saved to: %s', save_filename)
+    return save_filename
+
+
 def optimize_model_skip_op_for_inference(model, op_list=None):
     """
     skip ops can be bypassed for inference
@@ -326,7 +369,7 @@ def optimize_model_skip_op_for_inference(model, op_list=None):
         if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
             continue
         op_type = node.op_type
-        if not (op_type in op_list):
+        if op_type not in op_list:
             continue
 
         if op_type in ('Dropout', ):
@@ -590,22 +633,16 @@ if __name__ == '__main__':
         level=logging.DEBUG,
     )
 
-    from onnx.checker import check_model
-    from onnx.utils import polish_model
     from onnx.version_converter import convert_version
 
-    model = onnx.load('../examples/t1.onnx')
+    model = onnx.load('/tmp/export.onnx')
     print_pb_structure(model, loop_iterative=False)
 
     check_model(model)
     model = convert_version(model, 9)
-    model = optimize_model_skip_op_for_inference(model)
-    model = optimize_model_strip_initializer(model)
-    model = optimize_model_cast(model)
-    model = optimize_model_slice(model)
     model = polish_model(model)
 
-    onnx.save(model, '/tmp/optimized.onnx')
+    onnx.save(model, '/tmp/export.optimized.onnx')
 
     graph = model.graph
     value_info = inferred_model_value_info(model)
@@ -617,23 +654,23 @@ if __name__ == '__main__':
 
     logger.info('ops:')
     for name, domain, op_type, _, _, attrs in graph_ops(graph, topo='forward'):
-        logger.info('%s %s::%s: %s', name, domain, op_type, attrs)
+        logger.info('- \t%s %s::%s: %s', name, domain, op_type, attrs)
 
     logger.info('weights:')
     for name, array in graph_weights(graph):
         weights.append(name)
-        logger.info('%s: %s', name, array.shape)
+        logger.info('- \t%s: %s', name, array.shape)
 
     logger.info('inputs:')
     external_inputs = []
     for name in inputs:
         if name not in weights:
             external_inputs.append(name)
-            logger.info('%s: %s', name, value_info[name]['shape'])
+            logger.info('- \t%s: %s', name, value_info[name]['shape'])
 
     logger.info('outputs:')
     external_outputs = []
     for name in outputs:
         if name not in weights:
             external_outputs.append(name)
-            logger.info('%s: %s', name, value_info[name]['shape'])
+            logger.info('- \t%s: %s', name, value_info[name]['shape'])

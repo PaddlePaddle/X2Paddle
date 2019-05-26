@@ -34,15 +34,12 @@ def convert(onnx_model_filename,
 
     from onnx.checker import ValidationError
     from onnx.checker import check_model
-    from onnx.utils import polish_model
     from onnx.version_converter import convert_version
 
     from .onnx_utils import DEFAULT_OP_DOMAIN
     from .onnx_utils import graph_ops, graph_weights
     from .onnx_utils import inferred_model_value_info
-    from .onnx_utils import optimize_model_skip_op_for_inference
-    from .onnx_utils import optimize_model_strip_initializer
-    from .onnx_utils import optimize_model_cast, optimize_model_slice
+    from .onnx_utils import polish_model
     from .writer import Program, Writer
     from .writer import make_var_name
 
@@ -56,14 +53,12 @@ def convert(onnx_model_filename,
         logger.info('checking model ...')
         check_model(onnx_model)
         if onnx_opset_version is None:  # WORKAROUND: RuntimeError: No Adapter For OP
-            logger.debug('assumed opset version: %d',
-                         DEFAULT_ONNX_OPSET_VERSION)
             logger.warning(
                 'opset conversion skipped for onnx_opset_pedantic is OFF')
+            logger.info('assumed opset version: %d', DEFAULT_ONNX_OPSET_VERSION)
         else:
-            logger.debug('using opset version: %d', onnx_opset_version)
+            logger.info('using opset version: %d', onnx_opset_version)
             onnx_model = convert_version(onnx_model, onnx_opset_version)
-        onnx_model = polish_model(onnx_model)
     except ValidationError as e:
         if onnx_opset_pedantic:
             raise e
@@ -75,10 +70,7 @@ def convert(onnx_model_filename,
     # onnx model optimization
     logger.info('model has %d ops', len(onnx_model.graph.node))
     logger.info('optimizing model ...')
-    onnx_model = optimize_model_skip_op_for_inference(onnx_model)
-    onnx_model = optimize_model_strip_initializer(onnx_model)
-    onnx_model = optimize_model_cast(onnx_model)
-    onnx_model = optimize_model_slice(onnx_model)
+    onnx_model = polish_model(onnx_model)
 
     # prepare filesystem
     shutil.rmtree(save_dir, ignore_errors=True)
@@ -87,9 +79,8 @@ def convert(onnx_model_filename,
 
     # DEBUG:
     if debug:
-        model = onnx.shape_inference.infer_shapes(onnx_model)
         debug_model_filename, _ = shutil.os.path.splitext(onnx_model_filename)
-        onnx.save(model, debug_model_filename + '.optimized_and_inffered.onnx')
+        onnx.save(onnx_model, debug_model_filename + '.polished.onnx')
 
     # I/O instances
     onnx_graph = onnx_model.graph
@@ -141,11 +132,11 @@ def convert(onnx_model_filename,
     logger.info('%d ops in, %d ops out', len(onnx_graph.node),
                 len(fluid_program.op_descs))
 
-    # type-shape inference
+    # type-shape info copy
     for name, value_info in graph_value_infos.items():
         var_name = make_var_name(name)
         fluid_program.VarTypeShapeInfo(var_name, value_info,
-                                       remove_batch=False)  # shape-infer only
+                                       remove_batch=False)  #
     bad_var_names = []
     for var_name, var_desc in fluid_program.var_descs.items():
         if not var_desc.type.lod_tensor.HasField('tensor'):
@@ -155,8 +146,8 @@ def convert(onnx_model_filename,
                        ', '.join(bad_var_names[:5]))
         logger.warning('this causes little problem for PaddlePaddle, '
                        'but Paddle Mobile may not infer correctly')
-        logger.warning('please consider running onnx2fluid.validation with -i '
-                       'to invoke PaddlePaddle type-shape inference')
+        logger.warning('please consider running validation with -i '
+                       'to invoke type-shape inference in PaddlePaddle')
 
     # weight writer
     for name, weight in graph_weights(onnx_graph):
