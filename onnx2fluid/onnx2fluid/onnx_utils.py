@@ -642,7 +642,7 @@ if __name__ == '__main__':
     model = convert_version(model, 9)
     model = polish_model(model)
 
-    onnx.save(model, '/tmp/export.optimized.onnx')
+    onnx.save(model, '/tmp/export.polished.onnx')
 
     graph = model.graph
     value_info = inferred_model_value_info(model)
