@@ -51,8 +51,8 @@ layer {
     top: "out3"
     slice_param {
 	axis: 1    # 使用-1效果相同
-	alice_point: 1
-	alice_point: 2
+	slice_point: 1
+	slice_point: 2
     }
 }
 # 输出3个数组，第一个shape：(2,1)，第二个shape：(2,1)，第三个shape：(2,4)
