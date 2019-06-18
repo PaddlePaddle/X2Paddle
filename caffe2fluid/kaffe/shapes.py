@@ -3,6 +3,9 @@ from collections import namedtuple
 
 from .errors import KaffeError
 
+Tensor5DShape = namedtuple('Tensor5DShape',
+                           ['batch_size', 'data1', 'daat2', 'data3', 'data4'])
+
 Tensor4DShape = namedtuple('Tensor4DShape',
                            ['batch_size', 'channels', 'height', 'width'])
 

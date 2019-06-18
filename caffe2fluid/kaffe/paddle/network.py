@@ -103,7 +103,7 @@ class Network(object):
                 place = self.paddle_env['place']
                 exe = self.paddle_env['exe']
 
-        data_dict = np.load(data_path).item()
+        data_dict = np.load(data_path, allow_pickle=True).item()
         for op_name in data_dict:
             if op_name == 'caffe2fluid_name_trace':
                 self.name_trace = data_dict[op_name]
@@ -441,7 +441,7 @@ class Network(object):
             need_transpose = True
 
         if need_transpose:
-            in_order = range(dims)
+            in_order = list(range(dims))
             in_order.remove(axis)
             in_order.append(axis)
             input = fluid.layers.transpose(

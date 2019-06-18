@@ -172,7 +172,7 @@ def load_model(exe, place, net_file, net_name, net_weight, debug):
 
 def get_shape(fluid, program, name):
     for var in program.list_vars():
-        if var.name == 'data':
+        if var.type == 'Input':
             return list(var.shape[1:])
 
     raise ValueError('not found shape for input layer[%s], '
