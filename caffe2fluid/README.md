@@ -81,7 +81,7 @@ except ImportError:
     # Fall back to the protobuf implementation
     self.caffepb = import_caffepb()
     show_fallback_warning()
-# 将上述代码替换为
+# 将上述代码替换为下列代码：
 self.caffepb = import_caffepb()
 show_fallback_warning()
 ```
