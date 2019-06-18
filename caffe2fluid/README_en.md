@@ -72,7 +72,22 @@ In the model conversion, when encounter an unsupported custom layer, users can a
 2. Add ```import mylayer``` to  `kaffe/custom_layers/__init__.py`
 
 3. Prepare your pycaffe as your customized version(same as previous env prepare)
-    - (option1) replace `proto/caffe.proto` with your own caffe.proto and compile it
+    - (option1) 
+    1. replace `proto/caffe.proto` with your own caffe.proto and compile it
+    2. modify the ./kaffe/caffe/resolver.py
+```python
+try:
+    # Try to import PyCaffe first
+    import caffe
+    self.caffe = caffe
+except ImportError:
+    # Fall back to the protobuf implementation
+    self.caffepb = import_caffepb()
+    show_fallback_warning()
+# replace the above code with:
+self.caffepb = import_caffepb()
+show_fallback_warning()
+```
     - (option2) change your `pycaffe` to the customized version
 
 4. Convert the Caffe model to Fluid model
