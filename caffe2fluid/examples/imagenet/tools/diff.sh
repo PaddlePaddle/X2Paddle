@@ -49,7 +49,7 @@ if [[ -z $PYTHON ]];then
     PYTHON=`which python`
 fi
 $PYTHON ../../convert.py \
-        $proto_file \
+        --npy_path $proto_file \
         --caffemodel $caffemodel_file \
         --data-output-path $weight_file\
         --code-output-path $net_file
