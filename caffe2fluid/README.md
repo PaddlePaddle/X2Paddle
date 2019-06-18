@@ -69,7 +69,9 @@ bash tools/diff.sh alexnet ../../alexnet.prototxt \
 2. 添加`import mylayer`至`kaffe/custom_layers/__init__.py`
 
 3. 准备你的pycaffe作为你的定制版本（与以前的env准备相同）
-> 选择一：编译你自己的caffe.proto来代替proto/caffe.proto  
+> 选择一：1. 编译你自己的caffe.proto来代替proto/caffe.proto       
+  	 2. 修改./kaffe/caffe/resolver.py
+	 
 > 选择二：更换你的pycaffe到特定的版本
 
 4. 按照之前步骤，将Caffe模型转换为PaddlePaddle模型
