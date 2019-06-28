@@ -1,6 +1,6 @@
 ## tf.math.rsqrt
 
-### [tf.math.rsqrt](https://www.tensorflow.org/api_docs/python/tf/math/rsqrt)
+### [tf.math.rsqrt](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/rsqrt)
 ``` python
 tf.math.rsqrt(
     x,

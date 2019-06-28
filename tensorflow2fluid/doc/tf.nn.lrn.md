@@ -1,7 +1,6 @@
-
 ## tf.nn.lrn
 
-### [tf.nn.lrn](https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization)
+### [tf.nn.lrn](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/local_response_normalization)
 
 ```python
 tf.nn.local_response_normalization(

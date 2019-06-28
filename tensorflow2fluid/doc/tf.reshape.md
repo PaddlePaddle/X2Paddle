@@ -1,7 +1,6 @@
-
 ## tf.reshape
 
-### [tf.reshape](https://www.tensorflow.org/api_docs/python/tf/reshape)
+### [tf.reshape](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/reshape)
 ``` python
 tf.reshape(
     tensor,
@@ -38,4 +37,3 @@ out = fluid.layers.reshape(t, [-1, 6])
 # 输出 tensor out 的 shape 为[3, 2, 2]
 out = fluid.layers.reshape(t, [0, 2, 2])
 ```
-

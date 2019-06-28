@@ -1,7 +1,6 @@
-
 ## tf.image.non_max_suppression
 
-### [tf.image.non_max_suppression](https://www.tensorflow.org/api_docs/python/tf/image/non_max_suppression)
+### [tf.image.non_max_suppression](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/image/non_max_suppression)
 ``` python
 tf.image.non_max_suppression(
     boxes,

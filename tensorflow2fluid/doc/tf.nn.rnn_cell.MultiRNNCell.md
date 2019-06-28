@@ -1,9 +1,9 @@
 ## tf.nn.rnn_cell.MultiRNNCell
 
-### [tf.nn.rnn_cell.MultiRNNCell](https://www.tensorflow.org/api_docs/python/tf/nn/rnn_cell/MultiRNNCell)
+### [tf.nn.rnn_cell.MultiRNNCell](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/rnn_cell/MultiRNNCell)
 
 ```python
-tf.nn.rnn_cell.MultiRNNCell(
+__init__(
     cells,
     state_is_tuple=True
 )

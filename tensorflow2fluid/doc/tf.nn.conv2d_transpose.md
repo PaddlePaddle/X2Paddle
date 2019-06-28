@@ -1,7 +1,6 @@
-
 ## tf.nn.conv2d_transpose
 
-### [tf.nn.conv2d_transpose](https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose)
+### [tf.nn.conv2d_transpose](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/conv2d_transpose)
 ``` python
 tf.nn.conv2d_transpose(
     value,

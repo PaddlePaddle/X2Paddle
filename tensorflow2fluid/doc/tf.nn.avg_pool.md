@@ -1,6 +1,6 @@
 ## tf.nn.avg_pool
 
-### [tf.nn.avg_pool](https://www.tensorflow.org/versions/r1.10/api_docs/python/tf/nn/avg_pool)
+### [tf.nn.avg_pool](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/avg_pool)
 
 ``` python
 tf.nn.avg_pool(

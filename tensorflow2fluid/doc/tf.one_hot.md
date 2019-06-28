@@ -1,7 +1,6 @@
-
 ## tf.one_hot
 
-### [tf.one_hot](https://www.tensorflow.org/api_docs/python/tf/one_hot)
+### [tf.one_hot](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/one_hot)
 ``` python
 tf.one_hot(
     indices,

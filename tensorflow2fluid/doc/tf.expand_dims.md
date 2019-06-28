@@ -1,7 +1,6 @@
-
 ## tf.expand_dims
 
-### [tf.expand_dims](https://www.tensorflow.org/api_docs/python/tf/expand_dims)
+### [tf.expand_dims](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/expand_dims)
 ``` python
 tf.expand_dims(
     input,
@@ -40,4 +39,3 @@ out = fluid.layers.unsqueeze(t, [-1])
 # 输出 tensor out 的 shape 为[1, 1，3, 4]
 out = fluid.layers.unsqueeze(t, [0, 1])  
 ```
-

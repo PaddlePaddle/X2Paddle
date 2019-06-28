@@ -1,7 +1,6 @@
-
 ## tf.image.resize_images
 
-### [tf.image.resize_images](https://www.tensorflow.org/api_docs/python/tf/image/resize_images)
+### [tf.image.resize_images](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/image/resize_images)
 ``` python
 tf.image.resize_images(
     images,
@@ -39,4 +38,3 @@ inputs = fluid.layers.data(dtype='float32', shape=[3, 300, 300], name='inputs')
 # 输出shape为[3, 400, 500]
 outputs = fluid.layers.image_reisze(inputs, [400, 500])
 ```
-

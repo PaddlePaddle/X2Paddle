@@ -1,6 +1,6 @@
 ## tf.clip_by_norm
 
-### [tf.clip_by_norm](https://www.tensorflow.org/api_docs/python/tf/clip_by_norm)
+### [tf.clip_by_norm](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/clip_by_norm)
 
 ``` python
 tf.clip_by_norm(

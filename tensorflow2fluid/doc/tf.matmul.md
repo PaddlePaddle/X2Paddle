@@ -1,7 +1,6 @@
-
 ## tf.matmul
 
-### [tf.matmul](https://www.tensorflow.org/api_docs/python/tf/linalg/matmul)
+### [tf.matmul](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/linalg/matmul)
 ``` python
 tf.matmul(
     a,

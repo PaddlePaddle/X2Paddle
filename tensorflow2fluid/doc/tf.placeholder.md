@@ -1,7 +1,6 @@
-
 ## tf.placeholder
 
-### [tf.placeholder](https://www.tensorflow.org/api_docs/python/tf/placeholder)
+### [tf.placeholder](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/placeholder)
 ``` python
 tf.placeholder(
     dtype,
