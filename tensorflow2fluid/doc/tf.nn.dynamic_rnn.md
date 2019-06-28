@@ -1,6 +1,6 @@
 ## tf.nn.dynamic_rnn
 
-### [tf.nn.dynamic_rnn](https://www.tensorflow.org/api_docs/python/tf/nn/dynamic_rnn)
+### [tf.nn.dynamic_rnn](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/dynamic_rnn)
 ``` python
 tf.nn.dynamic_rnn(
     cell,

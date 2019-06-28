@@ -4,8 +4,8 @@
 
 | TensorFlow接口 | PaddlePaddle接口 |
 |--------------------------|-------------------------------------------------|
-|[tf.math.less_equal](https://www.tensorflow.org/api_docs/python/tf/math/less_equal)|运算符`<=`|
-|[tf.math.greater](https://www.tensorflow.org/api_docs/python/tf/math/greater)|运算符`>`|
-|[tf.math.greater_equal](https://www.tensorflow.org/api_docs/python/tf/math/greater_equal)|运算符`>=`|
-|[tf.math.equal](https://www.tensorflow.org/api_docs/python/tf/math/equal)|运算符`==` 或 [paddle.fluid.layers.equal](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-7-equal) |
-|[tf.math.less](https://www.tensorflow.org/api_docs/python/tf/math/less)|运算符`<` 或 [paddle.fluid.layers.less_than](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-11-less_than) |
+|[tf.math.less_equal](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/less_equal)|运算符`<=`|
+|[tf.math.greater](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/greater)|运算符`>`|
+|[tf.math.greater_equal](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/greater_equal)|运算符`>=`|
+|[tf.math.equal](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/equal)|运算符`==` 或 [paddle.fluid.layers.equal](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-7-equal) |
+|[tf.math.less](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/less)|运算符`<` 或 [paddle.fluid.layers.less_than](http://paddlepaddle.org/documentation/docs/zh/1.3/api_cn/layers_cn.html#permalink-11-less_than) |

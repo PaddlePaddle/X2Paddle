@@ -1,6 +1,6 @@
 ## tf.squared_difference
 
-### [tf.squared_diffenrece](https://www.tensorflow.org/api_docs/python/tf/math/squared_difference)
+### [tf.squared_diffenrece](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/squared_difference)
 ``` python
 tf.math.squared_difference(
     x,

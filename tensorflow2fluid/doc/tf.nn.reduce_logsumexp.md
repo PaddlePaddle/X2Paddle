@@ -1,6 +1,6 @@
 ## tf.math.reduce_logsumexp
 
-### [tf.math.reduce_logsumexp](https://www.tensorflow.org/api_docs/python/tf/math/reduce_logsumexp)
+### [tf.math.reduce_logsumexp](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/reduce_logsumexp)
 ``` python
 tf.math.log_softmax(
     logits,

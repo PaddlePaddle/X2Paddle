@@ -1,6 +1,6 @@
 ## tf.nn.max_pool
 
-### [tf.nn.max_pool](https://www.tensorflow.org/api_docs/python/tf/nn/max_pool)
+### [tf.nn.max_pool](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/max_pool)
 
 ``` python
 tf.nn.max_pool(

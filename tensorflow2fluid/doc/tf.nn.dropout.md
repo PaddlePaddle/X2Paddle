@@ -1,7 +1,6 @@
-
 ## tf.dropout
 
-### [tf.nn.dropout](https://www.tensorflow.org/api_docs/python/tf/nn/dropout)
+### [tf.nn.dropout](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/dropout)
 ``` python
 tf.nn.dropout(
     x,

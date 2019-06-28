@@ -1,7 +1,6 @@
-
 ## tf.pad
 
-### [tf.pad](https://www.tensorflow.org/api_docs/python/tf/pad)
+### [tf.pad](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/pad)
 ``` python
 tf.pad(
     tensor,

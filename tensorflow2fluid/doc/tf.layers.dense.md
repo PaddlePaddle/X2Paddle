@@ -1,7 +1,6 @@
-
 ## tf.layers.dense
 
-### [tf.layers.dense](https://www.tensorflow.org/api_docs/python/tf/layers/dense)
+### [tf.layers.dense](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/layers/dense)
 ``` python
 tf.layers.dense(
     inputs,

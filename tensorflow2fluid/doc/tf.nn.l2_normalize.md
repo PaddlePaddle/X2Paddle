@@ -1,7 +1,6 @@
-
 ## tf.nn.l2_normalize
 
-### [tf.nn.l2_normalize](https://www.tensorflow.org/api_docs/python/tf/math/l2_normalize)
+### [tf.nn.l2_normalize](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/math/l2_normalize)
 
 ```python
 tf.math.l2_normalize(

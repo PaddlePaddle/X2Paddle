@@ -1,6 +1,6 @@
 ## tf.losses.mean_and_squared_error
 
-### [tf.losses.mean_and_squared_error](https://www.tensorflow.org/api_docs/python/tf/losses/mean_squared_error)
+### [tf.losses.mean_and_squared_error](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/losses/mean_squared_error)
 
 ``` python
 tf.losses.mean_squared_error(

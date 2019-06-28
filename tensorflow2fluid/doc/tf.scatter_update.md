@@ -1,6 +1,6 @@
 ## tf.scatter_update
 
-### [tf.scatter_update](https://www.tensorflow.org/api_docs/python/tf/scatter_update)
+### [tf.scatter_update](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/scatter_update)
 
 ```python
 tf.scatter_update(
@@ -19,7 +19,8 @@ paddle.fluid.layers.scatter(
     input, 
     index, 
     updates, 
-    name=None
+    name=None,
+    overwrite=True
 )
 ```
 
@@ -32,7 +33,7 @@ PaddlePaddle：`index`只支持1-d Variable。
 
 #### 其他
 Tensorflow：`updates`支持numpy-style broadcasting;  
-PaddlePaddle：`updates`要求其rank与`input`相同，同时`updates.shape[0]`等于`index.shape[0]`。
+PaddlePaddle：`updates`要求其rank与`input`相同，同时`updates.shape[0]`等于`index.shape[0]`。此外`overwrite`参数提供了当存在重复index时，两种不同的梯度更新策略。
 
 ### 代码示例
 ```
