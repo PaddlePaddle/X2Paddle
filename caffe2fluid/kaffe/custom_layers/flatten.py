@@ -2,7 +2,7 @@
     more info can be found here: http://caffe.berkeleyvision.org/tutorial/layers/flatten.html
 """
 from .register import register
-
+from functools import reduce
 
 def flatten_shape(input_shape, axis=1, end_axis=-1):
     """ calculate the output shape of this layer using input shape
@@ -29,6 +29,8 @@ def flatten_shape(input_shape, axis=1, end_axis=-1):
             % (start_axis, end_axis)
     output_shape = input_shape[0:start_axis]
     flat_sz = reduce(lambda a, b: a * b, input_shape[start_axis:end_axis])
+    if flat_sz < 0:
+        flat_sz = -1
     output_shape += [flat_sz]
     output_shape += input_shape[end_axis:-1]
 
@@ -52,9 +54,8 @@ def flatten_layer(input, name, axis=1, end_axis=-1):
     input_shape = list(input.shape)
 
     if input_shape[0] == -1:
-        input_shape[0] = 1
+        input_shape[0] = 0
         output_shape = flatten_shape(input_shape, axis=axis, end_axis=end_axis)
-        output_shape[0] = -1
     else:
         output_shape = flatten_shape(input_shape, axis=axis, end_axis=end_axis)
 

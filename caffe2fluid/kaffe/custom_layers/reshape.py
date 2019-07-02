@@ -79,11 +79,7 @@ def reshape_layer(input, name, shape, axis=0, num_axes=-1):
         output (variable): output variable for this layer
     """
     fluid = import_fluid()
-
     input_shape = list(input.shape)
-    print(input_shape)
-    print(shape)
-
     if input_shape[0] == -1:
         input_shape[0] = 0
         output_shape = reshape_shape(input_shape, shape, axis, num_axes)
