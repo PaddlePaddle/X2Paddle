@@ -49,13 +49,13 @@ def detectionoutput_layer(inputs,
     pbv = fluid.layers.reshape(x=pbv, shape=[-1, 4])
     mbox_loc = inputs[0]
     mbox_loc = fluid.layers.reshape(
-        x=mbox_loc, shape=[-1, mbox_conf_flatten.shape[1], 4])
+        x=mbox_loc, shape=[0, mbox_conf_flatten.shape[1], 4])
 
     default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
     fields = ['eta', 'top_k', 'nms_threshold']
 
     for f in default.keys():
-        if not nms_param.has_key(f):
+        if f not in nms_param:
             nms_param[f] = default[f]
 
     nmsed_outs = fluid.layers.detection_output(
