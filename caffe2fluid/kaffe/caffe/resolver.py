@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 SHARED_CAFFE_RESOLVER = None
 
@@ -9,6 +10,10 @@ def import_caffepb():
     p = os.path.dirname(p)
     p = os.path.join(p, '../../proto')
     sys.path.insert(0, p)
+    pb_version = subprocess.getstatusoutput('protoc --version')[1]
+    ver_str = pb_version.split(' ')[-1].replace('.', '')
+    ver_int = int(ver_str)
+    assert vaer_int >= 360, 'The version of protobuf must be larger than 3.6.0!'
     import caffe_pb2
     return caffe_pb2
 

@@ -1,6 +1,6 @@
 ## tf.contrib.layers.flatten
 
-### [tf.contrib.layers.flatten](https://www.tensorflow.org/api_docs/python/tf/contrib/layers/flatten)
+### [tf.contrib.layers.flatten](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/contrib/layers/flatten)
 
 ```python
 tf.contrib.layers.flatten(

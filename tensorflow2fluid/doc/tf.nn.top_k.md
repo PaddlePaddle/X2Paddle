@@ -1,7 +1,6 @@
-
 ## tf.nn.top_k
 
-### [tf.nn.top_k](https://www.tensorflow.org/api_docs/python/tf/nn/top_k)
+### [tf.nn.top_k](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/top_k)
 ``` python
 tf.math.top_k(
     input,

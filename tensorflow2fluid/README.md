@@ -103,6 +103,8 @@ tensorflow2fluid在如下tensorflow模型上测试了模型转换前后的diff
 |          | ResNet V1 50  | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py) | 1.31E-06 |
 |          | ResNet V1 101 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py) | 4.74E-07 |
 |          | Inception V3  | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py) | 1.55E-04 |
+|         | NASNet_Large | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/nasnet/nasnet.py) | - |
+|         | PNASNet_Large | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/nasnet/pnasnet.py) | - |
 | 目标检测 | YOLO-Small    | [code](https://github.com/gliese581gg/YOLO_tensorflow) | 1.40E-06 |
 |          | YOLO-V3       | [code](https://github.com/mystic123/tensorflow-yolo-v3) | 6.20E-04 |
 | 语义分割 | Unet          | [code](https://github.com/jakeret/tf_unet) | 4.17E-07 |

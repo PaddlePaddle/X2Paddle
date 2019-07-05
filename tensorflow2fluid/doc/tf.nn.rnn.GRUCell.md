@@ -1,9 +1,9 @@
 ## tf.contrib.rnn.GRUCell
 
-### [tf.contrib.rnn.GRUCell](https://www.tensorflow.org/api_docs/python/tf/nn/rnn_cell/GRUCell)
+### [tf.nn.rnn.GRUCell](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/rnn_cell/GRUCell)
 
 ```python
-tf.contrib.rnn.GRUCell(
+__init__(
     num_units,
     activation=None,
     reuse=None,
@@ -13,7 +13,6 @@ tf.contrib.rnn.GRUCell(
     dtype=None,
     **kwargs
 )
-
 ```
 
 ### [paddle.fluid.layers.gru_unit](http://paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html#gru-unit)

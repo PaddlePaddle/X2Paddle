@@ -1,6 +1,6 @@
 ## tf.losses.sigmoid_cross_entropy
 
-### [tf.losses.sigmoid_cross_entropy](https://www.tensorflow.org/api_docs/python/tf/losses/sigmoid_cross_entropy)
+### [tf.losses.sigmoid_cross_entropy](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/losses/sigmoid_cross_entropy)
 
 ```python
 tf.losses.sigmoid_cross_entropy(

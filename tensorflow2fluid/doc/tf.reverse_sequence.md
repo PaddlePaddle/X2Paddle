@@ -1,6 +1,6 @@
 ## tf.reverse_sequence
 
-### [tf.reverse_sequence](https://www.tensorflow.org/api_docs/python/tf/reverse_sequence)
+### [tf.reverse_sequence](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/reverse_sequence)
 
 ```python
 tf.reverse_sequence(

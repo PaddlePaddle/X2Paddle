@@ -1,7 +1,7 @@
 ## tf.nn.bidirectional_dynamic_rnn
 
 
-### [tf.nn.bidirectional_dynamic_rnn](https://www.tensorflow.org/api_docs/python/tf/nn/bidirectional_dynamic_rnn)
+### [tf.nn.bidirectional_dynamic_rnn](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/bidirectional_dynamic_rnn)
 
 ```python
 tf.nn.bidirectional_dynamic_rnn(

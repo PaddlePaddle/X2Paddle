@@ -1,7 +1,6 @@
-
 ## tf.stop_gradient
 
-### [tf.stop_gradient](https://www.tensorflow.org/api_docs/python/tf/stop_gradient)
+### [tf.stop_gradient](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/stop_gradient)
 ``` python
 tf.stop_gradient(
     input,

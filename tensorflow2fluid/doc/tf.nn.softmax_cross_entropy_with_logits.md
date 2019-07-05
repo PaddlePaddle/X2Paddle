@@ -1,6 +1,6 @@
 ## tf.nn.softmax_cross_entropy_with_logits
 
-### [tf.nn.rnn_cell.MultiRNNCell](https://www.tensorflow.org/api_docs/python/tf/nn/softmax_cross_entropy_with_logits)
+### [tf.nn.rnn_cell.MultiRNNCell](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/softmax_cross_entropy_with_logits)
 
 ```python
 tf.nn.softmax_cross_entropy_with_logits(
@@ -20,7 +20,8 @@ paddle.fluid.layers.softmax_with_cross_entropy(
     soft_label=False, 
     ignore_index=-100, 
     numeric_stable_mode=False, 
-    return_softmax=False
+    return_softmax=False,
+    axis=-1
 )
 ```
 

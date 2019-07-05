@@ -2,6 +2,7 @@
     more info can be found here: http://caffe.berkeleyvision.org/tutorial/layers/reshape.html
 """
 from .register import register
+from functools import reduce
 
 
 def import_fluid():
@@ -61,43 +62,6 @@ def reshape_shape(input_sp, shape, axis=0, num_axes=-1):
     assert len(output_shape) == num_axes_retained + num_new_axes,\
             "[Reshape]invalid dims of output shape[%s]" % (str(output_shape))
 
-    inferred_axis = -1
-    copy_axes = []
-    constant_count = 1
-    for i in range(num_new_axes):
-        top_dim = shape['dim'][i]
-        if top_dim == 0:
-            copy_axes.append(i)
-            copy_axis_index = start_axis + i
-            output_shape[copy_axis_index] = input_shape[copy_axis_index]
-        elif top_dim == -1:
-            assert inferred_axis == -1, "[Reshape]new shape contains multiple -1 dims"
-            inferred_axis = i
-        else:
-            constant_count *= top_dim
-
-    if inferred_axis >= 0:
-        explicit_count = constant_count
-        l = input_shape[0:start_axis]
-        if len(l) > 0:
-            explicit_count *= count(l)
-
-        l = input_shape[end_axis:]
-        if len(l) > 0:
-            explicit_count *= count(l)
-
-        for i in range(len(copy_axes)):
-            explicit_count *= output_shape[start_axis + copy_axes[i]]
-
-        assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
-                "must be divisible by product of the specified dimensions[%d] "\
-                % (input_count, explicit_count)
-        output_shape[start_axis + inferred_axis] = input_count / explicit_count
-
-    output_count = count(output_shape)
-    assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
-        output_count, input_count)
-
     return output_shape
 
 
@@ -115,19 +79,16 @@ def reshape_layer(input, name, shape, axis=0, num_axes=-1):
         output (variable): output variable for this layer
     """
     fluid = import_fluid()
-
     input_shape = list(input.shape)
-
     if input_shape[0] == -1:
-        input_shape[0] = 1
+        input_shape[0] = 0
         output_shape = reshape_shape(input_shape, shape, axis, num_axes)
-        output_shape[0] = -1
     else:
         output_shape = reshape_shape(input_shape, shape, axis, num_axes)
-
     output = fluid.layers.reshape(input, shape=output_shape, name=name)
 
     return output
 
 
 register(kind='Reshape', shape=reshape_shape, layer=reshape_layer)
+

@@ -1,6 +1,6 @@
 ## tf.while_loop
 
-### [tf.while_loop](https://www.tensorflow.org/api_docs/python/tf/while_loop)
+### [tf.while_loop](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/while_loop)
 
 ```python
 tf.while_loop(

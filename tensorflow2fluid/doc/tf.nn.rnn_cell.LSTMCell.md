@@ -1,6 +1,6 @@
 ## tf.nn.rnn_cell.LSTMCell
 
-### [tf.nn.rnn_cell.LSTMCell](https://www.tensorflow.org/api_docs/python/tf/nn/rnn_cell/LSTMCell)
+### [tf.nn.rnn_cell.LSTMCell](https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/nn/rnn_cell/LSTMCell)
 
 ```python
 tf.nn.rnn_cell.LSTMCell(
