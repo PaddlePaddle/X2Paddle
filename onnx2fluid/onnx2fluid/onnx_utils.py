@@ -87,6 +87,9 @@ def get_attribute_value2(attr):
     get_attribute_value enhanced
     """
 
+    assert isinstance(
+        attr, onnx.AttributeProto), 'attr is not a AttributeProto instance'
+
     if attr.type == onnx.AttributeProto.TENSOR:
         dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
         data = attr.t.raw_data
@@ -106,6 +109,9 @@ def tensor_dtype(tensor):
     get ONNX tensor in np.dtype
     """
 
+    assert isinstance(
+        tensor, onnx.ValueInfoProto), 'tensor is not a ValueInfoProto instance'
+
     return TENSOR_TYPE_TO_NP_TYPE[tensor.type.tensor_type.elem_type]
 
 
@@ -114,6 +120,9 @@ def tensor_shape(tensor):
     get ONNX tensor shape
     """
 
+    assert isinstance(
+        tensor, onnx.ValueInfoProto), 'tensor is not a ValueInfoProto instance'
+
     return tuple([dim.dim_value for dim in tensor.type.tensor_type.shape.dim])
 
 
@@ -121,6 +130,8 @@ def node_attrs(node):
     """
     convert ONNX node attributes to dict
     """
+
+    assert isinstance(node, onnx.NodeProto), 'node is not a NodeProto instance'
 
     return {attr.name: get_attribute_value2(attr)
             for attr in node.attribute}  # dict
@@ -224,9 +235,8 @@ def graph_ops(graph, topo='default'):
     generator for ONNX node graph with given topology
     """
 
-    if not isinstance(graph, onnx.GraphProto):
-        logger.error('graph is not a GraphProto instance')
-        return
+    assert isinstance(graph,
+                      onnx.GraphProto), 'graph is not a GraphProto instance'
 
     return node_iter(graph.node, node_topo(graph.node, topo))
 
@@ -236,9 +246,8 @@ def graph_weights(graph):
     generator for weights of an ONNX model
     """
 
-    if not isinstance(graph, onnx.GraphProto):
-        logger.error('graph is not a GraphProto instance')
-        return
+    assert isinstance(graph,
+                      onnx.GraphProto), 'graph is not a GraphProto instance'
 
     for initializer in graph.initializer:
         name = initializer.name
@@ -250,6 +259,9 @@ def inferred_model_value_info(model):
     """
     collect value/type info for an ONNX model
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
 
     model = infer_shapes(model)
     graph = model.graph
@@ -353,6 +365,10 @@ def optimize_model_skip_op_for_inference(model, op_list=None):
     """
     skip ops can be bypassed for inference
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
+
     if op_list is None:
         op_list = ('Dropout', 'Identity')
 
@@ -415,6 +431,9 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
     strip weights for inference
     """
 
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
+
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
     out_names = [val.name for val in model.graph.output]
@@ -455,6 +474,9 @@ def optimize_model_cast(model):
     """
     strip cascade and unecessary onnx::Cast-9:
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
@@ -512,6 +534,9 @@ def optimize_model_slice(model):
     """
     strip cascade and unecessary onnx::Slice-1:9
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)

@@ -17,13 +17,13 @@ onnx2fluid支持将ONNX模型转换为PaddlePaddle模型，并用于预测，用
 在如下环境配置中测试成功:
 
 * python 3.5+
-* onnx == 1.4.0
-* paddlepaddle == 1.3.0 (可选，仅用于验证)
+* onnx == 1.4.1
+* paddlepaddle == 1.5.0 (可选，仅用于验证)
 
 使用[Anaconda](https://docs.anaconda.com/anaconda/install):
 ``` shell
 conda install -c conda-forge onnx
-pip install paddlepaddle==1.3.0
+pip install paddlepaddle==1.5.0
 ```
 
 ## 动手玩
@@ -48,6 +48,8 @@ onnx2fluid sample_1.onnx -t sample_1.npz
 ```
 
 ## 使用说明
+
+目前支持 **ONNX opset 9+** 的部分算子，对应PyTorch版本 **1.0/1.1(stable opset)**，更多兼容信息请参考[ONNX文档](https://github.com/onnx/onnx/blob/master/docs/Operators.md)
 
 onnx2fluid:
 
@@ -79,5 +81,5 @@ onnx2fluid.validate [-d] [-t test_data.npz] [-p 1e-3] /path/to/onnx/model.onnx
 
 ## 参考
 
-* PaddlePaddle [算子](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_cn/layers_cn.html)
-* PaddlePaddle [加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.4/api_guides/low_level/inference.html#id4)
+* PaddlePaddle [算子](http://www.paddlepaddle.org/documentation/docs/zh/1.5/api_cn/layers_cn.html)
+* PaddlePaddle [加载预测模型](http://www.paddlepaddle.org/documentation/docs/zh/1.5/api_guides/low_level/inference.html#id4)

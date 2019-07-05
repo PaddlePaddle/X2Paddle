@@ -6,6 +6,9 @@ Created on Fri Mar 22 11:22:46 2019
 @author: Macrobull
 """
 
+from __future__ import division
+
+import logging
 import numpy as np
 import torch
 
@@ -23,6 +26,8 @@ from typing import (
     Tuple,
     Union,
 )
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     'export_data',
@@ -76,7 +81,7 @@ def export_data(state_dict: Mapping[Text, Any], prefix: Text = '') -> None:
         return str(obj)
 
     prefix_ = prefix + ('_' if prefix else '')
-    fp = open('{}.txt'.format(prefix or 'meta'), 'w')
+    fp = open('{}.txt'.format(prefix or 'meta'), mode='w')
     for key, value in state_dict.items():
         data = None
         if torch.is_tensor(value):
@@ -93,7 +98,7 @@ def export_data(state_dict: Mapping[Text, Any], prefix: Text = '') -> None:
 
 
 def export_onnx_with_validation(
-        model: torch.nn.Module,
+        model: torch.nn.Module,  # or JITScriptModule
         inputs: Sequence[Union[torch.Tensor, Sequence[object]]],
         export_basepath: Text,
         input_names: Optional[List[Text]] = None,

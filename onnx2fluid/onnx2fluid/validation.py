@@ -43,7 +43,8 @@ def fluid_prog_shape_infer(prog):
 
     import paddle.fluid as fluid
 
-    assert isinstance(prog, fluid.framework.Program)
+    assert isinstance(prog,
+                      fluid.framework.Program), 'prog is not a Program instance'
 
     logger.info('performing type-shape inference ...')
     for block in prog.blocks:
@@ -83,6 +84,8 @@ def validate(fluid_model_filename,
     """
     inference the converted Paddle fluid model, validate with given golden data
     """
+
+    assert isinstance(fluid_model_filename, str)
 
     import numpy as np
     import paddle.fluid as fluid
@@ -153,7 +156,7 @@ def validate(fluid_model_filename,
         input_data = flatten_dict(input_data)
         output_data = flatten_dict(output_data)
         input_names = input_data.keys()
-        output_names = output_data.keys()
+        #        output_names = output_data.keys()
         logger.info('with %d inputs and %d outputs', len(input_data),
                     len(output_data))
     else:

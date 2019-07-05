@@ -16,7 +16,6 @@ from collections import OrderedDict as Dict
 logger = logging.getLogger(__name__)
 
 from . import symbolic
-from .symbolic import _make_var_name as make_var_name
 
 try:
     import paddle.fluid.proto.framework_pb2 as framework_pb2
@@ -63,7 +62,7 @@ def make_attr_name(name):
 
     assert name != '', 'name should not be empty'
 
-    for s in ' \\|/:-':  #
+    for s in ' \\|/:.-':  #
         name = name.replace(s, '_')
     if not name.startswith('_'):
         name = '_' + name
@@ -207,7 +206,7 @@ class Program(object):
         return desc
 
     def VarDesc(self,
-                var_name,
+                name,
                 persistable=False,
                 value_info=None,
                 remove_batch=None):
@@ -215,18 +214,16 @@ class Program(object):
         add VarDesc,
         """
 
-        assert var_name not in self.var_descs, 'var naming conflicted'
+        assert name not in self.var_descs, 'var naming conflicted'
 
         var_desc = framework_pb2.VarDesc()
-        var_desc.name = var_name
+        var_desc.name = name
         var_desc.persistable = persistable
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
-        self.var_descs[var_name] = var_desc
+        self.var_descs[name] = var_desc
 
         if value_info:
-            self.VarTypeShapeInfo(var_name,
-                                  value_info,
-                                  remove_batch=remove_batch)
+            self.VarTypeShapeInfo(name, value_info, remove_batch=remove_batch)
 
     def Op(self, domain, op_type, *args, **kwargs):
         """
@@ -260,19 +257,19 @@ class Program(object):
         else:
             self.code_mutable = code_mutable
 
-    def VarTypeShapeInfo(self, var_name, value_info, remove_batch=None):
+    def VarTypeShapeInfo(self, name, value_info, remove_batch=None):
         """
         set value_info for var
         """
 
-        if var_name not in self.var_descs:
+        if name not in self.var_descs:
             return
 
         dtype = value_info.get('dtype', None)
         if dtype is None:
             return
 
-        var_desc = self.var_descs[var_name]
+        var_desc = self.var_descs[name]
         tensor_desc = var_desc.type.lod_tensor.tensor
         tensor_desc.data_type = self.Dtype(dtype)  # required
 
@@ -292,8 +289,7 @@ class Writer(object):
     fluid code and desc writter
     """
 
-    #	CODE_INDENT = ' ' * 4
-    CODE_INDENT = '\t'
+    CODE_INDENT = ' ' * 4  # '\t'
 
     @staticmethod
     def header_code(func_name, info=''):
@@ -313,6 +309,7 @@ class Writer(object):
         codes.append('from paddle.fluid import initializer, layers')
         codes.append('')
         codes.append('')
+
         codes.append('def {}():'.format(func_name))
         return codes
 
@@ -342,24 +339,26 @@ class Writer(object):
         emit an ONNX weight into program
         """
 
-        if value_info.get('embeded_as', []):
-            var_names = value_info['embeded_as']
-            prog.Code('# parameter {} embeded as {}'.format(name, var_names))
-            for var_name in var_names:
-                prog.VarDesc(var_name, persistable=True, value_info=value_info)
+        if value_info.get('embedded_as', []):
+            embedded_names = value_info['embedded_as']
+            prog.Code('# parameter {} embedded as {}'.format(
+                name, embedded_names))
+            for embedded_name in embedded_names:
+                prog.VarDesc(embedded_name,
+                             persistable=True,
+                             value_info=value_info)
         else:
-            var_name = make_var_name(name)
             attr_name = make_attr_name(name)
-            prog.Code('# parameter {}: {}'.format(name, var_name))
+            prog.Code('# parameter {}'.format(name))
             prog.Code('{} = ParamAttr(name={})'  # , trainable=True
-                      .format(attr_name, repr(var_name)))
+                      .format(attr_name, repr(name)))
             prog.Code(
                 '{} = layers.create_parameter(shape={}, dtype={}, name={}, attr={}'
                 ', default_initializer=initializer.Constant(0))'  #, is_bias={}
-                .format(var_name, value_info['shape'],
+                .format(name, value_info['shape'],
                         repr(value_info['dtype'].name), repr(name),
                         attr_name))  #, value_info.get('is_bias', False)))
-            prog.VarDesc(var_name, persistable=True, value_info=value_info)
+            prog.VarDesc(name, persistable=True, value_info=value_info)
 
     @staticmethod
     def emit_inputs(prog, names, value_infos, remove_batch=None):
@@ -368,7 +367,6 @@ class Writer(object):
         """
 
         for idx, name in enumerate(names):
-            var_name = make_var_name(name)
             value_info = value_infos[name]
             shape = value_info['shape']
             if remove_batch is None:
@@ -377,13 +375,13 @@ class Writer(object):
             if remove_batch:
                 shape = shape[1:]
 
-            prog.Code('# input {}: {}'.format(name, var_name))
+            prog.Code('# input {}'.format(name))
             prog.Code((
                 '{} = layers.data(name={}, shape={}, dtype={}, '
                 'append_batch_size={})'  # , stop_gradient=True
             ).format(
-                var_name,
-                repr(var_name),
+                name,
+                repr(name),
                 shape,
                 repr(value_info['dtype'].name),
                 remove_batch,
@@ -391,12 +389,10 @@ class Writer(object):
             prog.OpDesc(
                 'feed',
                 (['feed'], 'X'),
-                ([var_name], 'Out'),
+                ([name], 'Out'),
                 {'col': idx},
             )
-            prog.VarDesc(var_name,
-                         value_info=value_info,
-                         remove_batch=remove_batch)
+            prog.VarDesc(name, value_info=value_info, remove_batch=remove_batch)
 
     @staticmethod
     def emit_outputs(prog, names):  #, value_infos
@@ -406,12 +402,11 @@ class Writer(object):
 
         code = 'return '
         for idx, name in enumerate(names):
-            var_name = make_var_name(name)
-            code += var_name + ', '
+            code += name + ', '
 
             prog.OpDesc(
                 'fetch',
-                ([var_name], 'X'),
+                ([name], 'X'),
                 (['fetch'], 'Out'),
                 {'col': idx},
             )
@@ -458,8 +453,7 @@ class Writer(object):
         for name, weight in weights.items():
             assert isinstance(weights, dict), 'dict type weights required'
 
-            var_name = make_var_name(name)
-            filename = os.path.join(save_dir, var_name)
+            filename = os.path.join(save_dir, name)
             Writer.write_weight(weight, filename)
             logger.debug('saved weight %s to %s', name, filename)
 

@@ -17,6 +17,22 @@ __all__ = [
 DEFAULT_ONNX_OPSET_VERSION = 9
 
 
+def make_var_name(name):
+    """
+    make a valid variable name in Python code and filename in filesystem
+    """
+
+    if name == '':
+        return '_'
+    if name[0].isdigit():
+        return 'var_' + name
+    for s in ' \\|/:.-':
+        name = name.replace(s, '_')
+    if name.startswith('_'):
+        name = 'var' + name
+    return name
+
+
 def convert(onnx_model_filename,
             save_dir,
             model_basename='model.py',
@@ -30,6 +46,12 @@ def convert(onnx_model_filename,
     convert an ONNX model to Paddle fluid Python code and desc pb
     """
 
+    assert isinstance(onnx_model_filename, str)
+    assert isinstance(save_dir, str)
+    assert isinstance(model_basename, str)
+    assert isinstance(model_func_name, str)
+    assert onnx_opset_version is None or isinstance(onnx_opset_version, int)
+
     import onnx
 
     from onnx.checker import ValidationError
@@ -41,7 +63,6 @@ def convert(onnx_model_filename,
     from .onnx_utils import inferred_model_value_info
     from .onnx_utils import polish_model
     from .writer import Program, Writer
-    from .writer import make_var_name
 
     logger = logging.getLogger('convert')
 
@@ -88,17 +109,21 @@ def convert(onnx_model_filename,
     fluid_writer = Writer()
 
     # model components
-    #    graph_name = onnx_graph.name
-    graph_inputs = [value.name for value in onnx_graph.input]
-    graph_outputs = [value.name for value in onnx_graph.output]
-    graph_params = []
-    graph_value_infos = inferred_model_value_info(onnx_model)
+    inp_vars = [make_var_name(value.name) for value in onnx_graph.input]
+    out_vars = [make_var_name(value.name) for value in onnx_graph.output]
+    par_vars = []
+    value_infos = inferred_model_value_info(onnx_model)
+    value_infos = {
+        make_var_name(key): value
+        for key, value in value_infos.items()
+    }
 
     # prepare additional value_info
     # for weights
     for name, weight in graph_weights(onnx_graph):
-        value_info = graph_value_infos[name]
-        value_info['embeded_as'] = []
+        var_name = make_var_name(name)
+        value_info = value_infos[var_name]
+        value_info['embedded_as'] = []
         value_info['get_weight'] = (lambda w: lambda: w.tolist())(
             weight)  # lazy getter
 
@@ -108,19 +133,23 @@ def convert(onnx_model_filename,
     topo = 'forward'
     for name, domain, op_type, inputs, outputs, attrs in graph_ops(onnx_graph,
                                                                    topo=topo):
-        logger.debug('translating op %s %s::%s ...', name, domain, op_type)
+        op_name = make_var_name(name)
+        inputs = [make_var_name(val) for val in inputs]
+        outputs = [make_var_name(val) for val in outputs]
+        logger.debug('translating op %s(%s) %s::%s ...', name, op_name, domain,
+                     op_type)
         if domain == DEFAULT_OP_DOMAIN:
             domain = ''
         try:
             fluid_writer.emit_op(
                 fluid_program,
-                name,
+                op_name,
                 domain,
                 op_type,
                 inputs,
                 outputs,
                 attrs,
-                graph_value_infos,
+                value_infos,
                 embed_params=embed_params,
             )
         except BaseException as e:
@@ -133,17 +162,16 @@ def convert(onnx_model_filename,
                 len(fluid_program.op_descs))
 
     # type-shape info copy
-    for name, value_info in graph_value_infos.items():
-        var_name = make_var_name(name)
+    for var_name, value_info in value_infos.items():
         fluid_program.VarTypeShapeInfo(var_name, value_info,
                                        remove_batch=False)  #
-    bad_var_names = []
+    bad_vars = []
     for var_name, var_desc in fluid_program.var_descs.items():
         if not var_desc.type.lod_tensor.HasField('tensor'):
-            bad_var_names.append(var_name)
-    if len(bad_var_names) > 0:
+            bad_vars.append(var_name)
+    if len(bad_vars) > 0:
         logger.warning('type-shape not infered for var %s ...',
-                       ', '.join(bad_var_names[:5]))
+                       ', '.join(bad_vars[:5]))
         logger.warning('this causes little problem for PaddlePaddle, '
                        'but Paddle Mobile may not infer correctly')
         logger.warning('please consider running validation with -i '
@@ -151,40 +179,41 @@ def convert(onnx_model_filename,
 
     # weight writer
     for name, weight in graph_weights(onnx_graph):
-        graph_params.append(name)
-        value_info = graph_value_infos[name]
-        var_names = value_info.get('embeded_as', [])
-        if var_names:
-            if len(var_names) > 1:
+        var_name = make_var_name(name)
+        par_vars.append(var_name)
+        value_info = value_infos[var_name]
+        embedded_names = value_info.get('embedded_as', [])
+        if embedded_names:
+            if len(embedded_names) > 1:
                 logger.info(
                     'weight %s is shared between ops, more disk space will be consumed',
                     name)
             logger.debug('saving weight %s(%s[%d], %dB) as %s ...', name,
-                         weight.dtype, weight.size, weight.nbytes, var_names)
-            for var_name in var_names:  # multiple references
+                         weight.dtype, weight.size, weight.nbytes,
+                         embedded_names)
+            for embedded_name in embedded_names:  # multiple references
                 fluid_writer.write_weight(
-                    weight, shutil.os.path.join(save_dir, var_name))
+                    weight, shutil.os.path.join(save_dir, embedded_name))
         else:
             logger.debug('saving weight %s(%s[%d], %dB) to %s ...', name,
-                         weight.dtype, weight.size, weight.nbytes,
-                         make_var_name(name))
-            fluid_writer.write_weight(
-                weight, shutil.os.path.join(save_dir, make_var_name(name)))
-        fluid_writer.emit_param(fluid_program, name, value_info)
+                         weight.dtype, weight.size, weight.nbytes, var_name)
+            fluid_writer.write_weight(weight,
+                                      shutil.os.path.join(save_dir, var_name))
+        fluid_writer.emit_param(fluid_program, var_name, value_info)
     param_codes = fluid_program.codes
     fluid_program.codes = []
-    logger.info('%d weights converted', len(graph_params))
+    logger.info('%d weights converted', len(par_vars))
 
     # input writer
     external_inputs = []
-    for name in graph_inputs:
-        if name not in graph_params:
-            value_info = graph_value_infos[name]
+    for var_name in inp_vars:
+        if var_name not in par_vars:
+            value_info = value_infos[var_name]
             assert value_info['external']
-            external_inputs.append(name)
+            external_inputs.append(var_name)
     fluid_writer.emit_inputs(fluid_program,
                              external_inputs,
-                             graph_value_infos,
+                             value_infos,
                              remove_batch=False)  # TODO:
     input_codes = fluid_program.codes
     fluid_program.codes = []
@@ -192,11 +221,11 @@ def convert(onnx_model_filename,
 
     # output writer
     external_outputs = []
-    for name in graph_outputs:
-        if name not in graph_params:
-            value_info = graph_value_infos[name]
+    for var_name in out_vars:
+        if var_name not in par_vars:
+            value_info = value_infos[var_name]
             assert value_info['external']
-            external_outputs.append(name)
+            external_outputs.append(var_name)
     fluid_writer.emit_outputs(fluid_program, external_outputs)
     output_codes = [''] + fluid_program.codes  # add an empty line
     fluid_program.codes = []
@@ -204,10 +233,18 @@ def convert(onnx_model_filename,
 
     # code generation
     header_codes = fluid_writer.header_code(
-        model_func_name, 'From: {}'.format(onnx_model_filename))
+        model_func_name,
+        'From: {}'.format(onnx_model_filename),
+    )
     code_filename = shutil.os.path.join(save_dir, model_basename)
-    fluid_writer.write_code_file(code_filename, header_codes, input_codes,
-                                 param_codes, op_codes, output_codes)
+    fluid_writer.write_code_file(
+        code_filename,
+        header_codes,
+        input_codes,
+        param_codes,
+        op_codes,
+        output_codes,
+    )
     logger.info('code saved to %s, factory function: %s', code_filename,
                 model_func_name)
 

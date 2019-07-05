@@ -24,14 +24,14 @@ bvlc_alexnet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for npz in "$bn_tar"/*.npz
+	for npz in "$bn_tar/"*.npz
 	do
 		echo "converting $npz ..."
 		python convert_data_npz.py "$npz" data_0 prob_1 -s
 		python -m onnx2fluid.validation $validate_flags1 -t "$npz"
 		python -m onnx2fluid.validation $validate_flags2 -t "$npz"
 	done
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -54,7 +54,7 @@ bvlc_googlenet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -77,7 +77,7 @@ bvlc_reference_caffenet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -100,7 +100,7 @@ bvlc_reference_rcnn_ilsvrc13()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 fc-rcnn_1
@@ -123,14 +123,14 @@ densenet121()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for npz in "$bn_tar"/*.npz
+	for npz in "$bn_tar/"*.npz
 	do
 		echo "converting $npz ..."
 		python convert_data_npz.py "$npz" data_0 fc6_1 -s
 		python -m onnx2fluid.validation $validate_flags1 -t "$npz"
 		python -m onnx2fluid.validation $validate_flags2 -t "$npz"
 	done
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 fc6_1
@@ -153,7 +153,7 @@ emotion_ferplus()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" Input3 Plus692_Output_0
@@ -176,14 +176,14 @@ inception_v1()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for npz in "$bn_tar"/*.npz
+	for npz in "$bn_tar/"*.npz
 	do
 		echo "converting $npz ..."
 		python convert_data_npz.py "$npz" data_0 prob_1 -s
 		python -m onnx2fluid.validation $validate_flags1 -t "$npz"
 		python -m onnx2fluid.validation $validate_flags2 -t "$npz"
 	done
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -206,14 +206,14 @@ inception_v2()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for npz in "$bn_tar"/*.npz
+	for npz in "$bn_tar/"*.npz
 	do
 		echo "converting $npz ..."
 		python convert_data_npz.py "$npz" data_0 prob_1 -s
 		python -m onnx2fluid.validation $validate_flags1 -t "$npz"
 		python -m onnx2fluid.validation $validate_flags2 -t "$npz"
 	done
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -236,7 +236,7 @@ mobilenet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data mobilenetv20_output_flatten0_reshape0
@@ -259,7 +259,7 @@ resnet18()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data resnetv15_dense0_fwd
@@ -282,14 +282,14 @@ resnet50()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for npz in "$bn_tar"/*.npz
+	for npz in "$bn_tar/"*.npz
 	do
 		echo "converting $npz ..."
 		python convert_data_npz.py "$npz" gpu_0/data_0 gpu_0/softmaxout_1 -s
 		python -m onnx2fluid.validation $validate_flags1 -t "$npz"
 		python -m onnx2fluid.validation $validate_flags2 -t "$npz"
 	done
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" gpu_0/data_0 gpu_0/softmaxout_1
@@ -312,7 +312,7 @@ resnet100_arcface()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data fc1
@@ -335,7 +335,7 @@ resnet101_duc()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data seg_loss
@@ -358,7 +358,7 @@ resnet152()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data resnetv27_dense0_fwd
@@ -381,7 +381,7 @@ shufflenet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" gpu_0/data_0 gpu_0/softmax_1
@@ -404,7 +404,7 @@ squeezenet()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 softmaxout_1
@@ -427,7 +427,7 @@ squeezenet1v1()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data squeezenet0_flatten0_reshape0
@@ -448,10 +448,10 @@ ssd()
 	rm -rf "$bn_tar/"
 	echo "extracting ..."
 	mkdir "$bn_tar"
-	tar xf "$fn_tar" -C "$bn_tar"/
+	tar xf "$fn_tar" -C "$bn_tar/"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" image bboxes,labels,scores
@@ -474,7 +474,7 @@ tiny_yolov2()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" image grid
@@ -497,7 +497,7 @@ vgg16bn()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -y
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" data vgg0_dense2_fwd
@@ -520,7 +520,7 @@ vgg19()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" data_0 prob_1
@@ -543,7 +543,7 @@ yolov3()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model" -x #
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir ..."
 		python convert_data_pb.py "$pb_dir" input_1:01,image_shape:01 yolonms_layer_1/ExpandDims_1:0,yolonms_layer_1/ExpandDims_3:0,yolonms_layer_1/concat_2:0
@@ -566,7 +566,7 @@ zfnet512()
 	tar xf "$fn_tar"
 
 	python -m onnx2fluid $convert_flags "$fn_model"
-	for pb_dir in "$bn_tar"/*/
+	for pb_dir in "$bn_tar/"*/
 	do
 		echo "converting $pb_dir"
 		python convert_data_pb.py "$pb_dir" gpu_0/data_0 gpu_0/softmax_1
