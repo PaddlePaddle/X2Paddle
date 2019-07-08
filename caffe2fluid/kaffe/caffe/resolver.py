@@ -6,7 +6,7 @@ SHARED_CAFFE_RESOLVER = None
 
 
 def import_caffepb():
-   p = os.path.realpath(__file__)
+    p = os.path.realpath(__file__)
     p = os.path.dirname(p)
     p = os.path.join(p, '../../proto')
     sys.path.insert(0, p)
