@@ -8,8 +8,6 @@ X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型，同时我们
 
 任何使用问题均可通过[ISSUE](https://github.com/PaddlePaddle/X2Paddle/issues)的方式及时反馈，或者也可直接通过pull request的方式一起更新代码和文档。
 
-> **目前X2Paddle主要支持CV部分模型，对于NLP模型暂未支持。**
-
 ## [caffe2fluid](caffe2fluid)
 1. 支持将Caffe模型转至PaddlePaddle fluid可加载预测模型
 2. 提供Caffe-PaddlePaddle常用API的对比文档[[doc](caffe2fluid/doc)]
