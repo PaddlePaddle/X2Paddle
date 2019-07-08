@@ -20,34 +20,74 @@ from onnx2fluid.torch_export_helper import export_onnx_with_validation
 prefix = 'sample_'
 idx = 0
 
+######## example: RNN cell ########
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.gru = nn.GRUCell(6, 5)
+        self.lstm = nn.LSTMCell(5, 4)
+
+    def forward(self, x, h1, h2, c2):
+        h = self.gru(x, h1)
+        h, c = self.lstm(h, (h2, c2))
+        return h, c
+
+
+model = Model()
+model.eval()
+xb = torch.rand((7, 6))
+h1 = torch.zeros((7, 5))
+h2 = torch.zeros((7, 4))
+c2 = torch.zeros((7, 4))
+yp = model(xb, h1, h2, c2)
+idx += 1
+print('index: ', idx)
+export_onnx_with_validation(model, [xb, h1, h2, c2],
+                            prefix + str(idx), ['x', 'h1', 'h2', 'c2'],
+                            ['h', 'c'],
+                            verbose=True,
+                            training=False)
+
 ######## example: RNN ########
 
 
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.gru = nn.GRU(4, 5, 3)
-        self.lstm = nn.LSTM(5, 6, 2)
+        self.gru = nn.GRU(6, 5, 3)
+        self.lstm = nn.LSTM(5, 4, 2)
 
-    def forward(self, x):
-        y = x
-        y, h = self.gru(y)
-        y, h = self.lstm(y)
+    def forward(self, x, h1, h2, c2):
+        y, h1 = self.gru(x, h1)
+        y, (h2, c2) = self.lstm(y, (h2, c2))
         return y
 
 
 model = Model()
 model.eval()
-xb = torch.rand((2, 3, 4))
-yp = model(xb)
+xb = torch.rand((8, 1, 6))
+h1 = torch.zeros((3, 1, 5))
+h2 = torch.zeros((2, 1, 4))
+c2 = torch.zeros((2, 1, 4))
+yp = model(xb, h1, h2, c2)
 idx += 1
 print('index: ', idx)
-export_onnx_with_validation(model, [xb],
-                            prefix + str(idx), ['x'], ['y'],
+export_onnx_with_validation(model, [xb, h1, h2, c2],
+                            prefix + str(idx), ['x', 'h1', 'h2', 'c2'], ['y'],
                             verbose=True,
                             training=False)
 
 ######## example: random ########
+"""
+    symbolic registration:
+
+    def rand(g, *shapes):
+        shapes_list = list(shapes)
+        shape = _maybe_get_const(shapes_list[0], "is")
+        return g.op('RandomUniform', shape_i=shape)
+"""
 
 
 class Model(nn.Module):
@@ -55,8 +95,9 @@ class Model(nn.Module):
         super(Model, self).__init__()
 
     def forward(self, x):
-        y = torch.rand((2, 3))  # + torch.rand_like(xb)
-        y = y + torch.randn((2, 3))  # + torch.randn_like(xb)
+        y = torch.rand((2, 3))  # + torch.rand_like(x)
+        y = y + torch.randn((2, 3))  # + torch.randn_like(x)
+        y = y + x
         return y
 
 
@@ -124,6 +165,13 @@ export_onnx_with_validation(model, [xb0, xb1],
                             training=False)
 
 ######## example: affine_grid ########
+"""
+    symbolic registration:
+
+    @parse_args('v', 'is')
+    def affine_grid_generator(g, theta, size):
+        return g.op('AffineGrid', theta, size_i=size)
+"""
 
 
 class Model(nn.Module):

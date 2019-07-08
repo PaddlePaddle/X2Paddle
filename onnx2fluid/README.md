@@ -54,7 +54,7 @@ onnx2fluid sample_1.onnx -t sample_1.npz
 onnx2fluid:
 
 ```shell
-onnx2fluid [-dexy] [-o /path/to/export_dir/] [-z archive.zip] [-t test_data.npz] /path/to/onnx/model.onnx
+onnx2fluid [-dexy] [-o /path/to/export_dir/] [-z archive.zip] [-t test_data.npz] [-i [input_name1,input_name2]] /path/to/onnx/model.onnx
 
 optional arguments:
   --debug, -d           启用调试
@@ -65,6 +65,8 @@ optional arguments:
   --output_dir, -o      指定输出目录
   --archive [ARCHIVE], -z [ARCHIVE]
                         如果验证通过，打包到指定的ZIP文件
+  --infer_inputs, -i [input_name1,input_name2]
+                        调用PaddlePaddle fluid类形推导完善模型
 ```
 
 转换工具onnx2fluid.conversion:
@@ -76,7 +78,7 @@ onnx2fluid.conversion [-dexy] [-o /path/to/export_dir/] /path/to/onnx/model.onnx
 验证工具onnx2fluid.validate:
 
 ```shell
-onnx2fluid.validate [-d] [-t test_data.npz] [-p 1e-3] /path/to/onnx/model.onnx
+onnx2fluid.validate [-d] [-t test_data.npz] [-i [input_name1,input_name2]] [-p 1e-3] /path/to/onnx/model.onnx
 ```
 
 ## 参考

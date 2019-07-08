@@ -159,7 +159,7 @@ def validate(fluid_model_filename,
         #        output_names = output_data.keys()
         logger.info('with %d inputs and %d outputs', len(input_data),
                     len(output_data))
-    else:
+    elif save_inference_model:
         assert inference_input_names, 'input names required for type-shape inference'
 
         input_names = inference_input_names

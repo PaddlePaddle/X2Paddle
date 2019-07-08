@@ -61,7 +61,7 @@ def main(**kwargs):
     passed = True
     golden_data_filename = kwargs.pop('test_data', '')
     infer_inputs = kwargs.pop('infer_inputs', None)
-    if golden_data_filename or infer_inputs:
+    if golden_data_filename or infer_inputs is not None:
         from .validation import validate
 
         save_inference_model = infer_inputs is not None

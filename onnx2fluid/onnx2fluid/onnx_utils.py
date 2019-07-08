@@ -319,17 +319,20 @@ def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
     return processed
 
 
-def polish_model(model, extras=True):
+def polish_model(model, internals=True, extras=True, checking=True):
     """
     polish_model enhanced for inference
     """
 
-    check_model(model)
+    if checking:
+        check_model(model)
     strip_doc_string(model)
-    passes = optimizer.get_available_passes()
-    passes = list(filter(lambda name: not name.startswith('split_'), passes))  #
-    logger.debug('builtin optimizations to perform in ONNX:\n\t%s', passes)
-    model = optimizer.optimize(model, passes=passes)
+    if internals:
+        passes = optimizer.get_available_passes()
+        passes = list(filter(lambda name: not name.startswith('split_'),
+                             passes))  #
+        logger.debug('builtin optimizations to perform in ONNX:\n\t%s', passes)
+        model = optimizer.optimize(model, passes=passes)
     if extras:
         for optimize in (
                 optimize_model_skip_op_for_inference,
@@ -339,7 +342,8 @@ def polish_model(model, extras=True):
         ):
             model = optimize(model)
     model = infer_shapes(model)
-    check_model(model)
+    if checking:
+        check_model(model)
     return model
 
 
