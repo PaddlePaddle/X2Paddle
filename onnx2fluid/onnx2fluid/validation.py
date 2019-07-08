@@ -160,7 +160,8 @@ def validate(fluid_model_filename,
         logger.info('with %d inputs and %d outputs', len(input_data),
                     len(output_data))
     elif save_inference_model:
-        assert inference_input_names, 'input names required for type-shape inference'
+        assert inference_input_names is not None, (
+            'input names required for type-shape inference')
 
         input_names = inference_input_names
         logger.info('using input names: %s', ', '.join(input_names))
@@ -178,7 +179,7 @@ def validate(fluid_model_filename,
         fluid.io.load_inference_model(fluid_model_dir, exe)
         logger.info('model re-load passed')
 
-    if not golden_data_filename:
+    if golden_data_filename == '':
         return True
 
     # execute

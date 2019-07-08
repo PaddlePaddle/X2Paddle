@@ -99,6 +99,9 @@ def get_attribute_value2(attr):
     elif attr.type == onnx.AttributeProto.STRING:
         value = attr.s
         value = value.decode() if isinstance(value, bytes) else value
+    elif attr.type == onnx.AttributeProto.STRINGS:
+        value = attr.strings
+        value = [s.decode() if isinstance(s, bytes) else s for s in value]
     else:
         value = get_attribute_value(attr)
     return value
@@ -161,12 +164,12 @@ def node_topo(nodes, topo='default'):
         for node_idx, degree in enumerate(node_in_degrees):
             if degree == 0:
                 queue.append(node_idx)
-        while len(queue) > 0:
+        while queue:
             node_idx = queue.pop(0)
             node_topo.append(node_idx)
             for val_name in nodes[node_idx].output:
                 output_refs[val_name].remove(node_idx)
-                if len(output_refs[val_name]) > 0:
+                if output_refs[val_name]:
                     continue
                 output_refs.pop(val_name)
                 if val_name not in input_refs:
@@ -186,12 +189,12 @@ def node_topo(nodes, topo='default'):
         for node_idx, degree in enumerate(node_out_degrees):
             if degree == 0:
                 queue.append(node_idx)
-        while len(queue) > 0:
+        while queue:
             node_idx = queue.pop(0)
             node_topo.append(node_idx)
             for val_name in nodes[node_idx].input:
                 input_refs[val_name].remove(node_idx)
-                if len(input_refs[val_name]) > 0:
+                if input_refs[val_name]:
                     continue
                 input_refs.pop(val_name)
                 if val_name not in output_refs:
@@ -210,7 +213,10 @@ def node_iter(nodes, indices=None):
     generator for ONNX node graph with given indices
     """
 
-    for index in indices or range(len(nodes)):
+    if indices is None:
+        indices = range(len(nodes))
+
+    for index in indices:
         node = nodes[index]
         name = node.name
         domain = node.domain
@@ -221,9 +227,11 @@ def node_iter(nodes, indices=None):
 
         if name == '':
             name = 'op_' + str(index)
-        else:  # make_op_name
-            for s in ' \\|/:-':  #
-                name = name.replace(s, '_')
+
+
+#        else: # make_op_name
+#            for s in ' \\|/:-': #
+#                name = name.replace(s, '_')
         if domain == '':
             domain = DEFAULT_OP_DOMAIN
 
@@ -356,10 +364,11 @@ def polish_and_save(model_filename,
     run polish_model and save
     """
 
+    if save_filename is None:
+        save_filename = model_filename.replace('.onnx', suffix + '.onnx')
+
     model = onnx.load(model_filename)
     model = polish_model(model, *args, **kwargs)
-    save_filename = save_filename or model_filename.replace(
-        '.onnx', suffix + '.onnx')
     onnx.save(model, save_filename)
     logger.info('polished model saved to: %s', save_filename)
     return save_filename
@@ -495,7 +504,7 @@ def optimize_model_cast(model):
     for node_idx, node in enumerate(nodes):
         if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
             continue
-        if not (node.op_type == 'Cast'):
+        if node.op_type != 'Cast':
             continue
         attrs = node_attrs(node)
         output_dtype = TENSOR_TYPE_TO_NP_TYPE[attrs['to']]
@@ -551,7 +560,7 @@ def optimize_model_slice(model):
             node = nodes[node_idx]
             if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
                 return chain
-            if not node.op_type == 'Slice':
+            if node.op_type != 'Slice':
                 return chain
             chain.append(node_idx)
             output_name = node.output[0]
@@ -585,10 +594,10 @@ def optimize_model_slice(model):
     nodes_to_remove = []
     for node_idx in range(len(nodes)):
         slice_chain = build_slice_node_chain(node_idx)
-        if len(slice_chain) == 0:
+        if not slice_chain:
             continue
         merged_slice = merge_slice(slice_chain)
-        if len(merged_slice) > 0 and len(slice_chain) == 1:  # no need to merge
+        if merged_slice and len(slice_chain) == 1:  # no need to merge
             continue
 
         attrs = {'axes': [], 'starts': [], 'ends': []}
@@ -602,12 +611,11 @@ def optimize_model_slice(model):
         output_name = last_node.output[0]
         processed = -1
         if output_name in input_refs:  # 0, [1...]
-            new_input_name = first_node.output[0] if len(
-                merged_slice) > 0 else input_name
+            new_input_name = first_node.output[0] if merged_slice else input_name
             processed = skip_node_forward(ret_nodes, output_name,
                                           new_input_name, input_refs)
             if processed > 0:
-                if len(merged_slice) > 0:
+                if merged_slice:
                     remain_idx = slice_chain[0]
                     remove_chain = slice_chain[1:]
                     slice_node = ret_nodes[remain_idx]
@@ -621,12 +629,11 @@ def optimize_model_slice(model):
                     remove_chain = slice_chain
 
         if processed < 0 and input_name in output_refs:
-            new_output_name = last_node.input[0] if len(
-                merged_slice) > 0 else output_name
+            new_output_name = last_node.input[0] if merged_slice else output_name
             processed = skip_node_backward(ret_nodes, input_name,
                                            new_output_name, output_refs)
             if processed > 0:
-                if len(merged_slice) > 0:
+                if merged_slice:
                     remain_idx = slice_chain[-1]
                     remove_chain = slice_chain[:-1]
                     slice_node = ret_nodes[remain_idx]
@@ -641,7 +648,7 @@ def optimize_model_slice(model):
 
         if processed > 0:
             nodes_to_remove.extend(remove_chain)
-            if len(merged_slice) == 0:
+            if not merged_slice:
                 logger.debug('skip slice chain %s -> %s -> %s', input_name,
                              slice_chain, output_name)
         elif processed < 0:  # NEVERFIX: not merge standalone slice chain

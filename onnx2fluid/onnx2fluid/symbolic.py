@@ -44,50 +44,62 @@ DEFAULT_OP_MAPPING = {
         ## nil ops ##
         'RandomUniform':
             ['uniform_random', [], ['Out'], dict(high='max', low='min'),
-             dict(), None, None, False], # TODO: add dtype support
+             dict(max=1., min=0., seed=0), None, None, False], # TODO: add dtype support
         'RandomNormal':
             ['gaussian_random', [], ['Out'], dict(scale='std'),
-             dict(), None, None, False], # TODO: add dtype support
+             dict(mean=0., std=1., seed=0), None, None, False], # TODO: add dtype support
         ## unary ops ##
         'Abs': ['abs', ['X'], ['Out']],
         'Acos': ['acos', ['X'], ['Out']],
         'Asin': ['asin', ['X'], ['Out']],
         'Atan': ['atan', ['X'], ['Out']],
-        'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims='')],
-        'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims='')],
+        'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims=''), dict(axis=0)],
+        'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims=''), dict(axis=0)],
         'Ceil': ['ceil', ['X'], ['Out']],
-        'Clip': ['clip', ['X'], ['Out']], # attrs bypassed
+        'Clip':
+            ['clip', ['X'], ['Out'], dict(), dict(
+                    min=(_np.array([255, 255, 127, 255], dtype=_np.uint8).view(_np.float32)),
+                    max=(_np.array([255, 255, 127, 127], dtype=_np.uint8).view(_np.float32)),
+                )],
         'Cos': ['cos', ['X'], ['Out']],
-        'Elu': ['elu', ['X'], ['Out']],
+        'Elu': ['elu', ['X'], ['Out'], dict(), dict(alpha=1.)],
         'Exp': ['exp', ['X'], ['Out']],
-        'Flatten': ['flatten', ['X'], ['Out']], # attrs bypassed, FIXME: emit flatten2
+        'Flatten': ['flatten', ['X'], ['Out'], dict(), dict(axis=1)], # FIXME: emit flatten2
         'Floor': ['floor', ['X'], ['Out']],
-        'Gather': ['gather', ['X'], ['Out'], dict(axis='')],
-        'HardSigmoid': ['hard_sigmoid', ['X'], ['Out'], dict(alpha='slope', beta='offset')],
+        'Gather': ['gather', ['X', "Index"], ['Out'], dict(axis='')],
+        'HardSigmoid':
+            ['hard_sigmoid', ['X'], ['Out'], dict(alpha='slope', beta='offset'),
+             dict(slope=.2, offset=.5)],
         'Identity': ['assign', ['X'], ['Out']],
-        'LeakyRelu': ['leaky_relu', ['X'], ['Out']],
+        'LeakyRelu': ['leaky_relu', ['X'], ['Out'], dict(), dict(alpha=.01)],
         'Log': ['log', ['X'], ['Out']],
-        'LRN': ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k')], #
+        'LRN':
+            ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k'),
+             dict(n=5, k=1., alpha=1e-4, beta=.75)], #
         'Reciprocal': ['reciprocal', ['X'], ['Out']],
         'Relu': ['relu', ['X'], ['Out']],
         'Round': ['round', ['X'], ['Out']],
-        'Selu': ['selu', ['X'], ['Out'], dict(gamma='scale')],
-        'Shape': ['shape', ['X'], ['Out']], # FIXME: out is int64 vs int32
+        'Selu':
+            ['selu', ['X'], ['Out'], dict(gamma='scale'), dict(
+                    scale=1.0507009873554804934193349852946,
+                    alpha=1.6732632423543772848170429916717,
+                )],
         'Shrink': ['softshrink', ['X'], ['Out'], dict(bias='', labmd='')],
         'Sigmoid': ['sigmoid', ['X'], ['Out']],
         'Sign': ['sign', ['X'], ['Out']],
         'Sin': ['sin', ['X'], ['Out']],
-        'Squeeze': ['squeeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit squeeze2
+        'Squeeze': ['squeeze', ['X'], ['Out']], # FIXME: emit squeeze2
         # FIXME: default axis = -1, reshape required before and after
-        'Softmax': ['softmax', ['X'], ['Out'], dict(axis='')],
+        'Softmax': ['softmax', ['X'], ['Out'], dict(axis=''), dict(axis=-1)],
         'Softplus': ['softplus', ['X'], ['Out']],
         'Softsign': ['softsign', ['X'], ['Out']],
         'SpaceToDepth': ['space_to_depth', ['X'], ['Out']],
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
-        'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
+        'ThresholdedRelu':
+            ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold'), dict(alpha=1.)],
         #'Transpose': ['transpose', ['X'], ['Out']],
-        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
+        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
@@ -103,20 +115,31 @@ DEFAULT_OP_MAPPING = {
         'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Not': ['logical_not', ['X', 'Y'], ['Out']],
         'OneHot': # assuming values=[0, 1], axis=-1 and drop them
-            ['one_hot', ['Input', 'Depth'], ['Out'], dict(axis=''), dict(),
+            ['one_hot', ['Input', 'depth_tensor'], ['Out'], dict(axis=''), dict(),
              [0, 1], None, False],
         'Or': ['logical_or', ['X', 'Y'], ['Out']],
         'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)], # TODO: pow for scalar exponent
         'Sub': ['elementwise_sub', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Xor': ['logical_xor', ['X', 'Y'], ['Out']],
         # reduce ops
-        'ReduceMax': ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceMean': ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceMin': ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceProd': ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceSum': ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        # TODO: fix reduce_all ?
+        'ReduceMax':
+            ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceMean':
+            ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceMin':
+            ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceProd':
+            ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceSum':
+            ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
         # other ops
-        'Scatter': ['scatter', ['X', 'Index', 'Updates'], ['Out']],
+        'Scatter': ['scatter', ['X', 'Ids', 'Updates'], ['Out'], dict(), dict(overwrite=True)],
         'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
 }
 
@@ -133,7 +156,7 @@ DEFAULT_IOA_CONSTRAINTS = {
         (lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 supported'),
     ],
     'Shrink': [
-        (lambda i, o, a: a.get('bias', 0) == a.get('lambd', 0.5),
+        (lambda i, o, a: a.get('bias', 0) == a.get('lambd', .5),
          'only SoftShrink with bias = lambd supported'),
     ],
     #        'Softmax':
@@ -231,9 +254,12 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     fluid_attrs.update(mapped_attrs)  # as new attrs
 
     var_inps = list(map(inputs.__getitem__,
-                        input_perm)) if input_perm else inputs
+                        input_perm)) if input_perm is not None else inputs
     var_outs = list(map(outputs.__getitem__,
-                        output_perm)) if output_perm else outputs
+                        output_perm)) if output_perm is not None else outputs
+    for var_name in var_inps + var_outs:
+        assert var_name
+
     arg_name = ', name={}'.format(
         repr(name)) if fill_name_field and name else ''
     arg_attrs = [
@@ -252,7 +278,7 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     num_vars = len(var_outs)
     num_args = len(fluid_output_args)
     if num_vars < num_args:
-        assert fill_name_field, 'name required to name dummy output variables'
+        assert fill_name_field and name, 'name required to name dummy output variables'
         for idx_out in range(num_vars, num_args):
             var_out = name + '.' + fluid_output_args[idx_out]  # dummy output
             var_outs.append(var_out)
@@ -267,6 +293,7 @@ def _assign(prog, mapping):
     fluid_op = 'assign'
 
     for var_dst, var_src in mapping.items():
+        assert var_dst and var_src
         prog.Code('{} = {} # assign'.format(var_dst, var_src))
         #        prog.Code('{} = layers.{}({})'
         #                  .format(var_dst,
@@ -282,18 +309,17 @@ def _assign(prog, mapping):
         )
 
 
-def _zeros_like(prog, var_ref, var_out, value_infos):
+def _zeros_like(prog, var_ref, var_out):
     prog.Op(
         '',
         'Sub',
         [var_ref, var_ref],
         [var_out],
         {'axis': 0},
-        value_infos,
     )
 
 
-def _pad_if_asymmetric(prog, pads, var_input, value_infos):  # pads: SSEE
+def _pad_if_asymmetric(prog, pads, var_input, value_infos, scope):  # pads: SSEE
     assert len(pads) & 1 == 0
     ndims = len(pads) // 2
     symmetric = True
@@ -304,7 +330,8 @@ def _pad_if_asymmetric(prog, pads, var_input, value_infos):  # pads: SSEE
     if symmetric:
         return pads[:ndims], var_input
 
-    var_padded = var_input + '_pad'  # explicit variable
+    assert scope
+    var_padded = scope + '_pad'  # explicit variable
     prog.Op(
         '',
         'Pad',
@@ -316,7 +343,7 @@ def _pad_if_asymmetric(prog, pads, var_input, value_infos):  # pads: SSEE
             'pads': pads,
         },
         value_infos=value_infos,
-        name=(var_input + '/pad'),
+        name=(scope + '/pad'),
     )
     return [0] * ndims, var_padded
 
@@ -324,7 +351,8 @@ def _pad_if_asymmetric(prog, pads, var_input, value_infos):  # pads: SSEE
 def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
     # I/O
     var_x, = inputs
-    var_y, var_indices, = (outputs + [None] * 1)[:2]
+    var_y, var_indices, = (outputs + [''] * 1)[:2]
+    assert var_x and var_y
 
     # interpretation
     pool_size = attrs['output_size']  # required
@@ -359,21 +387,21 @@ def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
         (['X'], [var_x]),
         (['Out', 'Indices'], [var_y] + ([var_indices] if var_indices else [])),
         {
-            'global_pooling': False,
             'adaptive': True,
-            'require_index': bool(var_indices),
             'pooling_type': pool_type,
             'ksize': pool_size,
             # unused
             #                    'exclusive': True,
+            #                    'global_pooling': False,
         },
     )
 
 
-def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
+def _global_pool(prog, pool_type, inputs, outputs, value_infos, name=''):
     # I/O
     var_x, = inputs
     var_y, = outputs
+    assert var_x and var_y
 
     # interpretation
     input_shape = _shape_or_none(value_infos, var_x)
@@ -406,10 +434,10 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
         (['Out'], [var_y]),
         {
             'global_pooling': True,
-            'adaptive': False,
             'pooling_type': pool_type,
-            'ksize': [-1, -1],
             # unused
+            'adaptive': False,
+            'ksize': [-1, -1],
             'strides': [-1, -1],
             'paddings': [0, 0],
             'ceil_mode': False,
@@ -417,10 +445,11 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     )
 
 
-def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
+def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name):
     # I/O
     var_x, = inputs
-    var_y, var_indices, = (outputs + [None] * 1)[:2]
+    var_y, var_indices, = (outputs + [''] * 1)[:2]
+    assert name and var_x and var_y
 
     # interpretation
     assert attrs.get(
@@ -436,8 +465,8 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     strides = attrs.get('strides', [1] * poolnd)  # optional
     ceil_mode = bool(attrs.get('ceil_mode', 0))  # optional
     pads = attrs.get('pads', [0] * (poolnd * 2))  # optional
-    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos)
-    name_attr = ', name={}'.format(repr(name)) if name else ''
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
+    name_attr = ', name={}'.format(repr(name))
 
     # generation
     prog.Code('{} = layers.{}({}, exclusive=True'
@@ -467,23 +496,23 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
         (['Out', 'Indices'], [var_y] + ([var_indices] if var_indices else [])),
         {
             'global_pooling': False,
-            'adaptive': False,
-            'require_index': bool(var_indices),
             'pooling_type': pool_type,
             'ksize': pool_size,
             'strides': strides,
             'paddings': paddings,
             'ceil_mode': ceil_mode,
             # unused
-            'exclusive': True,
+            'adaptive': False,
+            #                    'exclusive': True,
         },
     )
 
 
-def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
+def _roi_pool(prog, fluid_op, inputs, outputs, attrs, name):
     # I/O
     var_x, var_rois, = inputs
     var_y, = outputs
+    assert name and var_x and var_rois and var_y
 
     # interpretation
     spatial_scale = attrs['spatial_scale']  # required
@@ -526,7 +555,7 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
         prog.VarDesc(var_argmax)
     prog.OpDesc(
         fluid_op,
-        (['X', 'Rois'], [var_x, var_rois]),
+        (['X', 'ROIs'], [var_x, var_rois]),
         (['Out', 'Argmax'], [var_y] + ([var_argmax] if is_max_pool else [])),
         od_attrs,
     )
@@ -536,6 +565,7 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
     # I/O
     var_x, var_scales, = inputs
     var_y, = outputs
+    assert var_x and var_scales and var_y
 
     # interpretation
     # output shape
@@ -551,7 +581,7 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
             1] == 1, 'only scale on (NC)HW supported'
         assert scales[2] == scales[
             3], 'only aspect-ratio-invariant scale supported'
-    scale = scales and scales[2]
+        scale = scales[2]
     # try input shape
     if scale is None:
         assert out_shape_, 'neither scales nor output shape available'
@@ -618,6 +648,7 @@ def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     # I/O
     var_theta, = inputs
     var_grid, = outputs
+    assert var_theta and var_grid
 
     # interpretation
     fluid_op = 'affine_grid'
@@ -644,19 +675,13 @@ def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     )
 
 
-def AveragePool(prog,
-                inputs,
-                outputs,
-                attrs,
-                value_infos,
-                name='',
-                *args,
+def AveragePool(prog, inputs, outputs, attrs, value_infos, name, *args,
                 **kwargs):
     """
     onnx::AveragePool-10:
     """
 
-    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
+    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name)
 
 
 def BatchNormalization(prog,
@@ -675,9 +700,10 @@ def BatchNormalization(prog,
     # I/O
     var_x, var_scale, var_b, var_mean, var_var, = inputs
     var_y, var_mean_, var_var_, var_saved_mean, var_saved_variance, = (
-        outputs + [None] * 4)[:5]
-    assert var_saved_mean or (name != '')
-    assert var_saved_variance or (name != '')
+        outputs + [''] * 4)[:5]
+    assert var_x and var_scale and var_b and var_mean and var_var and var_y
+    assert var_saved_mean or name
+    assert var_saved_variance or name
     var_saved_mean = var_saved_mean or (name + '.saved_mean')  # dummy output
     var_saved_variance = var_saved_variance or (name + '.saved_variance'
                                                 )  # dummy output
@@ -696,7 +722,7 @@ def BatchNormalization(prog,
         _logger.warning('broken Python code will be generated')
     embed_params &= embeddable
     if embed_params:
-        assert name != ''
+        assert name
         embedded_scale = name + '.w_0'
         embedded_b = name + '.b_0'
         embedded_mean = name + '.w_1'
@@ -744,6 +770,7 @@ def BatchNormalization(prog,
             'epsilon': epsilon,
             'is_test': 1,
             # unused
+            'data_layout': 'NCHW',
         },
     )
 
@@ -756,6 +783,7 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # I/O
     var_input, = inputs
     var_output, = outputs
+    assert var_input and var_output
 
     # interpretation
     dtype = attrs['to']  # required
@@ -799,6 +827,7 @@ def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
 
     # I/O
     var_ret, = outputs
+    assert var_ret
 
     # interpretation
     fluid_op = 'concat'
@@ -833,6 +862,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # I/O
     assert len(inputs) == 0, 'constant op accept no inputs'
     var_output, = outputs
+    assert var_output
 
     # interpretation
     value = attrs['value']  # required
@@ -852,7 +882,7 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             'using value as 1-D tensor may lead to fails', outputs, var_output)
 
     # generation
-    if len(shape) == 0 or value.size == 1:  # scalar or 1-size
+    if not shape or value.size == 1:  # scalar or 1-size
         shape = [1]  # WORKAROUND: bad scalar support
         value = value.tolist()[0]
         fluid_op = 'fill_constant'
@@ -890,6 +920,7 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # I/O
     var_shape, = inputs
     var_output, = outputs
+    assert var_shape and var_output
 
     shape = _const_weight_or_none(value_infos, var_shape)
     if shape is None:
@@ -908,7 +939,7 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         [],
         outputs,
         attrs,
-        value_infos,
+        value_infos=value_infos,
     )
 
 
@@ -926,8 +957,9 @@ def Conv(prog,
     """
 
     # I/O
-    var_x, var_w, var_b, = (inputs + [None] * 1)[:3]
+    var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
     var_y, = outputs
+    assert name and var_x and var_w and var_y
 
     # interpretation
     assert attrs.get(
@@ -945,7 +977,7 @@ def Conv(prog,
     strides = attrs.get('strides', [1] * convnd)  # optional
     dilations = attrs.get('dilations', [1] * convnd)  # optional
     pads = attrs.get('pads', [0] * (convnd * 2))  # optional
-    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos)
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
     name_attr = ', name={}'.format(repr(name))
     embeddable = _check_embeddable(value_infos,
                                    *([var_w] + ([var_b] if var_b else [])))
@@ -995,7 +1027,7 @@ def Conv(prog,
     var_conv = (name + '.conv') if var_b else var_y  # hidden variable
     prog.OpDesc(
         fluid_op,
-        (['Input', 'Filter'], [var_x, var_w]),  # , 'Bias', 'ResidualData'
+        (['Input', 'Filter'], [var_x, var_w]),
         (['Output'], [var_conv]),
         {
             'strides': strides,
@@ -1012,7 +1044,6 @@ def Conv(prog,
             [var_conv, var_b],  #
             [var_y],
             {'axis': 1},
-            value_infos=value_infos,
             name=(name + '/bias'),
         )
     else:
@@ -1033,8 +1064,9 @@ def ConvTranspose(prog,
     """
 
     # I/O
-    var_x, var_w, var_b, = (inputs + [None] * 1)[:3]
+    var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
     var_y, = outputs
+    assert name and var_x and var_w and var_y
 
     # interpretation
     assert attrs.get(
@@ -1056,7 +1088,7 @@ def ConvTranspose(prog,
     dilations = attrs.get('dilations', [1] * convnd)  # optional
     output_size = attrs.get('output_shape', [])  # optional
     pads = attrs.get('pads', [0] * (convnd * 2))  # optional
-    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos)
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
     name_attr = ', name={}'.format(repr(name))
     embeddable = _check_embeddable(value_infos,
                                    *([var_w] + ([var_b] if var_b else [])))
@@ -1109,7 +1141,7 @@ def ConvTranspose(prog,
     var_conv = (name + '.conv') if var_b else var_y  # hidden variable
     prog.OpDesc(
         fluid_op,
-        (['Input', 'Filter'], [var_x, var_w]),  # , 'Bias', 'ResidualData'
+        (['Input', 'Filter'], [var_x, var_w]),
         (['Output'], [var_conv]),
         {
             'strides': strides,
@@ -1128,7 +1160,6 @@ def ConvTranspose(prog,
             [var_conv, var_b],  #
             [var_y],
             {'axis': 1},
-            value_infos=value_infos,
             name=(name + '/bias'),
         )
     else:
@@ -1143,6 +1174,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     # due to fluid fc don't support transposed weight, we use matmul + ew_add
     var_a, var_b, var_c, = inputs
     var_y, = outputs
+    assert name and var_a and var_b and var_c and var_y
 
     alpha = attrs.get('alpha', 1.)  # optional
     beta = attrs.get('beta', 1.)  # optional
@@ -1160,7 +1192,6 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'transpose_y': trans_b,
             'alpha': alpha,
         },
-        value_infos=value_infos,
         name=(name + '/mm'),
     )
     prog.op_descs[-1].attrs.extend(
@@ -1176,7 +1207,6 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 [var_mm, var_c],
                 [var_y],
                 {'axis': 1},
-                value_infos=value_infos,
                 name=(name + '/bias'),
             )
         else:
@@ -1198,8 +1228,6 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 [],
                 [var_beta],
                 {'value': beta},
-                value_infos=value_infos,
-                name=var_beta,
             )
             prog.Op(
                 '',
@@ -1207,8 +1235,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 [var_c, var_beta],
                 [var_vm],
                 dict(),
-                value_infos=value_infos,
-                name=(var_beta + '/scale'),
+                name=(name + '.beta/scale'),
             )
             prog.Op(
                 '',
@@ -1223,7 +1250,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
 def GlobalAveragePool(prog,
                       inputs,
                       outputs,
-                      attrs,
+                      attrs_,
                       value_infos,
                       name='',
                       *args,
@@ -1232,19 +1259,13 @@ def GlobalAveragePool(prog,
     onnx::GlobalAveragePool-1:
     """
 
-    return _global_pool(prog,
-                        'avg',
-                        inputs,
-                        outputs,
-                        attrs,
-                        value_infos,
-                        name=name)
+    return _global_pool(prog, 'avg', inputs, outputs, value_infos, name=name)
 
 
 def GlobalMaxPool(prog,
                   inputs,
                   outputs,
-                  attrs,
+                  attrs_,
                   value_infos,
                   name='',
                   *args,
@@ -1253,25 +1274,20 @@ def GlobalMaxPool(prog,
     onnx::GlobalMaxPool-1:
     """
 
-    return _global_pool(prog,
-                        'max',
-                        inputs,
-                        outputs,
-                        attrs,
-                        value_infos,
-                        name=name)
+    return _global_pool(prog, 'max', inputs, outputs, value_infos, name=name)
 
 
-def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
+def GRU(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
     onnx::GRU-7:
     """
 
-    var_x, var_w, var_r, var_b, var_len, var_xh, = (inputs + [None] * 3)[:6]
-    var_y, var_yh, = (outputs + [None] * 2)[:2]
-    var_gate = var_y + '.gate'  # dummy output
-    var_reset = var_y + '.reset'  # dummy output
-    var_hidden = var_y + '.hidden'  # dummy output, # var_yh
+    var_x, var_w, var_r, var_b, var_len, var_xh, = (inputs + [''] * 3)[:6]
+    var_y, var_yh, = (outputs + [''] * 2)[:2]
+    assert name and var_x and var_w and var_r  # and (var_y or var_yh)
+    var_gate = name + '.gate'  # dummy output
+    var_reset = name + '.reset'  # dummy output
+    var_hidden = name + '.hidden'  # dummy output, # var_yh
 
     # interpretation
     x_shape = _shape_or_none(value_infos, var_x)
@@ -1279,19 +1295,19 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
     assert 'clip' not in attrs, 'clipping not supported'
     hidden_size = attrs.get('hidden_size', None)  # optional
-    if not hidden_size:
+    if hidden_size is None:
         r_shape = _shape_or_none(value_infos, var_r)
         if r_shape:
             hidden_size = r_shape[-1]
-    if not hidden_size:
+    if hidden_size is None:
         w_shape = _shape_or_none(value_infos, var_w)
         if w_shape:
             hidden_size = w_shape[-2] // 3
-    if not hidden_size and var_b:
+    if hidden_size is None and var_b:
         b_shape = _shape_or_none(value_infos, var_b)
         if b_shape:
             hidden_size = b_shape[-1] // 6
-    if not hidden_size and var_xh:
+    if hidden_size is None and var_xh:
         xh_shape = _shape_or_none(value_infos, var_xh)
         if xh_shape:
             hidden_size = xh_shape[-1]
@@ -1313,26 +1329,26 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     _logger.warning('broken Python code will be generated')
 
     # generation
-    var_x0 = var_x + '_0'  # explicit variable
+    var_x0 = name + '_x0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_x],
         [var_x0],
         {'axes': [1]},  # index on n
-        name=(var_x + '/index'),
+        name=(name + '.x/index'),
     )
-    var_w0 = var_w + '_0'  # explicit variable
+    var_w0 = name + '_w0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_w],
         [var_w0],
         {'axes': [0]},  # index on d
-        name=(var_w + '/index'),
+        name=(name + '.w/index'),
     )
-    var_fc = var_x0 + '_fc'
-    var_mm = (var_x0 + '_mm') if var_b else var_fc
+    var_fc = name + '_fc'
+    var_mm = (name + '_mm') if var_b else var_fc
     prog.Op(
         '',
         'MatMul',
@@ -1342,35 +1358,34 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             'transpose_x': 0,
             'transpose_y': 1,
         },
-        value_infos=value_infos,
-        name=(var_x0 + '/mm'),
+        name=(name + '/mm'),
     )
     prog.op_descs[-1].attrs.extend(
         prog.OpDescAttrs({
             'transpose_X': 0,
             'transpose_Y': 1,
         }))  # f**k you API
-    var_r0 = var_r + '_0'  # explicit variable
+    var_r0 = name + '_r0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_r],
         [var_r0],
         {'axes': [0]},  # index on d
-        name=(var_r + '/index'),
+        name=(name + '.r/index'),
     )
-    var_r0t = var_r0 + '_t'  # explicit variable
+    var_r0t = name + '_r0t'  # explicit variable
     prog.Op(
         '',
         'Transpose',
         [var_r0],
         [var_r0t],
         {'perm': [1, 0]},  # transpose OI->IO
-        name=(var_r0 + '/transpose'),
+        name=(name + '.r0/transpose'),
     )
     if var_b:
-        var_bi = var_b + '_i'  # explicit variable
-        var_bh = var_b + '_h'  # explicit variable
+        var_bi = name + '_bi'  # explicit variable
+        var_bh = name + '_bh'  # explicit variable
         prog.Op(
             '',
             'Split',
@@ -1380,17 +1395,17 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
                 'axis': 1,  # split on x
                 'split': [hidden_size * 3, hidden_size * 3],
             },
-            name=(var_b + '/split'),
+            name=(name + '.b/split'),
         )
         # squeeze bi so Gemm Add can be performed on axis=1 exaclty
-        var_bi0 = var_bi + '_0'  # explicit variable
+        var_bi0 = name + '_bi0'  # explicit variable
         prog.Op(
             '',
             'Squeeze',
             [var_bi],
             [var_bi0],
             {'axes': [0]},  # slice on d
-            name=(var_bi + '/index'),
+            name=(name + '.bi/index'),
         )
         prog.Op(
             '',
@@ -1398,19 +1413,19 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             [var_mm, var_bi0],
             [var_fc],
             {'axis': 1},  #
-            name=(var_x0 + '/bias'),
+            name=(name + '.i/bias'),
         )
     if var_xh:
-        var_xh0 = var_xh + '_0'  # explicit variable
+        var_xh0 = name + '_xh0'  # explicit variable
         prog.Op(
             '',
             'Squeeze',
             [var_xh],
             [var_xh0],
             {'axes': [1]},  # index on n
-            name=(var_xh + '/index'),
+            name=(name + '.xh/index'),
         )
-    var_y00 = var_y + '_00'  # explicit variable
+    var_y00 = name + '_y00'  # explicit variable #
     prog.Code('{} = layers.{}({}, {}, origin_mode=True'
               ', h_0={}'
               ', is_reverse={}'
@@ -1447,14 +1462,24 @@ def GRU(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
             'origin_mode': True,
         },
     )
-    prog.Op(
-        '',
-        'Unsqueeze',
-        [var_y00],
-        [var_y],
-        {'axes': [1, 1]},  # extrude on dn
-        name=(var_y + '/reshape'),
-    )
+    if var_y:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_y00],
+            [var_y],
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.y/reshape'),
+        )
+    if var_yh:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_y00],  #
+            [var_yh],  #
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.yh/reshape'),
+        )
 
 
 def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
@@ -1462,9 +1487,10 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     onnx::LSTM-7:
     """
 
-    var_x, var_w, var_r, var_b, var_len, var_xh, var_xc, var_p, = (
-        inputs + [None] * 5)[:8]
-    var_y, var_yh, var_yc, = (outputs + [None] * 3)[:3]
+    var_x, var_w, var_r, var_b, var_len, var_xh, var_xc, var_p, = (inputs +
+                                                                   [''] * 5)[:8]
+    var_y, var_yh, var_yc, = (outputs + [''] * 3)[:3]
+    assert name and var_x and var_w and var_r  # and (var_y or var_yh or var_yc)
     var_gate = name + '.gate'
     var_pre = name + '.pre'
 
@@ -1474,27 +1500,27 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
     assert 'clip' not in attrs, 'clipping not supported'
     hidden_size = attrs.get('hidden_size', None)  # optional
-    if not hidden_size:
+    if hidden_size is None:
         r_shape = _shape_or_none(value_infos, var_r)
         if r_shape:
             hidden_size = r_shape[-1]
-    if not hidden_size:
+    if hidden_size is None:
         w_shape = _shape_or_none(value_infos, var_w)
         if w_shape:
             hidden_size = w_shape[-2] // 4
-    if not hidden_size and var_b:
+    if hidden_size is None and var_b:
         b_shape = _shape_or_none(value_infos, var_b)
         if b_shape:
             hidden_size = b_shape[-1] // 8
-    if not hidden_size and var_xh:
+    if hidden_size is None and var_xh:
         xh_shape = _shape_or_none(value_infos, var_xh)
         if xh_shape:
             hidden_size = xh_shape[-1]
-    if not hidden_size and var_xc:
+    if hidden_size is None and var_xc:
         xc_shape = _shape_or_none(value_infos, var_xc)
         if xc_shape:
             hidden_size = xc_shape[-1]
-    if not hidden_size and var_p:
+    if hidden_size is None and var_p:
         p_shape = _shape_or_none(value_infos, var_p)
         if p_shape:
             hidden_size = p_shape[-1] // 3
@@ -1520,26 +1546,26 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     _logger.warning('broken Python code will be generated')
 
     # generation
-    var_x0 = var_x + '_0'  # explicit variable
+    var_x0 = name + '_x0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_x],
         [var_x0],
         {'axes': [1]},  # index on n
-        name=(var_x + '/index'),
+        name=(name + '.x/index'),
     )
-    var_w0 = var_w + '_0'  # explicit variable
+    var_w0 = name + '_w0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_w],
         [var_w0],
         {'axes': [0]},  # index on d
-        name=(var_w + '/index'),
+        name=(name + '.w/index'),
     )
-    var_fc = var_x0 + '_fc'
-    var_mm = (var_x0 + '_mm') if var_b else var_fc
+    var_fc = name + '_fc'
+    var_mm = (name + '_mm') if var_b else var_fc
     prog.Op(
         '',
         'MatMul',
@@ -1549,7 +1575,6 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'transpose_x': 0,
             'transpose_y': 1,
         },
-        value_infos=value_infos,
         name=(name + '/mm'),
     )
     prog.op_descs[-1].attrs.extend(
@@ -1557,27 +1582,27 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'transpose_X': 0,
             'transpose_Y': 1,
         }))  # f**k you API
-    var_r0 = var_r + '_0'  # explicit variable
+    var_r0 = name + '_r0'  # explicit variable
     prog.Op(
         '',
         'Squeeze',
         [var_r],
         [var_r0],
         {'axes': [0]},  # index on d
-        name=(var_r + '/index'),
+        name=(name + '.r/index'),
     )
-    var_r0t = var_r0 + '_t'  # explicit variable
+    var_r0t = name + '_r0t'  # explicit variable
     prog.Op(
         '',
         'Transpose',
         [var_r0],
         [var_r0t],
         {'perm': [1, 0]},  # transpose OI->IO
-        name=(var_r0 + '/transpose'),
+        name=(name + '.r0/transpose'),
     )
     if var_b:
-        var_bi = var_b + '_i'  # explicit variable
-        var_bh = var_b + '_h'  # explicit variable
+        var_bi = name + '_bi'  # explicit variable
+        var_bh = name + '_bh'  # explicit variable
         prog.Op(
             '',
             'Split',
@@ -1587,17 +1612,17 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 'axis': 1,  # split on x
                 'split': [hidden_size * 4, hidden_size * 4],
             },
-            name=(var_b + '/split'),
+            name=(name + '.b/split'),
         )
         # squeeze bi so Gemm Add can be performed on axis=1 exaclty
-        var_bi0 = var_bi + '_0'  # explicit variable
+        var_bi0 = name + '_bi0'  # explicit variable
         prog.Op(
             '',
             'Squeeze',
             [var_bi],
             [var_bi0],
             {'axes': [0]},  # slice on d
-            name=(var_bi + '/index'),
+            name=(name + '.bi/index'),
         )
         prog.Op(
             '',
@@ -1605,44 +1630,44 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             [var_mm, var_bi0],
             [var_fc],
             {'axis': 1},  #
-            name=(name + '/bias'),
+            name=(name + '.i/bias'),
         )
     if var_xh:
-        var_xh0 = var_xh + '_0'  # explicit variable
+        var_xh0 = name + '_xh0'  # explicit variable
         prog.Op(
             '',
             'Squeeze',
             [var_xh],
             [var_xh0],
             {'axes': [1]},  # index on n
-            name=(var_xh + '/index'),
+            name=(name + '.xh/index'),
         )
     if var_xc:
-        var_xc0 = var_xc + '_0'  # explicit variable
+        var_xc0 = name + '_xc0'  # explicit variable
         prog.Op(
             '',
             'Squeeze',
             [var_xc],
             [var_xc0],
             {'axes': [1]},  # index on n
-            name=(var_xc + '/index'),
+            name=(name + '.xc/index'),
         )
     var_bhp = var_p
     if var_b:
         if var_p:
-            var_bhp = var_bh + '_p'  # explicit variable
+            var_bhp = name + '_bhp'  # explicit variable
             prog.Op(
                 '',
                 'Concat',
                 [var_bh, var_p],
                 [var_bhp],
-                {'axes': [1]},  # cat on x
+                {'axis': [1]},  # cat on x
                 name=(name + '/concat'),
             )
         else:
             var_bhp = var_bh
-    var_yh0 = var_yh + '_0'  # explicit variable
-    var_yc0 = var_yc + '_0'  # explicit variable
+    var_yh0 = name + '_yh0'  # explicit variable
+    var_yc0 = name + '_yc0'  # explicit variable
     prog.Code('{}, {} = layers.{}({}, {}'
               ', h_0={}'
               ', c_0={}'
@@ -1690,15 +1715,24 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             'candidate_activation': candidate_activation,
         },
     )
-    #    if var_yh:
-    prog.Op(
-        '',
-        'Unsqueeze',
-        [var_yh0],
-        [var_y],  # var_yh
-        {'axes': [1, 1]},  # extrude on dn
-        name=(var_y + '/reshape'),
-    )
+    if var_y:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_yh0],  #
+            [var_y],  # var_y
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.y/reshape'),
+        )
+    if var_yh:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_yh0],
+            [var_yh],  # var_yh
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.yh/reshape'),
+        )
     if var_yc:
         prog.Op(
             '',
@@ -1706,26 +1740,24 @@ def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
             [var_yc0],
             [var_yc],
             {'axes': [1, 1]},  # extrude on dn
-            name=(var_yc + '/reshape'),
+            name=(name + '.yc/reshape'),
         )
 
 
-def MaxPool(prog, inputs, outputs, attrs, value_infos, name='', *args,
-            **kwargs):
+def MaxPool(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
     onnx::MaxPool-10:
     """
 
-    return _pool(prog, 'max', inputs, outputs, attrs, value_infos, name=name)
+    return _pool(prog, 'max', inputs, outputs, attrs, value_infos, name)
 
 
-def MaxRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args,
-               **kwargs):
+def MaxRoiPool(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     onnx::MaxRoiPool-1:
     """
 
-    _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, name)
 
 
 def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
@@ -1736,6 +1768,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     # I/O
     var_data, = inputs
     var_output, = outputs
+    assert var_data and var_output
 
     # interpretation
     pads = attrs['pads']  # required
@@ -1783,7 +1816,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        (['X'], [var_data]),
+        (['X', 'Paddings'], [var_data]),  #
         (['Out'], [var_output]),
         od_attrs,
     )
@@ -1792,7 +1825,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
 def PRelu(prog,
           inputs,
           outputs,
-          attrs,
+          attrs_,
           value_infos,
           name='',
           embed_params=False,
@@ -1805,12 +1838,13 @@ def PRelu(prog,
     # I/O
     var_x, var_slope, = inputs
     var_y, = outputs
+    assert name and var_x and var_slope and var_y
 
     # interpretation
     mode = 'channel'
     slope_shape = _shape_or_none(value_infos, var_slope)
     if slope_shape is not None:
-        if len(slope_shape) == 0:
+        if not slope_shape:
             mode = 'all'
         elif len(slope_shape) >= 2:
             if slope_shape[1] != _np.product(
@@ -1825,7 +1859,7 @@ def PRelu(prog,
         _logger.warning('broken Python code will be generated')
     embed_params &= embeddable
     if embed_params:
-        assert name != ''
+        assert name
         embedded_slope = name + '.w_0'
         value_infos[var_slope]['embedded_as'].append(embedded_slope)
         var_slope = embedded_slope
@@ -1854,15 +1888,15 @@ def PRelu(prog,
     )
 
 
-def PsRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def PsRoiPool(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     caffe2::PsRoiPool
     """
 
-    _roi_pool(prog, 'psroi_pool', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'psroi_pool', inputs, outputs, attrs, name)
 
 
-def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def Reshape(prog, inputs, outputs, attrs_, value_infos, name, *args, **kwargs):
     """
     onnx::Reshape-5:
     """
@@ -1870,10 +1904,12 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     # I/O
     var_data, var_shape, = inputs
     var_reshaped, = outputs
+    assert name and var_data and var_shape and var_reshaped
 
     # interpretation
     shape = _const_weight_or_none(value_infos, var_shape)
-    is_const_shape = shape and 'const_value' in value_infos[var_shape]
+    is_const_shape = shape is not None and 'const_value' in value_infos[
+        var_shape]
     if shape is None:
         shape = _shape_or_none(value_infos, var_reshaped)
 
@@ -1898,8 +1934,9 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     name_attr = ', name={}'.format(repr(name))
 
     # generation
-    var_shape_int32 = var_shape + ('_int32' if shape_dtype != _np.int32 else ''
-                                   )  # explicit variable
+    var_shape_i32 = (
+        name + '_shape_i32'
+    ) if shape_dtype != _np.int32 else var_shape  # explicit variable
     prog.Code('# shape: {} = {} # const as literal'.format(var_shape, shape))
     if is_const_shape:
         prog.Code('{} = layers.{}({}'
@@ -1918,9 +1955,16 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 '',
                 'Cast',
                 [var_shape],
-                [var_shape_int32],
+                [var_shape_i32],
                 {'to': _np.dtype('int32')},  # use np.dtype
-                value_infos=value_infos,
+                value_infos={
+                    var_shape: {
+                        'dtype': shape_dtype
+                    },
+                    var_shape_i32: {
+                        'dtype': _np.dtype('int32')
+                    },
+                },
                 name=(name + '/cast'),
             )
         prog.Code('{} = layers.{}({}'
@@ -1932,7 +1976,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       var_data,
                       # attrs
                       shape,
-                      var_shape_int32,
+                      var_shape_i32,
                       name_attr,
                   ))
     fluid_op = 'reshape2'
@@ -1941,7 +1985,7 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     prog.VarDesc(var_xshape)
     prog.OpDesc(
         fluid_op,
-        (['X', 'Shape'], [var_data, var_shape_int32]),
+        (['X', 'Shape', 'ShapeTensor'], [var_data, var_shape_i32]),  #
         (['Out', 'XShape'], [var_reshaped, var_xshape]),
         {'shape': shape},
     )
@@ -1955,44 +1999,57 @@ def Resize(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 
 
-def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def RoiAlign(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     caffe2::RoiAlign
     """
 
-    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, name)
 
 
-#def Shape(
-#        prog, inputs, outputs, attrs, value_infos,
-#        *args, **kwargs):
-#    """
-#    onnx::ConstantOfShape-1:
-#    """
-#
-#    # I/O
-#    val_data, = inputs
-#    val_shape, = outputs
-#    var_data = _make_var_name(val_data)
-#    var_shape = _make_var_name(val_shape)
-#
-#    # interpretation
-#    fluid_op = 'shape'
-##    value_infos[val_shape]['remove_batch'] = False
-#
-#    # generation
-#    prog.Code('{} = layers.{}({})'
-#              .format(var_shape,
-#                      fluid_op,
-#                      var_data,
-#                      # attrs
-#                      ))
-#    prog.VarDesc(var_shape) # , _value_info_or_none(value_infos, val_shape))
-#    prog.OpDesc(fluid_op,
-#                ([var_data], 'X'),
-#                ([var_shape], 'Out'),
-#                dict(),
-#                )
+def Shape(prog, inputs, outputs, attrs_, name, **kwargs):
+    """
+    onnx::Shape-1:
+    """
+
+    # I/O
+    var_data, = inputs
+    var_shape, = outputs
+    assert name and var_data and var_shape
+
+    # interpretation
+    fluid_op = 'shape'
+    var_shape_i64 = name + '_shape_i64'
+
+    # generation
+    prog.Code('{} = layers.{}({})'.format(
+        var_shape_i64,
+        fluid_op,
+        var_data,
+        # attrs
+    ))
+    prog.VarDesc(var_shape_i64)
+    prog.OpDesc(
+        fluid_op,
+        (['Input'], [var_data]),
+        (['Out'], [var_shape_i64]),
+    )
+    prog.Op(
+        '',
+        'Cast',
+        [var_shape_i64],
+        [var_shape],
+        {'to': _np.dtype('int32')},  # use np.dtype
+        value_infos={
+            var_shape: {
+                'dtype': _np.dtype('int32')
+            },
+            var_shape_i64: {
+                'dtype': _np.dtype('int64')
+            },
+        },
+        name=(name + '/cast'),
+    )
 
 
 def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
@@ -2003,6 +2060,7 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     # I/O
     var_data, = inputs
     var_output, = outputs
+    assert var_data and var_output
 
     # interpretation
     fluid_op = 'slice'
@@ -2059,6 +2117,7 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
 
     # I/O
     var_input, = inputs
+    assert var_input
 
     # interpretation
     fluid_op = 'split'
@@ -2093,13 +2152,14 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     )
 
 
-def Sum(prog, inputs, outputs, *args, **kwargs):
+def Sum(prog, inputs, outputs, attrs_, *args, **kwargs):
     """
     onnx::Sum-8:
     """
 
     # I/O
     var_sum, = outputs
+    assert var_sum
 
     # interpretation
     fluid_op = 'sums'
@@ -2121,7 +2181,7 @@ def Sum(prog, inputs, outputs, *args, **kwargs):
     )
 
 
-def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
+def Tile(prog, inputs, outputs, attrs_, value_infos, name='', *args, **kwargs):
     """
     onnx::Tile-1:
     """
@@ -2129,10 +2189,11 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     # I/O
     var_input, var_repeats, = inputs
     var_output, = outputs
+    assert var_input and var_repeats and var_output
 
     # interpretation
     repeats = _const_weight_or_none(value_infos, var_repeats)
-    assert repeats is not None, 'only const repeats supported'
+    assert repeats is not None, 'only const repeats supported'  # if contain_tensor(expand_times)
     fluid_op = 'expand'
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
@@ -2152,13 +2213,13 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        (['X'], [var_input]),
+        (['X', 'expand_times_tensor'], [var_input]),  # TODO
         (['Out'], [var_output]),
         {'expand_times': repeats},
     )
 
 
-def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
+def Transpose(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     onnx::Transpose-1:
     """
@@ -2166,6 +2227,7 @@ def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     # I/O
     var_data, = inputs
     var_transposed, = outputs
+    assert name and var_data and var_transposed
 
     # interpretation
     fluid_op = 'transpose'

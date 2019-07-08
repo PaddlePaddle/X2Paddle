@@ -20,8 +20,8 @@ def make_var_name(name):
     make a valid variable name in Python code
     """
 
-    if name == '':
-        return '_'
+    assert name
+
     if name[0].isdigit():
         return 'var_' + name
     for s in ' \\|/:-':  #

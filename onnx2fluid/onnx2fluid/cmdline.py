@@ -61,11 +61,14 @@ def main(**kwargs):
     passed = True
     golden_data_filename = kwargs.pop('test_data', '')
     infer_inputs = kwargs.pop('infer_inputs', None)
-    if golden_data_filename or infer_inputs is not None:
+    save_inference_model = infer_inputs is not None
+    if golden_data_filename or save_inference_model:
         from .validation import validate
 
-        save_inference_model = infer_inputs is not None
-        inference_input_names = infer_inputs and infer_inputs.split(',')
+        if save_inference_model:
+            inference_input_names = infer_inputs.split(',')
+        else:
+            inference_input_names = None
 
         logger.info('starting validation on desc ...')
         passed &= validate(shutil.os.path.join(save_dir, '__model__'),

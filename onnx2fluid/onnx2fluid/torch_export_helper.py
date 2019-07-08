@@ -119,7 +119,7 @@ def export_onnx_with_validation(
         return list(map(tensors_to_arrays, tensors))
 
     def zip_dict(
-            keys: Union[Iterable[Any], None],
+            keys: Optional[Iterable[Any]],
             values: Sequence[Union[Any, Sequence[Any]]],
     ) -> MyDict[Text, Union[object, MyDict[Text, object]]]:
         keys = keys or range(len(values))

@@ -23,7 +23,7 @@ def make_var_name(name):
     """
 
     if name == '':
-        return '_'
+        return ''
     if name[0].isdigit():
         return 'var_' + name
     for s in ' \\|/:.-':
@@ -170,7 +170,7 @@ def convert(onnx_model_filename,
     for var_name, var_desc in fluid_program.var_descs.items():
         if not var_desc.type.lod_tensor.HasField('tensor'):
             bad_vars.append(var_name)
-    if len(bad_vars) > 0:
+    if bad_vars:
         logger.warning('type-shape not infered for var %s ...',
                        ', '.join(bad_vars[:5]))
         logger.warning('this causes little problem for PaddlePaddle, '

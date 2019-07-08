@@ -133,7 +133,7 @@ class Program(object):
                 od_attr.type = framework_pb2.STRING
                 od_attr.s = value
             elif isinstance(value, list):
-                if len(value) > 0:  # TODO: test all items
+                if value:  # TODO: test all items
                     if isinstance(value[0],
                                   bool):  # bool.mro() = [bool, int, object]
                         od_attr.type = framework_pb2.BOOLEANS
@@ -183,23 +183,16 @@ class Program(object):
         if self.code_mutable:
             self.codes.append(code)
 
-    def OpDesc(self,
-               op_type,
-               input_key_vals=None,
-               output_key_vals=None,
-               attrs=None):
+    def OpDesc(self, op_type, input_key_vals, output_key_vals, attrs):
         """
         add OpDesc
         """
 
         desc = framework_pb2.OpDesc()
         desc.type = op_type
-        if input_key_vals:
-            desc.inputs.extend(self.OpDescVars(*input_key_vals))
-        if output_key_vals:
-            desc.outputs.extend(self.OpDescVars(*output_key_vals))
-        if attrs:
-            desc.attrs.extend(self.OpDescAttrs(attrs))
+        desc.inputs.extend(self.OpDescVars(*input_key_vals))
+        desc.outputs.extend(self.OpDescVars(*output_key_vals))
+        desc.attrs.extend(self.OpDescAttrs(attrs))
         self.op_descs.append(desc)
         return desc
 
@@ -212,7 +205,7 @@ class Program(object):
         add VarDesc,
         """
 
-        assert name not in self.var_descs, 'var naming conflicted'
+        assert name not in self.var_descs, 'var name {} conflicts'.format(name)
 
         var_desc = framework_pb2.VarDesc()
         var_desc.name = name
@@ -220,10 +213,10 @@ class Program(object):
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
         self.var_descs[name] = var_desc
 
-        if value_info:
+        if value_info is not None:
             self.VarTypeShapeInfo(name, value_info, remove_batch=remove_batch)
 
-    def Op(self, domain, op_type, *args, **kwargs):
+    def Op(self, domain, op_type, inputs, outputs, attrs, *args, **kwargs):
         """
         convert an ONNX op and add it to program
         """
@@ -232,15 +225,17 @@ class Program(object):
             raise ValueError('only default domain supported')
 
         if op_type in symbolic.DEFAULT_OP_MAPPING:
-            symbolic._default(self, op_type, *args, **kwargs)
+            symbolic._default(self, op_type, inputs, outputs, attrs, *args,
+                              **kwargs)
         elif hasattr(symbolic, op_type):
             fn = getattr(symbolic, op_type)
-            fn(self, *args, **kwargs)
+            fn(self, inputs, outputs, attrs, *args, **kwargs)
         else:
             raise ValueError('conversion for {}::{} not supported'.format(
                 domain, op_type))
 
-    def IntermediateOp(self, domain, op_type, *args, **kwargs):
+    def IntermediateOp(self, domain, op_type, inputs, outputs, attrs, *args,
+                       **kwargs):
         """
         convert an intermediate ONNX op declaring in desc program only
         """
@@ -248,7 +243,7 @@ class Program(object):
         code_mutable = self.code_mutable
         self.code_mutable = False
         try:
-            self.Op(domain, op_type, *args, **kwargs)
+            self.Op(domain, op_type, inputs, outputs, attrs, *args, **kwargs)
         except BaseException as e:
             self.code_mutable = code_mutable
             raise e
@@ -272,14 +267,15 @@ class Program(object):
         tensor_desc.data_type = self.Dtype(dtype)  # required
 
         shape = value_info.get('shape', None)
-        if shape is not None:
-            tensor_desc.dims.extend(shape)
-            if len(shape) > 0:  # skip scalars
-                if remove_batch is None:
-                    remove_batch = value_info.get('remove_batch',
-                                                  False)  #not persistable)
-                if remove_batch:
-                    tensor_desc.dims[0] = -1
+        if not shape:  # None or scalars
+            return
+
+        tensor_desc.dims.extend(shape)
+        if remove_batch is None:
+            remove_batch = value_info.get('remove_batch',
+                                          False)  #not persistable)
+        if remove_batch:
+            tensor_desc.dims[0] = -1
 
 
 class Writer(object):
@@ -337,8 +333,8 @@ class Writer(object):
         emit an ONNX weight into program
         """
 
-        if value_info.get('embedded_as', []):
-            embedded_names = value_info['embedded_as']
+        embedded_names = value_info.get('embedded_as', [])
+        if embedded_names:
             prog.Code('# parameter {} embedded as {}'.format(
                 name, embedded_names))
             for embedded_name in embedded_names:
@@ -431,7 +427,8 @@ class Writer(object):
         assert lod is None or isinstance(lod,
                                          list), 'lod should be None or list'
 
-        lod = lod or [0]
+        if lod is None:
+            lod = [0]
 
         tensor_desc = framework_pb2.VarType.TensorDesc()
         tensor_desc.data_type = Program.Dtype(weight.dtype)
