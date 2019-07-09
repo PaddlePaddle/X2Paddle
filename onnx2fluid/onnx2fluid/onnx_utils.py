@@ -11,9 +11,11 @@ from __future__ import division
 import logging
 import numpy as np
 import onnx
+import onnx.optimizer as optimizer
 
 from collections import OrderedDict as Dict  # as default dict
-from onnx.helper import get_attribute_value, make_attribute
+from onnx.checker import check_model
+from onnx.helper import get_attribute_value, make_attribute, strip_doc_string
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 from onnx.numpy_helper import to_array
 from onnx.shape_inference import infer_shapes
@@ -23,14 +25,16 @@ logger = logging.getLogger(__name__)
 __all__ = [
     'print_pb_structure',
     'build_value_refs',
+    'tensor_dtype',
+    'tensor_shape',
     'node_attrs',
     'node_topo',
     'node_iter',
-    'tensor_dtype',
-    'tensor_shape',
     'graph_ops',
     'graph_weights',
     'inferred_model_value_info',
+    'polish_model',
+    'polish_and_save',
     'optimize_model_skip_op_for_inference',
     'optimize_model_strip_initializer',
     'optimize_model_cast',
@@ -50,17 +54,17 @@ def print_pb_structure(message, loop_iterative=False, depth=0):
     if hasattr(message, 'DESCRIPTOR') and hasattr(message.DESCRIPTOR, 'fields'):
         for field in message.DESCRIPTOR.fields:
             print('\t' * depth + '-', field.name)
-            print_pb_structure(
-                getattr(message, field.name),
-                loop_iterative=loop_iterative,
-                depth=(depth + 1))
+            print_pb_structure(getattr(message, field.name),
+                               loop_iterative=loop_iterative,
+                               depth=(depth + 1))
 
     if loop_iterative and hasattr(message, 'MergeFrom') and hasattr(
             message, '__len__'):
         for idx, item in enumerate(message):
             print('\t' * depth + '-', idx)
-            print_pb_structure(
-                item, loop_iterative=loop_iterative, depth=(depth + 1))
+            print_pb_structure(item,
+                               loop_iterative=loop_iterative,
+                               depth=(depth + 1))
 
 
 def build_value_refs(nodes):
@@ -83,14 +87,21 @@ def get_attribute_value2(attr):
     get_attribute_value enhanced
     """
 
+    assert isinstance(
+        attr, onnx.AttributeProto), 'attr is not a AttributeProto instance'
+
     if attr.type == onnx.AttributeProto.TENSOR:
         dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
         data = attr.t.raw_data
-        value = np.frombuffer(
-            data, dtype=dtype, count=(len(data) // dtype.itemsize))
+        value = np.frombuffer(data,
+                              dtype=dtype,
+                              count=(len(data) // dtype.itemsize))
     elif attr.type == onnx.AttributeProto.STRING:
         value = attr.s
         value = value.decode() if isinstance(value, bytes) else value
+    elif attr.type == onnx.AttributeProto.STRINGS:
+        value = attr.strings
+        value = [s.decode() if isinstance(s, bytes) else s for s in value]
     else:
         value = get_attribute_value(attr)
     return value
@@ -101,6 +112,9 @@ def tensor_dtype(tensor):
     get ONNX tensor in np.dtype
     """
 
+    assert isinstance(
+        tensor, onnx.ValueInfoProto), 'tensor is not a ValueInfoProto instance'
+
     return TENSOR_TYPE_TO_NP_TYPE[tensor.type.tensor_type.elem_type]
 
 
@@ -109,13 +123,18 @@ def tensor_shape(tensor):
     get ONNX tensor shape
     """
 
-    return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
+    assert isinstance(
+        tensor, onnx.ValueInfoProto), 'tensor is not a ValueInfoProto instance'
+
+    return tuple([dim.dim_value for dim in tensor.type.tensor_type.shape.dim])
 
 
 def node_attrs(node):
     """
     convert ONNX node attributes to dict
     """
+
+    assert isinstance(node, onnx.NodeProto), 'node is not a NodeProto instance'
 
     return {attr.name: get_attribute_value2(attr)
             for attr in node.attribute}  # dict
@@ -145,12 +164,12 @@ def node_topo(nodes, topo='default'):
         for node_idx, degree in enumerate(node_in_degrees):
             if degree == 0:
                 queue.append(node_idx)
-        while len(queue) > 0:
+        while queue:
             node_idx = queue.pop(0)
             node_topo.append(node_idx)
             for val_name in nodes[node_idx].output:
                 output_refs[val_name].remove(node_idx)
-                if len(output_refs[val_name]) > 0:
+                if output_refs[val_name]:
                     continue
                 output_refs.pop(val_name)
                 if val_name not in input_refs:
@@ -170,12 +189,12 @@ def node_topo(nodes, topo='default'):
         for node_idx, degree in enumerate(node_out_degrees):
             if degree == 0:
                 queue.append(node_idx)
-        while len(queue) > 0:
+        while queue:
             node_idx = queue.pop(0)
             node_topo.append(node_idx)
             for val_name in nodes[node_idx].input:
                 input_refs[val_name].remove(node_idx)
-                if len(input_refs[val_name]) > 0:
+                if input_refs[val_name]:
                     continue
                 input_refs.pop(val_name)
                 if val_name not in output_refs:
@@ -208,6 +227,11 @@ def node_iter(nodes, indices=None):
 
         if name == '':
             name = 'op_' + str(index)
+
+
+#        else: # make_op_name
+#            for s in ' \\|/:-': #
+#                name = name.replace(s, '_')
         if domain == '':
             domain = DEFAULT_OP_DOMAIN
 
@@ -219,9 +243,8 @@ def graph_ops(graph, topo='default'):
     generator for ONNX node graph with given topology
     """
 
-    if not isinstance(graph, onnx.GraphProto):
-        logger.error('graph is not a GraphProto instance')
-        return
+    assert isinstance(graph,
+                      onnx.GraphProto), 'graph is not a GraphProto instance'
 
     return node_iter(graph.node, node_topo(graph.node, topo))
 
@@ -231,9 +254,8 @@ def graph_weights(graph):
     generator for weights of an ONNX model
     """
 
-    if not isinstance(graph, onnx.GraphProto):
-        logger.error('graph is not a GraphProto instance')
-        return
+    assert isinstance(graph,
+                      onnx.GraphProto), 'graph is not a GraphProto instance'
 
     for initializer in graph.initializer:
         name = initializer.name
@@ -246,29 +268,32 @@ def inferred_model_value_info(model):
     collect value/type info for an ONNX model
     """
 
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
+
     model = infer_shapes(model)
     graph = model.graph
     value_info = Dict()
     for item in graph.value_info:
-        value_info[item.name] = dict(
-            dtype=tensor_dtype(item),
-            shape=tensor_shape(item),
-            external=False,
-        )
+        value_info[item.name] = {
+            'dtype': tensor_dtype(item),
+            'shape': tensor_shape(item),
+            'external': False,
+        }
     for item in graph.input:
         assert item.name not in value_info
-        value_info[item.name] = dict(
-            dtype=tensor_dtype(item),
-            shape=tensor_shape(item),
-            external=True,
-        )
+        value_info[item.name] = {
+            'dtype': tensor_dtype(item),
+            'shape': tensor_shape(item),
+            'external': True,
+        }
     for item in graph.output:
         #        assert item.name not in value_info, 'bypass-model not supported'
-        value_info[item.name] = dict(
-            dtype=tensor_dtype(item),
-            shape=tensor_shape(item),
-            external=True,
-        )
+        value_info[item.name] = {
+            'dtype': tensor_dtype(item),
+            'shape': tensor_shape(item),
+            'external': True,
+        }
     return value_info
 
 
@@ -302,12 +327,63 @@ def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
     return processed
 
 
+def polish_model(model, internals=True, extras=True, checking=True):
+    """
+    polish_model enhanced for inference
+    """
+
+    if checking:
+        check_model(model)
+    strip_doc_string(model)
+    if internals:
+        passes = optimizer.get_available_passes()
+        passes = list(filter(lambda name: not name.startswith('split_'),
+                             passes))  #
+        logger.debug('builtin optimizations to perform in ONNX:\n\t%s', passes)
+        model = optimizer.optimize(model, passes=passes)
+    if extras:
+        for optimize in (
+                optimize_model_skip_op_for_inference,
+                optimize_model_strip_initializer,
+                optimize_model_cast,
+                optimize_model_slice,
+        ):
+            model = optimize(model)
+    model = infer_shapes(model)
+    if checking:
+        check_model(model)
+    return model
+
+
+def polish_and_save(model_filename,
+                    suffix='.polished',
+                    save_filename=None,
+                    *args,
+                    **kwargs):
+    """
+    run polish_model and save
+    """
+
+    if save_filename is None:
+        save_filename = model_filename.replace('.onnx', suffix + '.onnx')
+
+    model = onnx.load(model_filename)
+    model = polish_model(model, *args, **kwargs)
+    onnx.save(model, save_filename)
+    logger.info('polished model saved to: %s', save_filename)
+    return save_filename
+
+
 def optimize_model_skip_op_for_inference(model, op_list=None):
     """
     skip ops can be bypassed for inference
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
+
     if op_list is None:
-        op_list = ['Dropout']
+        op_list = ('Dropout', 'Identity')
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
@@ -322,10 +398,10 @@ def optimize_model_skip_op_for_inference(model, op_list=None):
         if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
             continue
         op_type = node.op_type
-        if not (op_type in op_list):
+        if op_type not in op_list:
             continue
 
-        if op_type in ['Dropout']:
+        if op_type in ('Dropout', ):
             input_name = node.input[0]
             output_name = node.output[0]
         elif not (len(node.input) == 1 and len(node.output) == 1):
@@ -368,6 +444,9 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
     strip weights for inference
     """
 
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
+
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
     out_names = [val.name for val in model.graph.output]
@@ -406,8 +485,11 @@ def optimize_model_strip_initializer(model, keep_input_only=True):
 
 def optimize_model_cast(model):
     """
-    strip cascade and unecessary onnx::Cast
+    strip cascade and unecessary onnx::Cast-9:
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
@@ -422,7 +504,7 @@ def optimize_model_cast(model):
     for node_idx, node in enumerate(nodes):
         if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
             continue
-        if not (node.op_type == 'Cast'):
+        if node.op_type != 'Cast':
             continue
         attrs = node_attrs(node)
         output_dtype = TENSOR_TYPE_TO_NP_TYPE[attrs['to']]
@@ -463,19 +545,22 @@ def optimize_model_cast(model):
 
 def optimize_model_slice(model):
     """
-    strip cascade and unecessary onnx::Slice
+    strip cascade and unecessary onnx::Slice-1:9
     """
+
+    assert isinstance(model,
+                      onnx.ModelProto), 'model is not a ModelProto instance'
 
     nodes = model.graph.node
     input_refs, output_refs = build_value_refs(nodes)
 
-    def _build_slice_node_chain(node_idx):
+    def build_slice_node_chain(node_idx):
         chain = []
         while True:
             node = nodes[node_idx]
             if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
                 return chain
-            if not node.op_type == 'Slice':
+            if node.op_type != 'Slice':
                 return chain
             chain.append(node_idx)
             output_name = node.output[0]
@@ -485,7 +570,7 @@ def optimize_model_slice(model):
             node_idx = list(input_refs[output_name])[0]
 
     # axis: (start, end)
-    def _merge_slice(slice_chain):
+    def merge_slice(slice_chain):
         merged_slice = dict()
         for slice_node_idx in slice_chain:
             node = nodes[slice_node_idx]
@@ -508,14 +593,14 @@ def optimize_model_slice(model):
     ret_nodes = ret.graph.node
     nodes_to_remove = []
     for node_idx in range(len(nodes)):
-        slice_chain = _build_slice_node_chain(node_idx)
-        if len(slice_chain) == 0:
+        slice_chain = build_slice_node_chain(node_idx)
+        if not slice_chain:
             continue
-        merged_slice = _merge_slice(slice_chain)
-        if len(merged_slice) > 0 and len(slice_chain) == 1:  # no need to merge
+        merged_slice = merge_slice(slice_chain)
+        if merged_slice and len(slice_chain) == 1:  # no need to merge
             continue
 
-        attrs = dict(axes=[], starts=[], ends=[])
+        attrs = {'axes': [], 'starts': [], 'ends': []}
         for axis, (start, end) in merged_slice.items():
             attrs['axes'].append(axis)
             attrs['starts'].append(start)
@@ -526,12 +611,11 @@ def optimize_model_slice(model):
         output_name = last_node.output[0]
         processed = -1
         if output_name in input_refs:  # 0, [1...]
-            new_input_name = first_node.output[0] if len(
-                merged_slice) > 0 else input_name
+            new_input_name = first_node.output[0] if merged_slice else input_name
             processed = skip_node_forward(ret_nodes, output_name,
                                           new_input_name, input_refs)
             if processed > 0:
-                if len(merged_slice) > 0:
+                if merged_slice:
                     remain_idx = slice_chain[0]
                     remove_chain = slice_chain[1:]
                     slice_node = ret_nodes[remain_idx]
@@ -545,12 +629,11 @@ def optimize_model_slice(model):
                     remove_chain = slice_chain
 
         if processed < 0 and input_name in output_refs:
-            new_output_name = last_node.input[0] if len(
-                merged_slice) > 0 else output_name
+            new_output_name = last_node.input[0] if merged_slice else output_name
             processed = skip_node_backward(ret_nodes, input_name,
                                            new_output_name, output_refs)
             if processed > 0:
-                if len(merged_slice) > 0:
+                if merged_slice:
                     remain_idx = slice_chain[-1]
                     remove_chain = slice_chain[:-1]
                     slice_node = ret_nodes[remain_idx]
@@ -565,7 +648,7 @@ def optimize_model_slice(model):
 
         if processed > 0:
             nodes_to_remove.extend(remove_chain)
-            if len(merged_slice) == 0:
+            if not merged_slice:
                 logger.debug('skip slice chain %s -> %s -> %s', input_name,
                              slice_chain, output_name)
         elif processed < 0:  # NEVERFIX: not merge standalone slice chain
@@ -586,22 +669,16 @@ if __name__ == '__main__':
         level=logging.DEBUG,
     )
 
-    from onnx.checker import check_model
-    from onnx.utils import polish_model
     from onnx.version_converter import convert_version
 
-    model = onnx.load('../examples/t1.onnx')
+    model = onnx.load('/tmp/export.onnx')
     print_pb_structure(model, loop_iterative=False)
 
     check_model(model)
     model = convert_version(model, 9)
-    model = optimize_model_skip_op_for_inference(model)
-    model = optimize_model_strip_initializer(model)
-    model = optimize_model_cast(model)
-    model = optimize_model_slice(model)
     model = polish_model(model)
 
-    onnx.save(model, '/tmp/optimized.onnx')
+    onnx.save(model, '/tmp/export.polished.onnx')
 
     graph = model.graph
     value_info = inferred_model_value_info(model)
@@ -613,23 +690,23 @@ if __name__ == '__main__':
 
     logger.info('ops:')
     for name, domain, op_type, _, _, attrs in graph_ops(graph, topo='forward'):
-        logger.info('%s %s::%s: %s', name, domain, op_type, attrs)
+        logger.info('- \t%s %s::%s: %s', name, domain, op_type, attrs)
 
     logger.info('weights:')
     for name, array in graph_weights(graph):
         weights.append(name)
-        logger.info('%s: %s', name, array.shape)
+        logger.info('- \t%s: %s', name, array.shape)
 
     logger.info('inputs:')
     external_inputs = []
     for name in inputs:
         if name not in weights:
             external_inputs.append(name)
-            logger.info('%s: %s', name, value_info[name]['shape'])
+            logger.info('- \t%s: %s', name, value_info[name]['shape'])
 
     logger.info('outputs:')
     external_outputs = []
     for name in outputs:
         if name not in weights:
             external_outputs.append(name)
-            logger.info('%s: %s', name, value_info[name]['shape'])
+            logger.info('- \t%s: %s', name, value_info[name]['shape'])

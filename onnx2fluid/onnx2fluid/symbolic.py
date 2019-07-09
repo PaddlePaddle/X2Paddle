@@ -38,47 +38,68 @@ DEFAULT_OP_MAPPING_FIELD_VALUES[
 DEFAULT_OP_MAPPING_FIELD_VALUES[
     'OUTPUT_PERM'] = None  # sampler: [idx_onnx_arg...]
 DEFAULT_OP_MAPPING_FIELD_VALUES['FILL_NAME_FIELD'] = True
+DEFAULT_OP_MAPPING_VALUES = list(DEFAULT_OP_MAPPING_FIELD_VALUES.values())
 
 DEFAULT_OP_MAPPING = {
         ## nil ops ##
         'RandomUniform':
             ['uniform_random', [], ['Out'], dict(high='max', low='min'),
-             dict(), None, None, False],
+             dict(max=1., min=0., seed=0), None, None, False], # TODO: add dtype support
         'RandomNormal':
             ['gaussian_random', [], ['Out'], dict(scale='std'),
-             dict(), None, None, False],
+             dict(mean=0., std=1., seed=0), None, None, False], # TODO: add dtype support
         ## unary ops ##
         'Abs': ['abs', ['X'], ['Out']],
-        'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims='')],
-        'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims='')],
+        'Acos': ['acos', ['X'], ['Out']],
+        'Asin': ['asin', ['X'], ['Out']],
+        'Atan': ['atan', ['X'], ['Out']],
+        'ArgMax': ['argmax', ['X'], ['Out'], dict(keepdims=''), dict(axis=0)],
+        'ArgMin': ['argmin', ['X'], ['Out'], dict(keepdims=''), dict(axis=0)],
         'Ceil': ['ceil', ['X'], ['Out']],
-        'Clip': ['clip', ['X'], ['Out']], # attrs bypassed
+        'Clip':
+            ['clip', ['X'], ['Out'], dict(), dict(
+                    min=(_np.array([255, 255, 127, 255], dtype=_np.uint8).view(_np.float32)),
+                    max=(_np.array([255, 255, 127, 127], dtype=_np.uint8).view(_np.float32)),
+                )],
         'Cos': ['cos', ['X'], ['Out']],
-        'Elu': ['elu', ['X'], ['Out']],
+        'Elu': ['elu', ['X'], ['Out'], dict(), dict(alpha=1.)],
         'Exp': ['exp', ['X'], ['Out']],
-        'Flatten': ['flatten', ['X'], ['Out']], # attrs bypassed, FIXME: emit flatten2
+        'Flatten': ['flatten', ['X'], ['Out'], dict(), dict(axis=1)], # FIXME: emit flatten2
         'Floor': ['floor', ['X'], ['Out']],
-        'Gather': ['gather', ['X'], ['Out'], dict(axis='')],
-        'LeakyRelu': ['leaky_relu', ['X'], ['Out']],
+        'Gather': ['gather', ['X', "Index"], ['Out'], dict(axis='')],
+        'HardSigmoid':
+            ['hard_sigmoid', ['X'], ['Out'], dict(alpha='slope', beta='offset'),
+             dict(slope=.2, offset=.5)],
+        'Identity': ['assign', ['X'], ['Out']],
+        'LeakyRelu': ['leaky_relu', ['X'], ['Out'], dict(), dict(alpha=.01)],
         'Log': ['log', ['X'], ['Out']],
-        'LRN': ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k')], #
+        'LRN':
+            ['lrn', ['X'], ['Out', 'MidOut'], dict(size='n', bias='k'),
+             dict(n=5, k=1., alpha=1e-4, beta=.75)], #
         'Reciprocal': ['reciprocal', ['X'], ['Out']],
         'Relu': ['relu', ['X'], ['Out']],
-        'Selu': ['selu', ['X'], ['Out'], dict(gamma='scale')],
-        'Shape': ['shape', ['X'], ['Out']], # FIXME: out is int64 vs int32
+        'Round': ['round', ['X'], ['Out']],
+        'Selu':
+            ['selu', ['X'], ['Out'], dict(gamma='scale'), dict(
+                    scale=1.0507009873554804934193349852946,
+                    alpha=1.6732632423543772848170429916717,
+                )],
         'Shrink': ['softshrink', ['X'], ['Out'], dict(bias='', labmd='')],
         'Sigmoid': ['sigmoid', ['X'], ['Out']],
+        'Sign': ['sign', ['X'], ['Out']],
         'Sin': ['sin', ['X'], ['Out']],
-        'Squeeze': ['squeeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit squeeze2
-        'Softplus': ['softplus', ['X'], ['Out']],
+        'Squeeze': ['squeeze', ['X'], ['Out']], # FIXME: emit squeeze2
         # FIXME: default axis = -1, reshape required before and after
-        'Softmax': ['softmax', ['X'], ['Out'], dict(axis='')],
+        'Softmax': ['softmax', ['X'], ['Out'], dict(axis=''), dict(axis=-1)],
+        'Softplus': ['softplus', ['X'], ['Out']],
         'Softsign': ['softsign', ['X'], ['Out']],
+        'SpaceToDepth': ['space_to_depth', ['X'], ['Out']],
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
-        'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
+        'ThresholdedRelu':
+            ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold'), dict(alpha=1.)],
         #'Transpose': ['transpose', ['X'], ['Out']],
-        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
+        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         #'AffineGrid': ['affine_grid', ['Theta'], ['Output'], dict(size='out_shape')],
@@ -90,121 +111,120 @@ DEFAULT_OP_MAPPING = {
         'MatMul': ['matmul', ['X', 'Y'], ['Out']], # defaults excluded for transpose_x vs transpose_X
         'Max': ['elementwise_max', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Min': ['elementwise_min', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
+        'Mod': ['elementwise_mod', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Not': ['logical_not', ['X', 'Y'], ['Out']],
         'OneHot': # assuming values=[0, 1], axis=-1 and drop them
-            ['one_hot', ['Input', 'Depth'], ['Out'], dict(axis=''), dict(),
+            ['one_hot', ['Input', 'depth_tensor'], ['Out'], dict(axis=''), dict(),
              [0, 1], None, False],
         'Or': ['logical_or', ['X', 'Y'], ['Out']],
         'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)], # TODO: pow for scalar exponent
         'Sub': ['elementwise_sub', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'Xor': ['logical_xor', ['X', 'Y'], ['Out']],
         # reduce ops
-        'ReduceMax': ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceMean': ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceMin': ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceProd': ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
-        'ReduceSum': ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim')],
+        # TODO: fix reduce_all ?
+        'ReduceMax':
+            ['reduce_max', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceMean':
+            ['reduce_mean', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceMin':
+            ['reduce_min', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceProd':
+            ['reduce_prod', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
+        'ReduceSum':
+            ['reduce_sum', ['X'], ['Out'], dict(axes='dim', keepdims='keep_dim'),
+             dict(keep_dim=1)],
         # other ops
-        'Scatter': ['scatter', ['X', 'Index', 'Updates'], ['Out']],
+        'Scatter': ['scatter', ['X', 'Ids', 'Updates'], ['Out'], dict(), dict(overwrite=True)],
         'TopK': ['topk', ['X', 'K'], ['Out', 'Indices']],
 }
 
 DEFAULT_IOA_CONSTRAINTS = {
     'ArgMax': [
         (lambda i, o, a: a.get('keepdims', 1) == 1,
-         'only keepdims = 0 is supported'),
+         'only keepdims = 0 supported'),
     ],
     'ArgMin': [
         (lambda i, o, a: a.get('keepdims', 1) == 1,
-         'only keepdims = 0 is supported'),
+         'only keepdims = 0 supported'),
     ],
     'Gather': [
-        (lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 is supported'),
+        (lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 supported'),
     ],
     'Shrink': [
-        (lambda i, o, a: a.get('bias', 0) == a.get('lambd', 0.5),
-         'only SoftShrink with bias = lambd is supported'),
+        (lambda i, o, a: a.get('bias', 0) == a.get('lambd', .5),
+         'only SoftShrink with bias = lambd supported'),
     ],
     #        'Softmax':
     #            [(lambda i, o, a: a.get('axis', 1) == -2, 'Paddle fluid Softmax works on dim -2 only'),
     #            ],
     'OneHot': [
-        (lambda i, o, a: a.get('axis', -1) == -1,
-         'only axis = -1 is supported'),
+        (lambda i, o, a: a.get('axis', -1) == -1, 'only axis = -1 supported'),
     ],
     'Scatter': [
-        (lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 is supported'),
+        (lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 supported'),
     ],
     'TopK': [
-        (lambda i, o, a: a.get('axis', -1) == -1,
-         'only axis = -1 is supported'),
+        (lambda i, o, a: a.get('axis', -1) == -1, 'only axis = -1 supported'),
     ],
 }
 
 
-def _make_var_name(name):
-    """
-    make a valid variable name in Python code
-    """
-
-    if name == '':
-        return '_'
-    if name[0].isdigit():
-        return 'var_' + name
-    for s in ' *?\\/-:':
-        name = name.replace(s, '_')
-    if name.startswith('_'):
-        name = 'var' + name
-    return name
+def _dtype(value_infos, name):
+    return _np.dtype(value_infos[name]['dtype'])
 
 
-#def _value_info_or_none(value_infos, val_name):
-#    return value_infos.get(val_name, None)
-
-
-def _dtype(value_infos, val_name):
-    return _np.dtype(value_infos[val_name]['dtype'])
-
-
-def _dtype_or_none(value_infos, val_name):
-    if val_name not in value_infos:
+def _dtype_or_none(value_infos, name):
+    if name not in value_infos:
         return None
-    value_info = value_infos[val_name]
+    value_info = value_infos[name]
     if 'dtype' not in value_info:
         return None
     return _np.dtype(value_info['dtype'])
 
 
-def _shape(value_infos, val_name):
-    return list(value_infos[val_name]['shape'])
+def _shape(value_infos, name):
+    return list(value_infos[name]['shape'])
 
 
-def _shape_or_none(value_infos, val_name):
-    if val_name not in value_infos:
+def _shape_or_none(value_infos, name):
+    if name not in value_infos:
         return None
-    value_info = value_infos[val_name]
+    value_info = value_infos[name]
     if 'shape' not in value_info:
         return None
     return list(value_info['shape'])
 
 
-def _const_weight_or_none(value_infos, val_name):
-    if val_name not in value_infos:
+def _const_weight_or_none(value_infos, name):
+    if name not in value_infos:
         return None
-    value_info = value_infos[val_name]
+    value_info = value_infos[name]
     const_value = value_info.get('const_value', None)
-    if const_value:
+    if const_value is not None:
         return const_value
     get_weight_func = value_info.get('get_weight', None)
-    if get_weight_func:
+    if get_weight_func is not None:
         return get_weight_func()
     return None
 
 
+def _check_embeddable(value_infos, *names):
+    keyword = 'get_weight'
+    for name in names:
+        if keyword not in value_infos[name]:
+            _logger.warning('parameter %s not embeddable', name)
+            return False
+    return True
+
+
 def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     info = DEFAULT_OP_MAPPING[op_type]
-    info.extend(list(DEFAULT_OP_MAPPING_FIELD_VALUES.values())[len(info):])
+    info.extend(DEFAULT_OP_MAPPING_VALUES[len(info):])
 
     (
         fluid_op,
@@ -233,12 +253,13 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     fluid_attrs = default_attrs.copy()
     fluid_attrs.update(mapped_attrs)  # as new attrs
 
-    val_inps = inputs if input_perm is None else map(lambda i: inputs[i],
-                                                     input_perm)
-    val_outs = outputs if output_perm is None else map(lambda i: outputs[i],
-                                                       output_perm)
-    var_inps = [_make_var_name(val) for val in val_inps]
-    var_outs = [_make_var_name(val) for val in val_outs]
+    var_inps = list(map(inputs.__getitem__,
+                        input_perm)) if input_perm is not None else inputs
+    var_outs = list(map(outputs.__getitem__,
+                        output_perm)) if output_perm is not None else outputs
+    for var_name in var_inps + var_outs:
+        assert var_name
+
     arg_name = ', name={}'.format(
         repr(name)) if fill_name_field and name else ''
     arg_attrs = [
@@ -249,7 +270,7 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
         ', '.join(var_outs),
         fluid_op,
         ', '.join(var_inps),
-        ''.join(arg_attrs),
+        ''.join(arg_attrs)[(0 if var_inps else 2):],
         arg_name,
     ))
 
@@ -257,23 +278,22 @@ def _default(prog, op_type, inputs, outputs, attrs, *args, name='', **kwargs):
     num_vars = len(var_outs)
     num_args = len(fluid_output_args)
     if num_vars < num_args:
-        assert fill_name_field, 'name required to name dummy output variables'
+        assert fill_name_field and name, 'name required to name dummy output variables'
         for idx_out in range(num_vars, num_args):
             var_out = name + '.' + fluid_output_args[idx_out]  # dummy output
             var_outs.append(var_out)
 
     for var_out in var_outs:
         prog.VarDesc(var_out)
-    prog.OpDesc(fluid_op, (var_inps, *fluid_input_args),
-                (var_outs, *fluid_output_args), fluid_attrs)
+    prog.OpDesc(fluid_op, (fluid_input_args, var_inps),
+                (fluid_output_args, var_outs), fluid_attrs)
 
 
 def _assign(prog, mapping):
     fluid_op = 'assign'
 
-    for val_dst, val_src in mapping.items():
-        var_dst = _make_var_name(val_dst)
-        var_src = _make_var_name(val_src)
+    for var_dst, var_src in mapping.items():
+        assert var_dst and var_src
         prog.Code('{} = {} # assign'.format(var_dst, var_src))
         #        prog.Code('{} = layers.{}({})'
         #                  .format(var_dst,
@@ -283,24 +303,23 @@ def _assign(prog, mapping):
         prog.VarDesc(var_dst)
         prog.OpDesc(
             fluid_op,
-            ([var_src], 'X'),
-            ([var_dst], 'Out'),
+            (['X'], [var_src]),
+            (['Out'], [var_dst]),
             dict(),
         )
 
 
-def _zeros_like(prog, val_ref, val_out, value_infos):
+def _zeros_like(prog, var_ref, var_out):
     prog.Op(
         '',
         'Sub',
-        [val_ref, val_ref],
-        [val_out],  # val
-        dict(axis=0),
-        value_infos,
+        [var_ref, var_ref],
+        [var_out],
+        {'axis': 0},
     )
 
 
-def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
+def _pad_if_asymmetric(prog, pads, var_input, value_infos, scope):  # pads: SSEE
     assert len(pads) & 1 == 0
     ndims = len(pads) // 2
     symmetric = True
@@ -309,41 +328,36 @@ def _pad_if_asymmetric(prog, pads, val_name, value_infos):  # pads: SSEE
             symmetric = False
             break
     if symmetric:
-        return pads[:ndims], val_name
+        return pads[:ndims], var_input
 
-    val_padded = val_name + '_padded'  # explicit variable
+    assert scope
+    var_padded = scope + '_pad'  # explicit variable
     prog.Op(
         '',
         'Pad',
-        [val_name],
-        [val_padded],  # val
-        dict(
-            mode='constant',
-            value=0.,
-            pads=pads,
-        ),
+        [var_input],
+        [var_padded],
+        {
+            'mode': 'constant',
+            'value': 0.,
+            'pads': pads,
+        },
         value_infos=value_infos,
-        name=val_padded,
+        name=(scope + '/pad'),
     )
-    return [0] * ndims, val_padded
+    return [0] * ndims, var_padded
 
 
 def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
     # I/O
-    val_x, = inputs
-    val_y, = outputs[:1]
-    var_x = _make_var_name(val_x)
-    var_y = _make_var_name(val_y)
-
-    has_indices = len(outputs) > 1
-    if has_indices:
-        val_indices = outputs[1]
-        var_indices = _make_var_name(val_indices)
+    var_x, = inputs
+    var_y, var_indices, = (outputs + [''] * 1)[:2]
+    assert var_x and var_y
 
     # interpretation
     pool_size = attrs['output_size']  # required
     poolnd = len(pool_size)
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
 
     fluid_op = 'adaptive_pool{}d'.format(poolnd)
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -355,50 +369,49 @@ def _adaptive_pool(prog, pool_type, inputs, outputs, attrs, name=''):
               ', pool_type={}'
               '{})'.format(
                   var_y,
-                  ', {}'.format(var_indices) if has_indices else '',
+                  ', {}'.format(var_indices) if var_indices else '',
                   fluid_op,
                   var_x,
                   # attrs
-                  has_indices,
+                  bool(var_indices),
                   pool_size,
                   repr(pool_type),
                   name_attr,
               ))
     fluid_op = 'pool{}d'.format(poolnd)
     prog.VarDesc(var_y)
-    if has_indices:
+    if var_indices:
         prog.VarDesc(var_indices)
     prog.OpDesc(
         fluid_op,
-        ([var_x], 'X'),
-        ([var_y] + ([var_indices] if has_indices else []), 'Out', 'Indices'),
-        dict(
-            global_pooling=False,
-            adaptive=True,
-            exclusive=True,
-            require_index=has_indices,
-            pooling_type=pool_type,
-            ksize=pool_size,
-        ),
+        (['X'], [var_x]),
+        (['Out', 'Indices'], [var_y] + ([var_indices] if var_indices else [])),
+        {
+            'adaptive': True,
+            'pooling_type': pool_type,
+            'ksize': pool_size,
+            # unused
+            #                    'exclusive': True,
+            #                    'global_pooling': False,
+        },
     )
 
 
-def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
+def _global_pool(prog, pool_type, inputs, outputs, value_infos, name=''):
     # I/O
-    val_x, = inputs
-    val_y, = outputs
-    var_x = _make_var_name(val_x)
-    var_y = _make_var_name(val_y)
+    var_x, = inputs
+    var_y, = outputs
+    assert var_x and var_y
 
     # interpretation
-    input_shape = _shape_or_none(value_infos, val_x)
-    output_shape = _shape_or_none(value_infos, val_y)
+    input_shape = _shape_or_none(value_infos, var_x)
+    output_shape = _shape_or_none(value_infos, var_y)
     assert input_shape is not None or output_shape is not None, 'poolnd not inferred'  # NC...
-    if input_shape:
+    if input_shape is not None:
         poolnd = len(input_shape) - 2  # NC...
-    elif output_shape:
+    elif output_shape is not None:
         poolnd = len(output_shape) - 2  # NC...
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
 
     fluid_op = 'pool{}d'.format(poolnd)
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -417,43 +430,43 @@ def _global_pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
     prog.VarDesc(var_y)
     prog.OpDesc(
         fluid_op,
-        ([var_x], 'X'),
-        ([var_y], 'Out'),
-        dict(
-            global_pooling=True,
-            adaptive=False,
-            pooling_type=pool_type,
-            ksize=[-1, -1],
-        ),
+        (['X'], [var_x]),
+        (['Out'], [var_y]),
+        {
+            'global_pooling': True,
+            'pooling_type': pool_type,
+            # unused
+            'adaptive': False,
+            'ksize': [-1, -1],
+            'strides': [-1, -1],
+            'paddings': [0, 0],
+            'ceil_mode': False,
+        },
     )
 
 
-def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
+def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name):
     # I/O
-    val_x, = inputs
-    val_y, = outputs[:1]
-    var_y = _make_var_name(val_y)
-
-    has_indices = len(outputs) > 1
-    if has_indices:
-        val_indices = outputs[1]
-        var_indices = _make_var_name(val_indices)
+    var_x, = inputs
+    var_y, var_indices, = (outputs + [''] * 1)[:2]
+    assert name and var_x and var_y
 
     # interpretation
     assert attrs.get(
         'auto_pad',
-        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET is supported'  # optional
+        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET supported'  # optional
+    assert attrs.get('count_include_pad',
+                     0) == 0, 'only count_include_pad = 0 supported'  # optional
     pool_size = attrs['kernel_shape']  # required
     poolnd = len(pool_size)
-    assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
+    assert 2 <= poolnd <= 3, 'only pool2d and pool3d supported'
 
     fluid_op = 'pool{}d'.format(poolnd)
     strides = attrs.get('strides', [1] * poolnd)  # optional
     ceil_mode = bool(attrs.get('ceil_mode', 0))  # optional
     pads = attrs.get('pads', [0] * (poolnd * 2))  # optional
-    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    var_x = _make_var_name(val_x)
-    name_attr = ', name={}'.format(repr(name)) if name else ''
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
+    name_attr = ', name={}'.format(repr(name))
 
     # generation
     prog.Code('{} = layers.{}({}, exclusive=True'
@@ -475,42 +488,40 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name=''):
                   name_attr,
               ))
     prog.VarDesc(var_y)
-    if has_indices:
+    if var_indices:
         prog.VarDesc(var_indices)
     prog.OpDesc(
         fluid_op,
-        ([var_x], 'X'),
-        ([var_y] + ([var_indices] if has_indices else []), 'Out', 'Indices'),
-        dict(
-            global_pooling=False,
-            adaptive=False,
-            exclusive=True,
-            require_index=has_indices,
-            pooling_type=pool_type,
-            ksize=pool_size,
-            strides=strides,
-            paddings=paddings,
-            ceil_mode=ceil_mode,
-        ),
+        (['X'], [var_x]),
+        (['Out', 'Indices'], [var_y] + ([var_indices] if var_indices else [])),
+        {
+            'global_pooling': False,
+            'pooling_type': pool_type,
+            'ksize': pool_size,
+            'strides': strides,
+            'paddings': paddings,
+            'ceil_mode': ceil_mode,
+            # unused
+            'adaptive': False,
+            #                    'exclusive': True,
+        },
     )
 
 
-def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
+def _roi_pool(prog, fluid_op, inputs, outputs, attrs, name):
     # I/O
-    val_x, val_rois = inputs
-    val_y, = outputs
-    var_x = _make_var_name(val_x)
-    var_rois = _make_var_name(val_rois)
-    var_y = _make_var_name(val_y)
+    var_x, var_rois, = inputs
+    var_y, = outputs
+    assert name and var_x and var_rois and var_y
 
     # interpretation
     spatial_scale = attrs['spatial_scale']  # required
     pooled_height, pooled_width = attrs['pooled_shape']  # required
-    od_attrs = dict(
-        pooled_height=pooled_height,
-        pooled_width=pooled_width,
-        spatial_scale=spatial_scale,
-    )
+    od_attrs = {
+        'pooled_height': pooled_height,
+        'pooled_width': pooled_width,
+        'spatial_scale': spatial_scale,
+    }
     feature_attr = ''
     is_max_pool = fluid_op == 'roi_pool'
     if 'sampling_ratio' in attrs:  #
@@ -530,7 +541,7 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
               '{})'.format(
                   var_y,
                   fluid_op,
-                  val_x,
+                  var_x,
                   var_rois,
                   # attrs
                   spatial_scale,
@@ -540,46 +551,45 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, value_infos, name):
               ))
     prog.VarDesc(var_y)
     if is_max_pool:
-        var_argmax = _make_var_name(name + '.argmax')  # hidden variable
+        var_argmax = name + '.argmax'  # hidden variable
         prog.VarDesc(var_argmax)
     prog.OpDesc(
         fluid_op,
-        ([var_x, var_rois], 'X', 'Rois'),
-        ([var_y] + ([var_argmax] if is_max_pool else []), 'Out', 'Argmax'),
+        (['X', 'ROIs'], [var_x, var_rois]),
+        (['Out', 'Argmax'], [var_y] + ([var_argmax] if is_max_pool else [])),
         od_attrs,
     )
 
 
 def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
     # I/O
-    val_x, val_scales = inputs
-    val_y, = outputs
-    var_x = _make_var_name(val_x)
-    var_y = _make_var_name(val_y)
+    var_x, var_scales, = inputs
+    var_y, = outputs
+    assert var_x and var_scales and var_y
 
     # interpretation
     # output shape
-    out_shape_ = _shape_or_none(value_infos, val_y)
+    out_shape_ = _shape_or_none(value_infos, var_y)
     if out_shape_ is not None:
         assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
         out_shape_ = out_shape_[2:]
     # try scales
-    scales = _const_weight_or_none(value_infos, val_scales)
+    scales = _const_weight_or_none(value_infos, var_scales)
     if scales is not None:
         assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
         assert scales[0] == 1 and scales[
             1] == 1, 'only scale on (NC)HW supported'
         assert scales[2] == scales[
             3], 'only aspect-ratio-invariant scale supported'
-    scale = scales[2] if scales else None
+        scale = scales[2]
     # try input shape
     if scale is None:
-        assert out_shape_, 'neither scales nor output shape is available'
+        assert out_shape_, 'neither scales nor output shape available'
         out_shape = out_shape_
     else:
         out_shape = None
         if out_shape_ is None:
-            in_shape = _shape_or_none(value_infos, val_x)
+            in_shape = _shape_or_none(value_infos, var_x)
             assert in_shape is not None, 'out_shape required but not inferrable'
             assert len(in_shape) == 4, 'only 4-D Tensor as X and Y supported'
             out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
@@ -604,13 +614,13 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
     prog.VarDesc(var_y)
     prog.OpDesc(
         fluid_op,
-        ([var_x], 'X'),
-        ([var_y], 'Out'),
-        dict(
-            interp_method=mode,
-            out_h=out_shape_[0],
-            out_w=out_shape_[1],
-        ),
+        (['X'], [var_x]),
+        (['Out'], [var_y]),
+        {
+            'interp_method': mode,
+            'out_h ': out_shape_[0],
+            'out_w ': out_shape_[1],
+        },
     )
 
 
@@ -636,10 +646,9 @@ def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
 
     # I/O
-    val_theta, = inputs
-    val_grid, = outputs
-    var_theta = _make_var_name(val_theta)
-    var_grid = _make_var_name(val_grid)
+    var_theta, = inputs
+    var_grid, = outputs
+    assert var_theta and var_grid
 
     # interpretation
     fluid_op = 'affine_grid'
@@ -660,25 +669,19 @@ def AffineGrid(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     prog.VarDesc(var_grid)
     prog.OpDesc(
         fluid_op,
-        ([var_theta], 'Theta'),
-        ([var_grid], 'Output'),
-        dict(output_shape=size),  # f**k you API
+        (['Theta'], [var_theta]),
+        (['Output'], [var_grid]),
+        {'output_shape': size},  # f**k you API
     )
 
 
-def AveragePool(prog,
-                inputs,
-                outputs,
-                attrs,
-                value_infos,
-                name='',
-                *args,
+def AveragePool(prog, inputs, outputs, attrs, value_infos, name, *args,
                 **kwargs):
     """
     onnx::AveragePool-10:
     """
 
-    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
+    return _pool(prog, 'avg', inputs, outputs, attrs, value_infos, name)
 
 
 def BatchNormalization(prog,
@@ -695,41 +698,52 @@ def BatchNormalization(prog,
     """
 
     # I/O
-    val_x, val_scale, val_b, val_mean, val_var = inputs
-    val_y, = outputs
-    var_x = _make_var_name(val_x)
-    var_y = _make_var_name(val_y)
-    var_saved_mean = name + '.saved_mean'  # dummy output
-    var_saved_variance = name + '.saved_variance'  # dummy output
+    var_x, var_scale, var_b, var_mean, var_var, = inputs
+    var_y, var_mean_, var_var_, var_saved_mean, var_saved_variance, = (
+        outputs + [''] * 4)[:5]
+    assert var_x and var_scale and var_b and var_mean and var_var and var_y
+    assert var_saved_mean or name
+    assert var_saved_variance or name
+    var_saved_mean = var_saved_mean or (name + '.saved_mean')  # dummy output
+    var_saved_variance = var_saved_variance or (name + '.saved_variance'
+                                                )  # dummy output
 
     # interpretation
     fluid_op = 'batch_norm'
     momentum = attrs.get('momentum', .9)  # optional
     epsilon = attrs.get('epsilon', 1e-5)  # optional
     name_attr = ', name={}'.format(repr(name)) if name else ''
+    embeddable = _check_embeddable(value_infos, var_scale, var_b, var_mean,
+                                   var_var)
+    if not embeddable:
+        _logger.warning('for op  %s(%s -> BatchNormalization -> %s)', name,
+                        inputs, outputs)
+        _logger.warning('one of the parameters is intermediate value')
+        _logger.warning('broken Python code will be generated')
+    embed_params &= embeddable
     if embed_params:
-        assert name != ''
-        var_scale = name + '.w_0'
-        var_b = name + '.b_0'
-        var_mean = name + '.w_1'
-        var_var = name + '.w_2'
-        value_infos[val_scale].setdefault('embeded_as', []).append(var_scale)
-        value_infos[val_b].setdefault('embeded_as', []).append(var_b)
-        value_infos[val_mean].setdefault('embeded_as', []).append(var_mean)
-        value_infos[val_var].setdefault('embeded_as', []).append(var_var)
+        assert name
+        embedded_scale = name + '.w_0'
+        embedded_b = name + '.b_0'
+        embedded_mean = name + '.w_1'
+        embedded_var = name + '.w_2'
+        value_infos[var_scale]['embedded_as'].append(embedded_scale)
+        value_infos[var_b]['embedded_as'].append(embedded_b)
+        value_infos[var_mean]['embedded_as'].append(embedded_mean)
+        value_infos[var_var]['embedded_as'].append(embedded_var)
+        var_scale = embedded_scale
+        var_b = embedded_b
+        var_mean = embedded_mean
+        var_var = embedded_var
         param_attr = ''
     else:
-        var_scale = _make_var_name(val_scale)
-        var_b = _make_var_name(val_b)
-        var_mean = _make_var_name(val_mean)
-        var_var = _make_var_name(val_var)
         param_attr = (', param_attr={}, bias_attr={}'
                       ', moving_mean_name={}, moving_variance_name={}').format(
                           repr(var_scale), repr(var_b), repr(var_mean),
                           repr(var_var))
 
     # generation
-    prog.Code('{} = layers.{}({}, is_test=True, data_layout="NCHW"'
+    prog.Code('{} = layers.{}({}, is_test=True'
               ', momentum={}'
               ', epsilon={}'
               '{}{})'.format(
@@ -747,16 +761,17 @@ def BatchNormalization(prog,
     prog.VarDesc(var_saved_variance)
     prog.OpDesc(
         fluid_op,
-        ([var_x, var_scale, var_b, var_mean, var_var], 'X', 'Scale', 'Bias',
-         'Mean', 'Variance'),
-        ([var_y, var_mean, var_saved_mean, var_saved_variance, var_var], 'Y',
-         'MeanOut', 'SavedMean', 'SavedVariance', 'VarianceOut'),
-        dict(
-            is_test=1,
-            data_layout='NCHW',
-            use_global_stats=False,
-            momentum=momentum,
-            epsilon=epsilon),
+        (['X', 'Scale', 'Bias', 'Mean', 'Variance'
+          ], [var_x, var_scale, var_b, var_mean, var_var]),
+        (['Y', 'MeanOut', 'SavedMean', 'SavedVariance', 'VarianceOut'
+          ], [var_y, var_mean, var_saved_mean, var_saved_variance, var_var]),
+        {
+            'momentum': momentum,
+            'epsilon': epsilon,
+            'is_test': 1,
+            # unused
+            'data_layout': 'NCHW',
+        },
     )
 
 
@@ -766,18 +781,19 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
 
     # I/O
-    val_input, = inputs
-    val_output, = outputs
-    var_input = _make_var_name(val_input)
-    var_output = _make_var_name(val_output)
+    var_input, = inputs
+    var_output, = outputs
+    assert var_input and var_output
 
     # interpretation
     dtype = attrs['to']  # required
     if not isinstance(dtype, _np.dtype):  # additional: possible np.dtype
         dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
-    output_dtype = _dtype_or_none(value_infos, val_output)
-    if output_dtype:
-        assert dtype == output_dtype, 'dtype of to unmatches output'
+
+
+#    output_dtype = _dtype_or_none(value_infos, var_output)
+#    if output_dtype is not None:
+#        assert dtype == output_dtype, 'dtype of to unmatches output'
 
     fluid_op = 'cast'
 
@@ -794,13 +810,14 @@ def Cast(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        ([var_input], 'X'),
-        ([var_output], 'Out'),
-        dict(
-            in_dtype=prog.Dtype(_dtype(value_infos,
-                                       val_input)),  # holy, required
-            out_dtype=prog.Dtype(dtype),
-        ))
+        (['X'], [var_input]),
+        (['Out'], [var_output]),
+        {
+            'in_dtype': prog.Dtype(_dtype(value_infos,
+                                          var_input)),  # holy, required
+            'out_dtype': prog.Dtype(dtype),
+        },
+    )
 
 
 def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
@@ -809,9 +826,8 @@ def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
 
     # I/O
-    val_concat_result, = outputs
-    var_inps = [_make_var_name(val) for val in inputs]
-    var_concat_result = _make_var_name(val_concat_result)
+    var_ret, = outputs
+    assert var_ret
 
     # interpretation
     fluid_op = 'concat'
@@ -822,19 +838,19 @@ def Concat(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     prog.Code('{} = layers.{}({}'
               ', axis={}'
               '{})'.format(
-                  var_concat_result,
+                  var_ret,
                   fluid_op,
-                  '[' + ', '.join(var_inps) + ']',
+                  '[' + ', '.join(inputs) + ']',
                   # attrs
                   axis,
                   name_attr,
               ))
-    prog.VarDesc(var_concat_result)
+    prog.VarDesc(var_ret)
     prog.OpDesc(
         fluid_op,
-        (var_inps, *(['X'] * len(var_inps))),
-        ([var_concat_result], 'Out'),
-        dict(axis=axis),
+        (['X'] * len(inputs), inputs),
+        (['Out'], [var_ret]),
+        {'axis': axis},
     )
 
 
@@ -844,34 +860,31 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
 
     # I/O
-    assert len(inputs) == 0
-    val_output, = outputs
-    var_output = _make_var_name(val_output)
+    assert len(inputs) == 0, 'constant op accept no inputs'
+    var_output, = outputs
+    assert var_output
 
     # interpretation
     value = attrs['value']  # required
     dtype = _np.dtype(value.dtype)
-    output_dtype = _dtype_or_none(value_infos, val_output)
-    if output_dtype:
-        assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
-
-
-#    dtype = _np.dtype('float32') # HINT: force to float32
-    shape = attrs.get('shape', None)  #
+    #    output_dtype = _dtype_or_none(value_infos, var_output)
+    #    if output_dtype is not None:
+    #        assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
+    #    dtype = _np.dtype('float32') # HINT: force to float32
+    shape = attrs.get('shape', None)  # additional
     if shape is None:
-        shape = _shape_or_none(value_infos, val_output)
+        shape = _shape_or_none(value_infos, var_output)
     if shape is None:
         shape = list(value.shape)
         _logger.warning(
-            'in (Constant -> %s): '
+            'in op (Constant -> %s): '
             'attribute "shape" of %s not inferred, '
-            'using value as 1-D tensor may lead to fails', outputs, val_output)
+            'using value as 1-D tensor may lead to fails', outputs, var_output)
 
     # generation
-    value = value.tolist()
-    if len(value) == 1:  # scalar
+    if not shape or value.size == 1:  # scalar or 1-size
         shape = [1]  # WORKAROUND: bad scalar support
-        value = value[0]
+        value = value.tolist()[0]
         fluid_op = 'fill_constant'
         prog.Code('{} = layers.{}(shape={}, dtype={}, value={})'.format(
             var_output,
@@ -884,19 +897,19 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         prog.VarDesc(var_output)
         prog.OpDesc(
             fluid_op,
-            ([], ),
-            ([var_output], 'Out'),
-            dict(
-                shape=shape,
-                dtype=prog.Dtype(dtype),
-                value=value,
-            ),
+            ([], []),
+            (['Out'], [var_output]),
+            {
+                'shape': shape,
+                'dtype': prog.Dtype(dtype),
+                'value': value,
+            },
         )
     else:  # list parameter -> const_value
         prog.Code('# {} = {} # passed directly as literal'.format(
-            var_output, value))
+            var_output, value.tolist()))
 
-    value_infos[val_output]['const_value'] = value
+    value_infos[var_output]['const_value'] = value
 
 
 def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
@@ -905,28 +918,28 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
 
     # I/O
-    val_shape, = inputs
-    val_output, = outputs
-    var_shape = _make_var_name(val_shape)
+    var_shape, = inputs
+    var_output, = outputs
+    assert var_shape and var_output
 
-    shape = _const_weight_or_none(value_infos, val_shape)
+    shape = _const_weight_or_none(value_infos, var_shape)
     if shape is None:
-        shape = _shape_or_none(value_infos, val_output)
+        shape = _shape_or_none(value_infos, var_output)
     assert shape is not None, (
         'given shape is neither const value nor deductible from output, '
         'this is not supported')
-    dtype = attrs['value'].dtype
     attrs = attrs.copy()
-    attrs.update(dict(shape=shape, dtype=dtype))  # pass const
+    attrs.setdefault('value', _np.array(0, dtype=_np.float32))
+    attrs.update({'shape': shape})  # pass const
 
-    prog.Code('# shape:{}={} # const as literal'.format(var_shape, shape))
+    prog.Code('# shape: {} = {} # const as literal'.format(var_shape, shape))
     prog.Op(
         '',
         'Constant',
         [],
-        outputs,  # val
+        outputs,
         attrs,
-        value_infos,
+        value_infos=value_infos,
     )
 
 
@@ -935,7 +948,7 @@ def Conv(prog,
          outputs,
          attrs,
          value_infos,
-         name='',
+         name,
          embed_params=False,
          *args,
          **kwargs):
@@ -944,46 +957,47 @@ def Conv(prog,
     """
 
     # I/O
-    val_x, val_w = inputs[:2]
-    val_y, = outputs
-    var_y = _make_var_name(val_y)
-
-    has_bias = len(inputs) == 3
-    if has_bias:
-        val_b, = inputs[2:]
+    var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
+    var_y, = outputs
+    assert name and var_x and var_w and var_y
 
     # interpretation
     assert attrs.get(
-        'auto_pad', 'NOTSET'
-    ) == 'NOTSET', 'only auto_pad == NOTSET is supported'  # optional
-    kernel_shape = _shape(value_infos, val_w)[2:]  # OI...
-    assert kernel_shape == attrs[
-        'kernel_shape'], 'kernel_shape in attr unmatches value_info'  # HW
+        'auto_pad',
+        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET supported'  # optional
+    kernel_shape = attrs.get('kernel_shape',
+                             _shape(value_infos, var_w)[2:])  # optional, HW
+    assert kernel_shape, 'kernel_shape not inferred'
     convnd = len(kernel_shape)
-    assert 2 <= convnd <= 3, 'only conv2d and conv3d is supported'
-    num_out_channels = _shape(value_infos, val_w)[0]  # OI...
+    assert 2 <= convnd <= 3, 'only conv2d and conv3d supported'
+    num_out_channels = _shape(value_infos, var_w)[0]  # OI...
 
     fluid_op = 'conv{}d'.format(convnd)
     num_groups = attrs.get('group', 1)  # optional
     strides = attrs.get('strides', [1] * convnd)  # optional
     dilations = attrs.get('dilations', [1] * convnd)  # optional
     pads = attrs.get('pads', [0] * (convnd * 2))  # optional
-    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    var_x = _make_var_name(val_x)
-    name_attr = ', name={}'.format(repr(name)) if name else ''
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
+    name_attr = ', name={}'.format(repr(name))
+    embeddable = _check_embeddable(value_infos,
+                                   *([var_w] + ([var_b] if var_b else [])))
+    if not embeddable:
+        _logger.warning('for op  %s(%s -> Conv -> %s)', name, inputs, outputs)
+        _logger.warning('one of the parameters is intermediate value')
+        _logger.warning('broken Python code will be generated')
+    embed_params &= embeddable
     if embed_params:
-        assert name != ''
-        var_w = name + '.w_0'
-        value_infos[val_w].setdefault('embeded_as', []).append(var_w)
-        if has_bias:
-            var_b = name + '.b_0'
-            value_infos[val_b].setdefault('embeded_as', []).append(var_b)
+        embedded_w = name + '.w_0'
+        value_infos[var_w]['embedded_as'].append(embedded_w)
+        var_w = embedded_w
+        if var_b:
+            embedded_b = name + '.b_0'
+            value_infos[var_b]['embedded_as'].append(embedded_b)
+            var_b = embedded_b
             param_attr = ''
         else:
             param_attr = ', bias_attr=False'
     else:
-        var_w = _make_var_name(val_w)
-        var_b = _make_var_name(val_b) if has_bias else False
         param_attr = ', param_attr={}, bias_attr={}'.format(
             repr(var_w),
             repr(var_b) if var_b else False)
@@ -1010,27 +1024,27 @@ def Conv(prog,
                   param_attr,
                   name_attr,
               ))
-    var_conv = name + '.conv'  # hidden variable
+    var_conv = (name + '.conv') if var_b else var_y  # hidden variable
     prog.OpDesc(
         fluid_op,
-        ([var_x, var_w], 'Input', 'Filter'),  # , 'Bias', 'ResidualData'
-        ([var_conv if has_bias else var_y], 'Output'),
-        dict(
-            strides=strides,
-            paddings=paddings,
-            dilations=dilations,
-            groups=num_groups,
-        ))
-    if has_bias:
+        (['Input', 'Filter'], [var_x, var_w]),
+        (['Output'], [var_conv]),
+        {
+            'strides': strides,
+            'paddings': paddings,
+            'dilations': dilations,
+            'groups': num_groups,
+        },
+    )
+    if var_b:
         prog.VarDesc(var_conv)
         prog.IntermediateOp(
             '',
             'Add',
             [var_conv, var_b],  #
-            [val_y],
-            dict(axis=1),
-            value_infos=value_infos,
-            name=(name + '.bias'),
+            [var_y],
+            {'axis': 1},
+            name=(name + '/bias'),
         )
     else:
         prog.VarDesc(var_y)
@@ -1041,7 +1055,7 @@ def ConvTranspose(prog,
                   outputs,
                   attrs,
                   value_infos,
-                  name='',
+                  name,
                   embed_params=False,
                   *args,
                   **kwargs):
@@ -1050,49 +1064,52 @@ def ConvTranspose(prog,
     """
 
     # I/O
-    val_x, val_w = inputs[:2]
-    val_y, = outputs
-    var_y = _make_var_name(val_y)
-
-    has_bias = len(inputs) == 3
-    if has_bias:
-        val_b, = inputs[2:]
+    var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
+    var_y, = outputs
+    assert name and var_x and var_w and var_y
 
     # interpretation
     assert attrs.get(
-        'auto_pad', 'NOTSET'
-    ) == 'NOTSET', 'only auto_pad == NOTSET is supported'  # optional
-    assert sum(attrs.get(
-        'output_padding',
-        [])) == 0, 'only zero output_padding is supported'  # optional ?
-    kernel_shape = _shape(value_infos, val_w)[2:]  # IO...
-    assert kernel_shape == attrs[
-        'kernel_shape'], 'kernel_shape in attr unmatches value_info'  # HW
+        'auto_pad',
+        'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET supported'  # optional
+    assert sum(
+        attrs.get('output_padding',
+                  [])) == 0, 'only zero output_padding supported'  # optional ?
+    kernel_shape = attrs.get('kernel_shape',
+                             _shape(value_infos, var_w)[2:])  # optional, HW
+    assert kernel_shape, 'kernel_shape not inferred'
     convnd = len(kernel_shape)
-    assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose is supported'
-    num_out_channels = _shape(value_infos, val_w)[1]  # IO...
+    assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose supported'
+    num_out_channels = _shape(value_infos, var_w)[1]  # IO...
 
     fluid_op = 'conv{}d_transpose'.format(convnd)
     num_groups = attrs.get('group', 1)  # optional
     strides = attrs.get('strides', [1] * convnd)  # optional
     dilations = attrs.get('dilations', [1] * convnd)  # optional
+    output_size = attrs.get('output_shape', [])  # optional
     pads = attrs.get('pads', [0] * (convnd * 2))  # optional
-    paddings, val_x = _pad_if_asymmetric(prog, pads, val_x, value_infos)
-    var_x = _make_var_name(val_x)
-    name_attr = ', name={}'.format(repr(name)) if name else ''
+    paddings, var_x = _pad_if_asymmetric(prog, pads, var_x, value_infos, name)
+    name_attr = ', name={}'.format(repr(name))
+    embeddable = _check_embeddable(value_infos,
+                                   *([var_w] + ([var_b] if var_b else [])))
+    if not embeddable:
+        _logger.warning('for op  %s(%s -> ConvTranspose -> %s)', name, inputs,
+                        outputs)
+        _logger.warning('one of the parameters is intermediate value')
+        _logger.warning('broken Python code will be generated')
+    embed_params &= embeddable
     if embed_params:
-        assert name != ''
-        var_w = name + '.w_0'
-        value_infos[val_w].setdefault('embeded_as', []).append(var_w)
-        if has_bias:
-            var_b = name + '.b_0'
-            value_infos[val_b].setdefault('embeded_as', []).append(var_b)
+        embedded_w = name + '.w_0'
+        value_infos[var_w]['embedded_as'].append(embedded_w)
+        var_w = embedded_w
+        if var_b:
+            embedded_b = name + '.b_0'
+            value_infos[var_b]['embedded_as'].append(embedded_b)
+            var_b = embedded_b
             param_attr = ''
         else:
             param_attr = ', bias_attr=False'
     else:
-        var_w = _make_var_name(val_w)
-        var_b = _make_var_name(val_b) if has_bias else False
         param_attr = ', param_attr={}, bias_attr={}'.format(
             repr(var_w),
             repr(var_b) if var_b else False)
@@ -1100,7 +1117,7 @@ def ConvTranspose(prog,
     # generation
     prog.Code('{} = layers.{}({}'
               ', num_filters={}'
-              #              ', output_size={}'
+              ', output_size={}'
               ', filter_size={}'
               ', padding={}'
               ', stride={}'
@@ -1112,6 +1129,7 @@ def ConvTranspose(prog,
                   var_x,
                   # attrs
                   num_out_channels,
+                  output_size or None,
                   kernel_shape,
                   paddings,
                   strides,
@@ -1120,48 +1138,32 @@ def ConvTranspose(prog,
                   param_attr,
                   name_attr,
               ))
-    var_conv = name + '.conv'  # hidden variable
+    var_conv = (name + '.conv') if var_b else var_y  # hidden variable
     prog.OpDesc(
         fluid_op,
-        ([var_x, var_w], 'Input', 'Filter'),  # , 'Bias', 'ResidualData'
-        ([var_conv if has_bias else var_y], 'Output'),
-        dict(
-            strides=strides,
-            paddings=paddings,
-            dilations=dilations,
-            # output_size=output_size,
-            groups=num_groups,
-        ))
-    if has_bias:
+        (['Input', 'Filter'], [var_x, var_w]),
+        (['Output'], [var_conv]),
+        {
+            'strides': strides,
+            'paddings': paddings,
+            'dilations': dilations,
+            'groups': num_groups,
+            # unused
+            'output_size': output_size,
+        },
+    )
+    if var_b:
         prog.VarDesc(var_conv)
         prog.IntermediateOp(
             '',
             'Add',
             [var_conv, var_b],  #
-            [val_y],
-            dict(axis=1),
-            value_infos=value_infos,
-            name=(name + '.bias'),
+            [var_y],
+            {'axis': 1},
+            name=(name + '/bias'),
         )
     else:
         prog.VarDesc(var_y)
-
-
-# should not appear
-#def Dropout(
-#        prog, inputs, outputs, value_infos,
-#        *args, **kwargs):
-#    """
-#    onnx::Dropout-7:9
-#    """
-#
-#    val_data, = inputs
-#    val_output, = outputs[:1]
-#
-#    _assign(prog,
-#            dict([(val_output, val_data)]),
-#            value_infos,
-#            )
 
 
 def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
@@ -1170,53 +1172,52 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
 
     # due to fluid fc don't support transposed weight, we use matmul + ew_add
-    val_a, val_b, val_c = inputs
-    val_y, = outputs
+    var_a, var_b, var_c, = inputs
+    var_y, = outputs
+    assert name and var_a and var_b and var_c and var_y
 
     alpha = attrs.get('alpha', 1.)  # optional
     beta = attrs.get('beta', 1.)  # optional
     trans_a = bool(attrs.get('transA', 0))  # optional
     trans_b = bool(attrs.get('transB', 0))  # optional
 
-    val_mm = name + '_mm'  # explicit variable
+    var_mm = var_y if beta == 0 else (name + '_mm')  # explicit variable
     prog.Op(
         '',
         'MatMul',
-        [val_a, val_b],
-        [val_mm],  # val
-        dict(
-            transpose_x=trans_a,
-            transpose_y=trans_b,
-            alpha=alpha,
-        ),
-        value_infos=value_infos,
-        name=val_mm,
+        [var_a, var_b],
+        [var_mm],
+        {
+            'transpose_x': trans_a,
+            'transpose_y': trans_b,
+            'alpha': alpha,
+        },
+        name=(name + '/mm'),
     )
     prog.op_descs[-1].attrs.extend(
-        prog.OpDescAttrs(dict(
-            transpose_X=trans_a,
-            transpose_Y=trans_b,
-        )))  # f**k you API
+        prog.OpDescAttrs({
+            'transpose_X': trans_a,
+            'transpose_Y': trans_b,
+        }))  # f**k you API
     if beta != 0:
         if beta == 1.:  # exactly
             prog.Op(
                 '',
                 'Add',
-                [val_mm, val_c],
-                [val_y],  # val
-                dict(axis=1),
-                value_infos=value_infos,
-                name=(name + '_beta'),
+                [var_mm, var_c],
+                [var_y],
+                {'axis': 1},
+                name=(name + '/bias'),
             )
         else:
-            val_beta = name + '_beta'  # explicit variable
-            val_vm = name + '_vm'  # explicit variable
+            var_beta = name + '_beta'  # explicit variable
+            var_vm = name + '_vm'  # explicit variable
             if beta.is_integer():
-                vm_dtype = _dtype_or_none(value_infos, val_c)
+                vm_dtype = _dtype_or_none(value_infos, var_c)
                 if vm_dtype is None:
                     vm_dtype = _np.dtype('float32')
                     _logger.warning(
-                        'in %s(%s -> Gemm -> %s): '
+                        'in op %s(%s -> Gemm -> %s): '
                         'attribute "beta" seems to be an interger, '
                         'however dtype can not be inferred, '
                         'still use float32', name, inputs, outputs)
@@ -1225,34 +1226,31 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                 '',
                 'Constant',
                 [],
-                [val_beta],  # val
-                dict(value=beta),
-                value_infos=value_infos,
-                name=val_beta,
+                [var_beta],
+                {'value': beta},
             )
             prog.Op(
                 '',
                 'Mul',
-                [val_c, val_beta],
-                [val_vm],  # val
+                [var_c, var_beta],
+                [var_vm],
                 dict(),
-                value_infos=value_infos,
-                name=(name + '_scale'),
+                name=(name + '.beta/scale'),
             )
             prog.Op(
                 '',
                 'Add',
-                [val_mm, val_vm],
-                [val_y],  # val
-                dict(axis=1),
-                name=(name + '_bias'),
+                [var_mm, var_vm],
+                [var_y],
+                {'axis': 1},  #
+                name=(name + '/bias'),
             )
 
 
 def GlobalAveragePool(prog,
                       inputs,
                       outputs,
-                      attrs,
+                      attrs_,
                       value_infos,
                       name='',
                       *args,
@@ -1261,14 +1259,13 @@ def GlobalAveragePool(prog,
     onnx::GlobalAveragePool-1:
     """
 
-    return _global_pool(
-        prog, 'avg', inputs, outputs, attrs, value_infos, name=name)
+    return _global_pool(prog, 'avg', inputs, outputs, value_infos, name=name)
 
 
 def GlobalMaxPool(prog,
                   inputs,
                   outputs,
-                  attrs,
+                  attrs_,
                   value_infos,
                   name='',
                   *args,
@@ -1277,78 +1274,490 @@ def GlobalMaxPool(prog,
     onnx::GlobalMaxPool-1:
     """
 
-    return _global_pool(
-        prog, 'max', inputs, outputs, attrs, value_infos, name=name)
+    return _global_pool(prog, 'max', inputs, outputs, value_infos, name=name)
 
 
-#def LRN(
-#        prog, inputs, outputs, attrs, value_infos, name, # name required
-#        *args, **kwargs):
-#    """
-#    onnx::LRN-1:
-#    """
-#
-#    # I/O
-#    val_x, = inputs
-#    val_y, = outputs
-#    var_x = _make_var_name(val_x)
-#    var_y = _make_var_name(val_y)
-#
-#    # interpretation
-#    fluid_op = 'lrn'
-#    size = attrs['size'] # required
-#    alpha = attrs.get('alpha', 0.0001) # optional
-#    beta = attrs.get('beta', 0.75) # optional
-#    bias = attrs.get('bias', 1.0) # optional
-#    name_attr = ', name={}'.format(repr(name)) if name else ''
-#
-#    # generation
-#    prog.Code('{} = layers.{}({}'
-#              ', n={}'
-#              ', k={}'
-#              ', alpha={}'
-#              ', beta={}'
-#              '{})'
-#              .format(var_y,
-#                      fluid_op,
-#                      var_x,
-#                      # attrs
-#                      size,
-#                      bias,
-#                      alpha,
-#                      beta,
-#                      name_attr,
-#                      ))
-#    var_mid = name + '.mid' # hidden variable
-#    prog.VarDesc(var_y)
-#    prog.VarDesc(var_mid)
-#    prog.OpDesc(fluid_op,
-#                ([var_x], 'X'),
-#                ([var_y, var_mid], 'Out', 'MidOut'),
-#                dict(n=size,
-#                     k=bias,
-#                     alpha=alpha,
-#                     beta=beta,
-#                     ),
-#                )
+def GRU(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+    """
+    onnx::GRU-7:
+    """
+
+    var_x, var_w, var_r, var_b, var_len, var_xh, = (inputs + [''] * 3)[:6]
+    var_y, var_yh, = (outputs + [''] * 2)[:2]
+    assert name and var_x and var_w and var_r  # and (var_y or var_yh)
+    var_gate = name + '.gate'  # dummy output
+    var_reset = name + '.reset'  # dummy output
+    var_hidden = name + '.hidden'  # dummy output, # var_yh
+
+    # interpretation
+    x_shape = _shape_or_none(value_infos, var_x)
+    assert x_shape is not None, 'shape of X required to be known'
+    assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
+    assert 'clip' not in attrs, 'clipping not supported'
+    hidden_size = attrs.get('hidden_size', None)  # optional
+    if hidden_size is None:
+        r_shape = _shape_or_none(value_infos, var_r)
+        if r_shape:
+            hidden_size = r_shape[-1]
+    if hidden_size is None:
+        w_shape = _shape_or_none(value_infos, var_w)
+        if w_shape:
+            hidden_size = w_shape[-2] // 3
+    if hidden_size is None and var_b:
+        b_shape = _shape_or_none(value_infos, var_b)
+        if b_shape:
+            hidden_size = b_shape[-1] // 6
+    if hidden_size is None and var_xh:
+        xh_shape = _shape_or_none(value_infos, var_xh)
+        if xh_shape:
+            hidden_size = xh_shape[-1]
+    assert hidden_size, 'hidden_size not inferred'
+    assert attrs.get(
+        'linear_before_reset',
+        0) == 0, 'only linear_before_reset = 0 supported'  # optional
+    direction = attrs.get('direction', 'forward')  # optional
+    assert direction != 'bidirectional', 'direction = bidirectional not supported'
+    activations = attrs.get('activations', ['Sigmoid', 'Tanh'])  # optional
+    assert len(activations) == 2, 'bidirectional operation not supported'
+    activations = [s.lower() for s in activations]  # TODO: check support
+    gate_activation, candidate_activation = activations
+    is_reverse = direction == 'reverse'
+
+    fluid_op = 'dynamic_gru'
+    _logger.warning('for op  (%s -> GRU -> %s)', inputs, outputs)
+    _logger.warning('one of the parameters is intermediate value')
+    _logger.warning('broken Python code will be generated')
+
+    # generation
+    var_x0 = name + '_x0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_x],
+        [var_x0],
+        {'axes': [1]},  # index on n
+        name=(name + '.x/index'),
+    )
+    var_w0 = name + '_w0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_w],
+        [var_w0],
+        {'axes': [0]},  # index on d
+        name=(name + '.w/index'),
+    )
+    var_fc = name + '_fc'
+    var_mm = (name + '_mm') if var_b else var_fc
+    prog.Op(
+        '',
+        'MatMul',
+        [var_x0, var_w0],
+        [var_mm],
+        {
+            'transpose_x': 0,
+            'transpose_y': 1,
+        },
+        name=(name + '/mm'),
+    )
+    prog.op_descs[-1].attrs.extend(
+        prog.OpDescAttrs({
+            'transpose_X': 0,
+            'transpose_Y': 1,
+        }))  # f**k you API
+    var_r0 = name + '_r0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_r],
+        [var_r0],
+        {'axes': [0]},  # index on d
+        name=(name + '.r/index'),
+    )
+    var_r0t = name + '_r0t'  # explicit variable
+    prog.Op(
+        '',
+        'Transpose',
+        [var_r0],
+        [var_r0t],
+        {'perm': [1, 0]},  # transpose OI->IO
+        name=(name + '.r0/transpose'),
+    )
+    if var_b:
+        var_bi = name + '_bi'  # explicit variable
+        var_bh = name + '_bh'  # explicit variable
+        prog.Op(
+            '',
+            'Split',
+            [var_b],
+            [var_bi, var_bh],
+            {
+                'axis': 1,  # split on x
+                'split': [hidden_size * 3, hidden_size * 3],
+            },
+            name=(name + '.b/split'),
+        )
+        # squeeze bi so Gemm Add can be performed on axis=1 exaclty
+        var_bi0 = name + '_bi0'  # explicit variable
+        prog.Op(
+            '',
+            'Squeeze',
+            [var_bi],
+            [var_bi0],
+            {'axes': [0]},  # slice on d
+            name=(name + '.bi/index'),
+        )
+        prog.Op(
+            '',
+            'Add',
+            [var_mm, var_bi0],
+            [var_fc],
+            {'axis': 1},  #
+            name=(name + '.i/bias'),
+        )
+    if var_xh:
+        var_xh0 = name + '_xh0'  # explicit variable
+        prog.Op(
+            '',
+            'Squeeze',
+            [var_xh],
+            [var_xh0],
+            {'axes': [1]},  # index on n
+            name=(name + '.xh/index'),
+        )
+    var_y00 = name + '_y00'  # explicit variable #
+    prog.Code('{} = layers.{}({}, {}, origin_mode=True'
+              ', h_0={}'
+              ', is_reverse={}'
+              ', gate_activation={}'
+              ', candidate_activation={}'
+              ', param_attr={}, bias_attr={})'.format(
+                  var_y00,
+                  fluid_op,
+                  var_fc,
+                  hidden_size,
+                  var_xh0 if var_xh else None,
+                  is_reverse,
+                  repr(gate_activation),
+                  repr(candidate_activation),
+                  repr(var_r0t),
+                  repr(var_bh) if var_b else False,
+              ))
+
+    fluid_op = 'gru'
+    prog.VarDesc(var_y00)
+    prog.VarDesc(var_gate)
+    prog.VarDesc(var_reset)
+    prog.VarDesc(var_hidden)
+    prog.OpDesc(
+        fluid_op,
+        (['Input', 'Weight', 'Bias', 'H0'], [var_fc, var_r0t] +
+         ([var_bh] if var_b else []) + ([var_xh0] if var_xh else [])),
+        (['Hidden', 'BatchGate', 'BatchResetHiddenPrev', 'BatchHidden'
+          ], [var_y00, var_gate, var_reset, var_hidden]),
+        {
+            'is_reverse': is_reverse,
+            'gate_activation': gate_activation,
+            'activation': candidate_activation,
+            'origin_mode': True,
+        },
+    )
+    if var_y:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_y00],
+            [var_y],
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.y/reshape'),
+        )
+    if var_yh:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_y00],  #
+            [var_yh],  #
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.yh/reshape'),
+        )
 
 
-def MaxPool(prog, inputs, outputs, attrs, value_infos, name='', *args,
-            **kwargs):
+def LSTM(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+    """
+    onnx::LSTM-7:
+    """
+
+    var_x, var_w, var_r, var_b, var_len, var_xh, var_xc, var_p, = (inputs +
+                                                                   [''] * 5)[:8]
+    var_y, var_yh, var_yc, = (outputs + [''] * 3)[:3]
+    assert name and var_x and var_w and var_r  # and (var_y or var_yh or var_yc)
+    var_gate = name + '.gate'
+    var_pre = name + '.pre'
+
+    # interpretation
+    x_shape = _shape_or_none(value_infos, var_x)
+    assert x_shape is not None, 'shape of X required to be known'
+    assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
+    assert 'clip' not in attrs, 'clipping not supported'
+    hidden_size = attrs.get('hidden_size', None)  # optional
+    if hidden_size is None:
+        r_shape = _shape_or_none(value_infos, var_r)
+        if r_shape:
+            hidden_size = r_shape[-1]
+    if hidden_size is None:
+        w_shape = _shape_or_none(value_infos, var_w)
+        if w_shape:
+            hidden_size = w_shape[-2] // 4
+    if hidden_size is None and var_b:
+        b_shape = _shape_or_none(value_infos, var_b)
+        if b_shape:
+            hidden_size = b_shape[-1] // 8
+    if hidden_size is None and var_xh:
+        xh_shape = _shape_or_none(value_infos, var_xh)
+        if xh_shape:
+            hidden_size = xh_shape[-1]
+    if hidden_size is None and var_xc:
+        xc_shape = _shape_or_none(value_infos, var_xc)
+        if xc_shape:
+            hidden_size = xc_shape[-1]
+    if hidden_size is None and var_p:
+        p_shape = _shape_or_none(value_infos, var_p)
+        if p_shape:
+            hidden_size = p_shape[-1] // 3
+    assert hidden_size, 'hidden_size not inferred'
+    assert attrs.get(
+        'linear_before_reset',
+        0) == 0, 'only linear_before_reset = 0 supported'  # optional
+    assert attrs.get('input_forget',
+                     0) == 0, 'only input_forget = 0 supported'  # optional
+    direction = attrs.get('direction', 'forward')  # optional
+    assert direction != 'bidirectional', 'direction = bidirectional not supported'
+    activations = attrs.get('activations',
+                            ['Sigmoid', 'Tanh', 'Tanh'])  # optional
+    assert len(activations) == 3, 'bidirectional operation not supported'
+    activations = [s.lower() for s in activations]  # TODO: check support
+    gate_activation, cell_activation, candidate_activation = activations
+    is_reverse = direction == 'reverse'
+
+    fluid_op = 'dynamic_lstm'
+    name_attr = ', name={}'.format(repr(name))
+    _logger.warning('for op  %s(%s -> LSTM -> %s)', name, inputs, outputs)
+    _logger.warning('one of the parameters is intermediate value')
+    _logger.warning('broken Python code will be generated')
+
+    # generation
+    var_x0 = name + '_x0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_x],
+        [var_x0],
+        {'axes': [1]},  # index on n
+        name=(name + '.x/index'),
+    )
+    var_w0 = name + '_w0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_w],
+        [var_w0],
+        {'axes': [0]},  # index on d
+        name=(name + '.w/index'),
+    )
+    var_fc = name + '_fc'
+    var_mm = (name + '_mm') if var_b else var_fc
+    prog.Op(
+        '',
+        'MatMul',
+        [var_x0, var_w0],
+        [var_mm],
+        {
+            'transpose_x': 0,
+            'transpose_y': 1,
+        },
+        name=(name + '/mm'),
+    )
+    prog.op_descs[-1].attrs.extend(
+        prog.OpDescAttrs({
+            'transpose_X': 0,
+            'transpose_Y': 1,
+        }))  # f**k you API
+    var_r0 = name + '_r0'  # explicit variable
+    prog.Op(
+        '',
+        'Squeeze',
+        [var_r],
+        [var_r0],
+        {'axes': [0]},  # index on d
+        name=(name + '.r/index'),
+    )
+    var_r0t = name + '_r0t'  # explicit variable
+    prog.Op(
+        '',
+        'Transpose',
+        [var_r0],
+        [var_r0t],
+        {'perm': [1, 0]},  # transpose OI->IO
+        name=(name + '.r0/transpose'),
+    )
+    if var_b:
+        var_bi = name + '_bi'  # explicit variable
+        var_bh = name + '_bh'  # explicit variable
+        prog.Op(
+            '',
+            'Split',
+            [var_b],
+            [var_bi, var_bh],
+            {
+                'axis': 1,  # split on x
+                'split': [hidden_size * 4, hidden_size * 4],
+            },
+            name=(name + '.b/split'),
+        )
+        # squeeze bi so Gemm Add can be performed on axis=1 exaclty
+        var_bi0 = name + '_bi0'  # explicit variable
+        prog.Op(
+            '',
+            'Squeeze',
+            [var_bi],
+            [var_bi0],
+            {'axes': [0]},  # slice on d
+            name=(name + '.bi/index'),
+        )
+        prog.Op(
+            '',
+            'Add',
+            [var_mm, var_bi0],
+            [var_fc],
+            {'axis': 1},  #
+            name=(name + '.i/bias'),
+        )
+    if var_xh:
+        var_xh0 = name + '_xh0'  # explicit variable
+        prog.Op(
+            '',
+            'Squeeze',
+            [var_xh],
+            [var_xh0],
+            {'axes': [1]},  # index on n
+            name=(name + '.xh/index'),
+        )
+    if var_xc:
+        var_xc0 = name + '_xc0'  # explicit variable
+        prog.Op(
+            '',
+            'Squeeze',
+            [var_xc],
+            [var_xc0],
+            {'axes': [1]},  # index on n
+            name=(name + '.xc/index'),
+        )
+    var_bhp = var_p
+    if var_b:
+        if var_p:
+            var_bhp = name + '_bhp'  # explicit variable
+            prog.Op(
+                '',
+                'Concat',
+                [var_bh, var_p],
+                [var_bhp],
+                {'axis': [1]},  # cat on x
+                name=(name + '/concat'),
+            )
+        else:
+            var_bhp = var_bh
+    var_yh0 = name + '_yh0'  # explicit variable
+    var_yc0 = name + '_yc0'  # explicit variable
+    prog.Code('{}, {} = layers.{}({}, {}'
+              ', h_0={}'
+              ', c_0={}'
+              ', use_peepholes={}'
+              ', is_reverse={}'
+              ', gate_activation={}'
+              ', cell_activation={}'
+              ', candidate_activation={}'
+              ', param_attr={}, bias_attr={}'
+              '{})'.format(
+                  var_yh0,
+                  var_yc0,
+                  fluid_op,
+                  var_fc,
+                  hidden_size * 4,
+                  var_xh0 if var_xh else None,
+                  var_xc0 if var_xc else None,
+                  bool(var_p),
+                  is_reverse,
+                  repr(gate_activation),
+                  repr(cell_activation),
+                  repr(candidate_activation),
+                  repr(var_r0t),
+                  repr(var_bhp) if var_bhp else False,
+                  name_attr,
+              ))
+
+    fluid_op = 'lstm'
+    prog.VarDesc(var_yh0)
+    prog.VarDesc(var_yc0)
+    prog.VarDesc(var_gate)
+    prog.VarDesc(var_pre)
+    prog.OpDesc(
+        fluid_op,
+        (['Input', 'Weight', 'Bias', 'H0', 'C0'], [var_fc, var_r0t] +
+         ([var_bhp] if var_bhp else []) + ([var_xh0] if var_xh else []) +
+         ([var_xc0] if var_xc else [])),
+        (['Hidden', 'Cell', 'BatchGate', 'BatchCellPreAct'
+          ], [var_yh0, var_yc0, var_gate, var_pre]),
+        {
+            'use_peepholes': bool(var_p),
+            'is_reverse': is_reverse,
+            'gate_activation': gate_activation,
+            'cell_activation': cell_activation,
+            'candidate_activation': candidate_activation,
+        },
+    )
+    if var_y:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_yh0],  #
+            [var_y],  # var_y
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.y/reshape'),
+        )
+    if var_yh:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_yh0],
+            [var_yh],  # var_yh
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.yh/reshape'),
+        )
+    if var_yc:
+        prog.Op(
+            '',
+            'Unsqueeze',
+            [var_yc0],
+            [var_yc],
+            {'axes': [1, 1]},  # extrude on dn
+            name=(name + '.yc/reshape'),
+        )
+
+
+def MaxPool(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     """
     onnx::MaxPool-10:
     """
 
-    return _pool(prog, 'max', inputs, outputs, attrs, value_infos, name=name)
+    return _pool(prog, 'max', inputs, outputs, attrs, value_infos, name)
 
 
-def MaxRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args,
-               **kwargs):
+def MaxRoiPool(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     onnx::MaxRoiPool-1:
     """
 
-    _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'roi_pool', inputs, outputs, attrs, name)
 
 
 def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
@@ -1357,32 +1766,31 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     """
 
     # I/O
-    val_data, = inputs
-    val_output, = outputs
-    var_data = _make_var_name(val_data)
-    var_output = _make_var_name(val_output)
+    var_data, = inputs
+    var_output, = outputs
+    assert var_data and var_output
 
     # interpretation
     pads = attrs['pads']  # required
     mode = attrs.get('mode', 'constant')  # optional
     value = attrs.get('value', 0.)  # optional
-    data_shape = _shape_or_none(value_infos, val_data)
-    output_shape = _shape_or_none(value_infos, val_output)
+    data_shape = _shape_or_none(value_infos, var_data)
+    output_shape = _shape_or_none(value_infos, var_output)
     assume_pad2d = False
     if len(pads) == 4:
         assume_pad2d |= mode != 'constant'
-        if data_shape:
+        if data_shape is not None:
             assume_pad2d |= data_shape and len(data_shape) == 4  # NCHW
-        if output_shape:
+        if output_shape is not None:
             assume_pad2d |= output_shape and len(output_shape) == 4  # NCHW
-    od_attrs = dict(pad_value=value)
+    od_attrs = {'pad_value': value}
     if assume_pad2d:
         fluid_op = 'pad2d'
         pad2d_attr = ', mode={}, data_format="NCHW"'.format(repr(mode))
         od_attrs['mode'] = mode
         od_attrs['data_format'] = "NCHW"
     else:
-        assert mode == 'constant', 'mode {} is supported only in pad2d'.format(
+        assert mode == 'constant', 'mode {} supported only in pad2d'.format(
             mode)
         fluid_op = 'pad'
         pad2d_attr = ''
@@ -1408,8 +1816,8 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        ([var_data], 'X'),
-        ([var_output], 'Out'),
+        (['X', 'Paddings'], [var_data]),  #
+        (['Out'], [var_output]),
         od_attrs,
     )
 
@@ -1417,7 +1825,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
 def PRelu(prog,
           inputs,
           outputs,
-          attrs,
+          attrs_,
           value_infos,
           name='',
           embed_params=False,
@@ -1428,67 +1836,82 @@ def PRelu(prog,
     """
 
     # I/O
-    val_x, val_slope = inputs
-    val_y, = outputs
-    var_x = _make_var_name(val_x)
-    var_y = _make_var_name(val_y)
+    var_x, var_slope, = inputs
+    var_y, = outputs
+    assert name and var_x and var_slope and var_y
 
     # interpretation
+    mode = 'channel'
+    slope_shape = _shape_or_none(value_infos, var_slope)
+    if slope_shape is not None:
+        if not slope_shape:
+            mode = 'all'
+        elif len(slope_shape) >= 2:
+            if slope_shape[1] != _np.product(
+                    slope_shape):  # not channel broadcasting
+                mode = 'element'
     fluid_op = 'prelu'
     name_attr = ', name={}'.format(repr(name)) if name else ''
+    embeddable = _check_embeddable(value_infos, var_slope)
+    if not embeddable:
+        _logger.warning('for op  %s(%s -> PRelu -> %s)', name, inputs, outputs)
+        _logger.warning('one of the parameters is intermediate value')
+        _logger.warning('broken Python code will be generated')
+    embed_params &= embeddable
     if embed_params:
-        assert name != ''
-        var_slope = '{}.w_0'.format(val_slope)
-        value_infos[val_slope].setdefault('embeded_as', []).append(var_slope)
+        assert name
+        embedded_slope = name + '.w_0'
+        value_infos[var_slope]['embedded_as'].append(embedded_slope)
+        var_slope = embedded_slope
         param_attr = ''
     else:
-        var_slope = _make_var_name(val_slope)
         param_attr = ', param_attr={}'.format(repr(var_slope))
 
     # generation
-    prog.Code('{} = layers.{}({}, mode="all"'
+    prog.Code('{} = layers.{}({}'
+              ', mode={}'
               '{}{})'.format(
                   var_y,
                   fluid_op,
                   var_x,
                   # attrs
+                  repr(mode),
                   param_attr,
                   name_attr,
               ))
     prog.VarDesc(var_y)
     prog.OpDesc(
         fluid_op,
-        ([var_x], 'X'),
-        ([var_y], 'Out'),
-        dict(mode='all'),
+        (['X', 'Alpha'], [var_x, var_slope]),
+        (['Out'], [var_y]),
+        {'mode': mode},
     )
 
 
-def PsRoiPool(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def PsRoiPool(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     caffe2::PsRoiPool
     """
 
-    _roi_pool(prog, 'psroi_pool', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'psroi_pool', inputs, outputs, attrs, name)
 
 
-def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def Reshape(prog, inputs, outputs, attrs_, value_infos, name, *args, **kwargs):
     """
     onnx::Reshape-5:
     """
 
     # I/O
-    val_data, val_shape = inputs
-    val_reshaped, = outputs
-    var_data = _make_var_name(val_data)
-    var_shape = _make_var_name(val_shape)
-    var_reshaped = _make_var_name(val_reshaped)
+    var_data, var_shape, = inputs
+    var_reshaped, = outputs
+    assert name and var_data and var_shape and var_reshaped
 
     # interpretation
-    shape = _const_weight_or_none(value_infos, val_shape)
-    is_const_shape = shape and 'const_value' in value_infos[val_shape]
+    shape = _const_weight_or_none(value_infos, var_shape)
+    is_const_shape = shape is not None and 'const_value' in value_infos[
+        var_shape]
     if shape is None:
-        shape = _shape_or_none(value_infos, val_reshaped)
+        shape = _shape_or_none(value_infos, var_reshaped)
 
 
 #    assert shape is not None, ('given shape is neither const value nor deductible from output, '
@@ -1496,15 +1919,25 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     if shape is None:
         shape = [1, -1]  # who knows
         _logger.warning(
-            'in %s(%s -> Reshape -> %s): '
+            'in op %s(%s -> Reshape -> %s): '
             'input "shape" not inferred, use [1, -1] as dummy value, '
             'the behavior of Paddle fluid maybe undefined', name, inputs,
             outputs)
+    shape_dtype = _dtype_or_none(value_infos, var_shape)
+    if shape_dtype is None:
+        _logger.warning(
+            'in op %s(%s -> Reshape -> %s): '
+            'dtype of input "shape" not inferred, int32 assumed', name, inputs,
+            outputs)
+        shape_dtype = _np.dtype('int32')
     fluid_op = 'reshape'
-    name_attr = ', name={}'.format(repr(name)) if name else ''
+    name_attr = ', name={}'.format(repr(name))
 
     # generation
-    prog.Code('# shape:{}={} # const as literal'.format(var_shape, shape))
+    var_shape_i32 = (
+        name + '_shape_i32'
+    ) if shape_dtype != _np.int32 else var_shape  # explicit variable
+    prog.Code('# shape: {} = {} # const as literal'.format(var_shape, shape))
     if is_const_shape:
         prog.Code('{} = layers.{}({}'
                   ', shape={}'
@@ -1517,17 +1950,23 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       name_attr,
                   ))
     else:
-        val_shape_int32 = val_shape + '_int32'  # explicit variable
-        var_shape_int32 = _make_var_name(val_shape_int32)
-        prog.Op(
-            '',
-            'Cast',
-            [val_shape],
-            [val_shape_int32],  # var
-            dict(to=_np.dtype('int32')),  # use np.dtype
-            value_infos=value_infos,
-            name=(name + '_cast'),
-        )
+        if shape_dtype != _np.int32:
+            prog.Op(
+                '',
+                'Cast',
+                [var_shape],
+                [var_shape_i32],
+                {'to': _np.dtype('int32')},  # use np.dtype
+                value_infos={
+                    var_shape: {
+                        'dtype': shape_dtype
+                    },
+                    var_shape_i32: {
+                        'dtype': _np.dtype('int32')
+                    },
+                },
+                name=(name + '/cast'),
+            )
         prog.Code('{} = layers.{}({}'
                   ', shape={}'
                   ', actual_shape={}'
@@ -1537,27 +1976,19 @@ def Reshape(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
                       var_data,
                       # attrs
                       shape,
-                      var_shape_int32,
+                      var_shape_i32,
                       name_attr,
                   ))
     fluid_op = 'reshape2'
     var_xshape = name + '.xshape'  # dummy output
     prog.VarDesc(var_reshaped)
     prog.VarDesc(var_xshape)
-    if is_const_shape:
-        prog.OpDesc(
-            fluid_op,
-            ([var_data], 'X'),
-            ([var_reshaped, var_xshape], 'Out', 'XShape'),
-            dict(shape=shape),
-        )
-    else:
-        prog.OpDesc(
-            fluid_op,
-            ([var_data, var_shape_int32], 'X', 'Shape'),
-            ([var_reshaped, var_xshape], 'Out', 'XShape'),
-            dict(shape=shape),
-        )
+    prog.OpDesc(
+        fluid_op,
+        (['X', 'Shape', 'ShapeTensor'], [var_data, var_shape_i32]),  #
+        (['Out', 'XShape'], [var_reshaped, var_xshape]),
+        {'shape': shape},
+    )
 
 
 def Resize(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
@@ -1568,44 +1999,57 @@ def Resize(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     return _interpolate(prog, inputs, outputs, attrs, value_infos, name=name)
 
 
-def RoiAlign(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
+def RoiAlign(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     caffe2::RoiAlign
     """
 
-    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, value_infos, name)
+    _roi_pool(prog, 'roi_align', inputs, outputs, attrs, name)
 
 
-#def Shape(
-#        prog, inputs, outputs, attrs, value_infos,
-#        *args, **kwargs):
-#    """
-#    onnx::ConstantOfShape-1:
-#    """
-#
-#    # I/O
-#    val_data, = inputs
-#    val_shape, = outputs
-#    var_data = _make_var_name(val_data)
-#    var_shape = _make_var_name(val_shape)
-#
-#    # interpretation
-#    fluid_op = 'shape'
-##    value_infos[val_shape]['remove_batch'] = False
-#
-#    # generation
-#    prog.Code('{} = layers.{}({})'
-#              .format(var_shape,
-#                      fluid_op,
-#                      var_data,
-#                      # attrs
-#                      ))
-#    prog.VarDesc(var_shape) # , _value_info_or_none(value_infos, val_shape))
-#    prog.OpDesc(fluid_op,
-#                ([var_data], 'X'),
-#                ([var_shape], 'Out'),
-#                dict(),
-#                )
+def Shape(prog, inputs, outputs, attrs_, name, **kwargs):
+    """
+    onnx::Shape-1:
+    """
+
+    # I/O
+    var_data, = inputs
+    var_shape, = outputs
+    assert name and var_data and var_shape
+
+    # interpretation
+    fluid_op = 'shape'
+    var_shape_i64 = name + '_shape_i64'
+
+    # generation
+    prog.Code('{} = layers.{}({})'.format(
+        var_shape_i64,
+        fluid_op,
+        var_data,
+        # attrs
+    ))
+    prog.VarDesc(var_shape_i64)
+    prog.OpDesc(
+        fluid_op,
+        (['Input'], [var_data]),
+        (['Out'], [var_shape_i64]),
+    )
+    prog.Op(
+        '',
+        'Cast',
+        [var_shape_i64],
+        [var_shape],
+        {'to': _np.dtype('int32')},  # use np.dtype
+        value_infos={
+            var_shape: {
+                'dtype': _np.dtype('int32')
+            },
+            var_shape_i64: {
+                'dtype': _np.dtype('int64')
+            },
+        },
+        name=(name + '/cast'),
+    )
 
 
 def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
@@ -1614,18 +2058,17 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     """
 
     # I/O
-    val_data, = inputs
-    val_output, = outputs
-    var_data = _make_var_name(val_data)
-    var_output = _make_var_name(val_output)
+    var_data, = inputs
+    var_output, = outputs
+    assert var_data and var_output
 
     # interpretation
     fluid_op = 'slice'
     axes = attrs['axes']  # required
     starts = attrs['starts']  # required
     ends = attrs['ends']  # required
-    shape = _shape_or_none(value_infos, val_data)
-    if shape:
+    shape = _shape_or_none(value_infos, var_data)
+    if shape is not None:
         #        ndims = len(shape)
         #        for idx, value in enumerate(axes):
         #            if value > ONNX_INT_MAX // 2:
@@ -1657,13 +2100,13 @@ def Slice(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        ([var_data], 'Input'),
-        ([var_output], 'Out'),
-        dict(
-            axes=axes,
-            starts=starts,
-            ends=ends,
-        ),
+        (['Input'], [var_data]),
+        (['Out'], [var_output]),
+        {
+            'axes': axes,
+            'starts': starts,
+            'ends': ends,
+        },
     )
 
 
@@ -1673,9 +2116,8 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     """
 
     # I/O
-    val_input, = inputs
-    var_outs = [_make_var_name(val) for val in outputs]
-    var_input = _make_var_name(val_input)
+    var_input, = inputs
+    assert var_input
 
     # interpretation
     fluid_op = 'split'
@@ -1687,7 +2129,7 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     prog.Code('{} = layers.{}({}, {}'
               ', dim={}'
               '{})'.format(
-                  ', '.join(var_outs),
+                  ', '.join(outputs),
                   fluid_op,
                   var_input,
                   split,
@@ -1695,28 +2137,29 @@ def Split(prog, inputs, outputs, attrs, *args, name='', **kwargs):
                   axis,
                   name_attr,
               ))
-    for var_out in var_outs:
+    for var_out in outputs:
         prog.VarDesc(var_out)
     prog.OpDesc(
         fluid_op,
-        (var_input, 'X'),
-        ([var_outs], *(['Out'] * len(var_outs))),
-        dict(
-            axis=axis,
-            sections=split,
-        ),
+        (['X'], [var_input]),
+        (['Out'] * len(outputs), outputs),
+        {
+            'axis': axis,
+            'sections': split,
+            # unused
+            'num': 0,
+        },
     )
 
 
-def Sum(prog, inputs, outputs, *args, **kwargs):
+def Sum(prog, inputs, outputs, attrs_, *args, **kwargs):
     """
     onnx::Sum-8:
     """
 
     # I/O
-    val_sum, = outputs
-    var_inps = [_make_var_name(val) for val in inputs]
-    var_sum = _make_var_name(val_sum)
+    var_sum, = outputs
+    assert var_sum
 
     # interpretation
     fluid_op = 'sums'
@@ -1725,39 +2168,38 @@ def Sum(prog, inputs, outputs, *args, **kwargs):
     prog.Code('{} = layers.{}({})'.format(
         var_sum,
         fluid_op,
-        '[' + ', '.join(var_inps) + ']',
+        '[' + ', '.join(inputs) + ']',
         # attrs
     ))
     fluid_op = 'sum'
     prog.VarDesc(var_sum)
     prog.OpDesc(
         fluid_op,
-        (var_inps, *(['X'] * len(var_inps))),
-        ([var_sum], 'Out'),
+        (['X'] * len(inputs), inputs),
+        (['Out'], [var_sum]),
         dict(),
     )
 
 
-def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
+def Tile(prog, inputs, outputs, attrs_, value_infos, name='', *args, **kwargs):
     """
     onnx::Tile-1:
     """
 
     # I/O
-    val_input, val_repeats = inputs
-    val_output, = outputs
-    var_input = _make_var_name(val_input)
-    var_repeats = _make_var_name(val_repeats)
-    var_output = _make_var_name(val_output)
+    var_input, var_repeats, = inputs
+    var_output, = outputs
+    assert var_input and var_repeats and var_output
 
     # interpretation
-    repeats = _const_weight_or_none(value_infos, val_repeats)
-    assert repeats is not None, 'only const repeats is supported'
+    repeats = _const_weight_or_none(value_infos, var_repeats)
+    assert repeats is not None, 'only const repeats supported'  # if contain_tensor(expand_times)
     fluid_op = 'expand'
     name_attr = ', name={}'.format(repr(name)) if name else ''
 
     # generation
-    prog.Code('# repeats:{}={} # const as literal'.format(var_repeats, repeats))
+    prog.Code('# repeats: {} = {} # const as literal'.format(
+        var_repeats, repeats))
     prog.Code('{} = layers.{}({}'
               ', expand_times={}'
               '{})'.format(
@@ -1771,22 +2213,21 @@ def Tile(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
     prog.VarDesc(var_output)
     prog.OpDesc(
         fluid_op,
-        ([var_input], 'X'),
-        ([var_output], 'Out'),
-        dict(expand_times=repeats),
+        (['X', 'expand_times_tensor'], [var_input]),  # TODO
+        (['Out'], [var_output]),
+        {'expand_times': repeats},
     )
 
 
-def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
+def Transpose(prog, inputs, outputs, attrs, name, *args, **kwargs):
     """
     onnx::Transpose-1:
     """
 
     # I/O
-    val_data, = inputs
-    val_transposed, = outputs
-    var_data = _make_var_name(val_data)
-    var_transposed = _make_var_name(val_transposed)
+    var_data, = inputs
+    var_transposed, = outputs
+    assert name and var_data and var_transposed
 
     # interpretation
     fluid_op = 'transpose'
@@ -1810,9 +2251,9 @@ def Transpose(prog, inputs, outputs, attrs, *args, name='', **kwargs):
     prog.VarDesc(var_transposed)
     prog.OpDesc(
         fluid_op,
-        ([var_data], 'X'),
-        ([var_transposed, var_xshape], 'Out', 'XShape'),
-        dict(axis=perm),  # f**k you API
+        (['X'], [var_data]),
+        (['Out', 'XShape'], [var_transposed, var_xshape]),
+        {'axis': perm},  # f**k you API
     )
 
 
@@ -1902,9 +2343,8 @@ if __name__ == '__main__':
         ['input'],
         ['output'],
         dict(to=2),  # TensorProto.UINT8
-        dict(
-            input=dict(shape=(2, 3), dtype=np.float32),
-            output=dict(shape=(2, 3), dtype=np.uint8)),
+        dict(input=dict(shape=(2, 3), dtype=np.float32),
+             output=dict(shape=(2, 3), dtype=np.uint8)),
     )
     logger.info('Cast program:\n%s', prog)
 
@@ -2101,12 +2541,11 @@ if __name__ == '__main__':
     logger.info('Less program:\n%s', prog)
 
     prog = Program()
-    _default(
-        prog,
-        'MatMul', ['A', 'B'], ['Y'],
-        dict(),
-        dict(Y=dict(shape=(2, 8), dtype=np.float32)),
-        name='MatMul')
+    _default(prog,
+             'MatMul', ['A', 'B'], ['Y'],
+             dict(),
+             dict(Y=dict(shape=(2, 8), dtype=np.float32)),
+             name='MatMul')
     logger.info('MatMul program:\n%s', prog)
 
     prog = Program()
@@ -2168,11 +2607,9 @@ if __name__ == '__main__':
     logger.info('PRelu program:\n%s', prog)
 
     prog = Program()
-    Tile(
-        prog, ['input', 'repeats'], ['output'],
-        dict(),
-        dict(
-            repeats=dict(const_value=[1, 2]),
-            output=dict(shape=(2, 2, 4), dtype=np.float32)),
-        name='Tile')
+    Tile(prog, ['input', 'repeats'], ['output'],
+         dict(),
+         dict(repeats=dict(const_value=[1, 2]),
+              output=dict(shape=(2, 2, 4), dtype=np.float32)),
+         name='Tile')
     logger.info('Tile program:\n%s', prog)

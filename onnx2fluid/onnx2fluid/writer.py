@@ -11,10 +11,11 @@ from __future__ import division
 import logging, os
 import numpy as np
 
+from collections import OrderedDict as Dict
+
 logger = logging.getLogger(__name__)
 
 from . import symbolic
-from .symbolic import _make_var_name as make_var_name
 
 try:
     import paddle.fluid.proto.framework_pb2 as framework_pb2
@@ -30,7 +31,7 @@ __all__ = [
 ]
 
 
-def _irepr(obj, to='_'):
+def irepr(obj, to='_'):
     """inline repr"""
 
     s = repr(obj)
@@ -41,12 +42,14 @@ def _irepr(obj, to='_'):
     return s
 
 
-def _flatten_list(obj, out=None):
+def flatten_list(obj, out=None):
+    assert isinstance(obj, list), 'list type required'
+
     if out is None:
         out = type(obj)()
     for item in obj:
         if isinstance(item, list):
-            _flatten_list(item, out)
+            flatten_list(item, out)
         else:
             out.append(item)
     return out
@@ -57,9 +60,9 @@ def make_attr_name(name):
     make a valid code name for ParamAttr
     """
 
-    if name == '':
-        raise ValueError('name should not be empty')
-    for s in ' *?\\/-:':  #
+    assert name != '', 'name should not be empty'
+
+    for s in ' \\|/:.-':  #
         name = name.replace(s, '_')
     if not name.startswith('_'):
         name = '_' + name
@@ -93,7 +96,7 @@ class Program(object):
         return Program.DTYPE_TO_FRAMEWORK_DTYPE[dtype]
 
     @staticmethod
-    def OpDescVars(vals, *keys):
+    def OpDescVars(keys, vals):
         """
         make (OpDesc.Var)s
         """
@@ -130,8 +133,8 @@ class Program(object):
                 od_attr.type = framework_pb2.STRING
                 od_attr.s = value
             elif isinstance(value, list):
-                if len(value) > 0:
-                    if isinstance(value,
+                if value:  # TODO: test all items
+                    if isinstance(value[0],
                                   bool):  # bool.mro() = [bool, int, object]
                         od_attr.type = framework_pb2.BOOLEANS
                         od_attr.bools.extend(value)
@@ -147,13 +150,11 @@ class Program(object):
                     else:
                         raise ValueError('unsupported attribute {} = {}'.format(
                             key, value))
-                else:  # WORKAROUND: shape of scalars is []
-                    raise ValueError('unsupported attribute {} = {}'.format(
-                        key, value))
-
-
-#                    od_attr.type = framework_pb2.INTS
-#                    logger.warning('using attribute %s = %s as INTS', key, value)
+                else:  # WORKAROUND: [] not inferred
+                    #                    raise ValueError('unsupported attribute {} = {}'.format(key, value))
+                    od_attr.type = framework_pb2.INTS
+                    logger.warning('using attribute %s = %s as INTS', key,
+                                   value)
             else:
                 raise ValueError('unsupported attribute {} = {}'.format(
                     key, value))
@@ -164,14 +165,15 @@ class Program(object):
         self.code_mutable = True
         self.codes = []
         self.op_descs = []
-        self.var_descs = []
+        self.var_descs = Dict()
 
     def __repr__(self):
         return ('Program(code mutable: {}) with:\n'
                 'codes: {}\n'
                 'op_descs: {}\n'
                 'var_descs: {}\n').format(self.code_mutable, self.codes,
-                                          self.op_descs, self.var_descs)
+                                          self.op_descs,
+                                          list(self.var_descs.values()))
 
     def Code(self, code):
         """
@@ -181,23 +183,16 @@ class Program(object):
         if self.code_mutable:
             self.codes.append(code)
 
-    def OpDesc(self,
-               name,
-               input_val_keys=None,
-               output_val_keys=None,
-               attrs=None):
+    def OpDesc(self, op_type, input_key_vals, output_key_vals, attrs):
         """
         add OpDesc
         """
 
         desc = framework_pb2.OpDesc()
-        desc.type = name
-        if input_val_keys is not None:
-            desc.inputs.extend(self.OpDescVars(*input_val_keys))
-        if output_val_keys is not None:
-            desc.outputs.extend(self.OpDescVars(*output_val_keys))
-        if attrs is not None:
-            desc.attrs.extend(self.OpDescAttrs(attrs))
+        desc.type = op_type
+        desc.inputs.extend(self.OpDescVars(*input_key_vals))
+        desc.outputs.extend(self.OpDescVars(*output_key_vals))
+        desc.attrs.extend(self.OpDescAttrs(attrs))
         self.op_descs.append(desc)
         return desc
 
@@ -210,26 +205,18 @@ class Program(object):
         add VarDesc,
         """
 
+        assert name not in self.var_descs, 'var name {} conflicts'.format(name)
+
         var_desc = framework_pb2.VarDesc()
         var_desc.name = name
         var_desc.persistable = persistable
         var_desc.type.type = framework_pb2.VarType.LOD_TENSOR
+        self.var_descs[name] = var_desc
 
-        if value_info and 'dtype' in value_info:
-            tensor_desc = var_desc.type.lod_tensor.tensor
-            tensor_desc.data_type = self.Dtype(value_info['dtype'])  # required
-            if 'shape' in value_info:
-                tensor_desc.dims.extend(value_info['shape'])
-                if len(value_info['shape']) > 0:  # skip scalars
-                    if remove_batch is None:
-                        remove_batch = value_info.get('remove_batch',
-                                                      not persistable)
-                    if remove_batch:
-                        tensor_desc.dims[0] = -1
+        if value_info is not None:
+            self.VarTypeShapeInfo(name, value_info, remove_batch=remove_batch)
 
-        self.var_descs.append(var_desc)
-
-    def Op(self, domain, op_type, *args, **kwargs):
+    def Op(self, domain, op_type, inputs, outputs, attrs, *args, **kwargs):
         """
         convert an ONNX op and add it to program
         """
@@ -238,15 +225,17 @@ class Program(object):
             raise ValueError('only default domain supported')
 
         if op_type in symbolic.DEFAULT_OP_MAPPING:
-            symbolic._default(self, op_type, *args, **kwargs)
+            symbolic._default(self, op_type, inputs, outputs, attrs, *args,
+                              **kwargs)
         elif hasattr(symbolic, op_type):
             fn = getattr(symbolic, op_type)
-            fn(self, *args, **kwargs)
+            fn(self, inputs, outputs, attrs, *args, **kwargs)
         else:
             raise ValueError('conversion for {}::{} not supported'.format(
                 domain, op_type))
 
-    def IntermediateOp(self, domain, op_type, *args, **kwargs):
+    def IntermediateOp(self, domain, op_type, inputs, outputs, attrs, *args,
+                       **kwargs):
         """
         convert an intermediate ONNX op declaring in desc program only
         """
@@ -254,12 +243,39 @@ class Program(object):
         code_mutable = self.code_mutable
         self.code_mutable = False
         try:
-            self.Op(domain, op_type, *args, **kwargs)
+            self.Op(domain, op_type, inputs, outputs, attrs, *args, **kwargs)
         except BaseException as e:
             self.code_mutable = code_mutable
             raise e
         else:
             self.code_mutable = code_mutable
+
+    def VarTypeShapeInfo(self, name, value_info, remove_batch=None):
+        """
+        set value_info for var
+        """
+
+        if name not in self.var_descs:
+            return
+
+        dtype = value_info.get('dtype', None)
+        if dtype is None:
+            return
+
+        var_desc = self.var_descs[name]
+        tensor_desc = var_desc.type.lod_tensor.tensor
+        tensor_desc.data_type = self.Dtype(dtype)  # required
+
+        shape = value_info.get('shape', None)
+        if not shape:  # None or scalars
+            return
+
+        tensor_desc.dims.extend(shape)
+        if remove_batch is None:
+            remove_batch = value_info.get('remove_batch',
+                                          False)  #not persistable)
+        if remove_batch:
+            tensor_desc.dims[0] = -1
 
 
 class Writer(object):
@@ -267,7 +283,7 @@ class Writer(object):
     fluid code and desc writter
     """
 
-    CODE_INDENT = ' ' * 4
+    CODE_INDENT = ' ' * 4  # '\t'
 
     @staticmethod
     def header_code(func_name, info=''):
@@ -275,7 +291,7 @@ class Writer(object):
         Python header codes
         """
 
-        codes = list()
+        codes = []
         codes.append('"""')
         codes.append('This code is generated by onnx2fluid.')
         codes.append('{}'.format(info))
@@ -287,6 +303,7 @@ class Writer(object):
         codes.append('from paddle.fluid import initializer, layers')
         codes.append('')
         codes.append('')
+
         codes.append('def {}():'.format(func_name))
         return codes
 
@@ -299,17 +316,16 @@ class Writer(object):
 
         prog.Code('# {}, {}::{}: {} -> {}, {}'.format(name, domain, op_type,
                                                       inputs, outputs,
-                                                      _irepr(attrs, to=', ')))
-        prog.Op(
-            domain,
-            op_type,
-            inputs,
-            outputs,
-            attrs,
-            value_infos=value_infos,
-            name=name,
-            *args,
-            **kwargs)
+                                                      irepr(attrs, to=', ')))
+        prog.Op(domain,
+                op_type,
+                inputs,
+                outputs,
+                attrs,
+                value_infos=value_infos,
+                name=name,
+                *args,
+                **kwargs)
 
     @staticmethod
     def emit_param(prog, name, value_info):
@@ -317,24 +333,26 @@ class Writer(object):
         emit an ONNX weight into program
         """
 
-        if value_info.get('embeded_as', []):
-            var_names = value_info['embeded_as']
-            prog.Code('# parameter {} embeded as {}'.format(name, var_names))
-            for var_name in var_names:
-                prog.VarDesc(var_name, persistable=True, value_info=value_info)
+        embedded_names = value_info.get('embedded_as', [])
+        if embedded_names:
+            prog.Code('# parameter {} embedded as {}'.format(
+                name, embedded_names))
+            for embedded_name in embedded_names:
+                prog.VarDesc(embedded_name,
+                             persistable=True,
+                             value_info=value_info)
         else:
-            var_name = make_var_name(name)
             attr_name = make_attr_name(name)
-            prog.Code('# parameter {}: {}'.format(name, var_name))
+            prog.Code('# parameter {}'.format(name))
             prog.Code('{} = ParamAttr(name={})'  # , trainable=True
-                      .format(attr_name, repr(var_name)))
+                      .format(attr_name, repr(name)))
             prog.Code(
                 '{} = layers.create_parameter(shape={}, dtype={}, name={}, attr={}'
                 ', default_initializer=initializer.Constant(0))'  #, is_bias={}
-                .format(var_name, value_info['shape'],
+                .format(name, value_info['shape'],
                         repr(value_info['dtype'].name), repr(name),
                         attr_name))  #, value_info.get('is_bias', False)))
-            prog.VarDesc(var_name, persistable=True, value_info=value_info)
+            prog.VarDesc(name, persistable=True, value_info=value_info)
 
     @staticmethod
     def emit_inputs(prog, names, value_infos, remove_batch=None):
@@ -343,7 +361,6 @@ class Writer(object):
         """
 
         for idx, name in enumerate(names):
-            var_name = make_var_name(name)
             value_info = value_infos[name]
             shape = value_info['shape']
             if remove_batch is None:
@@ -352,25 +369,24 @@ class Writer(object):
             if remove_batch:
                 shape = shape[1:]
 
-            prog.Code('# input {}: {}'.format(name, var_name))
+            prog.Code('# input {}'.format(name))
             prog.Code((
                 '{} = layers.data(name={}, shape={}, dtype={}, '
                 'append_batch_size={})'  # , stop_gradient=True
             ).format(
-                var_name,
-                repr(var_name),
+                name,
+                repr(name),
                 shape,
                 repr(value_info['dtype'].name),
                 remove_batch,
             ))
             prog.OpDesc(
                 'feed',
-                (['feed'], 'X'),
-                ([var_name], 'Out'),
-                dict(col=idx),
+                (['X'], ['feed']),
+                (['Out'], [name]),
+                {'col': idx},
             )
-            prog.VarDesc(
-                var_name, value_info=value_info, remove_batch=remove_batch)
+            prog.VarDesc(name, value_info=value_info, remove_batch=remove_batch)
 
     @staticmethod
     def emit_outputs(prog, names):  #, value_infos
@@ -380,14 +396,13 @@ class Writer(object):
 
         code = 'return '
         for idx, name in enumerate(names):
-            var_name = make_var_name(name)
-            code += var_name + ', '
+            code += name + ', '
 
             prog.OpDesc(
                 'fetch',
-                ([var_name], 'X'),
-                (['fetch'], 'Out'),
-                dict(col=idx),
+                (['X'], [name]),
+                (['Out'], ['fetch']),
+                {'col': idx},
             )
             # var is emitted over ops
         prog.Code(code)
@@ -398,18 +413,22 @@ class Writer(object):
         flatten codes in program
         """
 
-        for code in _flatten_list(others):
+        for code in flatten_list(others):
             codes.append(Writer.CODE_INDENT * indent + code)
         return codes
 
     @staticmethod
-    def write_weight(weight, filename):
+    def write_weight(weight, filename, lod=None):
         """
         write single weight in fluid desc
         """
 
-        if not isinstance(weight, np.ndarray):
-            raise TypeError('weight is not an ndarray')
+        assert isinstance(weight, np.ndarray), 'weight is not an ndarray'
+        assert lod is None or isinstance(lod,
+                                         list), 'lod should be None or list'
+
+        if lod is None:
+            lod = [0]
 
         tensor_desc = framework_pb2.VarType.TensorDesc()
         tensor_desc.data_type = Program.Dtype(weight.dtype)
@@ -417,7 +436,7 @@ class Writer(object):
 
         fp = open(filename, 'wb')
         np.array([0], dtype=np.int32).tofile(fp)  # version
-        np.array([0], dtype=np.int64).tofile(fp)  # LOD level
+        np.array(lod, dtype=np.int64).tofile(fp)  # LOD level
         np.array([0], dtype=np.int32).tofile(fp)  # tensor version
         np.array([tensor_desc.ByteSize()], dtype=np.int32).tofile(fp)
         fp.write(tensor_desc.SerializeToString())
@@ -431,11 +450,9 @@ class Writer(object):
         """
 
         for name, weight in weights.items():
-            if not isinstance(weights, dict):
-                raise TypeError('dict type weights required')
+            assert isinstance(weights, dict), 'dict type weights required'
 
-            var_name = make_var_name(name)
-            filename = os.path.join(save_dir, var_name)
+            filename = os.path.join(save_dir, name)
             Writer.write_weight(weight, filename)
             logger.debug('saved weight %s to %s', name, filename)
 
@@ -451,7 +468,7 @@ class Writer(object):
             Writer.add_codes(codes, body_code, 1)
 
         fp = open(filename, 'w')
-        for code in _flatten_list(codes):
+        for code in flatten_list(codes):
             fp.write(code)
             fp.write('\n')
         fp.close()

@@ -22,7 +22,6 @@ __all__ = [
     'main',
 ]
 
-DEFAULT_ONNX_OPSET_VERSION = 9
 DEFAULT_MODEL_MODULE = 'model'
 DEFAULT_MODEL_FUNC = 'inference'
 
@@ -30,6 +29,7 @@ DEFAULT_MODEL_FUNC = 'inference'
 def main(**kwargs):
     """主程序入口"""
 
+    from .conversion import DEFAULT_ONNX_OPSET_VERSION
     from .conversion import convert
 
     logger = logging.getLogger('onnx2fluid')
@@ -44,41 +44,50 @@ def main(**kwargs):
                 if save_dir else basepath) + shutil.os.sep
     model_basename = DEFAULT_MODEL_MODULE + '.py'
     model_func_name = DEFAULT_MODEL_FUNC
-    onnx_opset_version = DEFAULT_ONNX_OPSET_VERSION
     onnx_opset_pedantic = kwargs.pop('pedantic', True)
-    onnx_skip_version_conversion = kwargs.pop('skip_version_conversion', False)
+    skip_version_conversion = kwargs.pop('skip_version_conversion', False)
+    onnx_opset_version = None if skip_version_conversion else DEFAULT_ONNX_OPSET_VERSION
 
     # convert
-    convert(
-        filename,
-        save_dir,
-        model_basename=model_basename,
-        model_func_name=model_func_name,
-        onnx_opset_version=onnx_opset_version,
-        onnx_opset_pedantic=onnx_opset_pedantic,
-        onnx_skip_version_conversion=onnx_skip_version_conversion,
-        **kwargs)
+    convert(filename,
+            save_dir,
+            model_basename=model_basename,
+            model_func_name=model_func_name,
+            onnx_opset_version=onnx_opset_version,
+            onnx_opset_pedantic=onnx_opset_pedantic,
+            **kwargs)
 
     # validate
     passed = True
     golden_data_filename = kwargs.pop('test_data', '')
-    if golden_data_filename:
+    infer_inputs = kwargs.pop('infer_inputs', None)
+    save_inference_model = infer_inputs is not None
+    if golden_data_filename or save_inference_model:
         from .validation import validate
 
+        if save_inference_model:
+            inference_input_names = infer_inputs.split(',')
+        else:
+            inference_input_names = None
+
         logger.info('starting validation on desc ...')
-        passed &= validate(
-            shutil.os.path.join(save_dir, '__model__'), golden_data_filename,
-            **kwargs)
+        passed &= validate(shutil.os.path.join(save_dir, '__model__'),
+                           golden_data_filename=golden_data_filename,
+                           save_inference_model=save_inference_model,
+                           inference_input_names=inference_input_names,
+                           **kwargs)
 
         logger.info('starting validation on code ...')
-        passed &= validate(
-            shutil.os.path.join(save_dir, model_basename),
-            golden_data_filename,
-            model_func_name=model_func_name,
-            **kwargs)
+        # this re-generate desc proto with Python code when debug on
+        passed &= validate(shutil.os.path.join(save_dir, model_basename),
+                           golden_data_filename=golden_data_filename,
+                           model_func_name=model_func_name,
+                           save_inference_model=save_inference_model,
+                           inference_input_names=inference_input_names,
+                           **kwargs)
 
     if not passed:
-        logger.error('validation failed, exit')
+        logger.fatal('validation failed, exit')
         return
 
     # create zip file
@@ -111,19 +120,17 @@ if __name__ == '__main__':
 
     from onnx2fluid.cmdline import main
 
-    main(
-        model=['../examples/t1.onnx'],
-        output_dir='/tmp/export/',
-        embed_params=False,
-        pedantic=False,
-        test_data='../examples/t1.npz',
-        debug=True)
+    main(model=['../examples/t1.onnx'],
+         output_dir='/tmp/export/',
+         embed_params=False,
+         pedantic=False,
+         test_data='../examples/t1.npz',
+         debug=True)
 
-    main(
-        model=['../examples/inception_v2/model.onnx'],
-        output_dir='/tmp/export/',
-        embed_params=True,
-        pedantic=False,
-        skip_version_conversion=False,
-        test_data='../examples/inception_v2/test_data_set_2.npz',
-        debug=True)
+    main(model=['../examples/inception_v2/model.onnx'],
+         output_dir='/tmp/export/',
+         embed_params=True,
+         pedantic=False,
+         skip_version_conversion=False,
+         test_data='../examples/inception_v2/test_data_set_2.npz',
+         debug=True)

@@ -15,16 +15,16 @@ from collections import OrderedDict as Dict
 from glob import glob
 
 
-def _make_var_name(name):
+def make_var_name(name):
     """
     make a valid variable name in Python code
     """
 
-    if name == '':
-        return '_'
+    assert name
+
     if name[0].isdigit():
         return 'var_' + name
-    for s in ' *?\\/-:':
+    for s in ' \\|/:-':  #
         name = name.replace(s, '_')
     if name.startswith('_'):
         name = 'var' + name
@@ -32,8 +32,8 @@ def _make_var_name(name):
 
 
 data_dir = os.path.dirname(sys.argv[1])
-input_names = sys.argv[2].split(':')
-output_name = sys.argv[3].split(':')
+input_names = sys.argv[2].split(',')
+output_names = sys.argv[3].split(',')
 squeeze_data = len(sys.argv) > 4
 
 # Load inputs
@@ -58,7 +58,7 @@ for fn in glob(os.path.join(data_dir, 'output_*.pb')):
         tensor = tensor.squeeze(0)
     outputs.append(tensor)
 
-inputs = Dict(zip(map(_make_var_name, input_names), inputs))
-outputs = Dict(zip(map(_make_var_name, output_name), outputs))
+inputs = Dict(zip(map(make_var_name, input_names), inputs))
+outputs = Dict(zip(map(make_var_name, output_names), outputs))
 
 np.savez(data_dir, inputs=inputs, outputs=outputs)

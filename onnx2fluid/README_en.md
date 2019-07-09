@@ -19,8 +19,8 @@ PyTorch to Paddlepaddle model conversion can be easily achieved with PyTorch ONN
 ## Environment and dependency
 
 * python 3.5+ (python 2 not fully supported yet)
-* onnx == 1.4.0
-* paddlepaddle == 1.3.0 (optional for validation)
+* onnx >= 1.4
+* paddlepaddle >= 1.3.0 (optional for validation)
 
 ## Get started
 
@@ -47,10 +47,12 @@ onnx2fluid sample_unet.onnx -t sample_unet.npz
 
 ## Usage
 
+**ONNX opset 9+** is mainly supported, corresponded to PyTorch **1.0/1.1(stable opset)**，for more information: [ONNX doc](https://github.com/onnx/onnx/blob/master/docs/Operators.md)
+
 onnx2fluid (all in one):
 
 ```shell
-onnx2fluid [-dexy] [-o /path/to/export_dir/] [-z archive.zip] [-t test_data.npz] /path/to/onnx/model.onnx
+onnx2fluid [-dexy] [-o /path/to/export_dir/] [-z archive.zip] [-t test_data.npz] [-i [input_name1,input_name2]] /path/to/onnx/model.onnx
 
 optional arguments:
   --debug, -d           enable debug logging and checking
@@ -61,6 +63,8 @@ optional arguments:
   --output_dir, -o      output directory
   --archive [ARCHIVE], -z [ARCHIVE]
                         compress outputs to ZIP file if conversion successed
+  --infer_inputs, -i [input_name1,input_name2]
+                        invoke PaddlePaddle fluid type-shape inference
 ```
 
 onnx2fluid.conversion:
@@ -72,10 +76,10 @@ onnx2fluid.conversion [-dexy] [-o /path/to/export_dir/] /path/to/onnx/model.onnx
 onnx2fluid.validate:
 
 ```shell
-onnx2fluid.validate [-d] [-t test_data.npz] [-p 1e-3] /path/to/onnx/model.onnx
+onnx2fluid.validate [-d] [-t test_data.npz] [-i [input_name1,input_name2]] [-p 1e-3] /path/to/onnx/model.onnx
 ```
 
 ## Reference
 
-* [PaddlePaddle fluid operators](http://www.paddlepaddle.org/documentation/docs/en/1.4/api/layers.html)
-* load converted model via [load_inference_model](http://www.paddlepaddle.org/documentation/docs/en/1.4/api/io.html#permalink-1-load_inference_model)
+* [PaddlePaddle fluid operators](http://www.paddlepaddle.org/documentation/docs/en/1.5/api/layers.html)
+* load converted model via [load_inference_model](http://www.paddlepaddle.org/documentation/docs/en/1.5/api/io.html#permalink-1-load_inference_model)
