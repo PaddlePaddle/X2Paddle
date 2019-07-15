@@ -1,3 +1,0 @@
--e .
-onnx>=1.4
-paddlepaddle>=1.5
