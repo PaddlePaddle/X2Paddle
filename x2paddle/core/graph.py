@@ -62,6 +62,7 @@ class Graph(object):
             num_inputs[name] = len(node.inputs)
 
         self.topo_sort = self.input_nodes[:]
+        idx = 0
         while idx < len(self.topo_sort):
             current_node = self.node_map[self.topo_sort[idx]]
             for node in current_node.outputs:
