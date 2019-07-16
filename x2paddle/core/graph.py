@@ -60,15 +60,16 @@ class Graph(object):
         num_inputs = dict()
         for name, node in self.node_map.items():
             num_inputs[name] = len(node.inputs)
+        print(len(self.node_map))
 
         self.topo_sort = self.input_nodes[:]
         idx = 0
         while idx < len(self.topo_sort):
             current_node = self.node_map[self.topo_sort[idx]]
             for node in current_node.outputs:
-                num_inputs[node.layer_name] -= 1
-                if num_inputs[node.layer_name] == 0:
-                    self.topo_sort.append(node.layer_name)
+                num_inputs[node] -= 1
+                if num_inputs[node] == 0:
+                    self.topo_sort.append(node)
             idx += 1
 
         for i, tmp in enumerate(self.topo_sort):
@@ -84,3 +85,4 @@ class Graph(object):
         if dst not in self.node_map:
             raise Exception("node[{}] not in graph".format(dst))
         self.node_map[dst].inputs.append(src)
+        self.node_map[src].outputs.append(dst)

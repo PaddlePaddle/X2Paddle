@@ -29,9 +29,6 @@ class TFGraphNode(GraphNode):
 class TFGraph(Graph):
     def __init__(self, model):
         super(TFGraph, self).__init__(model)
-        self.multi_output_ops = [
-                            'Split',
-                            'Unpack']
 
     def build(self):
         for layer in self.model.node:
@@ -41,12 +38,10 @@ class TFGraph(Graph):
             for in_node in node.layer.input:
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
-                        self.connect(in_node, layer_name)
+                        self.connect(in_node.strip().split(':')[0], layer_name)
                     else:
                         raise Exception('input[{}] of node[{}] does not exist in node_map'.format(in_node, layer_name))
                 else:
-                    if self.node_map[in_node].layer_type in self.multi_output_ops:
-                        in_node += ":0"
                     self.connect(in_node, layer_name)
 
         super(TFGraph, self).build()
