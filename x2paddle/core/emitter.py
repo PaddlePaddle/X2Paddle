@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO useless node remove
 
-# TODO identity node remove
+class Emitter(object):
+    def __init__(self):
+        print("Nothing done")
 
-# TODO subgraph optimize
+    def save_inference_model(self):
+        print("Not Implement")
 
-# TODO compute optimize
+    def save_python_code(self):
+        print("Not Implement")

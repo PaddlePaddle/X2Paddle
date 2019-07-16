@@ -21,10 +21,8 @@ class GraphNode(object):
         self.outputs = list()
         self.layer = layer
 
-        if layer_name is not None:
-            self.layer_name = layer_name
-        else:
-            self.layer_name = layer.name
+        assert layer_name is not None, "layer_name for GraphNode should not be None"
+        self.layer_name = layer_name
 
     def __hash__(self):
         return hash(self.layer.name)
@@ -70,6 +68,8 @@ class Graph(object):
                 num_inputs[node.layer_name] -= 1
                 if num_inputs[node.layer_name] == 0:
                     self.topo_sort.append(node.layer_name)
+        for i, tmp in enumerate(self.topo_sort):
+            print(tmp)
 
     def get_node(self, name):
         if name not in self.node_map:

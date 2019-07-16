@@ -19,7 +19,10 @@ import copy
 
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
-        super(TFGraphNode, self).__init__(layer, layer_name)
+        if layer_name is None:
+            super(TFGraphNode, self).__init__(layer, layer.name)
+        else:
+            super(TFGraphNode, self).__init__(layer, layer_name)
         self.layer_type = layer.op
 
 
