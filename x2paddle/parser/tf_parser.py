@@ -44,7 +44,8 @@ class TFGraph(Graph):
                 else:
                     self.connect(in_node, layer_name)
 
-        super(TFGraph, self).build()
+        super(TFGraph, self).build()        
+
 
 class TFParser(object):
     def __init__(self, pb_model, in_nodes=None, out_nodes=None, in_shapes=None):

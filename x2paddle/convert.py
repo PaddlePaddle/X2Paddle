@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from x2paddle.parser.tf_parser import TFParser
+from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
 
-parser = TFParser('/ssd2/Jason/github/X2Paddle/x2paddle/tests/frozen_darknet_yolov3_model.pb', 
+parser = TFParser('/ssd3/dltpsz/frozen_darknet_yolov3_model.pb', 
                 in_nodes=['inputs'], out_nodes=['output_boxes'],
                 in_shapes=[[-1, 416, 416, 3]])
+optimizer = TFGraphOptimizer()
+optimizer.remove_useless_node(parser.tf_graph)
+parser.tf_graph.print()
+

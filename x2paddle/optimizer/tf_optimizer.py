@@ -23,8 +23,9 @@ class TFGraphOptimizer(object):
                 'NoOp']
 
     def remove_useless_node(self, graph):
-        for name, node in graph.node_map.items():
+        for node_name, node in graph.node_map.items():
             if node.layer_type in self.useless_op:
+                graph.remove_node(node_name)
 
 # TODO identity node remove
 
