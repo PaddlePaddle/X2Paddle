@@ -15,7 +15,21 @@
 
 class Emitter(object):
     def __init__(self):
-        print("Nothing done")
+        self.paddle_codes = ""
+        self.tab = "    "
+
+    def add_codes(self, codes, indent=0):
+        if isinstance(codes, list):
+            for code in codes:
+                self.paddle_codes += (self.tab * indent + code + '\n')
+        elif isinstance(codes, str):
+            self.paddle_codes += (self.tab * indent + codes + '\n')
+        else:
+            raise Exception("Unknown type of codes")
+
+    def add_heads(self):
+        self.add_codes("import paddle.fluid as fluid")
+        self.add_codes("")
 
     def save_inference_model(self):
         print("Not Implement")

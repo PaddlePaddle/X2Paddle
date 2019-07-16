@@ -17,4 +17,4 @@ from x2paddle.core.emitter import Emitter
 
 class TFEmitter(Emitter):
     def __init__(self):
-        super(TFEmitter, self
+        super(TFEmitter, self).__init__()
