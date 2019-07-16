@@ -13,6 +13,18 @@
 # limitations under the License.
 
 # TODO useless node remove
+from x2paddle.parser.tf_parser import TFGraph
+
+
+class TFGraphOptimizer(object):
+    def __init__(self):
+        print("Not Implement")
+        self.useless_op = [
+                'NoOp']
+
+    def remove_useless_node(self, graph):
+        for name, node in graph.node_map.items():
+            if node.layer_type in self.useless_op:
 
 # TODO identity node remove
 

@@ -62,14 +62,16 @@ class Graph(object):
             num_inputs[name] = len(node.inputs)
 
         self.topo_sort = self.input_nodes[:]
-        for idx in range(len(self.topo_sort)):
+        while idx < len(self.topo_sort):
             current_node = self.node_map[self.topo_sort[idx]]
             for node in current_node.outputs:
                 num_inputs[node.layer_name] -= 1
                 if num_inputs[node.layer_name] == 0:
                     self.topo_sort.append(node.layer_name)
+            idx += 1
+
         for i, tmp in enumerate(self.topo_sort):
-            print(tmp)
+            print(tmp, self.node_map[tmp].layer_type, self.node_map[tmp].inputs)
 
     def get_node(self, name):
         if name not in self.node_map:

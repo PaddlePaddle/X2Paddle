@@ -17,18 +17,46 @@ class Layer(object):
     def __init__(self):
         self.op = None
         self.param_attr = dict()
-        self.input = None
+        self.inputs = dict()
         self.output = None
-        self.str_code = None
 
     def get_code(self):
-        if self.str_code is not None:
-            return self.str_code
+        layer_code = ""
+        if self.output is not None:
+            layer_code = self.output + " = "
+        
+        layer_code = layer_code + "fluid.layers." + self.op + "("
 
+        for key, tensor in self.inputs.items():
+            layer_code = layer_code + key + "=" + tensor + ", "
+
+        for key, value in self.param_attr.items():
+            layer_code = layer_code + key + "=" + value + ", "
+        layer_code = layer_code.strip(", ")
+
+        return layer_code += ")"
 
 class FluidCode(object):
     def __init__(self):
-        self.codes = list()
+        self.layers = list()
 
-    def add_layer(self, op, input, output, param_attr=None):
-        
+    def add_layer(self, op, inputs, output, param_attr=None):
+        layer = Layer()
+        layer.op = op
+        layer.inputs = inputs
+        layer.output = output
+        if param_attr is not None:
+            layer.param_attr = param_attr
+        self.layers.append(layer)
+
+    def add_note(self, note):
+        # note should be string
+        self.layers.append(note)
+
+    def gen_codes(self):
+        codes = list()
+        for layer in self.layers:
+            if isinstance(layer, Layer):
+                codes.append(layer.get_code())
+            elif isinstance(layer, str):
+                codes.append(layer)
