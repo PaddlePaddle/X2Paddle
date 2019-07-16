@@ -103,4 +103,3 @@ class Graph(object):
     def print(self):
         for i, tmp in enumerate(self.topo_sort):
             print(tmp, self.node_map[tmp].layer_type, self.node_map[tmp].inputs)
-
