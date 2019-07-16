@@ -13,11 +13,16 @@
 # limitations under the License.
 from x2paddle.parser.tf_parser import TFParser
 from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
+from x2paddle.emitter.tf_emitter import TFEmitter
 
-parser = TFParser('/ssd3/dltpsz/frozen_darknet_yolov3_model.pb', 
-                in_nodes=['inputs'], out_nodes=['output_boxes'],
-                in_shapes=[[-1, 416, 416, 3]])
+parser = TFParser('/ssd3/dltpsz/frozen_darknet_yolov3_model.pb',
+                  in_nodes=['inputs'],
+                  out_nodes=['output_boxes'],
+                  in_shapes=[[-1, 416, 416, 3]])
+
 optimizer = TFGraphOptimizer()
-optimizer.remove_useless_node(parser.tf_graph)
-parser.tf_graph.print()
+optimizer.run(parser.tf_graph)
+#parser.tf_graph.print()
 
+emitter = TFEmitter(parser)
+emitter.run()

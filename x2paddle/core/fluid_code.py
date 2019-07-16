@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from x2paddle.core.graph import GraphNode
+
 
 class Layer(object):
     def __init__(self):
@@ -23,18 +25,22 @@ class Layer(object):
     def get_code(self):
         layer_code = ""
         if self.output is not None:
-            layer_code = self.output + " = "
-        
+            if isinstance(self.output, str):
+                layer_code = self.output + " = "
+            else:
+                layer_code = self.output.layer_name + " = "
+
         layer_code = layer_code + "fluid.layers." + self.op + "("
 
         for key, tensor in self.inputs.items():
-            layer_code = layer_code + key + "=" + tensor + ", "
+            layer_code = layer_code + key + "={}, ".format(tensor)
 
         for key, value in self.param_attr.items():
-            layer_code = layer_code + key + "=" + value + ", "
+            layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
-        return layer_code += ")"
+        return layer_code + ")"
+
 
 class FluidCode(object):
     def __init__(self):
@@ -43,7 +49,8 @@ class FluidCode(object):
     def add_layer(self, op, inputs, output, param_attr=None):
         layer = Layer()
         layer.op = op
-        layer.inputs = inputs
+        if inputs is not None:
+            layer.inputs = inputs
         layer.output = output
         if param_attr is not None:
             layer.param_attr = param_attr

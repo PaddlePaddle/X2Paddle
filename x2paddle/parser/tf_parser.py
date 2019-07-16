@@ -17,6 +17,7 @@ from tensorflow.python.platform import gfile
 import tensorflow as tf
 import copy
 
+
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
@@ -24,6 +25,24 @@ class TFGraphNode(GraphNode):
         else:
             super(TFGraphNode, self).__init__(layer, layer_name)
         self.layer_type = layer.op
+
+        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
+
+    @property
+    def out_shapes(self):
+        values = self.layer.attr["_output_shapes"].list.shape
+        out_shapes = list()
+        for value in values:
+            shape = [dim.size for dim in value.dim]
+            out_shapes.append(shape)
+        return out_shapes
+
+    @property
+    def dtype(self):
+        dtype = self.layer.attr["dtype"].type
+        if dtype not in self.dtype_map:
+            raise Exception("Dtype[{}] not in dtype_map".format(dtype))
+        return self.dtype_map[dtype]
 
 
 class TFGraph(Graph):
@@ -40,11 +59,13 @@ class TFGraph(Graph):
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
                     else:
-                        raise Exception('input[{}] of node[{}] does not exist in node_map'.format(in_node, layer_name))
+                        raise Exception(
+                            'input[{}] of node[{}] does not exist in node_map'.
+                            format(in_node, layer_name))
                 else:
                     self.connect(in_node, layer_name)
 
-        super(TFGraph, self).build()        
+        super(TFGraph, self).build()
 
 
 class TFParser(object):
@@ -52,7 +73,8 @@ class TFParser(object):
         assert in_nodes is not None, "in_nodes should not be None"
         assert out_nodes is not None, "out_nodes should not be None"
         assert in_shapes is not None, "in_shapes should not be None"
-        assert len(in_shapes) == len(in_nodes), "length of in_shapes and in_nodes should be equal"
+        assert len(in_shapes) == len(
+            in_nodes), "length of in_shapes and in_nodes should be equal"
 
         sess = tf.Session()
         with gfile.FastGFile(pb_model, 'rb') as f:
@@ -60,7 +82,7 @@ class TFParser(object):
             graph_def.ParseFromString(f.read())
             sess.graph.as_default()
             tf.import_graph_def(graph_def, name='')
-        
+
         sess.run(tf.global_variables_initializer())
 
         self.tf_graph = TFGraph(sess.graph._as_graph_def(add_shapes=True)[0])

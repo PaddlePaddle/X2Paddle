@@ -18,14 +18,21 @@ from x2paddle.parser.tf_parser import TFGraph
 
 class TFGraphOptimizer(object):
     def __init__(self):
-        print("Not Implement")
-        self.useless_op = [
-                'NoOp']
+        self.identity_ops = ['Identity']
 
-    def remove_useless_node(self, graph):
-        for node_name, node in graph.node_map.items():
-            if node.layer_type in self.useless_op:
-                graph.remove_node(node_name)
+    def remove_isolated_node(self, graph):
+        # delete isolated nodes
+        isolated_nodes = list()
+        for node_name in graph.node_map.keys():
+            if len(graph.get_node(node_name).inputs) == 0 or len(
+                    graph.get_node(node_name).outputs) == 0:
+                isolated_nodes.append(node_name)
+
+        graph.remove_node(node_name)
+
+    def run(self, graph):
+        self.remove_isolated_node(graph)
+
 
 # TODO identity node remove
 
