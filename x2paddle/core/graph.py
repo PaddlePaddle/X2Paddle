@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from utils import *
 import collections
 
 
@@ -44,7 +43,7 @@ class Graph(object):
         self.topo_sort = list()
         self.model = model
 
-    def build(self, input_format):
+    def build(self):
         self._make_input_nodes()
         self._make_output_nodes()
         self._get_topo_sort()
@@ -65,7 +64,7 @@ class Graph(object):
             num_inputs[name] = len(node.inputs)
 
         self.topo_sort = self.input_nodes[:]
-        while idx in range(len(self.topo_sort)):
+        for idx in range(len(self.topo_sort)):
             current_node = self.node_map[self.topo_sort[idx]]
             for node in current_node.outputs:
                 num_inputs[node.layer_name] -= 1
@@ -79,8 +78,6 @@ class Graph(object):
             return self.node_map[name]
 
     def connect(self, src, dst):
-        if src.layer_name == dst.layer_name or src.layer_name not in \
-            self.node_map or dst.layer_name not in self.node_map:
-            raise Exception('Warning: Node not exist or there is a self-loop')
-        self.node_map[dst.layer_name].inputs.append(src)
-        self.node_map[src.layer_name].outputs.append(dst)
+        if dst not in self.node_map:
+            raise Exception("node[{}] not in graph".format(dst))
+        self.node_map[dst].inputs.append(src)

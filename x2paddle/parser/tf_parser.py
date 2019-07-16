@@ -13,18 +13,40 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode, Graph
-
+from tensorflow.python.platform import gfile
+import tensorflow as tf
+import copy
 
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         super(TFGraphNode, self).__init__(layer, layer_name)
-        self.layer_type = layer.op.lower()
+        self.layer_type = layer.op
 
 
 class TFGraph(Graph):
     def __init__(self, model):
         super(TFGraph, self).__init__(model)
+        self.multi_output_ops = [
+                            'Split',
+                            'Unpack']
 
+    def build(self):
+        for layer in self.model.node:
+            self.node_map[layer.name] = TFGraphNode(layer)
+
+        for layer_name, node in self.node_map.items():
+            for in_node in node.layer.input:
+                if in_node not in self.node_map:
+                    if in_node.strip().split(':')[0] in self.node_map:
+                        self.connect(in_node, layer_name)
+                    else:
+                        raise Exception('input[{}] of node[{}] does not exist in node_map'.format(in_node, layer_name))
+                else:
+                    if self.node_map[in_node].layer_type in self.multi_output_ops:
+                        in_node += ":0"
+                    self.connect(in_node, layer_name)
+
+        super(TFGraph, self).build()
 
 class TFParser(object):
     def __init__(self, pb_model, in_nodes=None, out_nodes=None, in_shapes=None):
@@ -33,11 +55,14 @@ class TFParser(object):
         assert in_shapes is not None, "in_shapes should not be None"
         assert len(in_shapes) == len(in_nodes), "length of in_shapes and in_nodes should be equal"
 
-        serialized_str = open(pb_model, 'rb').read()
-        tf.reset_default_graph()
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(serialized_str)
-
-        sess = tf.Session(graph=tf.get_default_graph())
-        sess.run(tf.global_variables_initializer())
+        sess = tf.Session()
+        with gfile.FastGFile(pb_model, 'rb') as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+            sess.graph.as_default()
+            tf.import_graph_def(graph_def, name='')
         
+        sess.run(tf.global_variables_initializer())
+
+        self.tf_graph = TFGraph(sess.graph._as_graph_def(add_shapes=True)[0])
+        self.tf_graph.build()

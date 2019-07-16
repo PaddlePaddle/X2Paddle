@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from x2paddle.parser.tf_parser import TFParser
+
+parser = TFParser('/ssd2/Jason/github/X2Paddle/x2paddle/tests/frozen_darknet_yolov3_model.pb', 
+                in_nodes=['inputs'], out_nodes=['output_boxes'],
+                in_shapes=[[-1, 416, 416, 3]])
