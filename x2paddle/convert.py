@@ -26,9 +26,3 @@ optimizer.run(parser.tf_graph)
 
 emitter = TFEmitter(parser)
 emitter.run()
-
-from x2paddle.parser.caffe_parser import CaffeParser
-
-parser = CaffeParser(
-    '/home/sunyanfang01/X2Paddle/x2paddle/alexnet.prototxt',
-    '/home/sunyanfang01/X2Paddle/x2paddle/bvlc_alexnet.caffemodel')
