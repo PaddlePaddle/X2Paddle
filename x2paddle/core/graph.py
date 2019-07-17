@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+from copy import deepcopy
 
 
 class GraphNode(object):
@@ -72,16 +73,24 @@ class Graph(object):
                     self.topo_sort.append(node)
             idx += 1
 
-    def get_node(self, name):
+    def get_node(self, name, copy=False):
         if name not in self.node_map:
             if name.split(':')[0] in self.node_map:
                 name_prefix, idx = name.split(':')
-                self.node_map[name_prefix].index = int(idx)
-                return self.node_map[name_prefix]
+                if copy:
+                    node = deepcopy(self.node_map[name_prefix])
+                else:
+                    node = self.node_map[name_prefix]
+                node.index = int(idx)
+                return node
             else:
                 raise Exception("Graph doesn't have node [%s]." % name)
         else:
-            return self.node_map[name]
+            if copy:
+                node = deepcopy(self.node_map[name])
+            else:
+                node = self.node_map[name]
+            return node
 
     def connect(self, src, dst):
         if dst not in self.node_map:

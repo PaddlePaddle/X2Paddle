@@ -32,8 +32,35 @@ class Layer(object):
 
         layer_code = layer_code + "fluid.layers." + self.op + "("
 
-        for key, tensor in self.inputs.items():
-            layer_code = layer_code + key + "={}, ".format(tensor)
+        if isinstance(self.inputs, list):
+            in_list = "["
+            for input in self.inputs:
+                assert isinstance(
+                    input, GraphNode), "Type of input should be GraphNode"
+                if hasattr(input, "index"):
+                    in_list += (input.layer_name + "[{}]".format(input.index) +
+                                ", ")
+                else:
+                    in_list += (input.layer_name + ", ")
+            inlist = in_list.strip(", ") + "], "
+        elif isinstance(self.inputs, dict):
+            for key, input in self.inputs.items():
+                assert isinstance(
+                    input, GraphNode), "Type of input should be GraphNode"
+                if hasattr(input, "index"):
+                    layer_code = layer_code + key + "={}, ".format(
+                        input.layer_name + "[{}]".format(input.index))
+                else:
+                    layer_code = layer_code + key + "={}, ".format(
+                        input.layer_name)
+        elif isinstance(self.inputs, GraphNode):
+            if hasattr(self.inputs, "index"):
+                layer_code += (self.inputs.layer_name +
+                               "[{}]".format(self.inputs.index) + ", ")
+            else:
+                layer_code += (self.inputs.layer_name + ", ")
+        else:
+            raise Exception("Unknown type of inputs.")
 
         for key, value in self.param_attr.items():
             layer_code = layer_code + key + "={}, ".format(value)
