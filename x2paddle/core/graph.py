@@ -74,7 +74,12 @@ class Graph(object):
 
     def get_node(self, name):
         if name not in self.node_map:
-            raise Exception("Graph doesn't have node [%s]." % name)
+            if name.split(':')[0] in self.node_map:
+                name_prefix, idx = name.split(':')
+                self.node_map[name_prefix].index = int(idx)
+                return self.node_map[name_prefix]
+            else:
+                raise Exception("Graph doesn't have node [%s]." % name)
         else:
             return self.node_map[name]
 

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode, Graph
+from x2paddle.core.fluid_code import FluidCode
+from tensorflow.python.framework import tensor_util
 from tensorflow.python.platform import gfile
 import tensorflow as tf
 import copy
@@ -24,7 +26,9 @@ class TFGraphNode(GraphNode):
             super(TFGraphNode, self).__init__(layer, layer.name)
         else:
             super(TFGraphNode, self).__init__(layer, layer_name)
+
         self.layer_type = layer.op
+        self.fluid_code = FluidCode()
 
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
 
@@ -43,6 +47,14 @@ class TFGraphNode(GraphNode):
         if dtype not in self.dtype_map:
             raise Exception("Dtype[{}] not in dtype_map".format(dtype))
         return self.dtype_map[dtype]
+
+    @property
+    def value(self):
+        assert self.layer_type == "Const", "Only Const node has value."
+
+        attr = self.layer.attr['value']
+        field = getattr(attr, attr.WhichOneof('value'))
+        return tensor_util.MakeNdarray(field)
 
 
 class TFGraph(Graph):

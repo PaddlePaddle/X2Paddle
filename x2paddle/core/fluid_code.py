@@ -60,6 +60,9 @@ class FluidCode(object):
         # note should be string
         self.layers.append(note)
 
+    def clear(self):
+        self.layers = list()
+
     def gen_codes(self):
         codes = list()
         for layer in self.layers:
