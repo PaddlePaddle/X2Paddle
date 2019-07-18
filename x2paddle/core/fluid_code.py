@@ -100,3 +100,4 @@ class FluidCode(object):
                 codes.append(layer.get_code())
             elif isinstance(layer, str):
                 codes.append(layer)
+        return codes

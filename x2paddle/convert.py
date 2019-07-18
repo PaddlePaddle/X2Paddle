@@ -14,14 +14,70 @@
 from x2paddle.parser.tf_parser import TFParser
 from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
 from x2paddle.emitter.tf_emitter import TFEmitter
+from six import text_type as _text_type
+import argparse
 
-parser = TFParser('/ssd2/Jason/github/X2Paddle/tool/vgg16_None.pb',
-                  in_nodes=['inputs'],
-                  out_nodes=['output_boxes'],
-                  in_shapes=[[-1, 416, 416, 3]])
 
-optimizer = TFGraphOptimizer()
-#parser.tf_graph.print()
+def arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model",
+                        "-m",
+                        type=_text_type,
+                        default=None,
+                        help="model file path")
+    parser.add_argument("--proto",
+                        "-p",
+                        type=_text_type,
+                        default=None,
+                        help="proto file of caffe model")
+    parser.add_argument("--weight",
+                        "-w",
+                        type=_text_type,
+                        default=None,
+                        help="weight file of caffe model")
+    parser.add_argument("--save_dir",
+                        "-s",
+                        type=_text_type,
+                        default=None,
+                        help="path to save translated model")
+    parser.add_argument("--framework",
+                        "-f",
+                        type=_text_type,
+                        default=None,
+                        help="define which deeplearning framework")
+    return parser
 
-emitter = TFEmitter(parser)
-emitter.run()
+
+def tf2paddle(model, save_dir):
+    print("Now translating model from tensorflow to paddle.")
+    parser = TFParser(model)
+    emitter = TFEmitter(parser)
+    emitter.run()
+    emitter.save_python_model(save_dir)
+
+
+def caffe2paddle(proto, weight, save_dir):
+    print("Not implement yet.")
+
+
+def main():
+    parser = arg_parser()
+    args = parser.parse_args()
+
+    assert args.framework is not None, "--from is not defined(tensorflow/caffe)"
+    assert args.save_dir is not None, "--save_dir is not defined"
+
+    if args.framework == "tensorflow":
+        assert args.model is not None, "--model should be defined while translate tensorflow model"
+        tf2paddle(args.model, args.save_dir)
+
+    elif args.framework == "caffe":
+        assert args.proto is not None, "--proto and --weight should be defined while translate caffe model"
+        caffe2paddle(args.proto, args.weight, args.save_dir)
+
+    else:
+        raise Exception("--framework only support tensorflow/caffe now")
+
+
+if __name__ == "__main__":
+    main()
