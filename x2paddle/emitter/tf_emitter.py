@@ -28,7 +28,6 @@ class TFEmitter(Emitter):
         # only for define attribute of op
         self.attr_node = list()
         self.omit_nodes = list()
-        self.weights = dict()
 
     def run(self):
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
@@ -44,13 +43,7 @@ class TFEmitter(Emitter):
             if node_name in self.omit_nodes:
                 continue
             node = self.graph.get_node(node_name)
-            for layer in node.fluid_code.layers:
-                print(layer.get_code())
-
-        for name, param in self.weights.items():
-            node = self.graph.get_node(name)
-            export_paddle_param(param, node.layer_name.replace('/', '_'),
-                                "params1")
+            self.net_code += node.fluid_code.gen_codes()
 
     def Placeholder(self, node):
         shape = node.out_shapes[0]
@@ -85,13 +78,13 @@ class TFEmitter(Emitter):
                                   inputs=None,
                                   output=node,
                                   param_attr=attr)
-        self.weights[node.layer_name] = node.value
+        self.weights[node.layer_name.replace('/', '_')] = node.value
 
     def Transpose(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         perm = self.graph.get_node(node.layer.input[1], copy=True)
         assert perm.layer_type == "Const", "Perm of transpose OP should be Const"
-        del self.weights[perm.layer_name]
+        del self.weights[perm.layer_name.replace('/', '_')]
         perm.fluid_code.clear()
         perm = perm.value.tolist()
 
@@ -204,7 +197,7 @@ class TFEmitter(Emitter):
         channel_first = data_format == "NCHW"
 
         if not channel_first:
-            self.weights[kernel.layer_name] = numpy.transpose(
+            self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
                 kernel.value, (3, 2, 0, 1))
             attr = {"perm": [0, 3, 1, 2]}
             node.fluid_code.add_layer("transpose",

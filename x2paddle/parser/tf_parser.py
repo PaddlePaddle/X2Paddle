@@ -24,9 +24,11 @@ import copy
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(TFGraphNode, self).__init__(layer, layer.name)
+            super(TFGraphNode, self).__init__(layer,
+                                              layer.name.replace('/', '_'))
         else:
-            super(TFGraphNode, self).__init__(layer, layer_name)
+            super(TFGraphNode, self).__init__(layer,
+                                              layer_name.replace('/', '_'))
 
         self.layer_type = layer.op
         self.fluid_code = FluidCode()
@@ -86,10 +88,11 @@ class TFGraph(Graph):
 
     def build(self):
         for layer in self.model.node:
-            self.node_map[layer.name] = TFGraphNode(layer)
+            self.node_map[layer.name.replace('/', '_')] = TFGraphNode(layer)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
+                in_node = in_node.replace('/', '_')
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
@@ -108,6 +111,7 @@ class TFGraph(Graph):
 
     def get_node(self, node_name, copy=False):
         items = node_name.strip().split(':')
+        items[0] = items[0].replace('/', '_')
         if items[0] in self.identity_map:
             items[0] = self.identity_map[items[0]]
         new_node_name = ":".join(items)
@@ -151,11 +155,11 @@ class TFGraph(Graph):
 
 class TFParser(object):
     def __init__(self, pb_model, in_nodes=None, out_nodes=None, in_shapes=None):
-        assert in_nodes is not None, "in_nodes should not be None"
-        assert out_nodes is not None, "out_nodes should not be None"
-        assert in_shapes is not None, "in_shapes should not be None"
-        assert len(in_shapes) == len(
-            in_nodes), "length of in_shapes and in_nodes should be equal"
+        #        assert in_nodes is not None, "in_nodes should not be None"
+        #        assert out_nodes is not None, "out_nodes should not be None"
+        #        assert in_shapes is not None, "in_shapes should not be None"
+        #        assert len(in_shapes) == len(
+        #            in_nodes), "length of in_shapes and in_nodes should be equal"
 
         sess = tf.Session()
         with gfile.FastGFile(pb_model, 'rb') as f:

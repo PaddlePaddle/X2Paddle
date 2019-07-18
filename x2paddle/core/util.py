@@ -44,7 +44,6 @@ def export_paddle_param(param, param_name, dir):
     if len(shape) == 0:
         assert param.size == 1, "Unexpected situation happend!"
         shape = [1]
-    print("param dtype:", param.dtype)
     assert str(param.dtype) in dtype_map, "Unknown dtype of params."
 
     fp = open(os.path.join(dir, param_name), 'wb')
