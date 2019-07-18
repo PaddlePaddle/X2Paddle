@@ -24,12 +24,12 @@ def make_var_name(name):
 
     if name == '':
         return ''
-    if name[0].isdigit():
-        return 'var_' + name
     for s in ' \\|/:.-':
         name = name.replace(s, '_')
     if name.startswith('_'):
         name = 'var' + name
+    elif name[0].isdigit():
+        name = 'var_' + name
     return name
 
 
@@ -40,6 +40,7 @@ def convert(onnx_model_filename,
             embed_params=False,
             onnx_opset_version=None,
             onnx_opset_pedantic=True,
+            onnx_skip_optimization=False,
             debug=False,
             **kwargs):
     """
@@ -61,10 +62,10 @@ def convert(onnx_model_filename,
     from .onnx_utils import DEFAULT_OP_DOMAIN
     from .onnx_utils import graph_ops, graph_weights
     from .onnx_utils import inferred_model_value_info
-    from .onnx_utils import polish_model
+    from .onnx_utils import polish_model, optimize_model_strip_initializer
     from .writer import Program, Writer
 
-    logger = logging.getLogger('convert')
+    logger = logging.getLogger('onnx2fluid')
 
     # prepare onnx model
     logger.info('loading model: %s ...', onnx_model_filename)
@@ -90,8 +91,12 @@ def convert(onnx_model_filename,
 
     # onnx model optimization
     logger.info('model has %d ops', len(onnx_model.graph.node))
-    logger.info('optimizing model ...')
-    onnx_model = polish_model(onnx_model, checking=onnx_opset_pedantic)
+    if onnx_skip_optimization:
+        logger.info('stripping model ...')
+        onnx_model = optimize_model_strip_initializer(onnx_model)
+    else:
+        logger.info('optimizing model ...')
+        onnx_model = polish_model(onnx_model, checking=onnx_opset_pedantic)
 
     # prepare filesystem
     shutil.rmtree(save_dir, ignore_errors=True)
@@ -123,7 +128,7 @@ def convert(onnx_model_filename,
     for name, weight in graph_weights(onnx_graph):
         var_name = make_var_name(name)
         value_info = value_infos[var_name]
-        value_info['lod'] = [0]
+        value_info['lod'] = []
         value_info['embedded_as'] = []
         value_info['get_weight'] = (lambda w: lambda: w.tolist())(
             weight)  # lazy getter
@@ -306,7 +311,14 @@ def main():
         '-x',
         action='store_false',
         dest='pedantic',
-        help='process non-standard ONNX ops, this may lead to fails',
+        help='process non-standard ONNX ops, this may lead to failures',
+    )
+    parser.add_argument(
+        '--naive',
+        '-n',
+        action='store_true',
+        default=False,
+        help='bypass ONNX op optimizations, especially for training purpose',
     )
     parser.add_argument(
         '--skip-version-conversion',
@@ -329,13 +341,15 @@ def main():
                 if save_dir else basepath) + shutil.os.sep
     embed_params = args.embed_params
     pedantic = args.pedantic
-    skip_version_conversion = args.skip_version_conversion
+    skip_optimization = args.naive
+    onnx_opset_version = None if args.skip_version_conversion else DEFAULT_ONNX_OPSET_VERSION
 
     convert(model_filename,
             save_dir,
             embed_params=embed_params,
+            onnx_opset_version=onnx_opset_version,
             onnx_opset_pedantic=pedantic,
-            onnx_skip_version_conversion=skip_version_conversion,
+            onnx_skip_optimization=skip_optimization,
             debug=debug)
 
 

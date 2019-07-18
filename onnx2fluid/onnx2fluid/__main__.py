@@ -64,7 +64,14 @@ parser.add_argument(
     '-x',
     action='store_false',
     dest='pedantic',
-    help='process non-standard ONNX ops, this may lead to fails',
+    help='process non-standard ONNX ops, this may lead to failures',
+)
+parser.add_argument(
+    '--naive',
+    '-n',
+    action='store_true',
+    default=False,
+    help='bypass ONNX op optimizations, especially for training purpose',
 )
 parser.add_argument(
     '--skip-version-conversion',
