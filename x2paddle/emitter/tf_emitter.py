@@ -23,6 +23,9 @@ class TFEmitter(Emitter):
         super(TFEmitter, self).__init__()
         self.parser = parser
         self.graph = parser.tf_graph
+        # attr_node is used to record nodes that
+        # only for define attribute of op
+        self.attr_node = list()
         self.weights = dict()
 
     def run(self):
@@ -54,6 +57,9 @@ class TFEmitter(Emitter):
                                   param_attr=attr)
 
     def Const(self, node):
+        ## TODO
+        return
+
         shape = node.out_shapes[0]
         dtype = node.dtype
         value = node.value
@@ -75,8 +81,9 @@ class TFEmitter(Emitter):
                                   param_attr=attr)
 
     def Transpose(self, node):
-        input = self.graph.get_node(node.layer.input[0])
-        perm = self.graph.get_node(node.layer.input[1])
+        return
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        perm = self.graph.get_node(node.layer.input[1], copy=True)
         perm.fluid_code.clear()
         perm = perm.value.tolist()
 
@@ -87,13 +94,146 @@ class TFEmitter(Emitter):
                                   param_attr=attr)
 
     def RealDiv(self, node):
-        x = self.graph.get_node(node.layer.input[0])
-        y = self.graph.get_node(node.layer.input[1])
+        return
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
         inputs = {'x': x, 'y': y}
         node.fluid_code.add_layer("elementwise_div",
                                   inputs=inputs,
                                   output=node,
                                   param_attr=None)
 
-    def Fc(self, node):
-        self.weight['asdf'] = np.tranpose(node.kerneln[1, 0])
+    def Relu(self, node):
+        return
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("relu",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
+
+    def Squeeze(self, node):
+        return
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        squeeze_dims = node.get_attr('squeeze_dims')
+        print(squeeze_dims)
+        attr = {'squeeze_dims': squeeze_dims}
+        node.fluid_code.add_layer("squeeze",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def BiasAdd(self, node):
+        return
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {'x': x, 'y': y}
+        node.fluid_code.add_layer("elementwise_add",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
+    def Identity(self, node):
+        return
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("assign",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
+
+    def MaxPool(self, node):
+        return
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        in_shape = input.out_shapes[0]
+        k_size = node.get_attr("ksize")
+        strides = node.get_attr("strides")
+        data_format = node.get_attr("data_format").decode()
+        pad_mode = node.get_attr("padding").decode()
+
+        if data_format == "NHWC":
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+            k_size = [k_size[i] for i in [0, 3, 1, 2]]
+            strides = [strides[i] for i in [0, 3, 1, 2]]
+
+        if pad_mode == "SAME":
+            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
+            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
+            pad_h = pad_h[0] + pad_h[1]
+            pad_w = pad_w[0] + pad_w[1]
+            attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
+            node.fluid_code.add_layer("pad2d",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+        attr = {
+            "pool_size": k_size[1:3],
+            "pool_type": string("max"),
+            "pool_stride": strides[1:3]
+        }
+        node.fluid_code.add_layer("pool2d",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+        if data_format == "NHWC":
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+
+
+#    def Conv2D(self, node):
+#        input = self.graph.get_node(node.layer.input[0], copy=True)
+#        in_shape = input.out_shapes[0]
+#        k_size = node.get_attr("ksize")
+#        strides = node.get_attr("strides")
+#        dilations = node.get_attr("dilations")
+#        data_format = node.get_attr("data_format").decode()
+#        pad_mode = node.get_attr("padding").decode()
+#
+#        if data_format == "NHWC":
+#            attr = {"perm": [0, 3, 1, 2]}
+#            node.fluid_code.add_layer("transpose",
+#                                      inputs=input,
+#                                      output=node,
+#                                      param_attr=attr)
+#            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+#            k_size = [k_size[i] for i in [0, 3, 1, 2]]
+#            strides = [strides[i] for i in [0, 3, 1, 2]]
+#            dilations = [dilations[i] for i in [0, 3, 1, 2]]
+#
+#        if pad_mode == "SAME":
+#            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
+#            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
+#            pad_h = pad_h[0] + pad_h[1]
+#            pad_w = pad_w[0] + pad_w[1]
+#            attr = {"paddings": pad_h+pad_w, "pad_value": 0.0}
+#            node.fluid_code.add_layer("pad2d",
+#                                inputs=input,
+#                                output=node,
+#                                param_attr=attr)
+#        attr = {
+#            "pool_stride": strides[1:3],
+#            "bias_attr": False,
+#            "param_attr":,
+#            "num_filters":,
+#            "filter_size":,
+#            "stride":,
+#            "dilation":
+#            }
+#        node.fluid_code.add_layer("conv2d",
+#                            inputs=input,
+#                            output=node,
+#                            param_attr=attr)
+#
+#        if data_format == "NHWC":
+#            attr = {"perm": [0, 2, 3, 1]}
+#            node.fluid_code.add_layer("transpose",
+#                                      inputs=input,
+#                                      output=node,
+#                                      param_attr=attr)

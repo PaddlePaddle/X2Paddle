@@ -16,6 +16,7 @@ from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.platform import gfile
+from tensorflow.core.framework import attr_value_pb2
 import tensorflow as tf
 import copy
 
@@ -55,6 +56,27 @@ class TFGraphNode(GraphNode):
         attr = self.layer.attr['value']
         field = getattr(attr, attr.WhichOneof('value'))
         return tensor_util.MakeNdarray(field)
+
+    def get_attr(self, name):
+        if name not in self.layer.attr:
+            return None
+        attr = self.layer.attr[name]
+        field = attr.WhichOneof('value')
+        value = getattr(attr, field) if field else None
+
+        if isinstance(value, attr_value_pb2.AttrValue.ListValue):
+            result = list(value.ListFields()[0][1])
+            for i in range(len(result)):
+                if isinstance(result[i], int):
+                    result[i] = int(result[i])
+                try:
+                    if isinstance(result[i], long):
+                        result[i] = int(result[i])
+                except:
+                    pass
+            return result
+        else:
+            return value
 
 
 class TFGraph(Graph):

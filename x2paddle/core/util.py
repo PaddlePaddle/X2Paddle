@@ -11,18 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from x2paddle.parser.tf_parser import TFParser
-from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
-from x2paddle.emitter.tf_emitter import TFEmitter
 
-parser = TFParser('/ssd2/Jason/github/X2Paddle/tool/vgg16.pb',
-                  in_nodes=['inputs'],
-                  out_nodes=['output_boxes'],
-                  in_shapes=[[-1, 416, 416, 3]])
 
-optimizer = TFGraphOptimizer()
-optimizer.run(parser.tf_graph)
-#parser.tf_graph.print()
+def string(param):
+    return "\'{}\'".format(param)
 
-emitter = TFEmitter(parser)
-emitter.run()
+
+def get_same_padding(input_size, kernel_size, stride):
+    new_size = int(math.ceil(input_size * 1.0 / stride))
+    pad_size = (new_size - 1) * stride + filter_size - in_size
+    pad0 = int(pad_size / 2)
+    pad1 = pad_size - pad0
+    return [pad0, pad1]

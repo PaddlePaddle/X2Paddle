@@ -59,6 +59,8 @@ class Layer(object):
                                "[{}]".format(self.inputs.index) + ", ")
             else:
                 layer_code += (self.inputs.layer_name + ", ")
+        elif isinstance(self.inputs, str):
+            layer_code += (self.inputs + ", ")
         else:
             raise Exception("Unknown type of inputs.")
 
