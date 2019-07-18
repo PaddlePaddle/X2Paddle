@@ -17,6 +17,8 @@ import sys
 from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
+from x2paddle.core.fluid_code import FluidCode
+from x2paddle.parser import caffe_shape
 
 
 class CaffeResolver(object):
@@ -62,9 +64,38 @@ class CaffeGraphNode(GraphNode):
         else:
             super(CaffeGraphNode, self).__init__(layer, layer_name)
         self.layer_type = layer.type
+        self.fluid_code = FluidCode()
 
     def set_params(self, params):
-        self.data = params
+        data_dict = {}
+        if self.layer_type in ['Convolution', 'InnerProduct', 'Deconvolution']:
+            data_dict[self.layer_name + '_weights'] = params[0]
+            if len(params) == 2:
+                data_dict[self.layer_name + '_bias'] = params[1]
+        elif self.layer_type == 'BatchNorm':
+            data_dict[self.layer_name + '_mean'] = params[0]
+            data_dict[self.layer_name + '_variance'] = params[1]
+            if len(params) == 4:
+                data_dict[self.layer_name + '_scale'] = params[2]
+                data_dict[self.self.layer_name + '_offset'] = params[3]
+        elif self.layer_type == 'Scale':
+            data_dict[self.layer_name + '_scale'] = params[0]
+            if len(params) == 2:
+                data_dict[self.layer_name + '_offset'] = params[1]
+        elif self.layer_type == 'PReLU':
+            data_dict[self.layer_name + '_negslope'] = params[0]
+        elif self.layer_type == 'Normalize':
+            data_dict[self.layer_name + '_scale'] = params[0]
+
+        self.data = data_dict
+
+    def set_output_shape(self, input_shape):
+        func_name = 'shape_' + self.layer_type.lower()
+        self.output_shape = getattr(caffe_shape, func_name)(self.layer,
+                                                            input_shape)
+
+    def set_input_shape(self, input_shape):
+        self.input_shape = input_shape
 
 
 class CaffeGraph(Graph):
@@ -148,7 +179,29 @@ class CaffeGraph(Graph):
             else:
                 notice('Ignoring parameters for non-existent layer: %s' % \
                         layer_name)
+        for layer_name in self.node_map:
+            node = self.node_map[layer_name]
+            inputs = node.inputs
+            i = 0
+            input_shape = []
+            for nm in inputs:
+                last_node = self.get_node(nm)
+                tmp = node.layer.bottom[i]
+                i = i + 1
+                idx = list(last_node.layer.top).index(tmp)
+                input_shape.append(last_node.output_shape[idx])
+            node.set_output_shape(input_shape)
+            node.set_input_shape(input_shape)
+
         super(CaffeGraph, self).build()
+
+    def get_node_with_next(self, name, next_node, need=0, copy=False):
+        assert name in self.node_map, 'The {} isn\'t a valid node'.format(name)
+        tmp_node = self.node_map[name]
+        if len(tmp_node.layer.top) > 1:
+            idx = list(tmp_node.layer.top).index(next_node.layer.bottom[need])
+            name = name + ':' + str(idx)
+        return self.get_node(name, copy=copy)
 
 
 class CaffeParser(object):
