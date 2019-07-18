@@ -372,7 +372,7 @@ class Writer(object):
             prog.Code('# input {}'.format(name))
             prog.Code((
                 '{} = layers.data(name={}, shape={}, dtype={}, '
-                'append_batch_size={})'  # , stop_gradient=True
+                'append_batch_size={}, lod_level=1)'  # , stop_gradient=True
             ).format(
                 name,
                 repr(name),
@@ -427,20 +427,28 @@ class Writer(object):
         assert lod is None or isinstance(lod,
                                          list), 'lod should be None or list'
 
-        if lod is None:
-            lod = [0]
+        lod = lod or []
 
         tensor_desc = framework_pb2.VarType.TensorDesc()
         tensor_desc.data_type = Program.Dtype(weight.dtype)
         tensor_desc.dims.extend(weight.shape)
 
         fp = open(filename, 'wb')
-        np.array([0], dtype=np.int32).tofile(fp)  # version
-        np.array(lod, dtype=np.int64).tofile(fp)  # LOD level
-        np.array([0], dtype=np.int32).tofile(fp)  # tensor version
-        np.array([tensor_desc.ByteSize()], dtype=np.int32).tofile(fp)
+
+        # lod_tensor.cc: SerializeToStream
+        np.asarray([0], dtype=np.uint32).tofile(fp)  # version
+        np.asarray([len(lod)], dtype=np.int64).tofile(fp)  # LOD levels
+        for level in lod:
+            np.asarray([len(level)], dtype=np.int64).tofile(fp)  # level size
+            np.asarray(level, dtype=np.uint64).tofile(fp)  # LOD: size_t
+
+        # tensor_util.cc: TensorToStream
+        np.asarray([0], dtype=np.uint32).tofile(fp)  # tensor version
+        np.asarray([tensor_desc.ByteSize()], dtype=np.int32).tofile(fp)
         fp.write(tensor_desc.SerializeToString())
+
         weight.tofile(fp)
+
         fp.close()
 
     @staticmethod

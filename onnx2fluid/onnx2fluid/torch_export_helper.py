@@ -138,10 +138,10 @@ def export_onnx_with_validation(
     outputs = torch.onnx.export(model,
                                 torch_inputs,
                                 export_basepath + '.onnx',
-                                input_names=(None if input_names is None else
-                                             flatten_list(input_names)),
-                                output_names=(None if output_names is None else
-                                              flatten_list(output_names)),
+                                input_names=(input_names
+                                             and flatten_list(input_names)),
+                                output_names=(output_names
+                                              and flatten_list(output_names)),
                                 *args,
                                 **kwargs)
     if outputs is None:  # WORKAROUND: for torch.onnx

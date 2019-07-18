@@ -90,7 +90,7 @@ def validate(fluid_model_filename,
     import numpy as np
     import paddle.fluid as fluid
 
-    logger = logging.getLogger('validate')
+    logger = logging.getLogger('onnx2fluid')
 
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -126,6 +126,7 @@ def validate(fluid_model_filename,
         logger.info('import passed')
 
         prog = fluid.default_main_program()
+        prog = prog.clone(for_test=True)  # force inference mode
         fluid.io.load_persistables(executor=exe,
                                    dirname=fluid_model_dir,
                                    main_program=prog)
@@ -160,8 +161,7 @@ def validate(fluid_model_filename,
         logger.info('with %d inputs and %d outputs', len(input_data),
                     len(output_data))
     elif save_inference_model:
-        assert inference_input_names is not None, (
-            'input names required for type-shape inference')
+        assert inference_input_names, 'input names required for type-shape inference'
 
         input_names = inference_input_names
         logger.info('using input names: %s', ', '.join(input_names))
@@ -185,6 +185,7 @@ def validate(fluid_model_filename,
     # execute
     outputs = exe.run(prog, feed=input_data,
                       fetch_list=out_names)  # out_names can be vars
+    exe.close()
     logger.info('execution passed')
 
     # validate
@@ -264,7 +265,7 @@ def main():
     atol, rtol = args.atol, args.rtol
     save_inference_model = args.infer_inputs is not None
     inference_input_names = args.infer_inputs.split(
-        ',') if args.infer_inputs else None
+        ',') if save_inference_model else None
 
     validate(fluid_model_filename,
              golden_data_filename=golden_data_filename,

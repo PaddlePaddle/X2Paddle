@@ -18,7 +18,8 @@ import numpy as _np
 from collections import OrderedDict as _dict
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 
-_logger = _logging.getLogger(__name__)
+# _logger = _logging.getLogger(__name__)
+_logger = _logging.getLogger('onnx2fluid')
 
 ONNX_INT_MAX = 2**63 - 1
 FLUID_INT_MAX = 2**31 - 1  #
@@ -58,8 +59,8 @@ DEFAULT_OP_MAPPING = {
         'Ceil': ['ceil', ['X'], ['Out']],
         'Clip':
             ['clip', ['X'], ['Out'], dict(), dict(
-                    min=(_np.array([255, 255, 127, 255], dtype=_np.uint8).view(_np.float32)),
-                    max=(_np.array([255, 255, 127, 127], dtype=_np.uint8).view(_np.float32)),
+                    min=(_np.asarray([255, 255, 127, 255], dtype=_np.uint8).view(_np.float32)),
+                    max=(_np.asarray([255, 255, 127, 127], dtype=_np.uint8).view(_np.float32)),
                 )],
         'Cos': ['cos', ['X'], ['Out']],
         'Elu': ['elu', ['X'], ['Out'], dict(), dict(alpha=1.)],
@@ -449,7 +450,7 @@ def _pool(prog, pool_type, inputs, outputs, attrs, value_infos, name):
     # I/O
     var_x, = inputs
     var_y, var_indices, = (outputs + [''] * 1)[:2]
-    assert name and var_x and var_y
+    assert name and all(inputs) and var_y
 
     # interpretation
     assert attrs.get(
@@ -512,7 +513,7 @@ def _roi_pool(prog, fluid_op, inputs, outputs, attrs, name):
     # I/O
     var_x, var_rois, = inputs
     var_y, = outputs
-    assert name and var_x and var_rois and var_y
+    assert name and all(inputs) and all(outputs)
 
     # interpretation
     spatial_scale = attrs['spatial_scale']  # required
@@ -565,7 +566,7 @@ def _interpolate(prog, inputs, outputs, attrs, value_infos, name=''):
     # I/O
     var_x, var_scales, = inputs
     var_y, = outputs
-    assert var_x and var_scales and var_y
+    assert all(inputs) and all(outputs)
 
     # interpretation
     # output shape
@@ -701,7 +702,7 @@ def BatchNormalization(prog,
     var_x, var_scale, var_b, var_mean, var_var, = inputs
     var_y, var_mean_, var_var_, var_saved_mean, var_saved_variance, = (
         outputs + [''] * 4)[:5]
-    assert var_x and var_scale and var_b and var_mean and var_var and var_y
+    assert all(inputs) and var_y
     assert var_saved_mean or name
     assert var_saved_variance or name
     var_saved_mean = var_saved_mean or (name + '.saved_mean')  # dummy output
@@ -879,7 +880,8 @@ def Constant(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         _logger.warning(
             'in op (Constant -> %s): '
             'attribute "shape" of %s not inferred, '
-            'using value as 1-D tensor may lead to fails', outputs, var_output)
+            'using value as 1-D tensor may lead to failures', outputs,
+            var_output)
 
     # generation
     if not shape or value.size == 1:  # scalar or 1-size
@@ -929,7 +931,7 @@ def ConstantOfShape(prog, inputs, outputs, attrs, value_infos, *args, **kwargs):
         'given shape is neither const value nor deductible from output, '
         'this is not supported')
     attrs = attrs.copy()
-    attrs.setdefault('value', _np.array(0, dtype=_np.float32))
+    attrs.setdefault('value', _np.asarray(0, dtype=_np.float32))
     attrs.update({'shape': shape})  # pass const
 
     prog.Code('# shape: {} = {} # const as literal'.format(var_shape, shape))
@@ -959,7 +961,7 @@ def Conv(prog,
     # I/O
     var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
     var_y, = outputs
-    assert name and var_x and var_w and var_y
+    assert name and var_x and var_w and all(outputs)
 
     # interpretation
     assert attrs.get(
@@ -1066,7 +1068,7 @@ def ConvTranspose(prog,
     # I/O
     var_x, var_w, var_b, = (inputs + [''] * 1)[:3]
     var_y, = outputs
-    assert name and var_x and var_w and var_y
+    assert name and var_x and var_w and all(outputs)
 
     # interpretation
     assert attrs.get(
@@ -1174,7 +1176,7 @@ def Gemm(prog, inputs, outputs, attrs, value_infos, name, *args, **kwargs):
     # due to fluid fc don't support transposed weight, we use matmul + ew_add
     var_a, var_b, var_c, = inputs
     var_y, = outputs
-    assert name and var_a and var_b and var_c and var_y
+    assert name and all(inputs) and all(outputs)
 
     alpha = attrs.get('alpha', 1.)  # optional
     beta = attrs.get('beta', 1.)  # optional
@@ -1794,7 +1796,7 @@ def Pad(prog, inputs, outputs, attrs, value_infos, name='', *args, **kwargs):
             mode)
         fluid_op = 'pad'
         pad2d_attr = ''
-    paddings = _np.array(pads).reshape(
+    paddings = _np.asarray(pads).reshape(
         (-1, 2)).transpose().flatten().tolist()  # SSEE -> SESE
     od_attrs['paddings'] = paddings
     name_attr = ', name={}'.format(repr(name)) if name else ''
@@ -1838,7 +1840,7 @@ def PRelu(prog,
     # I/O
     var_x, var_slope, = inputs
     var_y, = outputs
-    assert name and var_x and var_slope and var_y
+    assert name and all(inputs) and all(outputs)
 
     # interpretation
     mode = 'channel'
@@ -1904,7 +1906,7 @@ def Reshape(prog, inputs, outputs, attrs_, value_infos, name, *args, **kwargs):
     # I/O
     var_data, var_shape, = inputs
     var_reshaped, = outputs
-    assert name and var_data and var_shape and var_reshaped
+    assert name and all(inputs) and all(outputs)
 
     # interpretation
     shape = _const_weight_or_none(value_infos, var_shape)
@@ -2015,7 +2017,7 @@ def Shape(prog, inputs, outputs, attrs_, name, **kwargs):
     # I/O
     var_data, = inputs
     var_shape, = outputs
-    assert name and var_data and var_shape
+    assert name and all(inputs) and all(outputs)
 
     # interpretation
     fluid_op = 'shape'
@@ -2189,7 +2191,7 @@ def Tile(prog, inputs, outputs, attrs_, value_infos, name='', *args, **kwargs):
     # I/O
     var_input, var_repeats, = inputs
     var_output, = outputs
-    assert var_input and var_repeats and var_output
+    assert all(inputs) and all(outputs)
 
     # interpretation
     repeats = _const_weight_or_none(value_infos, var_repeats)
@@ -2227,7 +2229,7 @@ def Transpose(prog, inputs, outputs, attrs, name, *args, **kwargs):
     # I/O
     var_data, = inputs
     var_transposed, = outputs
-    assert name and var_data and var_transposed
+    assert name and all(inputs) and all(outputs)
 
     # interpretation
     fluid_op = 'transpose'

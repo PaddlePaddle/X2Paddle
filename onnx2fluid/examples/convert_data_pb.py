@@ -22,12 +22,12 @@ def make_var_name(name):
 
     assert name
 
-    if name[0].isdigit():
-        return 'var_' + name
-    for s in ' \\|/:-':  #
+    for s in ' \\|/:.-':
         name = name.replace(s, '_')
     if name.startswith('_'):
         name = 'var' + name
+    elif name[0].isdigit():
+        name = 'var_' + name
     return name
 
 
