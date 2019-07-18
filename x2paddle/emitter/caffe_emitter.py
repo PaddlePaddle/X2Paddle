@@ -104,6 +104,10 @@ class CaffeEmitter(Emitter):
                                   param_attr=attr)
 
     def Convolution(self, node):
+        data = node.data
+        self.weights[node.layer_name + '_weights'] = data[0]
+        if len(data) == 2:
+            self.weights[self.layer_name + '_bias'] = data[1]
         params = node.layer.convolution_param
         c_o, k_h, k_w, s_h, s_w, p_h, p_w, dila_h, dila_w, group = self.get_kernel_parameters(
             node.layer_type, params)
@@ -131,6 +135,10 @@ class CaffeEmitter(Emitter):
                                   param_attr=attr)
 
     def Deconvolution(self, node):
+        data = node.data
+        self.weights[node.layer_name + '_weights'] = data[0]
+        if len(data) == 2:
+            self.weights[self.layer_name + '_bias'] = data[1]
         params = node.layer.convolution_param
         c_o, k_h, k_w, s_h, s_w, p_h, p_w, dila_h, dila_w, group = self.get_kernel_parameters(
             node.layer_type, params)
@@ -230,6 +238,10 @@ class CaffeEmitter(Emitter):
                                   param_attr=attr)
 
     def InnerProduct(self, node):
+        data = node.data
+        self.weights[node.layer_name + '_weights'] = data[0]
+        if len(data) == 2:
+            self.weights[self.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of InnerProduct node\'s input is not 1.'
         params = node.layer.inner_product_param

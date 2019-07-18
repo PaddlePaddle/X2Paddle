@@ -67,27 +67,7 @@ class CaffeGraphNode(GraphNode):
         self.fluid_code = FluidCode()
 
     def set_params(self, params):
-        data_dict = {}
-        if self.layer_type in ['Convolution', 'InnerProduct', 'Deconvolution']:
-            data_dict[self.layer_name + '_weights'] = params[0]
-            if len(params) == 2:
-                data_dict[self.layer_name + '_bias'] = params[1]
-        elif self.layer_type == 'BatchNorm':
-            data_dict[self.layer_name + '_mean'] = params[0]
-            data_dict[self.layer_name + '_variance'] = params[1]
-            if len(params) == 4:
-                data_dict[self.layer_name + '_scale'] = params[2]
-                data_dict[self.self.layer_name + '_offset'] = params[3]
-        elif self.layer_type == 'Scale':
-            data_dict[self.layer_name + '_scale'] = params[0]
-            if len(params) == 2:
-                data_dict[self.layer_name + '_offset'] = params[1]
-        elif self.layer_type == 'PReLU':
-            data_dict[self.layer_name + '_negslope'] = params[0]
-        elif self.layer_type == 'Normalize':
-            data_dict[self.layer_name + '_scale'] = params[0]
-
-        self.data = data_dict
+        self.data = params
 
     def set_output_shape(self, input_shape):
         func_name = 'shape_' + self.layer_type.lower()
