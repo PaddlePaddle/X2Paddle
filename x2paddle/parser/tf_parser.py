@@ -82,6 +82,7 @@ class TFGraphNode(GraphNode):
 class TFGraph(Graph):
     def __init__(self, model):
         super(TFGraph, self).__init__(model)
+        self.identity_map = dict()
 
     def build(self):
         for layer in self.model.node:
@@ -100,6 +101,52 @@ class TFGraph(Graph):
                     self.connect(in_node, layer_name)
 
         super(TFGraph, self).build()
+
+        # tensorflow graph optimize
+        self._remove_isolated_node()
+        self._remove_identity_node()
+
+    def get_node(self, node_name, copy=False):
+        items = node_name.strip().split(':')
+        if items[0] in self.identity_map:
+            items[0] = self.identity_map[items[0]]
+        new_node_name = ":".join(items)
+        return super(TFGraph, self).get_node(new_node_name, copy)
+
+    def _remove_isolated_node(self):
+        # delete isolated nodes
+        isolated_nodes = list()
+        for node_name in self.node_map.keys():
+            if len(self.get_node(node_name).inputs) == 0 or len(
+                    self.get_node(node_name).outputs) == 0:
+                isolated_nodes.append(node_name)
+
+        self.remove_node(node_name)
+
+    def _remove_identity_node(self):
+        identity_node = list()
+        for node_name, node in self.node_map.items():
+            if node.layer_type == "Identity":
+                identity_node.append(node_name)
+
+        for node_name in identity_node:
+            node = self.get_node(node_name)
+            # Remind: Only 1 input for Identity node
+            input_node = self.get_node(node.inputs[0])
+
+            # remove identity node from graph
+            self.identity_map[node_name] = input_node.layer_name
+            idx = input_node.outputs.index(node_name)
+            del input_node.outputs[idx]
+
+            output_names = node.outputs
+            for output_name in output_names:
+                output_node = self.get_node(output_name)
+                idx = output_node.inputs.index(node_name)
+                output_node.inputs[idx] = input_node.layer_name
+
+            idx = self.topo_sort.index(node_name)
+            del self.topo_sort[idx]
 
 
 class TFParser(object):

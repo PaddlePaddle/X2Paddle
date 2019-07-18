@@ -15,13 +15,12 @@ from x2paddle.parser.tf_parser import TFParser
 from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
 from x2paddle.emitter.tf_emitter import TFEmitter
 
-parser = TFParser('/ssd2/Jason/github/X2Paddle/tool/vgg16.pb',
+parser = TFParser('/ssd2/Jason/github/X2Paddle/tool/vgg16_None.pb',
                   in_nodes=['inputs'],
                   out_nodes=['output_boxes'],
                   in_shapes=[[-1, 416, 416, 3]])
 
 optimizer = TFGraphOptimizer()
-optimizer.run(parser.tf_graph)
 #parser.tf_graph.print()
 
 emitter = TFEmitter(parser)

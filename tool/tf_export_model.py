@@ -31,7 +31,7 @@ import numpy
 
 with tf.Session() as sess:
     inputs = tf.placeholder(dtype=tf.float32,
-                            shape=[None, 224, 224, 3],
+                            shape=[None, None, None, 3],
                             name="inputs")
     logits, endpoint = vgg.vgg_16(inputs, num_classes=1000, is_training=False)
     load_model = slim.assign_from_checkpoint_fn(
@@ -45,4 +45,4 @@ with tf.Session() as sess:
     result = sess.run([output_tensor], {input_tensor: data})
     numpy.save("tensorflow.npy", numpy.array(result))
 
-    freeze_model(sess, ["vgg_16/fc8/squeezed"], "vgg16.pb")
+    freeze_model(sess, ["vgg_16/fc8/squeezed"], "vgg16_None.pb")

@@ -42,7 +42,8 @@ class Layer(object):
                                 ", ")
                 else:
                     in_list += (input.layer_name + ", ")
-            inlist = in_list.strip(", ") + "], "
+            in_list = in_list.strip(", ") + "], "
+            layer_code += in_list
         elif isinstance(self.inputs, dict):
             for key, input in self.inputs.items():
                 assert isinstance(
