@@ -43,5 +43,7 @@ cd X2Paddle
 git checkout develop
 export PYTHONPATH=${PWD}
 mkdir paddle_model
-python x2paddle/convert.py --framework=tensorflow --model=x2paddle/tests/vgg16.pb --save_dir=paddle_model
+python x2paddle/convert.py --framework=tensorflow \
+                           --model=x2paddle/tests/vgg16.pb \
+                           --save_dir=paddle_model
 ```
