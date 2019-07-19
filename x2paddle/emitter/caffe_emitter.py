@@ -164,7 +164,7 @@ class CaffeEmitter(Emitter):
             node.layer_type, params)
         assert len(node.inputs
                    ) == 1, 'The count of Convolution node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'filter_size': kernel,
             'num_filters': channel,
@@ -192,7 +192,7 @@ class CaffeEmitter(Emitter):
             node.layer_type, params)
         assert len(node.inputs
                    ) == 1, 'The count of Deconvolution node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'output_size': None,
             'filter_size': kernel,
@@ -220,7 +220,7 @@ class CaffeEmitter(Emitter):
             pool_type = 'avg'
         assert len(
             node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'pool_size': kernel,
             'pool_stride': stride,
@@ -238,7 +238,7 @@ class CaffeEmitter(Emitter):
     def ReLU(self, node):
         assert len(
             node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {'name': string(node.layer_name)}
         node.fluid_code.add_layer("relu",
                                   inputs=input,
@@ -255,7 +255,7 @@ class CaffeEmitter(Emitter):
         # just scales by alpha (as does Krizhevsky's paper).
         # We'll account for that here.
         alpha = params.alpha / float(params.local_size)
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'n': params.local_size,
             'k': 1.0,
@@ -288,7 +288,7 @@ class CaffeEmitter(Emitter):
         params = node.layer.inner_product_param
         assert params.axis == 1
         assert params.bias_term == True
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'size': params.num_output,
             'name': string(node.layer_name),
@@ -304,7 +304,7 @@ class CaffeEmitter(Emitter):
     def Softmax(self, node):
         assert len(
             node.inputs) == 1, 'The count of Softmax node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0)
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.softmax_param
         axis = params.axis
         shape = node.input_shape[0]
