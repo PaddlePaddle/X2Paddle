@@ -45,6 +45,8 @@ def export_paddle_param(param, param_name, dir):
         assert param.size == 1, "Unexpected situation happend!"
         shape = [1]
     assert str(param.dtype) in dtype_map, "Unknown dtype of params."
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
     fp = open(os.path.join(dir, param_name), 'wb')
     fp.write(struct.pack('i', 0))

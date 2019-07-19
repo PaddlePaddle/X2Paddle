@@ -24,7 +24,11 @@ class CaffeEmitter(Emitter):
         self.parser = parser
         self.graph = parser.caffe_graph
         self.weights = dict()
-        self.resolver = parser.resolver
+        resolver = parser.resolver
+        if resolver.has_pycaffe():
+            self.did_use_pb = False
+        else:
+            self.did_use_pb = True
 
     def run(self):
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
@@ -38,11 +42,48 @@ class CaffeEmitter(Emitter):
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
-            for layer in node.fluid_code.layers:
-                print(layer.get_code())
+            self.net_code += node.fluid_code.gen_codes()
 
-        for name, param in self.weights.items():
-            export_paddle_param(param, name.replace('/', '_'), "params1")
+    def adjust_parameters(self, node, data):
+        if not self.did_use_pb:
+            return data
+
+        # When using the protobuf-backend, each parameter initially has four dimensions.
+        # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
+        # This implementation takes care of the common cases. However, it does leave the
+        # potential for future issues.
+        # The Caffe-backend does not suffer from this problem.
+        data = list(data)
+
+        squeeze_indices = [1]  # Squeeze biases.
+        if node.kind == NodeKind.InnerProduct:
+            squeeze_indices.append(0)  # Squeeze FC.
+
+        for idx in squeeze_indices:
+            if idx >= len(data):
+                continue
+
+            d = data[idx]
+            assert len(
+                d.shape
+            ) == 4, 'invalid shape[%s] from caffe when adjust_parameters' % (
+                str(d.shape))
+
+            shape_old = d.shape
+            sq_axis = None
+            if idx == 0:
+                sq_axis = (0, 1)
+            elif idx == 1:
+                sq_axis = (0, 1, 2)
+            else:
+                continue
+
+            data[idx] = np.squeeze(d, axis=sq_axis)
+            shape_new = data[idx].shape
+            if len(shape_old) != shape_new:
+                debug('squeeze idx:%d, with kind:%s,name:%s' % \
+                        (idx, node.kind, node.name))
+        return data
 
     @staticmethod
     def get_kernel_value(scalar, repeated, idx, default=None):
@@ -114,6 +155,7 @@ class CaffeEmitter(Emitter):
 
     def Convolution(self, node):
         data = node.data
+        data = self.adjust_parameters(node, data)
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
@@ -141,6 +183,7 @@ class CaffeEmitter(Emitter):
 
     def Deconvolution(self, node):
         data = node.data
+        data = self.adjust_parameters(node, data)
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
@@ -227,6 +270,16 @@ class CaffeEmitter(Emitter):
 
     def InnerProduct(self, node):
         data = node.data
+        data = self.adjust_parameters(node, data)
+        # Reshape the parameters to Paddle's ordering
+        transpose_order = (1, 0)
+        w = data[0]
+        fc_shape = w.shape
+        output_channels = fc_shape[0]
+        w = w.reshape((output_channels, -1))
+        w = w.transpose(transpose_order)
+        data[0] = w
+
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]

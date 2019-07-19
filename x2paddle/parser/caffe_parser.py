@@ -212,6 +212,8 @@ class CaffeParser(object):
     def load_using_caffe(self):
         caffe = self.resolver.caffe
         caffe.set_mode_cpu()
+        print(self.proto_path)
+        print(self.model_path)
         net = caffe.Net(self.proto_path, self.model_path, caffe.TEST)
         data = lambda blob: blob.data
         self.params = [(k, list(map(data, v))) for k, v in net.params.items()]

@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from x2paddle.parser.tf_parser import TFParser
-from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
-from x2paddle.emitter.tf_emitter import TFEmitter
+
 from six import text_type as _text_type
 import argparse
 
@@ -50,6 +48,9 @@ def arg_parser():
 
 def tf2paddle(model, save_dir):
     print("Now translating model from tensorflow to paddle.")
+    from x2paddle.parser.tf_parser import TFParser
+    from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
+    from x2paddle.emitter.tf_emitter import TFEmitter
     parser = TFParser(model)
     emitter = TFEmitter(parser)
     emitter.run()
@@ -57,7 +58,13 @@ def tf2paddle(model, save_dir):
 
 
 def caffe2paddle(proto, weight, save_dir):
-    print("Not implement yet.")
+    print("Now translating model from caffe to paddle.")
+    from x2paddle.parser.caffe_parser import CaffeParser
+    from x2paddle.emitter.caffe_emitter import CaffeEmitter
+    parser = CaffeParser(proto, weight)
+    emitter = CaffeEmitter(parser)
+    emitter.run()
+    emitter.save_python_model(save_dir)
 
 
 def main():
