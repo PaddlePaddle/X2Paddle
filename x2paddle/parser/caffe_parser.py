@@ -17,6 +17,8 @@ import sys
 from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
+from x2paddle.core.fluid_code import FluidCode
+from x2paddle.parser import caffe_shape
 
 
 class CaffeResolver(object):
@@ -62,9 +64,18 @@ class CaffeGraphNode(GraphNode):
         else:
             super(CaffeGraphNode, self).__init__(layer, layer_name)
         self.layer_type = layer.type
+        self.fluid_code = FluidCode()
 
     def set_params(self, params):
         self.data = params
+
+    def set_output_shape(self, input_shape):
+        func_name = 'shape_' + self.layer_type.lower()
+        self.output_shape = getattr(caffe_shape, func_name)(self.layer,
+                                                            input_shape)
+
+    def set_input_shape(self, input_shape):
+        self.input_shape = input_shape
 
 
 class CaffeGraph(Graph):
@@ -148,7 +159,33 @@ class CaffeGraph(Graph):
             else:
                 notice('Ignoring parameters for non-existent layer: %s' % \
                         layer_name)
+        for layer_name in self.node_map:
+            node = self.node_map[layer_name]
+            inputs = node.inputs
+            i = 0
+            input_shape = []
+            for nm in inputs:
+                last_node = self.get_node(nm)
+                tmp = node.layer.bottom[i]
+                i = i + 1
+                idx = list(last_node.layer.top).index(tmp)
+                input_shape.append(last_node.output_shape[idx])
+            node.set_output_shape(input_shape)
+            node.set_input_shape(input_shape)
+
         super(CaffeGraph, self).build()
+
+    def get_bottom_node(self, node, idx=0, copy=False):
+        input_node_name = node.inputs[idx]
+        assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
+            name)
+        input_node = self.node_map[input_node_name]
+        if len(input_node.layer.top) > 1:
+            idx = list(input_node.layer.top).index(node.layer.bottom[need])
+            name = input_node_name + ':' + str(idx)
+        else:
+            name = input_node_name
+        return self.get_node(name, copy=copy)
 
 
 class CaffeParser(object):
@@ -175,6 +212,8 @@ class CaffeParser(object):
     def load_using_caffe(self):
         caffe = self.resolver.caffe
         caffe.set_mode_cpu()
+        print(self.proto_path)
+        print(self.model_path)
         net = caffe.Net(self.proto_path, self.model_path, caffe.TEST)
         data = lambda blob: blob.data
         self.params = [(k, list(map(data, v))) for k, v in net.params.items()]
