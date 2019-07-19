@@ -14,6 +14,8 @@ wget http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz
 ```
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.slim.nets import vgg
+from tensorflow.python.framework import graph_util
+import tensorflow as tf
 
 def freeze_model(sess, output_tensor_names, freeze_model_path):
     out_graph = graph_util.convert_variables_to_constants(
@@ -22,7 +24,7 @@ def freeze_model(sess, output_tensor_names, freeze_model_path):
         f.write(out_graph.SerializeToString())
 
     print("freeze model saved in {}".format(freeze_model_path))
-    
+
 with tf.Session() as sess:
     inputs = tf.placeholder(dtype=tf.float32,
                             shape=[None, 224, 224, 3],
@@ -31,8 +33,8 @@ with tf.Session() as sess:
     load_model = slim.assign_from_checkpoint_fn(
         "vgg_16.ckpt", slim.get_model_variables("vgg_16"))
     load_model(sess)
-    
-freeze_model(sess, ["vgg_16/fc8/squeezed"], "vgg16.pb")
+
+    freeze_model(sess, ["vgg_16/fc8/squeezed"], "vgg16.pb")
 ```
 
 ### 步骤三 模型转换
