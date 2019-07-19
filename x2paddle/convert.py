@@ -47,10 +47,10 @@ def arg_parser():
 
 
 def tf2paddle(model_path, save_dir):
-    print("Now translating model from tensorflow to paddle.")
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
-    from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+
+    print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path)
     mapper = TFOpMapper(model)
     mapper.run()
@@ -58,9 +58,10 @@ def tf2paddle(model_path, save_dir):
 
 
 def caffe2paddle(proto, weight, save_dir):
-    print("Now translating model from caffe to paddle.")
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
+
+    print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight)
     mapper = CaffeOpMapper(model)
     mapper.run()
@@ -75,11 +76,11 @@ def main():
     assert args.save_dir is not None, "--save_dir is not defined"
 
     if args.framework == "tensorflow":
-        assert args.model is not None, "--model should be defined while translate tensorflow model"
+        assert args.model is not None, "--model should be defined while translating tensorflow model"
         tf2paddle(args.model, args.save_dir)
 
     elif args.framework == "caffe":
-        assert args.proto is not None, "--proto and --weight should be defined while translate caffe model"
+        assert args.proto is not None, "--proto and --weight should be defined while translating caffe model"
         caffe2paddle(args.proto, args.weight, args.save_dir)
 
     else:
