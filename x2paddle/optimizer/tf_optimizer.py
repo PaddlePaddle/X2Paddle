@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # TODO useless node remove
-from x2paddle.parser.tf_parser import TFGraph
+from x2paddle.decoder.tf_decoder import TFGraph
 
 
 class TFGraphOptimizer(object):

@@ -12,21 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.parser.tf_parser import TFGraph
-from x2paddle.core.emitter import Emitter
-from x2paddle.core.fluid_code import FluidCode
+from x2paddle.decoder.tf_decoder import TFGraph
+from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 import numpy
 
 
-class TFEmitter(Emitter):
-    def __init__(self, parser):
-        super(TFEmitter, self).__init__()
-        self.parser = parser
-        self.graph = parser.tf_graph
-        # attr_node is used to record nodes that
-        # only for define attribute of op
-        self.attr_node = list()
+class TFOpMapper(OpMapper):
+    def __init__(self, decoder):
+        super(TFOpMapper, self).__init__()
+        self.graph = decoder.tf_graph
+        self.weights = dict()
         self.omit_nodes = list()
 
     def run(self):
@@ -35,8 +31,8 @@ class TFEmitter(Emitter):
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if hasattr(self, op):
-                emit_func = getattr(self, op)
-                emit_func(node)
+                func = getattr(self, op)
+                func(node)
 
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]

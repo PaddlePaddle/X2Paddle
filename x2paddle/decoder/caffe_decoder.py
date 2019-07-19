@@ -18,7 +18,7 @@ from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.parser import caffe_shape
+from x2paddle.decoder import caffe_shape
 
 
 class CaffeResolver(object):
@@ -188,7 +188,7 @@ class CaffeGraph(Graph):
         return self.get_node(name, copy=copy)
 
 
-class CaffeParser(object):
+class CaffeDecoder(object):
     def __init__(self, proto_path, model_path, use_caffe=True):
         self.proto_path = proto_path
         self.model_path = model_path

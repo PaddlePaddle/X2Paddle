@@ -13,18 +13,17 @@
 # limitations under the License.
 
 import numbers
-from x2paddle.parser.caffe_parser import CaffeGraph
-from x2paddle.core.emitter import Emitter
+from x2paddle.decoder.caffe_decoder import CaffeGraph
+from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 
 
-class CaffeEmitter(Emitter):
-    def __init__(self, parser):
-        super(CaffeEmitter, self).__init__()
-        self.parser = parser
-        self.graph = parser.caffe_graph
+class CaffeOpMapper(OpMapper):
+    def __init__(self, decoder):
+        super(CaffeOpMapper, self).__init__()
+        self.graph = decoder.caffe_graph
         self.weights = dict()
-        resolver = parser.resolver
+        resolver = decoder.resolver
         if resolver.has_pycaffe():
             self.did_use_pb = False
         else:
@@ -36,8 +35,8 @@ class CaffeEmitter(Emitter):
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if hasattr(self, op):
-                emit_func = getattr(self, op)
-                emit_func(node)
+                func = getattr(self, op)
+                func(node)
 
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]

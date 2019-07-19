@@ -46,25 +46,25 @@ def arg_parser():
     return parser
 
 
-def tf2paddle(model, save_dir):
+def tf2paddle(model_path, save_dir):
     print("Now translating model from tensorflow to paddle.")
-    from x2paddle.parser.tf_parser import TFParser
+    from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.optimizer.tf_optimizer import TFGraphOptimizer
-    from x2paddle.emitter.tf_emitter import TFEmitter
-    parser = TFParser(model)
-    emitter = TFEmitter(parser)
-    emitter.run()
-    emitter.save_python_model(save_dir)
+    from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+    model = TFDecoder(model_path)
+    mapper = TFOpMapper(model)
+    mapper.run()
+    mapper.save_python_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir):
     print("Now translating model from caffe to paddle.")
-    from x2paddle.parser.caffe_parser import CaffeParser
-    from x2paddle.emitter.caffe_emitter import CaffeEmitter
-    parser = CaffeParser(proto, weight)
-    emitter = CaffeEmitter(parser)
-    emitter.run()
-    emitter.save_python_model(save_dir)
+    from x2paddle.decoder.caffe_decoder import CaffeDecoder
+    from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
+    model = CaffeDecoder(proto, weight)
+    mapper = CaffeOpMapper(model)
+    mapper.run()
+    mapper.save_python_model(save_dir)
 
 
 def main():

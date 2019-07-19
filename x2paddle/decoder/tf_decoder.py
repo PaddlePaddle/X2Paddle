@@ -153,14 +153,8 @@ class TFGraph(Graph):
             del self.topo_sort[idx]
 
 
-class TFParser(object):
-    def __init__(self, pb_model, in_nodes=None, out_nodes=None, in_shapes=None):
-        #        assert in_nodes is not None, "in_nodes should not be None"
-        #        assert out_nodes is not None, "out_nodes should not be None"
-        #        assert in_shapes is not None, "in_shapes should not be None"
-        #        assert len(in_shapes) == len(
-        #            in_nodes), "length of in_shapes and in_nodes should be equal"
-
+class TFDecoder(object):
+    def __init__(self, pb_model):
         sess = tf.Session()
         with gfile.FastGFile(pb_model, 'rb') as f:
             graph_def = tf.GraphDef()
