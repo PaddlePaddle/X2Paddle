@@ -31,6 +31,11 @@ class CaffeOpMapper(OpMapper):
 
     def run(self):
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
+
+        # check if ops in model are all supported
+        if not self.op_checker():
+            raise Exception("Model are not supported yet.")
+
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type

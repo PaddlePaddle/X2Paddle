@@ -23,6 +23,21 @@ class OpMapper(object):
         self.net_code = list()
         self.weights = dict()
 
+    def op_checker(self):
+        unsupported_ops = set()
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            op = node.layer_type
+            if not hasattr(self, op):
+                unsupported_ops.add(op)
+        if len(unsupported_ops) == 0:
+            return True
+        else:
+            print("There are {} ops not supported yet, list as below")
+            for op in unsupported_ops:
+                print(op)
+            return False
+
     def add_codes(self, codes, indent=0):
         if isinstance(codes, list):
             for code in codes:

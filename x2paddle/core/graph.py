@@ -61,7 +61,6 @@ class Graph(object):
         num_inputs = dict()
         for name, node in self.node_map.items():
             num_inputs[name] = len(node.inputs)
-        print(len(self.node_map))
 
         self.topo_sort = self.input_nodes[:]
         idx = 0
