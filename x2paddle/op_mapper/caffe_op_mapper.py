@@ -106,11 +106,11 @@ class CaffeOpMapper(OpMapper):
             raise ValueError('Unable to determine kernel parameter!')
         return default
 
-    def get_kernel_parameters(self, kind, params):
+    def get_kernel_parameters(self, kind, params, kernel_default=[1, 1]):
         assert kind in ['Convolution', 'Pooling', 'Deconvolution']
 
-        k_h = self.get_kernel_value(params.kernel_h, params.kernel_size, 0)
-        k_w = self.get_kernel_value(params.kernel_w, params.kernel_size, 1)
+        k_h = self.get_kernel_value(params.kernel_h, params.kernel_size, 0, kernel_default[0])
+        k_w = self.get_kernel_value(params.kernel_w, params.kernel_size, 1, kernel_default[1])
         s_h = self.get_kernel_value(params.stride_h,
                                     params.stride,
                                     0,
@@ -216,8 +216,13 @@ class CaffeOpMapper(OpMapper):
 
     def Pooling(self, node):
         params = node.layer.pooling_param
+        shape = node.input_shape[0]
+        global_pool = getattr(params, 'global_pooling', False)
+        kernel_default = [1, 1]
+        if global_pool:
+            kernel_default = [shape[2],shape[3]]
         channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
-            node.layer_type, params)
+            node.layer_type, params, kernel_default=kernel_default)
         if params.pool == 0:
             pool_type = 'max'
         else:
@@ -348,3 +353,55 @@ class CaffeOpMapper(OpMapper):
                                       inputs=node,
                                       output=node,
                                       param_attr=attr)
+
+    def Slice(self, node):
+        assert len(
+            node.inputs) == 1, 'The count of Slice node\'s input is not 1.'
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.slice_param
+        axis = params.axis
+        points = list(params.slice_point)
+        shape = node.input_shape[0]
+        count = shape[axis]
+        sections = []
+        idx = 0
+        for p in points:
+            if idx == 0:
+                sections.append(p - 0)
+            elif idx == len(points) - 1:
+                sections.append(count - p)
+            else:
+                sections.append(points[idx + 1] - p)
+            idx += 1
+        attr = {
+            'dim': axis,
+            'num_or_sections': sections,
+            'name': string(node.layer_name + '_slice')
+        }
+        node.fluid_code.add_layer("split",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def Concat(self, node):
+        assert len(
+            node.inputs) > 1, 'The count of Concat node\'s input is not more than 1.'
+        inputs = []
+        for i in range(len(node.inputs)):
+            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            inputs.append(input)
+        params = node.layer.concat_param
+        axis = params.axis
+        attr = {
+            'axis': axis,
+            'name': string(node.layer_name + '_concat')
+        }
+        node.fluid_code.add_layer("concat",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=attr)
+    
+            
+        
+        
+        

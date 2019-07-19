@@ -60,9 +60,9 @@ class CaffeResolver(object):
 class CaffeGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(CaffeGraphNode, self).__init__(layer, layer.name)
+            super(CaffeGraphNode, self).__init__(layer, layer.name.replace('/', '_'))
         else:
-            super(CaffeGraphNode, self).__init__(layer, layer_name)
+            super(CaffeGraphNode, self).__init__(layer, layer_name.replace('/', '_'))
         self.layer_type = layer.type
         self.fluid_code = FluidCode()
 
@@ -181,8 +181,8 @@ class CaffeGraph(Graph):
             name)
         input_node = self.node_map[input_node_name]
         if len(input_node.layer.top) > 1:
-            idx = list(input_node.layer.top).index(node.layer.bottom[need])
-            name = input_node_name + ':' + str(idx)
+            need_idx = list(input_node.layer.top).index(node.layer.bottom[idx])
+            name = input_node_name + ':' + str(need_idx)
         else:
             name = input_node_name
         return self.get_node(name, copy=copy)

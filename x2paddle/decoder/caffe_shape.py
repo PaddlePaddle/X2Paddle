@@ -32,8 +32,8 @@ def get_params_w_h(params):
 
     if not isinstance(getattr(params, 'pad'), int):
         if len(params.pad) == 0:
-            pad_h = 1
-            pad_w = 1
+            pad_h = 0
+            pad_w = 0
         elif len(params.pad) == 1:
             pad_h = params.pad[0]
             pad_w = params.pad[0]
@@ -101,7 +101,6 @@ def get_filter_output_shape(i_h, i_w, params, round_func):
                               (kernel_h - 1) + 1)) / float(stride_h) + 1
     o_w = (i_w + 2 * pad_w - (dila_w *
                               (kernel_w - 1) + 1)) / float(stride_w) + 1
-
     return (int(round_func(o_h)), int(round_func(o_w)))
 
 
@@ -111,6 +110,7 @@ def get_strided_kernel_output_shape(params, input_shape, round_func):
                                        round_func)
     has_c_o = hasattr(params, 'num_output')
     c = params.num_output if has_c_o else input_shape[1]
+    
     return [[input_shape[0], c, o_h, o_w]]
 
 
@@ -168,3 +168,14 @@ def shape_softmax(layer, input_shape):
 
 def shape_input(layer, input_shape):
     return [list(layer.input_param.shape[0].dim)]
+
+def shape_concat(layer, input_shape):
+    params = layer.concat_param
+    axis = params.axis
+    output_shape = None
+    for shape in input_shape:
+        if output_shape is None:
+            output_shape = shape
+        else:
+            output_shape[axis] += shape[axis]
+    return [output_shape]
