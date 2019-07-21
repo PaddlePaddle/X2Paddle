@@ -49,3 +49,23 @@ python x2paddle/convert.py --framework=tensorflow \
                            --model=../vgg16.pb \
                            --save_dir=paddle_model
 ```
+## 转换caffe SqueezeNet模型
+
+### 步骤一 下载模型参数文件和proto文件
+```
+wget https://github.com/DeepScale/SqueezeNet/blob/master/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel
+wget https://github.com/DeepScale/SqueezeNet/blob/master/SqueezeNet_v1.1/deploy.prototxt
+```
+
+### 步骤二 模型转换
+
+```
+git clone https://github.com/PaddlePaddle/X2Paddle.git
+cd X2Paddle
+git checkout develop
+export PYTHONPATH=${PWD}:$PYTHONPATH
+mkdir paddle_model
+python x2paddle/convert.py --framework=caffe \
+                           --weight=../squeezenet_v1.1.caffemodel \
+                           --proto =../deploy.prototxt \
+                           --save_dir=paddle_model
