@@ -34,8 +34,6 @@ paddle.fluid.layers.accuracy(
 Caffe：可以设置计算某一维的accuracy；          
 PaddlePaddle：只能计算axis为1的维度的accuracy。
 
-
-
-
-
+#### 类别使用
+Caffe: 可以忽略某几个类别后计算accuracy。
 
