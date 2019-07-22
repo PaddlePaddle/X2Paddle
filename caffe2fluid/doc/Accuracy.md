@@ -9,8 +9,10 @@ layer {
     bottom: "input"
     bottom: "label"
     top: "accuracy"
-    include {
-	phase: TEST
+    accuracy_param{
+        top_k = 1
+	axis = 1
+	# ignore_label = 0 # 定义需要忽略的label的类标，一般未定义
     }
 }
 ```
@@ -29,8 +31,8 @@ paddle.fluid.layers.accuracy(
 
 ### 功能差异
 #### 计算机制
-Caffe：只能计算每个类别中top1中正确预测的个数；          
-PaddlePaddle：可以通过设置`k`来计算每个类别中top k 中正确预测的个数。
+Caffe：可以设置计算某一维的accuracy；          
+PaddlePaddle：不可以设置计算某一维的accuracy。
 
 
 
