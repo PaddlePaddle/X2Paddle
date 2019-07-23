@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from paddle.fluid.proto import framework_pb2
-import struct
+import paddle.fluid as fluid
+import numpy
 import math
 import os
 
@@ -49,14 +50,29 @@ def export_paddle_param(param, param_name, dir):
         os.makedirs(dir)
 
     fp = open(os.path.join(dir, param_name), 'wb')
-    fp.write(struct.pack('i', 0))
-    fp.write(struct.pack('L', 0))
-    fp.write(struct.pack('i', 0))
+    numpy.array([0], dtype='int32').tofile(fp)
+    numpy.array([0], dtype='int64').tofile(fp)
+    numpy.array([0], dtype='int32').tofile(fp)
     tensor_desc = framework_pb2.VarType.TensorDesc()
     tensor_desc.data_type = dtype_map[str(param.dtype)][0]
     tensor_desc.dims.extend(shape)
     desc_size = tensor_desc.ByteSize()
-    fp.write(struct.pack('i', desc_size))
+    numpy.array([desc_size], dtype='int32').tofile(fp)
     fp.write(tensor_desc.SerializeToString())
     param.tofile(fp)
     fp.close()
+
+
+def init_net(param_dir="./"):
+    import os
+    exe = fluid.Executor(fluid.CPUPlace())
+    exe.run(fluid.default_startup_program())
+
+    def if_exist(var):
+        b = os.path.exists(os.path.join(param_dir, var.name))
+        return b
+
+    fluid.io.load_vars(exe,
+                       param_dir,
+                       fluid.default_main_program(),
+                       predicate=if_exist)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import collections
-from copy import deepcopy
+import copy as cp
 
 
 class GraphNode(object):
@@ -77,7 +77,7 @@ class Graph(object):
             if name.split(':')[0] in self.node_map:
                 name_prefix, idx = name.split(':')
                 if copy:
-                    node = deepcopy(self.node_map[name_prefix])
+                    node = cp.copy(self.node_map[name_prefix])
                 else:
                     node = self.node_map[name_prefix]
                 node.index = int(idx)
@@ -86,7 +86,7 @@ class Graph(object):
                 raise Exception("Graph doesn't have node [%s]." % name)
         else:
             if copy:
-                node = deepcopy(self.node_map[name])
+                node = cp.copy(self.node_map[name])
             else:
                 node = self.node_map[name]
             return node
@@ -110,6 +110,7 @@ class Graph(object):
             del self.node_map[input].inputs[idx]
         del self.node_map[node_name]
 
+        print("remove topo", node_name)
         idx = self.topo_sort.index(node_name)
         del self.topo_sort[idx]
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from x2paddle.core.util import *
+import inspect
 import os
 
 
@@ -33,7 +34,8 @@ class OpMapper(object):
         if len(unsupported_ops) == 0:
             return True
         else:
-            print("There are {} ops not supported yet, list as below")
+            print("There are {} ops not supported yet, list as below".format(
+                len(unsupported_ops)))
             for op in unsupported_ops:
                 print(op)
             return False
@@ -41,9 +43,10 @@ class OpMapper(object):
     def add_codes(self, codes, indent=0):
         if isinstance(codes, list):
             for code in codes:
-                self.paddle_codes += (self.tab * indent + code + '\n')
+                self.paddle_codes += (self.tab * indent + code.strip('\n') +
+                                      '\n')
         elif isinstance(codes, str):
-            self.paddle_codes += (self.tab * indent + codes + '\n')
+            self.paddle_codes += (self.tab * indent + codes.strip('\n') + '\n')
         else:
             raise Exception("Unknown type of codes")
 
@@ -61,6 +64,8 @@ class OpMapper(object):
             export_paddle_param(param, name, save_dir)
         self.add_heads()
         self.add_codes(self.net_code)
+        self.add_codes("")
+        self.add_codes(inspect.getsourcelines(init_net)[0])
         fp = open(os.path.join(save_dir, "model.py"), 'w')
         fp.write(self.paddle_codes)
         fp.close()
