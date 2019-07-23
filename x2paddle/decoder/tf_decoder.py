@@ -18,7 +18,8 @@ from tensorflow.python.framework import tensor_util
 from tensorflow.python.platform import gfile
 from tensorflow.core.framework import attr_value_pb2
 import tensorflow as tf
-import copy
+import copy as cp
+import sys
 
 
 class TFGraphNode(GraphNode):
@@ -121,11 +122,12 @@ class TFGraph(Graph):
         # delete isolated nodes
         isolated_nodes = list()
         for node_name in self.node_map.keys():
-            if len(self.get_node(node_name).inputs) == 0 or len(
+            if len(self.get_node(node_name).inputs) == 0 and len(
                     self.get_node(node_name).outputs) == 0:
                 isolated_nodes.append(node_name)
 
-        self.remove_node(node_name)
+        for node_name in isolated_nodes:
+            self.remove_node(node_name)
 
     def _remove_identity_node(self):
         identity_node = list()
@@ -153,14 +155,40 @@ class TFGraph(Graph):
             del self.topo_sort[idx]
 
 
+def check_input_shape(graph_def):
+    graph_def = cp.deepcopy(graph_def)
+    input_map = dict()
+    for layer in graph_def.node:
+        if layer.op != "Placeholder":
+            continue
+        graph_node = TFGraphNode(layer)
+        dtype = graph_node.dtype
+        #       print("shape:", graph_node.out_shapes)
+        if not graph_node.get_attr("shape"):
+            sys.stderr.write("Unknown shape for input tensor[{}]\n".format(
+                layer.name))
+            shape = input("Please define shape of input here: ")
+            shape = [
+                None if dim == "None" else int(dim)
+                for dim in shape.strip().split(',')
+            ]
+            x2paddle_input = tf.placeholder(dtype=dtype,
+                                            shape=shape,
+                                            name="x2paddle_{}".format(
+                                                layer.name))
+            input_map["{}:0".format(layer.name)] = x2paddle_input
+    return input_map
+
+
 class TFDecoder(object):
     def __init__(self, pb_model):
         sess = tf.Session()
         with gfile.FastGFile(pb_model, 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
+            input_map = check_input_shape(graph_def)
             sess.graph.as_default()
-            tf.import_graph_def(graph_def, name='')
+            tf.import_graph_def(graph_def, name='', input_map=input_map)
 
         sess.run(tf.global_variables_initializer())
 
