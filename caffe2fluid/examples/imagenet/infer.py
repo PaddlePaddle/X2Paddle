@@ -2,7 +2,7 @@
 
 #function:
 #   a demo to show how to use the converted model genereated by caffe2fluid
-#   
+#
 #notes:
 #   only support imagenet data
 
@@ -59,8 +59,9 @@ def build_model(net_file, net_name):
     inputs_dict = MyNet.input_shapes()
     input_name = list(inputs_dict.keys())[0]
     input_shape = inputs_dict[input_name]
-    images = fluid.layers.data(
-        name=input_name, shape=input_shape, dtype='float32')
+    images = fluid.layers.data(name=input_name,
+                               shape=input_shape,
+                               dtype='float32')
     #label = fluid.layers.data(name='label', shape=[1], dtype='int64')
 
     net = MyNet({input_name: images})
@@ -172,7 +173,7 @@ def load_model(exe, place, net_file, net_name, net_weight, debug):
 
 def get_shape(fluid, program, name):
     for var in program.list_vars():
-        if var.type == 'Input':
+        if var.name == name:
             return list(var.shape[1:])
 
     raise ValueError('not found shape for input layer[%s], '
