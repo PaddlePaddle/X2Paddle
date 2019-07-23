@@ -22,6 +22,7 @@ import logging
 import math
 import struct
 import numpy
+import os
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -166,10 +167,10 @@ class PaddleEmitter(object):
             "float64": "d"
         }
         shape = weight.shape
-        filew = open(dir + "/" + paddle_var_name, "wb")
-        filew.write(struct.pack('i', 0))
-        filew.write(struct.pack('L', 0))
-        filew.write(struct.pack('i', 0))
+        filew = open(os.path.join(dir, paddle_var_name), "wb")
+        numpy.array([0], dtype=numpy.int32).tofile(filew)
+        numpy.array([0], dtype=numpy.int64).tofile(filew)
+        numpy.array([0], dtype=numpy.int32).tofile(filew)
         tensor_desc = framework.VarType.TensorDesc()
         if str(weight.dtype) in numpy_dtype_map:
             tensor_desc.data_type = numpy_dtype_map[str(weight.dtype)]
@@ -177,7 +178,7 @@ class PaddleEmitter(object):
             raise Exception("Unexpected array dtype [{}]".format(weight.dtype))
         tensor_desc.dims.extend(shape)
         desc_size = tensor_desc.ByteSize()
-        filew.write(struct.pack('i', desc_size))
+        numpy.array([desc_size], dtype=numpy.int32).tofile(filew)
         filew.write(tensor_desc.SerializeToString())
         weight.tofile(filew)
         filew.close()
