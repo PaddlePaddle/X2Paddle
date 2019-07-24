@@ -26,10 +26,10 @@ class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
             super(TFGraphNode, self).__init__(layer,
-                                              layer.name.replace('/', '_'))
+                                              layer.name.replace('/', '_').replace('-', '_'))
         else:
             super(TFGraphNode, self).__init__(layer,
-                                              layer_name.replace('/', '_'))
+                                              layer_name.replace('/', '_').replace('-', '_'))
 
         self.layer_type = layer.op
         self.fluid_code = FluidCode()
@@ -89,11 +89,11 @@ class TFGraph(Graph):
 
     def build(self):
         for layer in self.model.node:
-            self.node_map[layer.name.replace('/', '_')] = TFGraphNode(layer)
+            self.node_map[layer.name.replace('/', '_').replace('-', '_')] = TFGraphNode(layer)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
-                in_node = in_node.replace('/', '_')
+                in_node = in_node.replace('/', '_').replace('-', '_')
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
@@ -112,7 +112,7 @@ class TFGraph(Graph):
 
     def get_node(self, node_name, copy=False):
         items = node_name.strip().split(':')
-        items[0] = items[0].replace('/', '_')
+        items[0] = items[0].replace('/', '_').replace('-', '_')
         if items[0] in self.identity_map:
             items[0] = self.identity_map[items[0]]
         new_node_name = ":".join(items)
@@ -163,11 +163,10 @@ def check_input_shape(graph_def):
             continue
         graph_node = TFGraphNode(layer)
         dtype = graph_node.dtype
-        #       print("shape:", graph_node.out_shapes)
         if not graph_node.get_attr("shape"):
-            sys.stderr.write("Unknown shape for input tensor[{}]\n".format(
+            sys.stderr.write("\nUnknown shape for input tensor[tensor name: \"{}\"]\n".format(
                 layer.name))
-            shape = input("Please define shape of input here: ")
+            shape = input("Please define shape of input here(e.g. None,224,224,3): ")
             shape = [
                 None if dim == "None" else int(dim)
                 for dim in shape.strip().split(',')

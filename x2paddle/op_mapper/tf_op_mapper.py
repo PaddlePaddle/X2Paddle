@@ -350,6 +350,7 @@ class TFOpMapper(OpMapper):
         param = self.graph.get_node(node.layer.input[1], copy=True)
         if param.layer_type == "Const":
             attr = {"shape": param.value.tolist()}
+            self.omit_nodes.append(param.layer_name)
         else:
             # Here is a trick method to solove tensor parameter in tensorflow
             assert len(param.out_shapes[0]
@@ -425,3 +426,101 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=None)
+
+    def Sigmoid(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("sigmoid", inputs=input, output=node, param_attr=None)
+
+    def Maximum(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {"x": x, "y": y}
+        node.fluid_code.add_layer("elementwise_max",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
+    def SplitV(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        num_sections = self.graph.get_node(node.layer.input[1], copy=True)
+        dim = self.graph.get_node(node.layer.input[2], copy=True)
+        assert num_sections.layer_type == "Const"
+        assert dim.layer_type == "Const"
+        self.omit_nodes.append(num_sections.layer_name)
+        self.omit_nodes.append(dim.layer_name)
+        attr = {"num_or_sections":num_sections.value.tolist(), "dim":dim.value}
+        node.fluid_code.add_layer("split", inputs=input, output=node, param_attr=attr)
+
+    def Exp(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("exp", inputs=input, output=node, param_attr=None)
+
+    def ConcatV2(self, node):
+        inputs = [self.graph.get_node(name, copy=True) for name in node.layer.input[:-1]]
+        axis = self.graph.get_node(node.layer.input[-1], copy=True)
+        assert axis.layer_type == "Const"
+        self.omit_nodes.append(axis.layer_name)
+        attr = {"axis": axis.value}
+        node.fluid_code.add_layer("concat", inputs=inputs, output=node, param_attr=attr)
+
+    def Tile(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        expand_times = self.graph.get_node(node.layer.input[1], copy=True)
+        assert expand_times.layer_type == "Const"
+        self.omit_nodes.append(expand_times.layer_name)
+        attr = {"expand_times": expand_times.value.tolist()}
+        node.fluid_code.add_layer("expand", inputs=input, output=node, param_attr=attr)
+
+    def Pack(self, node):
+        inputs = [self.graph.get_node(name, copy=True) for name in node.layer.input[:-1]]
+        node.fluid_code.add_layer("stack", inputs=inputs, output=node, param_attr=None)
+
+    def Pad(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        paddings = self.graph.get_node(Node.layer.input[1], copy=True)
+        assert paddings.layer_type == "Const", "Padding should be Const"
+        self.omit_nodes.append(paddings.layer_name)
+        attr = {"paddings": paddings.value.tolist()}
+        node.fluid_code.add_layer("pad", inputs=input, output=node, param_attr=attr) 
+
+#    def ResizeNearestNeighbor(self, node):
+#        pass
+
+    def Range(self, node):
+        start = self.graph.get_node(node.layer.input[0], copy=True)
+        limit = self.graph.get_node(node.layer.input[1], copy=True)
+        delta = self.graph.get_node(node.layer.input[2], copy=True)
+        if start.layer_type == "Const":
+            self.omit_nodes.append(start.layer_name)
+            start = start.value
+        if limit.layer_type == "Const":
+            self.omit_nodes.append(limit.layer_name)
+            limit = limit.value
+        if delta.layer_type == "Const":
+            self.omit_nodes.append(delta.layer_name)
+            delta = delta.value
+        inputs = {"start": start, "end":limit, "step":delta}
+        attr = {"dtype": string(node.dtype)}
+        node.fluid_code.append("range", inputs=inputs, output=node, param_attr=None)
+
+#    def Fill(self, node):
+#        shape = self.graph.get_node(node.layer
+
+    def Mul(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {"x": x, "y": y}
+        node.fluid_code.add_layer("elementwise_mul",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
+    def Sub(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {"x": x, "y": y}
+        node.fluid_code.add_layer("elementwise_sub",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
