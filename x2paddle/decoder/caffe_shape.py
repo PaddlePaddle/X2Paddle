@@ -110,7 +110,7 @@ def get_strided_kernel_output_shape(params, input_shape, round_func):
                                        round_func)
     has_c_o = hasattr(params, 'num_output')
     c = params.num_output if has_c_o else input_shape[1]
-    
+
     return [[input_shape[0], c, o_h, o_w]]
 
 
@@ -169,6 +169,7 @@ def shape_softmax(layer, input_shape):
 def shape_input(layer, input_shape):
     return [list(layer.input_param.shape[0].dim)]
 
+
 def shape_concat(layer, input_shape):
     params = layer.concat_param
     axis = params.axis
@@ -179,3 +180,53 @@ def shape_concat(layer, input_shape):
         else:
             output_shape[axis] += shape[axis]
     return [output_shape]
+
+
+def shape_slice(layer, input_shape):
+    inshape = input_shape[0]
+    params = layer.slice_param
+    axis = params.axis
+    count = inshape[axis]
+    points = list(params.slice_point)
+    points = [0] + points + [count]
+    output_shape = []
+    for i in range(len(points)):
+        shape = inshape
+        size = points[i + 1] - points[i]
+        shape[axis] = size
+        output_shape.append(shape)
+        if i == len(points) - 2:
+            break
+    return output_shape
+
+
+def shape_prelu(layer, input_shape):
+    return input_shape
+
+
+def shape_sigmoid(layer, input_shape):
+    return input_shape
+
+
+def shape_absval(layer, input_shape):
+    return input_shape
+
+
+def shape_accuracy(layer, input_shape):
+    return [[1]]
+
+
+def shape_tanh(layer, input_shape):
+    return input_shape
+
+
+def shape_eltwise(layer, input_shape):
+    return [input_shape[0]]
+
+
+def shape_batchnorm(layer, input_shape):
+    return input_shape
+
+
+def shape_scale(layer, input_shape):
+    return input_shape
