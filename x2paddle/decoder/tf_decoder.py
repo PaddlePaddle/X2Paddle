@@ -25,16 +25,18 @@ import sys
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(TFGraphNode, self).__init__(layer,
-                                              layer.name.replace('/', '_').replace('-', '_'))
+            super(TFGraphNode,
+                  self).__init__(layer,
+                                 layer.name.replace('/', '_').replace('-', '_'))
         else:
-            super(TFGraphNode, self).__init__(layer,
-                                              layer_name.replace('/', '_').replace('-', '_'))
+            super(TFGraphNode,
+                  self).__init__(layer,
+                                 layer_name.replace('/', '_').replace('-', '_'))
 
         self.layer_type = layer.op
         self.fluid_code = FluidCode()
 
-        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
+        self.dtype_map = {1: "float32", 3: "int32", 4: "int8", 9: "int64"}
 
     @property
     def out_shapes(self):
@@ -89,7 +91,8 @@ class TFGraph(Graph):
 
     def build(self):
         for layer in self.model.node:
-            self.node_map[layer.name.replace('/', '_').replace('-', '_')] = TFGraphNode(layer)
+            self.node_map[layer.name.replace('/', '_').replace(
+                '-', '_')] = TFGraphNode(layer)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
@@ -164,9 +167,11 @@ def check_input_shape(graph_def):
         graph_node = TFGraphNode(layer)
         dtype = graph_node.dtype
         if not graph_node.get_attr("shape"):
-            sys.stderr.write("\nUnknown shape for input tensor[tensor name: \"{}\"]\n".format(
-                layer.name))
-            shape = input("Please define shape of input here(e.g. None,224,224,3): ")
+            sys.stderr.write(
+                "\nUnknown shape for input tensor[tensor name: \"{}\"]\n".
+                format(layer.name))
+            shape = input(
+                "Please define shape of input here(e.g. None,224,224,3): ")
             shape = [
                 None if dim == "None" else int(dim)
                 for dim in shape.strip().split(',')
@@ -186,6 +191,7 @@ class TFDecoder(object):
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             input_map = check_input_shape(graph_def)
+            self._fix_output_shape(graph_def)
             sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
@@ -193,3 +199,9 @@ class TFDecoder(object):
 
         self.tf_graph = TFGraph(sess.graph._as_graph_def(add_shapes=True)[0])
         self.tf_graph.build()
+
+    def _fix_output_shape(self, graph):
+        for i in range(len(graph.node)):
+            node = graph.node[i]
+            if node.op == "swish_f32":
+                graph.node[i].attr['_disable_call_shape_inference'].b = False

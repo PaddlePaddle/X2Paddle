@@ -54,7 +54,8 @@ class TFOpMapper(OpMapper):
         attr = {
             'dtype': string(dtype),
             'shape': shape,
-            'name': string(node.layer_name)
+            'name': string(node.layer_name),
+            'append_batch_size': False
         }
         node.fluid_code.add_layer("data",
                                   inputs=None,
@@ -429,7 +430,10 @@ class TFOpMapper(OpMapper):
 
     def Sigmoid(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
-        node.fluid_code.add_layer("sigmoid", inputs=input, output=node, param_attr=None)
+        node.fluid_code.add_layer("sigmoid",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
 
     def Maximum(self, node):
         x = self.graph.get_node(node.layer.input[0], copy=True)
@@ -448,20 +452,35 @@ class TFOpMapper(OpMapper):
         assert dim.layer_type == "Const"
         self.omit_nodes.append(num_sections.layer_name)
         self.omit_nodes.append(dim.layer_name)
-        attr = {"num_or_sections":num_sections.value.tolist(), "dim":dim.value}
-        node.fluid_code.add_layer("split", inputs=input, output=node, param_attr=attr)
+        attr = {
+            "num_or_sections": num_sections.value.tolist(),
+            "dim": dim.value
+        }
+        node.fluid_code.add_layer("split",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
     def Exp(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
-        node.fluid_code.add_layer("exp", inputs=input, output=node, param_attr=None)
+        node.fluid_code.add_layer("exp",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
 
     def ConcatV2(self, node):
-        inputs = [self.graph.get_node(name, copy=True) for name in node.layer.input[:-1]]
+        inputs = [
+            self.graph.get_node(name, copy=True)
+            for name in node.layer.input[:-1]
+        ]
         axis = self.graph.get_node(node.layer.input[-1], copy=True)
         assert axis.layer_type == "Const"
         self.omit_nodes.append(axis.layer_name)
         attr = {"axis": axis.value}
-        node.fluid_code.add_layer("concat", inputs=inputs, output=node, param_attr=attr)
+        node.fluid_code.add_layer("concat",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=attr)
 
     def Tile(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -469,11 +488,19 @@ class TFOpMapper(OpMapper):
         assert expand_times.layer_type == "Const"
         self.omit_nodes.append(expand_times.layer_name)
         attr = {"expand_times": expand_times.value.tolist()}
-        node.fluid_code.add_layer("expand", inputs=input, output=node, param_attr=attr)
+        node.fluid_code.add_layer("expand",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
     def Pack(self, node):
-        inputs = [self.graph.get_node(name, copy=True) for name in node.layer.input[:-1]]
-        node.fluid_code.add_layer("stack", inputs=inputs, output=node, param_attr=None)
+        inputs = [
+            self.graph.get_node(name, copy=True) for name in node.layer.input
+        ]
+        node.fluid_code.add_layer("stack",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
 
     def Pad(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -481,7 +508,10 @@ class TFOpMapper(OpMapper):
         assert paddings.layer_type == "Const", "Padding should be Const"
         self.omit_nodes.append(paddings.layer_name)
         attr = {"paddings": paddings.value.tolist()}
-        node.fluid_code.add_layer("pad", inputs=input, output=node, param_attr=attr) 
+        node.fluid_code.add_layer("pad",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
 #    def ResizeNearestNeighbor(self, node):
 #        pass
@@ -499,9 +529,13 @@ class TFOpMapper(OpMapper):
         if delta.layer_type == "Const":
             self.omit_nodes.append(delta.layer_name)
             delta = delta.value
-        inputs = {"start": start, "end":limit, "step":delta}
+        inputs = {"start": start, "end": limit, "step": delta}
         attr = {"dtype": string(node.dtype)}
-        node.fluid_code.append("range", inputs=inputs, output=node, param_attr=None)
+        node.fluid_code.append("range",
+                               inputs=inputs,
+                               output=node,
+                               param_attr=None)
+
 
 #    def Fill(self, node):
 #        shape = self.graph.get_node(node.layer
@@ -524,3 +558,75 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=None)
 
+    def Rsqrt(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("rsqrt",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
+
+    def swish_f32(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("sigmoid",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
+        inputs = {"x": input, "y": node}
+        node.fluid_code.add_layer("elementwise_mul",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
+    def Mean(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        keep_dims = node.get_attr("keep_dims")
+        attr = {"dim": reduce_idx.value.tolist(), "keep_dim": keep_dims}
+        node.fluid_code.add_layer("reduce_mean",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def MatMul(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        transpose_a = node.get_attr('transpose_a')
+        transpose_b = node.get_attr('transpose_b')
+        inputs = {"x": x, "y": y}
+        attr = {"transpose_x": transpose_a, "transpose_y": transpose_b}
+        node.fluid_code.add_layer("matmul",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=attr)
+
+    def ArgMax(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        axis = self.graph.get_node(node.layer.input[1], copy=True)
+        assert axis.layer_type == "Const", "ArgMax only support Const parameter"
+        self.omit_nodes.append(axis.layer_name)
+        attr = {"axis": axis.value}
+        node.fluid_code.add_layer("argmax",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def StridedSlice(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        begin = self.graph.get_node(node.layer.input[1], copy=True)
+        end = self.graph.get_node(node.layer.input[2], copy=True)
+        strides = self.graph.get_node(node.layer.input[3], copy=True)
+        assert begin.layer_type == "Const"
+        assert end.layer_type == "Const"
+        assert strides.layer_type == "Const"
+        self.omit_nodes.append(begin.layer_name)
+        self.omit_nodes.append(end.layer_name)
+        self.omit_nodes.append(strides.layer_name)
+        strides = strides.value.tolist()
+        assert len(set(strides)) == 1 and strides[0] == 1
+
+        attr = {"starts": begin.value.tolist(), "ends": end.value.tolist()}
+        node.fluid_code.add_layer("slice",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
