@@ -110,7 +110,6 @@ class Graph(object):
             del self.node_map[input].inputs[idx]
         del self.node_map[node_name]
 
-        print("remove topo", node_name)
         idx = self.topo_sort.index(node_name)
         del self.topo_sort[idx]
 
