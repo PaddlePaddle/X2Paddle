@@ -195,6 +195,10 @@ class TFDecoder(object):
             sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
+
+#        for node in graph_def.node:
+#            print(node.op)
+
         sess.run(tf.global_variables_initializer())
 
         self.tf_graph = TFGraph(sess.graph._as_graph_def(add_shapes=True)[0])

@@ -356,9 +356,14 @@ class TFOpMapper(OpMapper):
             # Here is a trick method to solove tensor parameter in tensorflow
             assert len(param.out_shapes[0]
                        ) == 1, "Unexpected situation of shape parameter"
+            attr = {"shape": [-1]}
+            node.fluid_code.add_layer("reshape",
+                                      inputs=param,
+                                      output="shape_param",
+                                      param_attr=attr)
             attr = {"num_or_sections": param.out_shapes[0][0], "dim": 0}
             node.fluid_code.add_layer("split",
-                                      inputs=param,
+                                      inputs="shape_param",
                                       output=node,
                                       param_attr=attr)
             new_param = "["
@@ -625,8 +630,132 @@ class TFOpMapper(OpMapper):
         strides = strides.value.tolist()
         assert len(set(strides)) == 1 and strides[0] == 1
 
-        attr = {"starts": begin.value.tolist(), "ends": end.value.tolist()}
+        attr = {
+            "axes": range(len(strides)),
+            "starts": begin.value.tolist(),
+            "ends": end.value.tolist()
+        }
         node.fluid_code.add_layer("slice",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+
+    def Slice(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        begin = self.graph.get_node(node.layer.input[1], copy=True)
+        size = self.graph.get_node(node.layer.input[2], copy=True)
+        assert begin.layer_type == "Const"
+        assert size.layer_type == "Const"
+        self.omit_nodes.append(begin.layer_name)
+        self.omit_nodes.append(size.layer_name)
+
+        attr = {"shape": size.value.tolist(), "offsets": begin.value.tolist()}
+        node.code.add_layer("crop", inputs=input, output=node, param_attr=attr)
+
+    def Abs(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        node.fluid_code.add_layer("abs",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=None)
+
+    def Conv2DBackpropInput(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        kernel = self.graph.get_node(node.layer.input[1], copy=True)
+        assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
+        self.omit_nodes.append(kernel.layer_name)
+
+        in_shape = input.out_shapes[0]
+        k_size = kernel.out_shapes[0]
+        strides = node.get_attr("strides")
+        dilations = node.get_attr("dilations")
+        data_format = node.get_attr("data_format").decode()
+        pad_mode = node.get_attr("padding").decode()
+        channel_first = data_format == "NCHW"
+
+        if not channel_first:
+            self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
+                kernel.value, (3, 2, 0, 1))
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+            strides = [strides[i] for i in [0, 3, 1, 2]]
+            dilations = [dilations[i] for i in [0, 3, 1, 2]]
+
+        if pad_mode == "SAME":
+            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
+            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
+            attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
+            if pad_h[0] + pad_h[1] + pad_w[0] + pad_w[1] != 0:
+                node.fluid_code.add_layer(
+                    "pad2d",
+                    inputs=input if channel_first else node,
+                    output=node,
+                    param_attr=attr)
+        attr = {
+            "bias_attr": False,
+            "param_attr": string(kernel.layer_name),
+            "num_filters": k_size[3],
+            "filter_size": k_size[0:2],
+            "stride": strides[2:4],
+            "dilation": dilations[2:4]
+        }
+        node.fluid_code.add_layer(
+            "conv2d_transpose",
+            inputs=input if channel_first and pad_mode != "SAME" else node,
+            output=node,
+            param_attr=attr)
+
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
+
+    def Max(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        keep_dims = node.get_attr("keep_dims")
+        attr = {"dim": reduce_idx.value.tolist(), "keep_dim": keep_dims}
+        node.fluid_code.add_layer("reduce_max",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def Sum(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        keep_dims = node.get_attr("keep_dims")
+        attr = {"dim": reduce_idx.value.tolist(), "keep_dim": keep_dims}
+        node.fluid_code.add_layer("reduce_sum",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def GreaterEqual(self, node):
+        pass
+
+    def RandomUniform(self, node):
+        pass
+
+    def cast(self, node):
+        pass
+
+    def FloorDiv(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {'x': x, 'y': y}
+        node.fluid_code.add_layer("elementwise_div",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+        node.fluid_code.add_layer("floor",
+                                  inputs=node,
+                                  output=node,
+                                  param_attr=None)
