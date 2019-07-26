@@ -230,3 +230,226 @@ def shape_batchnorm(layer, input_shape):
 
 def shape_scale(layer, input_shape):
     return input_shape
+
+
+def shape_reshape(layer, input_shape):
+    def count(num_list):
+        return reduce(lambda a, b: a * b, num_list)
+
+    inshape = input_shape[0]
+    params = layer.reshape_param
+    axis = params.axis if hasattr(params, axis) else 0
+    num_axes = params.num_axes if hasattr(params, num_axes) else -1
+    if inshape[0] == -1:
+        inshape[0] = 1
+    input_count = count(inshape)
+
+    input_num_axes = len(inshape)
+
+    input_start_axis = axis
+    start_axis = input_start_axis if input_start_axis >= 0 \
+            else input_num_axes + input_start_axis + 1
+
+    assert start_axis >= 0, "[Reshape]axis %d out of range" % (input_start_axis)
+    assert start_axis <= input_num_axes, "[Reshape]axis %d out of range for %d-D input data"\
+            % (input_start_axis, input_num_axes)
+
+    assert num_axes >= -1, "[Reshape]num_axes must be >= 0, or -1 for all"
+
+    end_axis = input_num_axes if num_axes == -1 else start_axis + num_axes
+    assert end_axis <= input_num_axes, "end_axis[%d] = axis[%d] + num_axes[%d] is out of range"\
+            % (end_axis, start_axis, num_axes)
+
+    num_axes_replaced = end_axis - start_axis
+    num_axes_retained = input_num_axes - num_axes_replaced
+    num_new_axes = len(shape['dim'])
+    outshape = []
+
+    for i in range(start_axis):
+        outshape.append(inshape[i])
+
+    for i in range(num_new_axes):
+        outshape.append(shape['dim'][i])
+
+    for i in range(end_axis, input_num_axes):
+        outshape.append(inshape[i])
+
+    assert len(outshape) == num_axes_retained + num_new_axes,\
+            "[Reshape]invalid dims of output shape[%s]" % (str(outshape))
+
+    inferred_axis = -1
+    copy_axes = []
+    constant_count = 1
+    for i in range(num_new_axes):
+        top_dim = shape['dim'][i]
+        if top_dim == 0:
+            copy_axes.append(i)
+            copy_axis_index = start_axis + i
+            outshape[copy_axis_index] = inshape[copy_axis_index]
+        elif top_dim == -1:
+            assert inferred_axis == -1, "[Reshape]new shape contains multiple -1 dims"
+            inferred_axis = i
+        else:
+            constant_count *= top_dim
+
+    if inferred_axis >= 0:
+        explicit_count = constant_count
+        l = inshape[0:start_axis]
+        if len(l) > 0:
+            explicit_count *= count(l)
+
+        l = inshape[end_axis:]
+        if len(l) > 0:
+            explicit_count *= count(l)
+
+        for i in range(len(copy_axes)):
+            explicit_count *= outshape[start_axis + copy_axes[i]]
+
+        assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
+                "must be divisible by product of the specified dimensions[%d] "\
+                % (input_count, explicit_count)
+        outshape[start_axis + inferred_axis] = input_count / explicit_count
+
+    output_count = count(outshape)
+    assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
+        output_count, input_count)
+    if inshape[0] == -1:
+        outshape[0] = -1
+    return [outshape]
+
+
+def shape_argmax(layer, input_shape):
+    inshape = input_shape[0]
+    params = layer.argmax_param
+    out_max_val = params.out_max_val if hasattr(params, out_max_val) else False
+    top_k = params.top_k if hasattr(params, top_k) else 1
+    axis = parmas.axis if hasattr(params, axis) else -1
+    if axis < 0:
+        axis += len(inshape)
+    assert (axis + 1 == len(inshape)
+            ), 'only can be applied on the last dimension[axis:%d, %s] now,'\
+                    'make sure you have set axis param in xxx.prototxt file' \
+                    % (axis, str(inshape))
+
+    outshape = inshape
+    outshape[-1] = top_k
+    if out_max_val is True:
+        outshape[-1] *= 2
+    return [outshape]
+
+
+def shape_axpy(layer, input_shape):
+    assert len(input_shapes) == 3, "not valid input shape for axpy layer"
+    assert len(input_shapes[0]) == len(input_shapes[1]), 'should have same dims'
+
+    output_shape = input_shapes[1]
+    assert (input_shapes[2] == output_shape),\
+            "shape not consistent for axpy[%s <--> %s]" \
+            % (str(output_shape), str(input_shapes[2]))
+    return [output_shape]
+
+
+def shape_crop(layer, input_shape):
+    assert len(input_shape) == 2, "the number of crop's inputs must be 2"
+    return [input_shape[1]]
+
+
+def shape_detectionoutput(layer, input_shape):
+    return [[-1, 6]]
+
+
+def shape_flatten(layer, input_shape):
+    assert len(input_shape) == 1, "the number of flatten's inputs must be 1"
+    params = layer.flatten_param
+    start_axis = params.axis
+    end_axis = params.end_axis
+    if start_axis < 0:
+        start_axis += len(input_shape[0])
+    if end_axis < 0:
+        end_axis += len(input_shape[0]) + 1
+    assert start_axis <= end_axis, 'invalid axis[%d] or end_axis[%d] params'\
+            % (start_axis, end_axis)
+    output_shape = [0] * (start_axis - 0) + [
+        -1
+    ] + [0] * (len(input_shape[0]) - end_axis)
+    return [output_shape]
+
+
+def shape_normalize(layer, input_shape):
+    return input_shape
+
+
+def shape_permute(layer, input_shape):
+    params = layer.permute_param
+    order = list(params.order)
+    inshape = input_shape[0]
+    output_shape = []
+    for ii in order:
+        assert ii < len(inshape), "invalid order for permute[%s]" % (name)
+        output_shape.append(inshape[ii])
+    return [output_shape]
+
+
+def shape_power(layer, input_shape):
+    return input_shape
+
+
+def shape_priorbox(layer, input_shape):
+    params = layer.prior_box_param
+    min_size = list(params.min_size)
+    max_size = list(params.max_size)
+    aspect_ratio = list(params.aspect_ratio)
+    assert len(input_shapes[0]) == 2, "invalid inputs for Priorbox[%s]" % (name)
+    fc_shape = input_shapes[0][0]
+    N = 1
+    if not max_size == None:
+        N += 1
+    if not aspect_ratio == None:
+        N += 2 * len(aspect_ratio)
+
+    N_bbx = fc_shape[2] * fc_shape[3] * N
+    output_shape = [[1, 2, 4 * N_bbx]]
+    return output_shape
+
+
+def shape_reduction(layer, input_shape):
+    params = layer.reduction_param
+    axis = params.axis
+    if axis < 0:
+        axis += len(input_shape[0]) + 1
+    assert axis <= len(input_shape[0]), 'invalid axis[%d] error' % (axis)
+    return [input_shape[0:axis]]
+
+
+def shape_roipooling(layer, input_shape):
+    params = layer.roi_pooling_param
+    pooled_w = params.pooled_w
+    pooled_h = params.pooled_h
+    spatial_scale = params.spatial_scale
+    assert len(
+        input_shapes[0]) == 2, "not valid input shape for roipooling layer"
+    base_fea_shape = input_shapes[0][0]
+    rois_shape = input_shapes[0][1]
+    output_shape = base_fea_shape
+    output_shape[0] = rois_shape[0]
+    output_shape[2] = pooled_h
+    output_shape[3] = pooled_w
+    return [output_shape]
+
+
+def shape_select(layer, input_shape):
+    input_shape = list(input_shape[0])
+    params = layer.select_param
+    axis = params.axis
+    slice_point = list(params.slice_point)
+    start = slice_point[0]
+    if len(slice_point) == 2:
+        end = slice_point[1]
+    else:
+        end = input_shape[axis]
+
+    assert end > start, "invalid slice_point with [start:%d, end:%d]"\
+             % (start, end)
+    output_shape = input_shape
+    output_shape[axis] = end - start
+    return [output_shape]
