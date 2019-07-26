@@ -1,6 +1,15 @@
 # X2Paddle
 X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks. 支持主流深度学习框架模型转换至PaddlePaddle（飞桨）
 
+## Installation
+```
+pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
+```
+
+## How To Use
+```
+x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
+```
 
 ## 转换tensorflow vgg_16模型
 
