@@ -3,9 +3,9 @@ X2Paddle is a toolkit for converting trained model to PaddlePaddle from other de
 
 ## Requirements
 
-python >= 3.5
-paddlepaddle >= 1.5.0
-tensorflow == 1.x
+python >= 3.5  
+paddlepaddle >= 1.5.0  
+tensorflow == 1.x  
 
 ## Installation
 ```
