@@ -14,8 +14,13 @@ pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 ```
 
 ## How To Use
+### TensorFlow
 ```
 x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
+```
+### Caffe
+```
+x2paddle --framework=caffe --proto=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
 ```
 
 ## Related Docs
