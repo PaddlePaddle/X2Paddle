@@ -1,6 +1,22 @@
 # X2Paddle
-X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks. 支持主流深度学习框架模型转换至PaddlePaddle（飞桨）
+X2Paddle支持将其余深度学习框架训练得到的模型，转换至PaddlePaddle模型。  
+X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.
 
+## Requirements
+
+python >= 3.5  
+paddlepaddle >= 1.5.0  
+tensorflow == 1.x  
+
+## Installation
+```
+pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
+```
+
+## How To Use
+```
+x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
+```
 
 ## 转换tensorflow vgg_16模型
 
@@ -40,14 +56,9 @@ with tf.Session() as sess:
 ### 步骤三 模型转换
 
 ```
-git clone https://github.com/PaddlePaddle/X2Paddle.git
-cd X2Paddle
-git checkout develop
-export PYTHONPATH=${PWD}
-mkdir paddle_model
-python x2paddle/convert.py --framework=tensorflow \
-                           --model=../vgg16.pb \
-                           --save_dir=paddle_model
+x2paddle --framework=tensorflow \
+         --model=../vgg16.pb \
+         --save_dir=paddle_model
 ```
 ## 转换caffe SqueezeNet模型
 
@@ -60,12 +71,7 @@ wget https://github.com/DeepScale/SqueezeNet/blob/master/SqueezeNet_v1.1/deploy.
 ### 步骤二 模型转换
 
 ```
-git clone https://github.com/PaddlePaddle/X2Paddle.git
-cd X2Paddle
-git checkout develop
-export PYTHONPATH=${PWD}:$PYTHONPATH
-mkdir paddle_model
-python x2paddle/convert.py --framework=caffe \
-                           --weight=../squeezenet_v1.1.caffemodel \
-                           --proto =../deploy.prototxt \
-                           --save_dir=paddle_model
+x2paddle --framework=caffe \
+         --weight=../squeezenet_v1.1.caffemodel \
+         --proto =../deploy.prototxt \
+         --save_dir=paddle_model

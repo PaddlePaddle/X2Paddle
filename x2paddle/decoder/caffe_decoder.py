@@ -60,11 +60,14 @@ class CaffeResolver(object):
 class CaffeGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(CaffeGraphNode, self).__init__(layer, layer.name.replace('/', '_'))
+            super(CaffeGraphNode, self).__init__(layer,
+                                                 layer.name.replace('/', '_'))
         else:
-            super(CaffeGraphNode, self).__init__(layer, layer_name.replace('/', '_'))
+            super(CaffeGraphNode, self).__init__(layer,
+                                                 layer_name.replace('/', '_'))
         self.layer_type = layer.type
         self.fluid_code = FluidCode()
+        self.data = None
 
     def set_params(self, params):
         self.data = params
@@ -117,24 +120,42 @@ class CaffeGraph(Graph):
         inputs_num = len(self.model.input)
         if inputs_num != 0:
             input_dims_num = len(self.model.input_dim)
-            if input_dims_num > 0 and input_dims_num != inputs_num * 4:
-                raise Error('invalid input_dim[%d] param in prototxt' %
-                            (input_dims_num))
-            for i in range(inputs_num):
-                dims = self.model.input_dim[i * 4:(i + 1) * 4]
-                data = self.model.layer.add()
-                try:
-                    from caffe import layers as L
-                    data.CopyFrom(
-                        L.Input(input_param=dict(shape=dict(
-                            dim=[dims[0], dims[1], dims[2], dims[3]
-                                 ]))).to_proto().layer[0])
-                except:
-                    raise Error(
-                        'You must install the caffe first when you use old style prototxt.'
-                    )
-                data.name = self.model.input[0]
-                data.top[0] = self.model.input[0]
+            if input_dims_num != 0:
+                if input_dims_num > 0 and input_dims_num != inputs_num * 4:
+                    raise Error('invalid input_dim[%d] param in prototxt' %
+                                (input_dims_num))
+                for i in range(inputs_num):
+                    dims = self.model.input_dim[i * 4:(i + 1) * 4]
+                    data = self.model.layer.add()
+                    try:
+                        from caffe import layers as L
+                        data.CopyFrom(
+                            L.Input(input_param=dict(shape=dict(
+                                dim=[dims[0], dims[1], dims[2], dims[3]
+                                     ]))).to_proto().layer[0])
+                    except:
+                        raise ImportError(
+                            'You must install the caffe first when you use old style prototxt.'
+                        )
+                    data.name = self.model.input[i]
+                    data.top[0] = self.model.input[i]
+            else:
+                for i in range(inputs_num):
+                    dims = self.model.input_shape[i].dim[0:4]
+                    data = self.model.layer.add()
+                    try:
+                        from caffe import layers as L
+                        data.CopyFrom(
+                            L.Input(input_param=dict(shape=dict(
+                                dim=[dims[0], dims[1], dims[2], dims[3]
+                                     ]))).to_proto().layer[0])
+                    except:
+                        raise ImportError(
+                            'You must install the caffe first when you use old style prototxt.'
+                        )
+                    data.name = self.model.input[i]
+                    data.top[0] = self.model.input[i]
+            layers = [data] + layers
 
         top_layer = {}
         for layer in layers:
