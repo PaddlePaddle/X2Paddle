@@ -9,8 +9,16 @@ paddlepaddle >= 1.5.0
 tensorflow == 1.x  
 
 ## Installation
+### 使用pip安装
 ```
 pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
+```
+### code安装
+```
+git clone https://github.com/PaddlePaddle/X2Paddle.git
+cd X2Paddle
+git checkout develop
+python setup.py install
 ```
 
 ## How To Use
