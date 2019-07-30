@@ -88,6 +88,7 @@ class TFGraph(Graph):
     def __init__(self, model):
         super(TFGraph, self).__init__(model)
         self.identity_map = dict()
+        self.multi_out_ops = ['Split', 'SplitV']
 
     def build(self):
         for layer in self.model.node:
@@ -119,7 +120,10 @@ class TFGraph(Graph):
         if items[0] in self.identity_map:
             items[0] = self.identity_map[items[0]]
         new_node_name = ":".join(items)
-        return super(TFGraph, self).get_node(new_node_name, copy)
+        node = super(TFGraph, self).get_node(new_node_name, copy)
+        if len(items) == 1 and node.layer_type in self.multi_out_ops:
+            node.index = 0
+        return node
 
     def _remove_isolated_node(self):
         # delete isolated nodes
@@ -158,46 +162,20 @@ class TFGraph(Graph):
             del self.topo_sort[idx]
 
 
-def check_input_shape(graph_def):
-    graph_def = cp.deepcopy(graph_def)
-    input_map = dict()
-    for layer in graph_def.node:
-        if layer.op != "Placeholder":
-            continue
-        graph_node = TFGraphNode(layer)
-        dtype = graph_node.dtype
-        if not graph_node.get_attr("shape"):
-            sys.stderr.write(
-                "\nUnknown shape for input tensor[tensor name: \"{}\"]\n".
-                format(layer.name))
-            shape = input(
-                "Please define shape of input here(e.g. None,224,224,3): ")
-            shape = [
-                None if dim == "None" else int(dim)
-                for dim in shape.strip().split(',')
-            ]
-            x2paddle_input = tf.placeholder(dtype=dtype,
-                                            shape=shape,
-                                            name="x2paddle_{}".format(
-                                                layer.name))
-            input_map["{}:0".format(layer.name)] = x2paddle_input
-    return input_map
-
-
 class TFDecoder(object):
     def __init__(self, pb_model):
         sess = tf.Session()
+        self.input_example_data = dict()
         with gfile.FastGFile(pb_model, 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
-            input_map = check_input_shape(graph_def)
+            input_map = self._check_input_shape(graph_def)
             self._fix_output_shape(graph_def)
             sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
-
-#        for node in graph_def.node:
-#            print(node.op)
+        for node in graph_def.node:
+            print(node.name, node.op, node.input)
 
         sess.run(tf.global_variables_initializer())
 
@@ -209,3 +187,28 @@ class TFDecoder(object):
             node = graph.node[i]
             if node.op == "swish_f32":
                 graph.node[i].attr['_disable_call_shape_inference'].b = False
+
+    def _check_input_shape(self, graph_def):
+        graph_def = cp.deepcopy(graph_def)
+        input_map = dict()
+        for layer in graph_def.node:
+            if layer.op != "Placeholder":
+                continue
+            graph_node = TFGraphNode(layer)
+            dtype = graph_node.dtype
+            if not graph_node.get_attr("shape"):
+                sys.stderr.write(
+                    "\nUnknown shape for input tensor[tensor name: \"{}\"]\n".
+                    format(layer.name))
+                shape = input(
+                    "Please define shape of input here(e.g. None,224,224,3): ")
+                shape = [
+                    None if dim == "None" else int(dim)
+                    for dim in shape.strip().split(',')
+                ]
+                x2paddle_input = tf.placeholder(dtype=dtype,
+                                                shape=shape,
+                                                name="x2paddle_{}".format(
+                                                    layer.name))
+                input_map["{}:0".format(layer.name)] = x2paddle_input
+        return input_map
