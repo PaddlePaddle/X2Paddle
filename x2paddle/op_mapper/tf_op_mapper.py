@@ -46,6 +46,68 @@ class TFOpMapper(OpMapper):
             node = self.graph.get_node(node_name)
             self.net_code += node.fluid_code.gen_codes()
 
+    def elementwise_operator(self, node, op_type):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        x_shape = x.out_shapes[0]
+        y_shape = y.out_shapes[0]
+        # incomplement broadcasting support for paddle
+        x_input = x
+        y_input = y
+        if len(x_shape) < len(y_shape):
+            unrevertable_ops = [
+                "elementwise_sub", "elementwise_div", "elementwise_floordiv",
+                "elementwise_mod", "elementwise_pow"
+            ]
+            if op_type not in unrevertable_ops:
+                x_input = y
+                y_input = x
+                x_shape = y.out_shapes[0]
+                y_shape = x.out_shapes[0]
+            else:
+                raise Exception("Unexpected situation happend")
+
+        is_sub_seq = True
+        for i in range(len(y_shape)):
+            index = -1 * i - 1
+            if y_shape[index] != x_shape[index]:
+                is_sub_seq = False
+        if not is_sub_seq:
+            x_expand_times = [1] * len(x_shape)
+            y_expand_times = [1] * len(y_shape)
+            x_need_expand = False
+            y_need_expand = False
+            for i in range(len(y_shape)):
+                index = -1 * i - 1
+                if y_shape[index] != x_shape[index]:
+                    if y_shape[index] == 1:
+                        y_expand_times[index] = x_shape[index]
+                        y_need_expand = True
+                    elif x_shape[index] == 1:
+                        x_expand_times[index] = y_shape[index]
+                        x_need_expand = True
+                    else:
+                        raise Exception("Unexpected situation happend")
+            if x_need_expand:
+                attr = {"expand_times": x_expand_times}
+                node.fluid_code.add_layer("expand",
+                                          inputs=x_input,
+                                          output="x_tmp",
+                                          param_attr=attr)
+                x_input = "x_tmp"
+            if y_need_expand:
+                attr = {"expand_times": y_expand_times}
+                node.fluid_code.add_layer("expand",
+                                          inputs=y_input,
+                                          output="y_tmp",
+                                          param_attr=attr)
+                y_input = "y_tmp"
+        inputs = {"x": x_input, "y": y_input}
+        node.fluid_code.add_layer(op_type,
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+
     def Placeholder(self, node):
         shape = node.out_shapes[0]
         assert len(shape) != 0, "Unknown shape of input nodes[{}].".format(
@@ -99,13 +161,14 @@ class TFOpMapper(OpMapper):
                                   param_attr=attr)
 
     def RealDiv(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {'x': x, 'y': y}
-        node.fluid_code.add_layer("elementwise_div",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        self.elementwise_operator(node, "elementwise_div")
+#        x = self.graph.get_node(node.layer.input[0], copy=True)
+#        y = self.graph.get_node(node.layer.input[1], copy=True)
+#        inputs = {'x': x, 'y': y}
+#        node.fluid_code.add_layer("elementwise_div",
+#                                  inputs=inputs,
+#                                  output=node,
+#                                  param_attr=None)
 
     def Relu(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -156,10 +219,11 @@ class TFOpMapper(OpMapper):
                                       param_attr=attr)
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
+            k_size = [k_size[i] for i in [0, 3, 1, 2]]
 
         if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
+            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
+            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
             pad_h = pad_h[0] + pad_h[1]
             pad_w = pad_w[0] + pad_w[1]
             attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
@@ -170,7 +234,7 @@ class TFOpMapper(OpMapper):
                     output=node,
                     param_attr=attr)
         attr = {
-            "pool_size": k_size[1:3],
+            "pool_size": k_size[2:4],
             "pool_type": string("max"),
             "pool_stride": strides[2:4]
         }
@@ -375,15 +439,32 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+        # temporary shape inference fix
+        if param.layer_type == "Pack":
+            shape_slices = list()
+            for i in range(len(param.layer.input)):
+                slice = self.graph.get_node(param.layer.input[i], copy=True)
+                if slice.layer_type == "Const":
+                    shape_slices.append(slice.value.tolist())
+                else:
+                    shape_slices.append(0)
+            if shape_slices.count(-1) == 0:
+                shape_slices[shape_slices.index(0)] = -1
+            attr = {"shape": shape_slices}
+            node.fluid_code.add_layer("reshape",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def Add(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer("elementwise_add",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        self.elementwise_operator(node, "elementwise_add")
+#        x = self.graph.get_node(node.layer.input[0], copy=True)
+#        y = self.graph.get_node(node.layer.input[1], copy=True)
+#        inputs = {"x": x, "y": y}
+#        node.fluid_code.add_layer("elementwise_add",
+#                                  inputs=inputs,
+#                                  output=node,
+#                                  param_attr=None)
 
     def AvgPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -402,15 +483,16 @@ class TFOpMapper(OpMapper):
                                       param_attr=attr)
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
+            k_size = [k_size[i] for i in [0, 3, 1, 2]]
 
         attr = {
-            "pool_size": k_size[1:3],
+            "pool_size": k_size[2:4],
             "pool_type": string("avg"),
             "pool_stride": strides[2:4]
         }
         if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
+            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
+            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
             assert pad_h[0] == pad_h[1] and pad_w[0] == pad_w[
                 1], "Cannot map AvgPool"
             attr["pool_padding"] = [pad_h[0], pad_w[0]]
@@ -441,13 +523,14 @@ class TFOpMapper(OpMapper):
                                   param_attr=None)
 
     def Maximum(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer("elementwise_max",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        self.elementwise_operator(node, "elementwise_max")
+#        x = self.graph.get_node(node.layer.input[0], copy=True)
+#        y = self.graph.get_node(node.layer.input[1], copy=True)
+#        inputs = {"x": x, "y": y}
+#        node.fluid_code.add_layer("elementwise_max",
+#                                  inputs=inputs,
+#                                  output=node,
+#                                  param_attr=None)
 
     def SplitV(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -502,14 +585,15 @@ class TFOpMapper(OpMapper):
         inputs = [
             self.graph.get_node(name, copy=True) for name in node.layer.input
         ]
+        attr = {"axis": node.get_attr("axis")}
         node.fluid_code.add_layer("stack",
                                   inputs=inputs,
                                   output=node,
-                                  param_attr=None)
+                                  param_attr=attr)
 
     def Pad(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
-        paddings = self.graph.get_node(Node.layer.input[1], copy=True)
+        paddings = self.graph.get_node(node.layer.input[1], copy=True)
         assert paddings.layer_type == "Const", "Padding should be Const"
         self.omit_nodes.append(paddings.layer_name)
         attr = {"paddings": paddings.value.tolist()}
@@ -541,27 +625,28 @@ class TFOpMapper(OpMapper):
                                output=node,
                                param_attr=None)
 
-
 #    def Fill(self, node):
 #        shape = self.graph.get_node(node.layer
 
     def Mul(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        self.elementwise_operator(node, "elementwise_mul")
+#        x = self.graph.get_node(node.layer.input[0], copy=True)
+#        y = self.graph.get_node(node.layer.input[1], copy=True)
+#        inputs = {"x": x, "y": y}
+#        node.fluid_code.add_layer("elementwise_mul",
+#                                  inputs=inputs,
+#                                  output=node,
+#                                  param_attr=None)
 
     def Sub(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer("elementwise_sub",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        self.elementwise_operator(node, "elementwise_sub")
+#        x = self.graph.get_node(node.layer.input[0], copy=True)
+#        y = self.graph.get_node(node.layer.input[1], copy=True)
+#        inputs = {"x": x, "y": y}
+#        node.fluid_code.add_layer("elementwise_sub",
+#                                  inputs=inputs,
+#                                  output=node,
+#                                  param_attr=None)
 
     def Rsqrt(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -738,14 +823,22 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def GreaterEqual(self, node):
-        pass
 
-    def RandomUniform(self, node):
-        pass
+#    def GreaterEqual(self, node):
+#        pass
+#
+#    def RandomUniform(self, node):
+#        pass
+#
 
-    def cast(self, node):
-        pass
+    def Cast(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        dtype = node.dtype_map[node.get_attr('DstT')]
+        attr = {"dtype": string(dtype)}
+        node.fluid_code.add_layer("cast",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
     def FloorDiv(self, node):
         x = self.graph.get_node(node.layer.input[0], copy=True)
@@ -759,3 +852,15 @@ class TFOpMapper(OpMapper):
                                   inputs=node,
                                   output=node,
                                   param_attr=None)
+
+    def Split(self, node):
+        dim = self.graph.get_node(node.layer.input[0], copy=True)
+        input = self.graph.get_node(node.layer.input[1], copy=True)
+        assert dim.layer_type == "Const"
+        self.omit_nodes.append(dim.layer_name)
+        num_split = node.get_attr('num_split')
+        attr = {"num_or_sections": num_split, "dim": dim.value}
+        node.fluid_code.add_layer("split",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)

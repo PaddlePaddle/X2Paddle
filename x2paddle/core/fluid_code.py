@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode
+import collections
 
 
 class Layer(object):
@@ -37,17 +38,20 @@ class Layer(object):
             for input in self.inputs:
                 if isinstance(input, GraphNode):
                     if hasattr(input, "index"):
-                        in_list += (input.layer_name + "[{}]".format(input.index) + ", ")
+                        in_list += (input.layer_name +
+                                    "[{}]".format(input.index) + ", ")
                     else:
                         in_list += (input.layer_name + ", ")
                 elif isinstance(input, str):
                     in_list += (input + ", ")
                 else:
-                    raise Exception("Element of inputs should GraphNode or String")
+                    raise Exception(
+                        "Element of inputs should GraphNode or String")
             in_list = in_list.strip(", ") + "], "
             layer_code += in_list
         elif isinstance(self.inputs, dict):
-            for key, input in self.inputs.items():
+            inputs = collections.OrderedDict(self.inputs)
+            for key, input in inputs.items():
                 if isinstance(input, GraphNode):
                     if hasattr(input, "index"):
                         layer_code = layer_code + key + "={}, ".format(
@@ -58,7 +62,8 @@ class Layer(object):
                 elif isinstance(input, str):
                     layer_code = layer_code + key + "={}, ".format(input)
                 else:
-                    raise Exception("Element of inputs should GraphNode or String")
+                    raise Exception(
+                        "Element of inputs should GraphNode or String")
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
                 layer_code += (self.inputs.layer_name +
@@ -70,7 +75,8 @@ class Layer(object):
         else:
             raise Exception("Unknown type of inputs.")
 
-        for key, value in self.param_attr.items():
+        param_attr = collections.OrderedDict(self.param_attr)
+        for key, value in param_attr.items():
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
