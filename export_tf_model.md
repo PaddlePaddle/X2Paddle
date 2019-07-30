@@ -12,6 +12,7 @@ tar xzvf vgg_16_2016_08_28.tar.gz
 
 步骤二 加载和导出模型
 ```
+#coding: utf-8
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.slim.nets import vgg
 from tensorflow.python.framework import graph_util
