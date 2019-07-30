@@ -19,4 +19,4 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 ```
 
 ## Related Docs
-[1. 如何
+[1. 如何导出TensorFlow的pb模型](export_tf_model.md)
