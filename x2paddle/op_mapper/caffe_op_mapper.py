@@ -17,6 +17,7 @@ import numpy as np
 from x2paddle.decoder.caffe_decoder import CaffeGraph
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
+from x2paddle.op_mapper.caffe_custom_layer import *
 
 
 class CaffeOpMapper(OpMapper):
@@ -25,34 +26,72 @@ class CaffeOpMapper(OpMapper):
         self.graph = decoder.caffe_graph
         self.weights = dict()
         resolver = decoder.resolver
+        self.mylayers = {}
         if resolver.has_pycaffe():
             self.did_use_pb = False
         else:
             self.did_use_pb = True
 
+    def op_checker(self):
+        unsupported_ops = set()
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            op = node.layer_type
+            if not hasattr(self, op) and op not in custom_layers:
+                unsupported_ops.add(op)
+        if len(unsupported_ops) == 0:
+            return True
+        else:
+            print("There are {} ops not supported yet, list as below".format(
+                len(unsupported_ops)))
+            for op in unsupported_ops:
+                print(op)
+            return False
+
     def run(self):
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
-
         # check if ops in model are all supported
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
-
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if hasattr(self, op):
+                self.set_shape(node)
                 func = getattr(self, op)
                 func(node)
+            elif op in custom_layers:
+                self.set_shape(node, is_fluid_op=False)
+                self.deal_custom_layer(node)
+            else:
+                raise Exception("Model are not supported yet.")
+        for key in self.mylayers:
+            self.net_code.append(self.mylayers[key])
 
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
             self.net_code += node.fluid_code.gen_codes()
 
-    def adjust_parameters(self, node, data):
+    def set_shape(self, node, is_fluid_op=True):
+        inputs = node.inputs
+        input_shape = []
+        for i, nm in enumerate(inputs):
+            last_node = self.graph.get_node(nm)
+            tmp = node.layer.bottom[i]
+            idx = list(last_node.layer.top).index(tmp)
+            input_shape.append(last_node.output_shape[idx])
+        node.set_input_shape(input_shape)
+        if is_fluid_op:
+            node.set_output_shape(input_shape)
+        else:
+            node.set_output_shape(compute_output_shape(node),
+                                  is_input=is_fluid_op)
+
+    def adjust_parameters(self, node):
+        data = node.data
         if not self.did_use_pb:
             return data
-
         # When using the protobuf-backend, each parameter initially has four dimensions.
         # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
         # This implementation takes care of the common cases. However, it does leave the
@@ -61,7 +100,7 @@ class CaffeOpMapper(OpMapper):
         data = list(data)
 
         squeeze_indices = [1]  # Squeeze biases.
-        if node.kind == NodeKind.InnerProduct:
+        if node.layer_type == 'InnerProduct':
             squeeze_indices.append(0)  # Squeeze FC.
 
         for idx in squeeze_indices:
@@ -85,55 +124,44 @@ class CaffeOpMapper(OpMapper):
 
             data[idx] = np.squeeze(d, axis=sq_axis)
             shape_new = data[idx].shape
+            print('shape-old' + str(shape_old))
+            print('shape-new' + str(shape_new))
             if len(shape_old) != shape_new:
-                debug('squeeze idx:%d, with kind:%s,name:%s' % \
-                        (idx, node.kind, node.name))
+                print('squeeze idx:%d, with kind:%s,name:%s' % \
+                        (idx, node.layer_type, node.layer.name))
         return data
 
-    @staticmethod
-    def get_kernel_value(scalar, repeated, idx, default=None):
-        if scalar:
-            return scalar
-        if repeated:
-            if isinstance(repeated, numbers.Number):
-                return repeated
-            if len(repeated) == 1:
-                # Same value applies to all spatial dimensions
-                return int(repeated[0])
-            assert idx < len(repeated)
-            # Extract the value for the given spatial dimension
-            return repeated[idx]
-        if default is None:
-            raise ValueError('Unable to determine kernel parameter!')
-        return default
-
     def get_kernel_parameters(self, kind, params):
-        assert kind in ['Convolution', 'Pooling', 'Deconvolution']
-
-        k_h = self.get_kernel_value(params.kernel_h,
-                                    params.kernel_size,
-                                    0,
-                                    default=1)
-        k_w = self.get_kernel_value(params.kernel_w,
-                                    params.kernel_size,
-                                    1,
-                                    default=1)
-        s_h = self.get_kernel_value(params.stride_h,
-                                    params.stride,
-                                    0,
-                                    default=1)
-        s_w = self.get_kernel_value(params.stride_w,
-                                    params.stride,
-                                    1,
-                                    default=1)
-        p_h = self.get_kernel_value(params.pad_h, params.pad, 0, default=0)
-        p_w = self.get_kernel_value(params.pad_w, params.pad, 1, default=0)
+        assert kind in [
+            'Convolution', 'Pooling', 'Deconvolution', 'ConvolutionDepthwise'
+        ]
+        [k_h, k_w] = [1, 1]
+        print(params.kernel_size)
+        if isinstance(params.kernel_size, numbers.Number):
+            [k_h, k_w] = [params.kernel_size] * 2
+        else:
+            k_h = params.kernel_h if params.kernel_h else params.kernel_size[0]
+            k_w = params.kernel_w if params.kernel_w else params.kernel_size[
+                len(params.kernel_size) - 1]
+        [s_h, s_w] = [1, 1]
+        if isinstance(params.stride, numbers.Number):
+            [s_h, s_w] = [params.stride] * 2
+        else:
+            s_h = params.stride_h if params.stride_h else params.stride[0]
+            s_w = params.stride_w if params.stride_w else params.stride[
+                len(params.stride) - 1]
+        [p_h, p_w] = [0, 0]
+        if isinstance(params.pad, numbers.Number):
+            [p_h, p_w] = [params.pad] * 2
+        else:
+            p_h = params.pad_h if params.pad_h else params.pad[0]
+            p_w = params.pad_w if params.pad_w else params.pad[len(params.pad) -
+                                                               1]
         dila_h = dila_w = 1
         group = 1
         c_o = 1
-        if kind in ['Convolution', 'Deconvolution']:
+        if kind in ['Convolution', 'Deconvolution', 'ConvolutionDepthwise']:
             c_o = params.num_output
-            group = params.group
             dila_len = len(params.dilation)
             if dila_len == 2:
                 dila_h = params.dilation[0]
@@ -143,12 +171,12 @@ class CaffeOpMapper(OpMapper):
             else:
                 assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
                     dila_len)
-
+        if kind in ['Convolution', 'Deconvolution']:
+            group = params.group
         kernel = [k_h, k_w]
         stride = [s_h, s_w]
         pad = [p_h, p_w]
         dilation = [dila_h, dila_w]
-
         return c_o, kernel, stride, pad, dilation, group
 
     def get_input_name(self, node):
@@ -180,7 +208,7 @@ class CaffeOpMapper(OpMapper):
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
             node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node, data)
+        data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
@@ -224,7 +252,7 @@ class CaffeOpMapper(OpMapper):
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
             node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node, data)
+        data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
@@ -343,7 +371,7 @@ class CaffeOpMapper(OpMapper):
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
             node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node, data)
+        data = self.adjust_parameters(node)
         # Reshape the parameters to Paddle's ordering
         transpose_order = (1, 0)
         w = data[0]
@@ -396,40 +424,11 @@ class CaffeOpMapper(OpMapper):
         shape = node.input_shape[0]
         dims = len(shape)
         axis = axis + dims if axis < 0 else axis
-        need_transpose = False
-        if axis + 1 != dims:
-            need_transpose = True
-        if need_transpose:
-            in_order = list(range(dims))
-            in_order.remove(axis)
-            in_order.append(axis)
-            attr = {
-                'perm': in_order,
-                'name': string(node.layer_name + '_transpose_in')
-            }
-            node.fluid_code.add_layer("transpose",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-        attr = {'name': string(node.layer_name + '_softmax')}
+        attr = {'axis': axis, 'name': string(node.layer_name + '_softmax')}
         node.fluid_code.add_layer("softmax",
-                                  inputs=node if need_transpose else input,
+                                  inputs=input,
                                   output=node,
                                   param_attr=attr)
-        if need_transpose:
-            out_order = [
-                0,
-            ] * dims
-            for id, v in enumerate(in_order):
-                out_order[v] = id
-            attr = {
-                'perm': out_order,
-                'name': string(node.layer_name + '_transpose_out')
-            }
-            node.fluid_code.add_layer("transpose",
-                                      inputs=node,
-                                      output=node,
-                                      param_attr=attr)
 
     def Slice(self, node):
         assert len(
@@ -451,13 +450,11 @@ class CaffeOpMapper(OpMapper):
             attr = {
                 'axes': [axis],
                 'starts': [points[i]],
-                'ends': [points[i + 1]],
-                'name': string(node.layer_name + '_' + str(i))
+                'ends': [points[i + 1]]
             }
             node.fluid_code.add_layer("slice",
                                       inputs=input,
-                                      output=string(node.layer_name + '_' +
-                                                    str(i)),
+                                      output=node.layer_name + '_' + str(i),
                                       param_attr=attr)
             node.fluid_code.add_note('{}.append({})'.format(
                 node.layer_name, node.layer_name + '_' + str(i)))
@@ -503,7 +500,7 @@ class CaffeOpMapper(OpMapper):
             node.layer_name, node.layer_type)
         self.weights[node.layer_name + '_weights'] = data[0]
         attr = {
-            'mode': mode,
+            'mode': string(mode),
             'param_attr': string(node.layer_name + '_weights'),
             'name': string(node.layer_name)
         }
@@ -731,7 +728,7 @@ class CaffeOpMapper(OpMapper):
 
     def Scale(self, node):
         assert len(
-            node.outputs) == 1, 'The count of Scale node\'s output is not 1.'
+            node.inputs) == 1, 'The count of Scale node\'s input is not 1.'
         if len(node.inputs) == 1 and self.graph.get_node(
                 node.inputs[0]).layer_type == 'BatchNorm':
             return
@@ -1058,7 +1055,9 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
         input_name = self.get_input_name(input)
         data = node.data
-        data = self.adjust_parameters(node, data)
+        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
+            node.layer_name, node.layer_type)
+        data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_scale'] = data[0]
         node.fluid_code.add_note(
             '{}_scale_attr = ParamAttr(name=\'{}\')'.format(
@@ -1297,7 +1296,7 @@ class CaffeOpMapper(OpMapper):
 
     def Select(self, node):
         assert len(
-            node.inputs) == 1, 'The count of Select node\'s input is not 2.'
+            node.inputs) == 1, 'The count of Select node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         if self.is_Scale(input):
             tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
@@ -1327,3 +1326,49 @@ class CaffeOpMapper(OpMapper):
                 node.layer_name, node.layer_name + '_' + str(i)))
             if i == len(slice_point) - 2:
                 break
+
+    def ShuffleChannel(self, node):
+        assert len(node.inputs
+                   ) == 1, 'The count of ShuffleChannel node\'s input is not 1.'
+        params = node.layer.shuffle_channel_param
+        group = params.group
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        if self.is_Scale(input):
+            tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
+            if self.is_BN(tmp):
+                input = tmp
+        attr = {'group': group, 'name': string(node.layer_name)}
+        node.fluid_code.add_layer("shuffle_channel",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+    def deal_custom_layer(self, node):
+        op = node.layer_type
+        custom_code, func = make_custom_layer(node)
+        params = get_params(node.layer, node.layer_type)
+        arg_names, kwargs = set_args(func, params)
+        kwargs['name'] = string(node.layer_name)
+        kwargs['input_shape'] = node.input_shape
+        data = node.data
+        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
+            node.layer_name, node.layer_type)
+        data = self.adjust_parameters(node)
+        weights_name = deal_weights(node)
+        for i in range(len(data)):
+            self.weights[weights_name[i]] = data[i]
+        inputs_node = []
+        for i in range(len(node.inputs)):
+            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            if self.is_Scale(input):
+                tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
+                if self.is_BN(tmp):
+                    input = tmp
+            inputs_node.append(input)
+        node.fluid_code.add_layer(func.__code__.co_name,
+                                  inputs=inputs_node,
+                                  output=node,
+                                  param_attr=kwargs,
+                                  is_custom_layer=True)
+        if op not in self.mylayers:
+            self.mylayers[op] = custom_code

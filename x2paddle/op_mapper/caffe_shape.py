@@ -453,3 +453,12 @@ def shape_select(layer, input_shape):
     output_shape = input_shape
     output_shape[axis] = end - start
     return [output_shape]
+
+
+def shape_shufflechannel(layer, input_shape):
+    return input_shape
+
+
+# def shape_convolutiondepthwise(layer, input_shape):
+#     params = layer.convolution_param
+#     return get_strided_kernel_output_shape(params, input_shape[0], math.floor)
