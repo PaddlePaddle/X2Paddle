@@ -18,19 +18,20 @@ from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.decoder import caffe_shape
+from x2paddle.op_mapper import caffe_shape
 
 
 class CaffeResolver(object):
-    def __init__(self, use_default=True):
-        self.use_default = use_default
+    def __init__(self, caffe_proto_folder=None):
+        self.proto_path = caffe_proto_folder
+        if self.proto_path == None:
+            self.use_default = True
+        else:
+            self.use_default = False
         self.import_caffe()
 
     def import_caffepb(self):
-        p = os.path.realpath(__file__)
-        p = os.path.dirname(p)
-        p = os.path.join(p, './proto')
-        sys.path.insert(0, p)
+        sys.path.append(self.proto_path)
         import caffe_pb2
         return caffe_pb2
 
@@ -60,11 +61,13 @@ class CaffeResolver(object):
 class CaffeGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(CaffeGraphNode, self).__init__(layer,
-                                                 layer.name.replace('/', '_'))
+            super(CaffeGraphNode,
+                  self).__init__(layer,
+                                 layer.name.replace('/', '_').replace('-', '_'))
         else:
-            super(CaffeGraphNode, self).__init__(layer,
-                                                 layer_name.replace('/', '_'))
+            super(CaffeGraphNode,
+                  self).__init__(layer,
+                                 layer_name.replace('/', '_').replace('-', '_'))
         self.layer_type = layer.type
         self.fluid_code = FluidCode()
         self.data = None
@@ -72,10 +75,13 @@ class CaffeGraphNode(GraphNode):
     def set_params(self, params):
         self.data = params
 
-    def set_output_shape(self, input_shape):
+    def set_output_shape(self, input_shape, is_input=True):
         func_name = 'shape_' + self.layer_type.lower()
-        self.output_shape = getattr(caffe_shape, func_name)(self.layer,
-                                                            input_shape)
+        if is_input:
+            self.output_shape = getattr(caffe_shape, func_name)(self.layer,
+                                                                input_shape)
+        else:
+            self.output_shape = input_shape
 
     def set_input_shape(self, input_shape):
         self.input_shape = input_shape
@@ -135,7 +141,7 @@ class CaffeGraph(Graph):
                                      ]))).to_proto().layer[0])
                     except:
                         raise ImportError(
-                            'You must install the caffe first when you use old style prototxt.'
+                            'The .proto file does not work for the old style prototxt. You must install the caffe or modify the old style to new style in .protottx file.'
                         )
                     data.name = self.model.input[i]
                     data.top[0] = self.model.input[i]
@@ -151,7 +157,7 @@ class CaffeGraph(Graph):
                                      ]))).to_proto().layer[0])
                     except:
                         raise ImportError(
-                            'You must install the caffe first when you use old style prototxt.'
+                            'The .proto file does not work for the old style prototxt. You must install the caffe or modify the old style to new style in .protottx file.'
                         )
                     data.name = self.model.input[i]
                     data.top[0] = self.model.input[i]
@@ -180,19 +186,6 @@ class CaffeGraph(Graph):
             else:
                 notice('Ignoring parameters for non-existent layer: %s' % \
                         layer_name)
-        for layer_name in self.node_map:
-            node = self.node_map[layer_name]
-            inputs = node.inputs
-            i = 0
-            input_shape = []
-            for nm in inputs:
-                last_node = self.get_node(nm)
-                tmp = node.layer.bottom[i]
-                i = i + 1
-                idx = list(last_node.layer.top).index(tmp)
-                input_shape.append(last_node.output_shape[idx])
-            node.set_output_shape(input_shape)
-            node.set_input_shape(input_shape)
 
         super(CaffeGraph, self).build()
 
@@ -210,11 +203,11 @@ class CaffeGraph(Graph):
 
 
 class CaffeDecoder(object):
-    def __init__(self, proto_path, model_path, use_caffe=True):
+    def __init__(self, proto_path, model_path, caffe_proto_folder=None):
         self.proto_path = proto_path
         self.model_path = model_path
 
-        self.resolver = CaffeResolver(use_default=use_caffe)
+        self.resolver = CaffeResolver(caffe_proto_folder=caffe_proto_folder)
         self.net = self.resolver.NetParameter()
         with open(proto_path, 'rb') as proto_file:
             proto_str = proto_file.read()

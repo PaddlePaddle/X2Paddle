@@ -23,11 +23,11 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="model file path")
-    parser.add_argument("--proto",
+    parser.add_argument("--prototxt",
                         "-p",
                         type=_text_type,
                         default=None,
-                        help="proto file of caffe model")
+                        help="prototxt file of caffe model")
     parser.add_argument("--weight",
                         "-w",
                         type=_text_type,
@@ -43,6 +43,11 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="define which deeplearning framework")
+    parser.add_argument("--caffe_proto",
+                        "-c",
+                        type=_text_type,
+                        default=None,
+                        help="caffe proto file of caffe model")
     return parser
 
 
@@ -57,12 +62,12 @@ def tf2paddle(model_path, save_dir):
     mapper.save_python_model(save_dir)
 
 
-def caffe2paddle(proto, weight, save_dir):
+def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
 
     print("Now translating model from caffe to paddle.")
-    model = CaffeDecoder(proto, weight)
+    model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
     mapper.run()
     mapper.save_python_model(save_dir)
@@ -80,8 +85,9 @@ def main():
         tf2paddle(args.model, args.save_dir)
 
     elif args.framework == "caffe":
-        assert args.proto is not None, "--proto and --weight should be defined while translating caffe model"
-        caffe2paddle(args.proto, args.weight, args.save_dir)
+        assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
+        caffe2paddle(args.prototxt, args.weight, args.save_dir,
+                     args.caffe_proto)
 
     else:
         raise Exception("--framework only support tensorflow/caffe now")
