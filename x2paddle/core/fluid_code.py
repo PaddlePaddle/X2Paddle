@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode
-import collections
 
 
 class Layer(object):
@@ -22,6 +21,7 @@ class Layer(object):
         self.param_attr = dict()
         self.inputs = dict()
         self.output = None
+        self.is_new = False
 
     def get_code(self):
         layer_code = ""
@@ -36,34 +36,25 @@ class Layer(object):
         if isinstance(self.inputs, list):
             in_list = "["
             for input in self.inputs:
-                if isinstance(input, GraphNode):
-                    if hasattr(input, "index"):
-                        in_list += (input.layer_name +
-                                    "[{}]".format(input.index) + ", ")
-                    else:
-                        in_list += (input.layer_name + ", ")
-                elif isinstance(input, str):
-                    in_list += (input + ", ")
+                assert isinstance(
+                    input, GraphNode), "Type of input should be GraphNode"
+                if hasattr(input, "index"):
+                    in_list += (input.layer_name + "[{}]".format(input.index) +
+                                ", ")
                 else:
-                    raise Exception(
-                        "Element of inputs should GraphNode or String")
+                    in_list += (input.layer_name + ", ")
             in_list = in_list.strip(", ") + "], "
             layer_code += in_list
         elif isinstance(self.inputs, dict):
-            inputs = collections.OrderedDict(self.inputs)
-            for key, input in inputs.items():
-                if isinstance(input, GraphNode):
-                    if hasattr(input, "index"):
-                        layer_code = layer_code + key + "={}, ".format(
-                            input.layer_name + "[{}]".format(input.index))
-                    else:
-                        layer_code = layer_code + key + "={}, ".format(
-                            input.layer_name)
-                elif isinstance(input, str):
-                    layer_code = layer_code + key + "={}, ".format(input)
+            for key, input in self.inputs.items():
+                assert isinstance(
+                    input, GraphNode), "Type of input should be GraphNode"
+                if hasattr(input, "index"):
+                    layer_code = layer_code + key + "={}, ".format(
+                        input.layer_name + "[{}]".format(input.index))
                 else:
-                    raise Exception(
-                        "Element of inputs should GraphNode or String")
+                    layer_code = layer_code + key + "={}, ".format(
+                        input.layer_name)
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
                 layer_code += (self.inputs.layer_name +
@@ -75,8 +66,38 @@ class Layer(object):
         else:
             raise Exception("Unknown type of inputs.")
 
-        param_attr = collections.OrderedDict(self.param_attr)
-        for key, value in param_attr.items():
+        for key, value in self.param_attr.items():
+            layer_code = layer_code + key + "={}, ".format(value)
+        layer_code = layer_code.strip(", ")
+
+        return layer_code + ")"
+
+    def get_custom_code(self):
+        layer_code = ""
+        if self.output is not None:
+            if isinstance(self.output, str):
+                layer_code = self.output + " = "
+            else:
+                layer_code = self.output.layer_name + " = "
+
+        layer_code = layer_code + self.op + "("
+
+        if isinstance(self.inputs, list):
+            in_list = "["
+            for input in self.inputs:
+                assert isinstance(
+                    input, GraphNode), "Type of input should be GraphNode"
+                if hasattr(input, "index"):
+                    in_list += (input.layer_name + "[{}]".format(input.index) +
+                                ", ")
+                else:
+                    in_list += (input.layer_name + ", ")
+            in_list = in_list.strip(", ") + "], "
+            layer_code += in_list
+        else:
+            raise Exception("Unknown type of inputs.")
+
+        for key, value in self.param_attr.items():
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
@@ -87,9 +108,15 @@ class FluidCode(object):
     def __init__(self):
         self.layers = list()
 
-    def add_layer(self, op, inputs, output, param_attr=None):
+    def add_layer(self,
+                  op,
+                  inputs,
+                  output,
+                  param_attr=None,
+                  is_custom_layer=False):
         layer = Layer()
         layer.op = op
+        layer.is_custom_layer = is_custom_layer
         if inputs is not None:
             layer.inputs = inputs
         layer.output = output
@@ -108,7 +135,10 @@ class FluidCode(object):
         codes = list()
         for layer in self.layers:
             if isinstance(layer, Layer):
-                codes.append(layer.get_code())
+                if layer.is_custom_layer:
+                    codes.append(layer.get_custom_code())
+                else:
+                    codes.append(layer.get_code())
             elif isinstance(layer, str):
                 codes.append(layer)
         return codes
