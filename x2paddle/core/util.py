@@ -23,6 +23,15 @@ def string(param):
     return "\'{}\'".format(param)
 
 
+def color_log(log_str):
+    try:
+        from colorama import init, Fore
+        init(autoreset=True)
+        print(Fore.RED + log_str)
+    except:
+        print(log_str)
+
+
 def get_same_padding(in_size, kernel_size, stride):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
@@ -65,7 +74,7 @@ def export_paddle_param(param, param_name, dir):
 
 def init_net(param_dir="./"):
     import os
-    exe = fluid.Executor(fluid.CPUPlace())
+    exe = fluid.Executor(fluid.CUDAPlace(0))
     exe.run(fluid.default_startup_program())
 
     def if_exist(var):
