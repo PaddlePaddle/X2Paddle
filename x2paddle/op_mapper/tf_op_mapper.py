@@ -21,6 +21,7 @@ import numpy
 class TFOpMapper(OpMapper):
     def __init__(self, decoder):
         super(TFOpMapper, self).__init__()
+        self.decoder = decoder
         self.graph = decoder.tf_graph
         self.weights = dict()
         self.omit_nodes = list()
@@ -162,13 +163,6 @@ class TFOpMapper(OpMapper):
 
     def RealDiv(self, node):
         self.elementwise_operator(node, "elementwise_div")
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {'x': x, 'y': y}
-#        node.fluid_code.add_layer("elementwise_div",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
 
     def Relu(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -204,7 +198,11 @@ class TFOpMapper(OpMapper):
 
     def MaxPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
+
         in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
+
         k_size = node.get_attr("ksize")
         strides = node.get_attr("strides")
         data_format = node.get_attr("data_format").decode()
@@ -257,8 +255,16 @@ class TFOpMapper(OpMapper):
         assert kernel.layer_type == "Const", "Kernel of Conv2D should be Const"
         self.omit_nodes.append(kernel.layer_name)
 
+        node.fluid_code.add_note("#{} : {}".format(node.layer.name,
+                                                   node.layer_name))
+
         in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
         k_size = kernel.out_shapes[0]
+        if k_size.count(-1) > 2:
+            k_size = self.decoder.infer_tensor(kernel).shape
+
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
@@ -321,6 +327,8 @@ class TFOpMapper(OpMapper):
         beta = self.graph.get_node(node.layer.input[2], copy=True)
         moving_mean = self.graph.get_node(node.layer.input[3], copy=True)
         moving_var = self.graph.get_node(node.layer.input[4], copy=True)
+        data_format = node.get_attr("data_format").decode()
+        channel_first = data_format == "NCHW"
 
         assert gamma.layer_type == "Const"
         assert beta.layer_type == "Const"
@@ -331,10 +339,17 @@ class TFOpMapper(OpMapper):
         self.omit_nodes.append(moving_mean.layer_name)
         self.omit_nodes.append(moving_var.layer_name)
 
+        if not channel_first:
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+
         attr = {
             "epsilon": node.get_attr("epsilon"),
             "param_attr": string(gamma.layer_name),
-            "data_layout": string(node.get_attr("data_format").decode()),
+            #            "data_layout": string(node.get_attr("data_format").decode()),
             "bias_attr": string(beta.layer_name),
             "moving_mean_name": string(moving_mean.layer_name),
             "moving_variance_name": string(moving_var.layer_name),
@@ -342,9 +357,16 @@ class TFOpMapper(OpMapper):
         }
 
         node.fluid_code.add_layer("batch_norm",
-                                  inputs=input,
+                                  inputs=input if channel_first else node,
                                   output=node,
                                   param_attr=attr)
+
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def DepthwiseConv2dNative(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -352,8 +374,16 @@ class TFOpMapper(OpMapper):
         assert kernel.layer_type == "Const", "Kernel of DepthwiseConv2DNative should be Const"
         self.omit_nodes.append(kernel.layer_name)
 
+        node.fluid_code.add_note("#{} : {}".format(node.layer.name,
+                                                   node.layer_name))
+
         in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
         k_size = kernel.out_shapes[0]
+        if k_size.count(-1) > 2:
+            k_size = self.decoder.infer_tensor(kernel).shape
+
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
@@ -418,57 +448,61 @@ class TFOpMapper(OpMapper):
             self.omit_nodes.append(param.layer_name)
         else:
             # Here is a trick method to solove tensor parameter in tensorflow
-            assert len(param.out_shapes[0]
-                       ) == 1, "Unexpected situation of shape parameter"
-            attr = {"shape": [-1]}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=param,
-                                      output="shape_param",
-                                      param_attr=attr)
-            attr = {"num_or_sections": param.out_shapes[0][0], "dim": 0}
-            node.fluid_code.add_layer("split",
-                                      inputs="shape_param",
-                                      output=node,
-                                      param_attr=attr)
-            new_param = "["
-            for i in range(param.out_shapes[0][0]):
-                new_param += (node.layer_name + "[{}]".format(i) + ", ")
-            new_param = new_param.strip(", ") + "]"
-            attr = {"shape": new_param}
+            shape = self.decoder.infer_shape_tensor(param, node.out_shapes[0])
+            if shape.count(-1) <= 1:
+                attr = {"shape": shape}
+                self.omit_nodes.append(param.layer_name)
+            else:
+                assert len(param.out_shapes[0]
+                           ) == 1, "Unexpected situation of shape parameter"
+                attr = {"shape": [-1]}
+                node.fluid_code.add_layer("reshape",
+                                          inputs=param,
+                                          output="shape_param",
+                                          param_attr=attr)
+                attr = {"num_or_sections": param.out_shapes[0][0], "dim": 0}
+                node.fluid_code.add_layer("split",
+                                          inputs="shape_param",
+                                          output=node,
+                                          param_attr=attr)
+                new_param = "["
+                for i in range(param.out_shapes[0][0]):
+                    new_param += (node.layer_name + "[{}]".format(i) + ", ")
+                new_param = new_param.strip(", ") + "]"
+                attr = {"shape": new_param}
         node.fluid_code.add_layer("reshape",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
         # temporary shape inference fix
-        if param.layer_type == "Pack":
-            shape_slices = list()
-            for i in range(len(param.layer.input)):
-                slice = self.graph.get_node(param.layer.input[i], copy=True)
-                if slice.layer_type == "Const":
-                    shape_slices.append(slice.value.tolist())
-                else:
-                    shape_slices.append(0)
-            if shape_slices.count(-1) == 0:
-                shape_slices[shape_slices.index(0)] = -1
-            attr = {"shape": shape_slices}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=node,
-                                      output=node,
-                                      param_attr=attr)
+
+
+#        if param.layer_type == "Pack":
+#            shape_slices = list()
+#            for i in range(len(param.layer.input)):
+#                slice = self.graph.get_node(param.layer.input[i], copy=True)
+#                if slice.layer_type == "Const":
+#                    shape_slices.append(slice.value.tolist())
+#                else:
+#                    shape_slices.append(0)
+#            if shape_slices.count(-1) == 0:
+#                shape_slices[shape_slices.index(0)] = -1
+#            attr = {"shape": shape_slices}
+#            node.fluid_code.add_layer("reshape",
+#                                      inputs=node,
+#                                      output=node,
+#                                      param_attr=attr)
 
     def Add(self, node):
         self.elementwise_operator(node, "elementwise_add")
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {"x": x, "y": y}
-#        node.fluid_code.add_layer("elementwise_add",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
 
     def AvgPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
+
         in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
+
         k_size = node.get_attr("ksize")
         strides = node.get_attr("strides")
         data_format = node.get_attr("data_format").decode()
@@ -524,13 +558,6 @@ class TFOpMapper(OpMapper):
 
     def Maximum(self, node):
         self.elementwise_operator(node, "elementwise_max")
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {"x": x, "y": y}
-#        node.fluid_code.add_layer("elementwise_max",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
 
     def SplitV(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -602,9 +629,6 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-#    def ResizeNearestNeighbor(self, node):
-#        pass
-
     def Range(self, node):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
@@ -625,28 +649,11 @@ class TFOpMapper(OpMapper):
                                output=node,
                                param_attr=None)
 
-#    def Fill(self, node):
-#        shape = self.graph.get_node(node.layer
-
     def Mul(self, node):
         self.elementwise_operator(node, "elementwise_mul")
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {"x": x, "y": y}
-#        node.fluid_code.add_layer("elementwise_mul",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
 
     def Sub(self, node):
         self.elementwise_operator(node, "elementwise_sub")
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {"x": x, "y": y}
-#        node.fluid_code.add_layer("elementwise_sub",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
 
     def Rsqrt(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -684,6 +691,16 @@ class TFOpMapper(OpMapper):
         transpose_a = node.get_attr('transpose_a')
         transpose_b = node.get_attr('transpose_b')
         inputs = {"x": x, "y": y}
+        # fix paddle shape infer problem
+        # should be removed after paddle 1.6
+        if x.out_shapes[0][-1] < 0 and y.out_shapes[0][0] > 0:
+            shape = x.out_shapes[0]
+            shape[-1] = y.out_shapes[0][0]
+            attr = {"shape": shape}
+            node.fluid_code.add_layer("reshape",
+                                      inputs=x,
+                                      output=x,
+                                      param_attr=attr)
         attr = {"transpose_x": transpose_a, "transpose_y": transpose_b}
         node.fluid_code.add_layer("matmul",
                                   inputs=inputs,
@@ -729,13 +746,24 @@ class TFOpMapper(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         begin = self.graph.get_node(node.layer.input[1], copy=True)
         size = self.graph.get_node(node.layer.input[2], copy=True)
-        assert begin.layer_type == "Const"
-        assert size.layer_type == "Const"
+        #        assert begin.layer_type == "Const"
+        #        assert size.layer_type == "Const"
         self.omit_nodes.append(begin.layer_name)
         self.omit_nodes.append(size.layer_name)
+        if begin.layer_type == "Const":
+            begin = begin.value.tolist()
+        else:
+            begin = self.decoder.infer_tensor(begin).tolist()
+        if size.layer_type == "const":
+            size = size.value.tolist()
+        else:
+            size = self.decoder.infer_tensor(size).tolist()
 
-        attr = {"shape": size.value.tolist(), "offsets": begin.value.tolist()}
-        node.code.add_layer("crop", inputs=input, output=node, param_attr=attr)
+        attr = {"shape": size, "offsets": begin}
+        node.fluid_code.add_layer("crop",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
     def Abs(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -750,8 +778,16 @@ class TFOpMapper(OpMapper):
         assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
         self.omit_nodes.append(kernel.layer_name)
 
+        node.fluid_code.add_note("#{} : {}".format(node.layer.name,
+                                                   node.layer_name))
+
         in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
         k_size = kernel.out_shapes[0]
+        if k_size.count(-1) > 2:
+            k_size = self.decoder.infer_tensor(kernel).shape
+
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
@@ -822,14 +858,6 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
-
-
-#    def GreaterEqual(self, node):
-#        pass
-#
-#    def RandomUniform(self, node):
-#        pass
-#
 
     def Cast(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
