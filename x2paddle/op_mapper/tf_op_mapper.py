@@ -51,12 +51,15 @@ class TFOpMapper(OpMapper):
         self.weights = dict()
         self.omit_nodes = list()
 
-    def run(self):
+        not_placeholder = list()
+        for name in self.graph.input_nodes:
+            if self.graph.get_node(name).layer_type != "Placeholder":
+                not_placeholder.append(name)
+        for name in not_placeholder:
+            idx = self.graph.input_nodes.index(name)
+            del self.graph.input_nodes[idx]
+
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
-
-        # check if ops in model are all supported
-        # TODO
-
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
@@ -69,13 +72,6 @@ class TFOpMapper(OpMapper):
                 func(node)
             else:
                 raise Exception("OP: [{}] not support yet".format(op))
-
-        for i in range(len(self.graph.topo_sort)):
-            node_name = self.graph.topo_sort[i]
-            if node_name in self.omit_nodes:
-                continue
-            node = self.graph.get_node(node_name)
-            self.net_code += node.fluid_code.gen_codes()
 
     def directly_map(self, node):
         assert node.layer_type in self.directly_map_ops

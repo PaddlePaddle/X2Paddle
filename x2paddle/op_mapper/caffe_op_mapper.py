@@ -26,7 +26,7 @@ class CaffeOpMapper(OpMapper):
         self.graph = decoder.caffe_graph
         self.weights = dict()
         resolver = decoder.resolver
-        self.mylayers = {}
+        self.used_custom_layers = {}
         self.inputs = self.graph.input_nodes
         self.outputs = self.graph.output_nodes
         if resolver.has_pycaffe():
@@ -67,8 +67,8 @@ class CaffeOpMapper(OpMapper):
                 self.deal_custom_layer(node)
             else:
                 raise Exception("Model are not supported yet.")
-        for key in self.mylayers:
-            self.net_code.append(self.mylayers[key])
+        for key in self.used_custom_layers:
+            self.net_code.append(self.used_custom_layers[key])
 
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
@@ -1050,5 +1050,5 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=kwargs,
                                   is_custom_layer=True)
-        if op not in self.mylayers:
-            self.mylayers[op] = custom_code
+        if op not in self.used_custom_layers:
+            self.used_custom_layers[op] = custom_code

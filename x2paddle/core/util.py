@@ -55,8 +55,6 @@ def export_paddle_param(param, param_name, dir):
         assert param.size == 1, "Unexpected situation happend!"
         shape = [1]
     assert str(param.dtype) in dtype_map, "Unknown dtype of params."
-    if not os.path.exists(dir):
-        os.makedirs(dir)
 
     fp = open(os.path.join(dir, param_name), 'wb')
     numpy.array([0], dtype='int32').tofile(fp)
@@ -72,8 +70,9 @@ def export_paddle_param(param, param_name, dir):
     fp.close()
 
 
-def init_net(param_dir="./"):
+def run_net(param_dir="./"):
     import os
+    inputs, outputs = x2paddle_net()
     exe = fluid.Executor(fluid.CUDAPlace(0))
     exe.run(fluid.default_startup_program())
 
@@ -85,3 +84,9 @@ def init_net(param_dir="./"):
                        param_dir,
                        fluid.default_main_program(),
                        predicate=if_exist)
+
+    fluid.io.save_inference_model(dirname='inference_model',
+                                  feeded_var_names=[i.name for i in inputs],
+                                  target_vars=outputs,
+                                  executor=exe,
+                                  params_filename="__params__")
