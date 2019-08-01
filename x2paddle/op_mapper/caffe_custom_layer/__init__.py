@@ -1,13 +1,15 @@
 from .register import get_registered_layers
 
 #custom layer import begins
-# from . import roipooling
-# from . import priorbox
-# from . import permute
-# from . import detection_out
-# from . import normalize
-# from . import select
+from . import roipooling
+from . import priorbox
+from . import permute
+from . import detectionoutput
+from . import normalize
+from . import select
+from . import shufflechannel
 from . import convolutiondepthwise
+from . import axpy
 #custom layer import ends
 
 custom_layers = get_registered_layers()
@@ -38,11 +40,25 @@ def has_layer(layer_type):
 
 
 def get_params(layer, layer_type):
+    import re
     if layer_type.lower() == "deconvolution" or layer_type.lower(
     ) == "convolutiondepthwise":
         param_name = '_'.join(('convolution', 'param'))
     elif layer_type.lower() == "normalize":
         param_name = '_'.join(('norm', 'param'))
+    elif len(layer_type) - len(re.sub("[A-Z]", "", layer_type)) >= 2:
+        s = ''
+        tmp_name = ''
+        for i, ch in enumerate(layer_type):
+            if i == 0:
+                s += ch.lower()
+                continue
+            elif ch.isupper() and layer_type[i - 1].islower():
+                tmp_name += (s + '_')
+                s = ''
+            s += ch
+        tmp_name += s
+        param_name = '_'.join((tmp_name, 'param'))
     else:
         param_name = '_'.join((layer_type.lower(), 'param'))
     return getattr(layer, param_name, None)

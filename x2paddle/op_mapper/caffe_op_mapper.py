@@ -27,6 +27,8 @@ class CaffeOpMapper(OpMapper):
         self.weights = dict()
         resolver = decoder.resolver
         self.mylayers = {}
+        self.inputs = self.graph.input_nodes
+        self.outputs = self.graph.output_nodes
         if resolver.has_pycaffe():
             self.did_use_pb = False
         else:
@@ -124,36 +126,32 @@ class CaffeOpMapper(OpMapper):
 
             data[idx] = np.squeeze(d, axis=sq_axis)
             shape_new = data[idx].shape
-            print('shape-old' + str(shape_old))
-            print('shape-new' + str(shape_new))
             if len(shape_old) != shape_new:
                 print('squeeze idx:%d, with kind:%s,name:%s' % \
                         (idx, node.layer_type, node.layer.name))
         return data
 
     def get_kernel_parameters(self, kind, params):
-        assert kind in [
-            'Convolution', 'Pooling', 'Deconvolution', 'ConvolutionDepthwise'
-        ]
+        assert kind in ['Convolution', 'Pooling', 'Deconvolution']
         [k_h, k_w] = [1, 1]
-        print(params.kernel_size)
         if isinstance(params.kernel_size, numbers.Number):
             [k_h, k_w] = [params.kernel_size] * 2
-        else:
+        elif isinstance(params.kernel_size,
+                        list) and len(params.kernel_size) > 0:
             k_h = params.kernel_h if params.kernel_h else params.kernel_size[0]
             k_w = params.kernel_w if params.kernel_w else params.kernel_size[
                 len(params.kernel_size) - 1]
         [s_h, s_w] = [1, 1]
         if isinstance(params.stride, numbers.Number):
             [s_h, s_w] = [params.stride] * 2
-        else:
+        elif isinstance(params.stride, list) and len(params.stride) > 0:
             s_h = params.stride_h if params.stride_h else params.stride[0]
             s_w = params.stride_w if params.stride_w else params.stride[
                 len(params.stride) - 1]
         [p_h, p_w] = [0, 0]
         if isinstance(params.pad, numbers.Number):
             [p_h, p_w] = [params.pad] * 2
-        else:
+        elif isinstance(params.pad, list) and len(params.pad) > 0:
             p_h = params.pad_h if params.pad_h else params.pad[0]
             p_w = params.pad_w if params.pad_w else params.pad[len(params.pad) -
                                                                1]
@@ -875,41 +873,6 @@ class CaffeOpMapper(OpMapper):
                                       output='_, {}'.format(node.layer_name),
                                       param_attr=attr)
 
-    def Axpy(self, node):
-        assert len(
-            node.inputs) == 3, 'The count of Axpy node\'s input is not 3.'
-        alpha = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(alpha):
-            tmp = self.graph.get_bottom_node(alpha, idx=0, copy=True)
-            if self.is_BN(tmp):
-                alpha = tmp
-        x = self.graph.get_bottom_node(node, idx=1, copy=True)
-        if self.is_Scale(x):
-            tmp = self.graph.get_bottom_node(x, idx=0, copy=True)
-            if self.is_BN(tmp):
-                x = tmp
-        y = self.graph.get_bottom_node(node, idx=2, copy=True)
-        if self.is_Scale(y):
-            tmp = self.graph.get_bottom_node(y, idx=0, copy=True)
-            if self.is_BN(tmp):
-                y = tmp
-        attr = {'axis': 0, 'name': string(node.layer_name + '_mul')}
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs={
-                                      'x': alpha,
-                                      'y': x
-                                  },
-                                  output=node,
-                                  param_attr=attr)
-        attr = {'name': string(node.layer_name + '_add')}
-        node.fluid_code.add_layer("elementwise_add",
-                                  inputs={
-                                      'x': node,
-                                      'y': y
-                                  },
-                                  output=node,
-                                  param_attr=attr)
-
     def Crop(self, node):
         assert len(
             node.inputs) == 2, 'The count of Crop node\'s input is not 2.'
@@ -943,83 +906,6 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def DetectionOutput(self, node):
-        assert len(
-            node.inputs
-        ) == 3, 'The count of DetectionOutput node\'s input is not 3.'
-        mbox_loc = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(mbox_loc):
-            tmp = self.graph.get_bottom_node(mbox_loc, idx=0, copy=True)
-            if self.is_BN(tmp):
-                mbox_loc = tmp
-        mbox_conf_flatten = self.graph.get_bottom_node(node, idx=1, copy=True)
-        if self.is_Scale(mbox_conf_flatten):
-            tmp = self.graph.get_bottom_node(mbox_conf_flatten,
-                                             idx=0,
-                                             copy=True)
-            if self.is_BN(tmp):
-                mbox_conf_flatten = tmp
-        mbox_priorbox = self.graph.get_bottom_node(node, idx=2, copy=True)
-        if self.is_Scale(mbox_priorbox):
-            tmp = self.graph.get_bottom_node(mbox_priorbox, idx=0, copy=True)
-            if self.is_BN(tmp):
-                mbox_priorbox = tmp
-        params = node.layer.detection_output_param
-        nms_threshold = 0.3
-        top_k = 10
-        eta = 1.0
-        if hasattr(params, 'nms_param'):
-            nms_threshold = getattr(params.nms_param, 'nms_threshold', 0.3)
-            top_k = getattr(params.nms_param, 'top_k', 10)
-            eta = getattr(params.nms_param, 'eta', 1.0)
-        background_label = getattr(params, 'background_label_id', 0)
-        share_location = getattr(params, 'share_location', True)
-        keep_top_k = getattr(params, 'keep_top_k', 100)
-        confidence_threshold = getattr(params, 'confidence_threshold', 0.1)
-        attr = {
-            'num_or_sections': 2,
-            'dim': 1,
-            'name': string(node.layer_name + '_split')
-        }
-        node.fluid_code.add_layer("split",
-                                  inputs=mbox_priorbox,
-                                  output='mbox_priorbox_list',
-                                  param_attr=attr)
-        node.fluid_code.add_note('pb = mbox_priorbox_list[0]')
-        node.fluid_code.add_note('pbv = mbox_priorbox_list[1]')
-        attr = {'shape': [-1, 4], 'name': string(node.layer_name + '_reshape1')}
-        node.fluid_code.add_layer("reshape",
-                                  inputs='pb',
-                                  output='pb',
-                                  param_attr=attr)
-        attr = {'shape': [-1, 4], 'name': string(node.layer_name + '_reshape2')}
-        node.fluid_code.add_layer("reshape",
-                                  inputs='pbv',
-                                  output='pbv',
-                                  param_attr=attr)
-        # TODO(syf): need chaeck
-        attr = {
-            'shape': [-1, node.input_shape[1][1], 4],
-            'name': string(node.layer_name + '_reshape3')
-        }
-        node.fluid_code.add_layer("reshape",
-                                  inputs=mbox_loc,
-                                  output='mbox_loc',
-                                  param_attr=attr)
-        attr = {
-            'background_label': background_label,
-            'nms_threshold': nms_threshold,
-            'nms_top_k': top_k,
-            'keep_top_k': keep_top_k,
-            'score_threshold': confidence_threshold,
-            'nms_eta': eta
-        }
-        inputs_str = get_input_name(mbox_conf_flatten) + ', mbox_loc, pb, pbv'
-        node.fluid_code.add_layer("detection_output",
-                                  inputs=inputs_str,
-                                  output=node,
-                                  param_attr=attr)
-
     def Flatten(self, noed):
         assert len(
             node.inputs
@@ -1032,68 +918,6 @@ class CaffeOpMapper(OpMapper):
         shape = node.output_shape[0]
         attr = {'shape': shape, 'name': string(node.layer_name)}
         node.fluid_code.add_layer("reshape",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def Normalize(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Normalize node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input):
-            tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input = tmp
-        params = node.layer.norm_param
-        across_spatial = params.across_spatial
-        channel_shared = params.channel_shared
-        assert across_spatial == False, "Only support across_spatial == False for Normalize"
-        attr = {'axis': 1, 'name': string(node.layer_name + '_l2')}
-        node.fluid_code.add_layer("l2_normalize",
-                                  inputs=input,
-                                  output=node.layer_name + '_l2',
-                                  param_attr=attr)
-        input_name = self.get_input_name(input)
-        data = node.data
-        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_scale'] = data[0]
-        node.fluid_code.add_note(
-            '{}_scale_attr = ParamAttr(name=\'{}\')'.format(
-                node.layer_name, node.layer_name + '_scale'))
-        attr = {
-            'shape': [1] if channel_shared else [node.input_shape[0][1]],
-            'dtype': '{}.dtype'.format(input_name),
-            'attr': '{}_scale_attr'.format(node.layer_name),
-            'name': string(node.layer_name + '_param')
-        }
-        node.fluid_code.add_layer("create_parameter",
-                                  inputs=None,
-                                  output=node.layer_name + '_scale_param',
-                                  param_attr=attr)
-        attr = {
-            'axis': -1 if channel_shared else 1,
-            'name': string(node.layer_name + '_mul')
-        }
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs=node.layer_name + '_l2, ' +
-                                  node.layer_name + '_scale_param',
-                                  output=node,
-                                  param_attr=attr)
-
-    def Permute(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Permute node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input):
-            tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input = tmp
-        params = node.layer.permute_param
-        order = list(params.order)
-        attr = {'order': order, 'name': string(node.layer_name)}
-        node.fluid_code.add_layer("transpose",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
@@ -1123,69 +947,6 @@ class CaffeOpMapper(OpMapper):
         attr = {'factor': power, 'name': string(node.layer_name)}
         node.fluid_code.add_layer("pow",
                                   inputs=node,
-                                  output=node,
-                                  param_attr=attr)
-
-    def PriorBox(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of PriorBox node\'s input is not 2.'
-        input1 = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input1):
-            tmp = self.graph.get_bottom_node(input1, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input1 = tmp
-        input2 = self.graph.get_bottom_node(node, idx=1, copy=True)
-        if self.is_Scale(input2):
-            tmp = self.graph.get_bottom_node(input2, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input2 = tmp
-        input_dict = {'input': input1, 'image': input2}
-        params = node.layer.prior_box_param
-        step = getattr(params, 'step', 0.0)
-        offset = getattr(params, 'offset', 0.5)
-        min_size = list(params.min_size)
-        max_size = list(params.max_size)
-        aspect_ratio = list(params.aspect_ratio)
-        flip = getattr(params, 'flip', False)
-        clip = getattr(params, 'clip', False)
-        variance = list(getattr(params, 'variance', [0.1, 0.1, 0.2, 0.2]))
-        steps = tuple(step) if type(step) is list or type(step) is tuple else (
-            step, step)
-        attr = {
-            'min_sizes': min_size,
-            'max_sizes': max_size,
-            'aspect_ratios': aspect_ratio,
-            'variance': variance,
-            'flip': flip,
-            'clip': clip,
-            'step': steps,
-            'offset': offset,
-            'min_max_aspect_ratios_order': True,
-            'name': string(node.layer_name)
-        }
-        node.fluid_code.add_layer("prior_box",
-                                  inputs=input_dict,
-                                  output='{}_box, {}_var'.format(
-                                      node.layer_name, node.layer_name),
-                                  param_attr=attr)
-        attr = {
-            'shape': [1, 1, -1],
-        }
-        node.fluid_code.add_layer("reshape",
-                                  inputs='{}_box'.format(node.layer_name),
-                                  output='{}_box'.format(node.layer_name),
-                                  param_attr=attr)
-        attr = {
-            'shape': [1, 1, -1],
-        }
-        node.fluid_code.add_layer("reshape",
-                                  inputs='{}_var'.format(node.layer_name),
-                                  output='{}_var'.format(node.layer_name),
-                                  param_attr=attr)
-        attr = {'axis': 1, 'name': string(node.layer_name + '_concat')}
-        node.fluid_code.add_layer("concat",
-                                  inputs='[{}_box, {}_var]'.format(
-                                      node.layer_name, node.layer_name),
                                   output=node,
                                   param_attr=attr)
 
@@ -1263,86 +1024,6 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def ROIPooling(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of ROIPooling node\'s input is not 2.'
-        input1 = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input1):
-            tmp = self.graph.get_bottom_node(input1, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input1 = tmp
-        input2 = self.graph.get_bottom_node(node, idx=1, copy=True)
-        if self.is_Scale(input2):
-            tmp = self.graph.get_bottom_node(input2, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input2 = tmp
-        attr = {'axes': [1], 'starts': [1], 'ends': [5]}
-        node.fluid_code.add_layer("slice",
-                                  inputs=input2,
-                                  output=input2,
-                                  param_attr=attr)
-        input_dict = {'input': input1, 'rois': input2}
-        params = node.layer.roi_pooling_param
-        attr = {
-            'pooled_w': params.pooled_w,
-            'pooled_h': params.pooled_h,
-            'spatial_scale': params.spatial_scale,
-            'name': string(node.layer_name)
-        }
-        node.fluid_code.add_layer("roi_pool",
-                                  inputs=input_dict,
-                                  output=node,
-                                  param_attr=attr)
-
-    def Select(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Select node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input):
-            tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input = tmp
-        params = node.layer.select_param
-        slice_point = list(params.slice_point)
-        axis = params.axis
-        maxint32 = 2147483647
-        slice_point = [0] + slice_point
-        slice_point.append(maxint32)
-        i = 0
-        node.fluid_code.add_note('{} = []'.format(node.layer_name))
-        for i in range(len(slice_point)):
-            attr = {
-                'axes': [axis],
-                'starts': [slice_point[i]],
-                'ends': [slice_point[i + 1]],
-                'name': string(node.layer_name + '_' + str(i))
-            }
-            node.fluid_code.add_layer("slice",
-                                      inputs=input,
-                                      output=string(node.layer_name + '_' +
-                                                    str(i)),
-                                      param_attr=attr)
-            node.fluid_code.add_note('{}.append({})'.format(
-                node.layer_name, node.layer_name + '_' + str(i)))
-            if i == len(slice_point) - 2:
-                break
-
-    def ShuffleChannel(self, node):
-        assert len(node.inputs
-                   ) == 1, 'The count of ShuffleChannel node\'s input is not 1.'
-        params = node.layer.shuffle_channel_param
-        group = params.group
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        if self.is_Scale(input):
-            tmp = self.graph.get_bottom_node(input, idx=0, copy=True)
-            if self.is_BN(tmp):
-                input = tmp
-        attr = {'group': group, 'name': string(node.layer_name)}
-        node.fluid_code.add_layer("shuffle_channel",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
     def deal_custom_layer(self, node):
         op = node.layer_type
         custom_code, func = make_custom_layer(node)
@@ -1351,12 +1032,11 @@ class CaffeOpMapper(OpMapper):
         kwargs['name'] = string(node.layer_name)
         kwargs['input_shape'] = node.input_shape
         data = node.data
-        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node)
-        weights_name = deal_weights(node)
-        for i in range(len(data)):
-            self.weights[weights_name[i]] = data[i]
+        if data is not None:
+            data = self.adjust_parameters(node)
+            weights_name = deal_weights(node)
+            for i in range(len(data)):
+                self.weights[weights_name[i]] = data[i]
         inputs_node = []
         for i in range(len(node.inputs)):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
