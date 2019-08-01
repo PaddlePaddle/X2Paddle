@@ -56,7 +56,7 @@ def get_params(layer, layer_type):
             elif ch.isupper() and layer_type[i - 1].islower():
                 tmp_name += (s + '_')
                 s = ''
-            s += ch
+            s += ch.lower()
         tmp_name += s
         param_name = '_'.join((tmp_name, 'param'))
     else:
