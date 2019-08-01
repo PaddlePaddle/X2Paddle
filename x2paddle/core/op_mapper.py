@@ -17,6 +17,35 @@ import inspect
 import os
 
 
+def export_paddle_param(param, param_name, dir):
+    dtype_map = {
+        "int16": [framework_pb2.VarType.INT16, 'h'],
+        "int32": [framework_pb2.VarType.INT32, 'i'],
+        "int64": [framework_pb2.VarType.INT64, 'q'],
+        "float16": [framework_pb2.VarType.FP16, 'e'],
+        "float32": [framework_pb2.VarType.FP32, 'f'],
+        "float64": [framework_pb2.VarType.FP64, 'd']
+    }
+    shape = param.shape
+    if len(shape) == 0:
+        assert param.size == 1, "Unexpected situation happend!"
+        shape = [1]
+    assert str(param.dtype) in dtype_map, "Unknown dtype of params."
+
+    fp = open(os.path.join(dir, param_name), 'wb')
+    numpy.array([0], dtype='int32').tofile(fp)
+    numpy.array([0], dtype='int64').tofile(fp)
+    numpy.array([0], dtype='int32').tofile(fp)
+    tensor_desc = framework_pb2.VarType.TensorDesc()
+    tensor_desc.data_type = dtype_map[str(param.dtype)][0]
+    tensor_desc.dims.extend(shape)
+    desc_size = tensor_desc.ByteSize()
+    numpy.array([desc_size], dtype='int32').tofile(fp)
+    fp.write(tensor_desc.SerializeToString())
+    param.tofile(fp)
+    fp.close()
+
+
 class OpMapper(object):
     def __init__(self):
         self.paddle_codes = ""
@@ -74,11 +103,11 @@ class OpMapper(object):
 
             def if_exist(var):
                 b = os.path.exists(
-                    os.path.join(os.path.join(save_dir, var.name)))
+                    os.path.join(os.path.join(py_code_dir, var.name)))
                 return b
 
             fluid.io.load_vars(exe,
-                               save_dir,
+                               py_code_dir,
                                fluid.default_main_program(),
                                predicate=if_exist)
 
@@ -88,7 +117,6 @@ class OpMapper(object):
                                           target_vars=outputs,
                                           executor=exe,
                                           params_filename="__params__")
-
         except:
             raise Exception(
                 "Paddle code was saved in {}/model.py, but seems there's wrong exist, please check model.py manually."
@@ -109,6 +137,7 @@ class OpMapper(object):
         if hasattr(self, "used_custom_layers"):
             for _, layer_code in self.used_custom_layers.items():
                 self.add_codes(layer_code, 0)
+                self.add_codes("", 0)
 
         self.add_codes("\ndef x2paddle_net():", 0)
         for i in range(len(self.graph.topo_sort)):

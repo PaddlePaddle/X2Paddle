@@ -22,7 +22,7 @@ class Layer(object):
         self.param_attr = dict()
         self.inputs = dict()
         self.output = None
-        self.is_new = False
+        self.is_custom_layer = False
 
     def get_code(self):
         layer_code = ""
@@ -32,7 +32,10 @@ class Layer(object):
             else:
                 layer_code = self.output.layer_name + " = "
 
-        layer_code = layer_code + "fluid.layers." + self.op + "("
+        if self.is_custom_layer:
+            layer_code = layer_code + self.op + "("
+        else:
+            layer_code = layer_code + "fluid.layers." + self.op + "("
 
         if isinstance(self.inputs, list):
             in_list = "["
@@ -83,38 +86,6 @@ class Layer(object):
 
         return layer_code + ")"
 
-    def get_custom_code(self):
-        layer_code = ""
-        if self.output is not None:
-            if isinstance(self.output, str):
-                layer_code = self.output + " = "
-            else:
-                layer_code = self.output.layer_name + " = "
-
-        layer_code = layer_code + self.op + "("
-
-        if isinstance(self.inputs, list):
-            in_list = "["
-            for input in self.inputs:
-                assert isinstance(
-                    input, GraphNode), "Type of input should be GraphNode"
-                if hasattr(input, "index"):
-                    in_list += (input.layer_name + "[{}]".format(input.index) +
-                                ", ")
-                else:
-                    in_list += (input.layer_name + ", ")
-            in_list = in_list.strip(", ") + "], "
-            layer_code += in_list
-        else:
-            raise Exception("Unknown type of inputs.")
-
-        param_attr = collections.OrderedDict(self.param_attr)
-        for key, value in param_attr.items():
-            layer_code = layer_code + key + "={}, ".format(value)
-        layer_code = layer_code.strip(", ")
-
-        return layer_code + ")"
-
 
 class FluidCode(object):
     def __init__(self):
@@ -147,10 +118,7 @@ class FluidCode(object):
         codes = list()
         for layer in self.layers:
             if isinstance(layer, Layer):
-                if layer.is_custom_layer:
-                    codes.append(layer.get_custom_code())
-                else:
-                    codes.append(layer.get_code())
+                codes.append(layer.get_code())
             elif isinstance(layer, str):
                 codes.append(layer)
         return codes
