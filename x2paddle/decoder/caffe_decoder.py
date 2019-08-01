@@ -183,8 +183,8 @@ class CaffeGraph(Graph):
                 node = self.node_map[layer_name]
                 node.set_params(data)
             else:
-                notice('Ignoring parameters for non-existent layer: %s' % \
-                        layer_name)
+                raise Exception('Ignoring parameters for non-existent layer: %s' % \
+                       layer_name)
 
         super(CaffeGraph, self).build()
 
