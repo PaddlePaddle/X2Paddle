@@ -97,7 +97,6 @@ class CaffeGraph(Graph):
         phase_map = {0: 'train', 1: 'test'}
         filtered_layer_names = set()
         filtered_layers = []
-        print('The filter layer:')
         for layer in layers:
             phase = 'test'
             if len(layer.include):
@@ -116,7 +115,7 @@ class CaffeGraph(Graph):
                 assert layer.name not in filtered_layer_names
                 filtered_layer_names.add(layer.name)
             else:
-                print(layer.name)
+                print('The filter layer:' + layer.name)
         return filtered_layers
 
     def build(self):
