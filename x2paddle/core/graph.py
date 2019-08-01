@@ -49,11 +49,13 @@ class Graph(object):
 
     def _make_input_nodes(self):
         for name, node in self.node_map.items():
+            name = name.replace('/', '_').replace('-', '_')
             if len(node.inputs) == 0:
                 self.input_nodes.append(name)
 
     def _make_output_nodes(self):
         for name, node in self.node_map.items():
+            name = name.replace('/', '_').replace('-', '_')
             if len(node.outputs) == 0:
                 self.output_nodes.append(name)
 
