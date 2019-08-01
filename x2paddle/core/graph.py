@@ -113,6 +113,13 @@ class Graph(object):
         idx = self.topo_sort.index(node_name)
         del self.topo_sort[idx]
 
+        if node_name in self.input_nodes:
+            idx = self.input_nodes.index(node_name)
+            del self.input_nodes[idx]
+        if node_name in self.output_nodes:
+            idx = self.output_nodes.index(node_name)
+            del self.output_nodes[idx]
+
     def print(self):
         for i, tmp in enumerate(self.topo_sort):
             print(tmp, self.node_map[tmp].layer_type, self.node_map[tmp].inputs,

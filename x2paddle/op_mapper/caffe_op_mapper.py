@@ -26,13 +26,25 @@ class CaffeOpMapper(OpMapper):
         self.graph = decoder.caffe_graph
         self.weights = dict()
         resolver = decoder.resolver
-        self.mylayers = {}
-        self.inputs = self.graph.input_nodes
-        self.outputs = self.graph.output_nodes
+        self.used_custom_layers = {}
         if resolver.has_pycaffe():
             self.did_use_pb = False
         else:
             self.did_use_pb = True
+
+        print("Total nodes: {}".format(len(self.graph.topo_sort)))
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            op = node.layer_type
+            if hasattr(self, op):
+                self.set_shape(node)
+                func = getattr(self, op)
+                func(node)
+            elif op in custom_layers:
+                self.set_shape(node, is_fluid_op=False)
+                self.deal_custom_layer(node)
+            else:
+                raise Exception("Model are not supported yet.")
 
     def op_checker(self):
         unsupported_ops = set()
@@ -49,31 +61,6 @@ class CaffeOpMapper(OpMapper):
             for op in unsupported_ops:
                 print(op)
             return False
-
-    def run(self):
-        print("Total nodes: {}".format(len(self.graph.topo_sort)))
-        # check if ops in model are all supported
-        if not self.op_checker():
-            raise Exception("Model are not supported yet.")
-        for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
-            op = node.layer_type
-            if hasattr(self, op):
-                self.set_shape(node)
-                func = getattr(self, op)
-                func(node)
-            elif op in custom_layers:
-                self.set_shape(node, is_fluid_op=False)
-                self.deal_custom_layer(node)
-            else:
-                raise Exception("Model are not supported yet.")
-        for key in self.mylayers:
-            self.net_code.append(self.mylayers[key])
-
-        for i in range(len(self.graph.topo_sort)):
-            node_name = self.graph.topo_sort[i]
-            node = self.graph.get_node(node_name)
-            self.net_code += node.fluid_code.gen_codes()
 
     def set_shape(self, node, is_fluid_op=True):
         inputs = node.inputs
@@ -1050,5 +1037,5 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=kwargs,
                                   is_custom_layer=True)
-        if op not in self.mylayers:
-            self.mylayers[op] = custom_code
+        if op not in self.used_custom_layers:
+            self.used_custom_layers[op] = custom_code

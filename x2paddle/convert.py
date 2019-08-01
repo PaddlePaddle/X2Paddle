@@ -58,8 +58,7 @@ def tf2paddle(model_path, save_dir):
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path)
     mapper = TFOpMapper(model)
-    mapper.run()
-    mapper.save_python_model(save_dir)
+    mapper.save_inference_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
@@ -69,8 +68,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
-    mapper.run()
-    mapper.save_python_model(save_dir)
+    mapper.save_inference_model(save_dir)
 
 
 def main():

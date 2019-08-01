@@ -23,6 +23,8 @@ class OpMapper(object):
         self.tab = "    "
         self.net_code = list()
         self.weights = dict()
+        self.inputs = list()
+        self.outputs = list()
 
     def op_checker(self):
         unsupported_ops = set()
@@ -56,16 +58,83 @@ class OpMapper(object):
         self.add_codes("import paddle.fluid as fluid")
         self.add_codes("")
 
-    def save_inference_model(self):
-        print("Not Implement")
+    def save_inference_model(self, save_dir):
+        self.save_python_model(save_dir)
+
+        import sys
+        import paddle.fluid as fluid
+        py_code_dir = os.path.join(save_dir, "model_with_code")
+        sys.path.append(py_code_dir)
+        import model
+        try:
+            inputs, outputs = model.x2paddle_net()
+            input_names = [input.name for input in inputs]
+            exe = fluid.Executor(fluid.CPUPlace())
+            exe.run(fluid.default_startup_program())
+
+            def if_exist(var):
+                b = os.path.exists(
+                    os.path.join(os.path.join(save_dir, var.name)))
+                return b
+
+            fluid.io.load_vars(exe,
+                               save_dir,
+                               fluid.default_main_program(),
+                               predicate=if_exist)
+
+            fluid.io.save_inference_model(dirname=os.path.join(
+                save_dir, "inference_model"),
+                                          feeded_var_names=input_names,
+                                          target_vars=outputs,
+                                          executor=exe,
+                                          params_filename="__params__")
+
+        except:
+            raise Exception(
+                "Paddle code was saved in {}/model.py, but seems there's wrong exist, please check model.py manually."
+                .format(py_code_dir))
 
     def save_python_model(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        py_code_dir = os.path.join(save_dir, "model_with_code")
+        if not os.path.exists(py_code_dir):
+            os.makedirs(py_code_dir)
+
         for name, param in self.weights.items():
-            export_paddle_param(param, name, save_dir)
+            export_paddle_param(param, name, py_code_dir)
         self.add_heads()
-        self.add_codes(self.net_code)
-        self.add_codes("")
-        self.add_codes(inspect.getsourcelines(init_net)[0])
-        fp = open(os.path.join(save_dir, "model.py"), 'w')
+
+        if hasattr(self, "used_custom_layers"):
+            for _, layer_code in self.used_custom_layers.items():
+                self.add_codes(layer_code, 0)
+
+        self.add_codes("\ndef x2paddle_net():", 0)
+        for i in range(len(self.graph.topo_sort)):
+            node_name = self.graph.topo_sort[i]
+            if hasattr(self, "omit_nodes") and node_name in self.omit_nodes:
+                continue
+            node = self.graph.get_node(node_name)
+            self.add_codes(node.fluid_code.gen_codes(), 1)
+
+        self.add_codes("", 0)
+
+        input_str = "["
+        for name in self.graph.input_nodes:
+            input_str += (name + ", ")
+        input_str = input_str.strip(", ") + "]"
+        output_str = "["
+        for name in self.graph.output_nodes:
+            output_str += (name + ", ")
+        output_str = output_str.strip(", ") + "]"
+
+        return_code = "return {}, {}".format(input_str, output_str)
+
+        self.add_codes(return_code, 1)
+        self.add_codes("", 0)
+
+        self.add_codes(inspect.getsourcelines(run_net)[0])
+        fp = open(os.path.join(py_code_dir, "model.py"), 'w')
         fp.write(self.paddle_codes)
         fp.close()

@@ -163,6 +163,10 @@ class TFGraph(Graph):
             idx = self.topo_sort.index(node_name)
             del self.topo_sort[idx]
 
+            if node_name in self.output_nodes:
+                idx = self.output_nodes.index(node_name)
+                self.output_nodes[idx] = input_node.layer_name
+
 
 class TFDecoder(object):
     def __init__(self, pb_model):
