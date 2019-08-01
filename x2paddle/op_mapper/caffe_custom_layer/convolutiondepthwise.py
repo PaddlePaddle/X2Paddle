@@ -18,19 +18,19 @@ def convolutiondepthwise_shape(input_shape,
     [k_h, k_w] = [1, 1]
     if isinstance(kernel_size, numbers.Number):
         [k_h, k_w] = [kernel_size] * 2
-    elif isinstance(kernel_size, list):
+    elif isinstance(kernel_size, list) and len(kernel_size) > 0:
         k_h = kernel_h if kernel_h else kernel_size[0]
         k_w = kernel_w if kernel_w else kernel_size[len(kernel_size) - 1]
     [s_h, s_w] = [1, 1]
     if isinstance(stride, numbers.Number):
         [s_h, s_w] = [stride] * 2
-    elif isinstance(stride, list):
+    elif isinstance(stride, list) and len(stride) > 0:
         s_h = stride_h if stride_h else stride[0]
         s_w = stride_w if stride_w else stride[len(stride) - 1]
     [p_h, p_w] = [0, 0]
     if isinstance(pad, numbers.Number):
         [p_h, p_w] = [pad] * 2
-    elif isinstance(pad, list):
+    elif isinstance(pad, list) and len(pad) > 0:
         p_h = pad_h if pad_h else pad[0]
         p_w = pad_w if pad_w else pad[len(pad) - 1]
     dila_len = len(dilation)
@@ -67,24 +67,24 @@ def convolutiondepthwise_layer(inputs,
                                kernel_w=None,
                                stride_h=None,
                                stride_w=None,
-                               input_shape=[],
+                               input_shape=None,
                                name=None):
     [k_h, k_w] = [1, 1]
     if isinstance(kernel_size, numbers.Number):
         [k_h, k_w] = [kernel_size] * 2
-    elif isinstance(kernel_size, list):
+    elif isinstance(kernel_size, list) and len(kernel_size) > 0:
         k_h = kernel_h if kernel_h else kernel_size[0]
         k_w = kernel_w if kernel_w else kernel_size[len(kernel_size) - 1]
     [s_h, s_w] = [1, 1]
     if isinstance(stride, numbers.Number):
         [s_h, s_w] = [stride] * 2
-    elif isinstance(stride, list):
+    elif isinstance(stride, list) and len(stride) > 0:
         s_h = stride_h if stride_h else stride[0]
         s_w = stride_w if stride_w else stride[len(stride) - 1]
     [p_h, p_w] = [0, 0]
     if isinstance(pad, numbers.Number):
         [p_h, p_w] = [pad] * 2
-    elif isinstance(pad, list):
+    elif isinstance(pad, list) and len(pad) > 0:
         p_h = pad_h if pad_h else pad[0]
         p_w = pad_w if pad_w else pad[len(pad) - 1]
     input = inputs[0]
