@@ -176,8 +176,9 @@ class TFDecoder(object):
             self.sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
-        for node in graph_def.node:
-            print(node.name, node.op, node.input)
+
+#        for node in graph_def.node:
+#            print(node.name, node.op, node.input)
 
         self.sess.run(tf.global_variables_initializer())
 
