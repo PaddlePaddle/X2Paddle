@@ -79,7 +79,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
         import caffe
         version = caffe.__version__
         if version == '1.0.0':
-            print("caffe == 1.0.0 is required")
+            print("caffe != 1.0.0 is required")
             return
     except:
         print("Caffe is not installed.")
