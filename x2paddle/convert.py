@@ -62,7 +62,7 @@ def tf2paddle(model_path, save_dir):
             )
             return
     except:
-        print("Tensorflow not installed, use \"pip install tensorflow\"")
+        print("Tensorflow is not installed, use \"pip install tensorflow\".")
         return
 
     from x2paddle.decoder.tf_decoder import TFDecoder
@@ -75,6 +75,21 @@ def tf2paddle(model_path, save_dir):
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
+    try:
+        import caffe
+        version = caffe.__version__
+        if version == '1.0.0':
+            print("caffe == 1.0.0 is required")
+            return
+    except:
+        print("Caffe is not installed.")
+        import os
+        if not os.path.isfile(caffe_proto + 'caffe_pb2.py'):
+            print("The file that resolve caffe is not exist.")
+            print(
+                "You have 2 options: 1. install caffe 2. compile the caffe.proto"
+            )
+            return
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
 
