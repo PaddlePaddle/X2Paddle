@@ -23,15 +23,6 @@ def string(param):
     return "\'{}\'".format(param)
 
 
-def color_log(log_str):
-    try:
-        from colorama import init, Fore
-        init(autoreset=True)
-        print(Fore.RED + log_str)
-    except:
-        print(log_str)
-
-
 # This func will copy to generate code file
 def run_net(param_dir="./"):
     import os
