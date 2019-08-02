@@ -15,11 +15,20 @@
 from x2paddle.decoder.tf_decoder import TFGraph
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
+import inspect
 import numpy
 
 
-class TFOpMapper(OpMapper):
+# compute padding size for SAME mode
+def get_same_padding(in_size, kernel_size, stride):
+    new_size = int(math.ceil(in_size * 1.0 / stride))
+    pad_size = (new_size - 1) * stride + kernel_size - in_size
+    pad0 = int(pad_size / 2)
+    pad1 = pad_size - pad0
+    return [pad0, pad1]
 
+
+class TFOpMapper(OpMapper):
     directly_map_ops = {
         'Relu': ['relu'],
         'Relu6': ['relu6'],
@@ -50,6 +59,7 @@ class TFOpMapper(OpMapper):
         self.graph = decoder.tf_graph
         self.weights = dict()
         self.omit_nodes = list()
+        self.used_custom_layers = dict()
 
         not_placeholder = list()
         for name in self.graph.input_nodes:
@@ -572,7 +582,7 @@ class TFOpMapper(OpMapper):
         paddings = self.graph.get_node(node.layer.input[1], copy=True)
         assert paddings.layer_type == "Const", "Padding should be Const"
         self.omit_nodes.append(paddings.layer_name)
-        attr = {"paddings": paddings.value.tolist()}
+        attr = {"paddings": paddings.value.flatten().tolist()}
         node.fluid_code.add_layer("pad",
                                   inputs=input,
                                   output=node,

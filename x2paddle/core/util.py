@@ -23,57 +23,11 @@ def string(param):
     return "\'{}\'".format(param)
 
 
-def color_log(log_str):
-    try:
-        from colorama import init, Fore
-        init(autoreset=True)
-        print(Fore.RED + log_str)
-    except:
-        print(log_str)
-
-
-def get_same_padding(in_size, kernel_size, stride):
-    new_size = int(math.ceil(in_size * 1.0 / stride))
-    pad_size = (new_size - 1) * stride + kernel_size - in_size
-    pad0 = int(pad_size / 2)
-    pad1 = pad_size - pad0
-
-    return [pad0, pad1]
-
-
-def export_paddle_param(param, param_name, dir):
-    dtype_map = {
-        "int16": [framework_pb2.VarType.INT16, 'h'],
-        "int32": [framework_pb2.VarType.INT32, 'i'],
-        "int64": [framework_pb2.VarType.INT64, 'q'],
-        "float16": [framework_pb2.VarType.FP16, 'e'],
-        "float32": [framework_pb2.VarType.FP32, 'f'],
-        "float64": [framework_pb2.VarType.FP64, 'd']
-    }
-    shape = param.shape
-    if len(shape) == 0:
-        assert param.size == 1, "Unexpected situation happend!"
-        shape = [1]
-    assert str(param.dtype) in dtype_map, "Unknown dtype of params."
-
-    fp = open(os.path.join(dir, param_name), 'wb')
-    numpy.array([0], dtype='int32').tofile(fp)
-    numpy.array([0], dtype='int64').tofile(fp)
-    numpy.array([0], dtype='int32').tofile(fp)
-    tensor_desc = framework_pb2.VarType.TensorDesc()
-    tensor_desc.data_type = dtype_map[str(param.dtype)][0]
-    tensor_desc.dims.extend(shape)
-    desc_size = tensor_desc.ByteSize()
-    numpy.array([desc_size], dtype='int32').tofile(fp)
-    fp.write(tensor_desc.SerializeToString())
-    param.tofile(fp)
-    fp.close()
-
-
+# This func will copy to generate code file
 def run_net(param_dir="./"):
     import os
     inputs, outputs = x2paddle_net()
-    exe = fluid.Executor(fluid.CUDAPlace(0))
+    exe = fluid.Executor(fluid.CPUPlace())
     exe.run(fluid.default_startup_program())
 
     def if_exist(var):
