@@ -14,7 +14,6 @@
 
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.core.util import *
 from tensorflow.python.framework import tensor_util
 from tensorflow.python.platform import gfile
 from tensorflow.core.framework import attr_value_pb2
@@ -217,21 +216,21 @@ class TFDecoder(object):
 
             if need_define_shape > 0:
                 if need_define_shape == 1:
-                    color_log(
+                    print(
                         "\nUnknown shape for input tensor[tensor name: \"{}\"]".
                         format(layer.name))
                 else:
-                    color_log(
+                    print(
                         "\nShape[now is {}] for input tensor[tensor name: \"{}\"] not support yet"
                         .format(shape, layer.name))
-                color_log(
+                print(
                     "Use your keyboard type the shape of input tensor below :)")
 
                 right_shape_been_input = False
                 while not right_shape_been_input:
                     shape = input("Shape of Input(e.g. None,224,224,3): ")
                     if shape.count("None") > 1:
-                        color_log("Only 1 dimension can be None, type again:)")
+                        print("Only 1 dimension can be None, type again:)")
                     else:
                         right_shape_been_input = True
 
