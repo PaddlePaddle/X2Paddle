@@ -116,7 +116,7 @@ class OpMapper(object):
                                           feeded_var_names=input_names,
                                           target_vars=outputs,
                                           executor=exe,
-                                          params_filename="__params__")
+                                          params_filename=None)
         except:
             raise Exception(
                 "Paddle code was saved in {}/model.py, but seems there's wrong exist, please check model.py manually."
