@@ -99,29 +99,6 @@ class Graph(object):
         self.node_map[dst].inputs.append(src)
         self.node_map[src].outputs.append(dst)
 
-    def remove_node(self, node_name):
-        if node_name not in self.node_map:
-            raise Exception("Node[{}] not in graph".format(node_name))
-        inputs = self.node_map[node_name].inputs
-        outputs = self.node_map[node_name].outputs
-        for input in inputs:
-            idx = self.node_map[input].outputs.index(node_name)
-            del self.node_map[input].outputs[idx]
-        for output in outputs:
-            idx = self.node_map[input].inputs.index(node_name)
-            del self.node_map[input].inputs[idx]
-        del self.node_map[node_name]
-
-        idx = self.topo_sort.index(node_name)
-        del self.topo_sort[idx]
-
-        if node_name in self.input_nodes:
-            idx = self.input_nodes.index(node_name)
-            del self.input_nodes[idx]
-        if node_name in self.output_nodes:
-            idx = self.output_nodes.index(node_name)
-            del self.output_nodes[idx]
-
     def print(self):
         for i, tmp in enumerate(self.topo_sort):
             print(tmp, self.node_map[tmp].layer_type, self.node_map[tmp].inputs,

@@ -24,7 +24,7 @@ import sys
 
 
 class TFGraphNode(GraphNode):
-    def __init__(self, layer, layer_name=None):
+    def __init__(self, layer, layer_name=None, data_format="NHWC"):
         if layer_name is None:
             super(TFGraphNode,
                   self).__init__(layer,
@@ -35,6 +35,8 @@ class TFGraphNode(GraphNode):
                                  layer_name.replace('/', '_').replace('-', '_'))
 
         self.layer_type = layer.op
+        self.tf_data_format = data_format
+        self.pd_data_format = "NCHW"
         self.fluid_code = FluidCode()
 
         self.dtype_map = {1: "float32", 3: "int32", 4: "int8", 9: "int64"}
@@ -86,15 +88,16 @@ class TFGraphNode(GraphNode):
 
 
 class TFGraph(Graph):
-    def __init__(self, model):
+    def __init__(self, model, data_format="NHWC"):
         super(TFGraph, self).__init__(model)
         self.identity_map = dict()
         self.multi_out_ops = ['Split', 'SplitV']
+        self.tf_data_format = data_format
 
     def build(self):
         for layer in self.model.node:
             self.node_map[layer.name.replace('/', '_').replace(
-                '-', '_')] = TFGraphNode(layer)
+                '-', '_')] = TFGraphNode(layer, data_format=self.tf_data_format)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
@@ -126,6 +129,26 @@ class TFGraph(Graph):
             node.index = 0
         return node
 
+    def remove_node(self, node_name):
+        if node_name not in self.node_map:
+            raise Exception("Node[{}] not in graph".format(node_name))
+        inputs = self.node_map[node_name].inputs
+        outputs = self.node_map[node_name].outputs
+        assert len(inputs) == 1
+        input_node = self.node_map[inputs[0]]
+        idx = input_node.outputs.index(node_name)
+        del input_node.outputs[idx]
+        for output in outputs:
+            node = self.node_map[output]
+            idx = node.inputs.index(node_name)
+            node.inputs[idx] = inputs[0]
+            input_node.outputs.append(output)
+
+        del self.node_map[node_name]
+
+        idx = self.topo_sort.index(node_name)
+        del self.topo_sort[idx]
+
     def _remove_isolated_node(self):
         # delete isolated nodes
         isolated_nodes = list()
@@ -135,7 +158,15 @@ class TFGraph(Graph):
                 isolated_nodes.append(node_name)
 
         for node_name in isolated_nodes:
-            self.remove_node(node_name)
+            del self.node_map[node_name]
+            if node_name in self.input_nodes:
+                idx = self.input_nodes.index(node_name)
+                del self.input_nodes[idx]
+            if node_name in self.output_nodes:
+                idx = self.output_nodes.index(node_name)
+                del self.output_nodes[idx]
+            idx = self.topo_sort.index(node_name)
+            del self.topo_sort[idx]
 
     def _remove_identity_node(self):
         identity_node = list()
@@ -145,30 +176,47 @@ class TFGraph(Graph):
 
         for node_name in identity_node:
             node = self.get_node(node_name)
-            # Remind: Only 1 input for Identity node
             input_node = self.get_node(node.inputs[0])
+            self.remove_node(node_name)
 
-            # remove identity node from graph
             self.identity_map[node_name] = input_node.layer_name
-            idx = input_node.outputs.index(node_name)
-            del input_node.outputs[idx]
 
-            output_names = node.outputs
-            for output_name in output_names:
-                output_node = self.get_node(output_name)
-                idx = output_node.inputs.index(node_name)
-                output_node.inputs[idx] = input_node.layer_name
-
-            idx = self.topo_sort.index(node_name)
-            del self.topo_sort[idx]
+            #            node = self.get_node(node_name)
+            #            # Remind: Only 1 input for Identity node
+            #            input_node = self.get_node(node.inputs[0])
+            #
+            #            # remove identity node from graph
+            #            self.identity_map[node_name] = input_node.layer_name
+            #            idx = input_node.outputs.index(node_name)
+            #            del input_node.outputs[idx]
+            #
+            #            output_names = node.outputs
+            #            for output_name in output_names:
+            #                output_node = self.get_node(output_name)
+            #                idx = output_node.inputs.index(node_name)
+            #                output_node.inputs[idx] = input_node.layer_name
+            #
+            #            idx = self.topo_sort.index(node_name)
+            #            del self.topo_sort[idx]
 
             if node_name in self.output_nodes:
                 idx = self.output_nodes.index(node_name)
                 self.output_nodes[idx] = input_node.layer_name
 
+    def data_format_propagation(self, node):
+        current_node = self.node_map[node.layer_name]
+        current_node = node.tf_data_format
+        outputs = current_node.outputs
+        if len(outputs) == 0:
+            return
+        for out in outputs:
+            next_node = self.node_map[out]
+            next_node.tf_data_format = node.tf_data_format
+            self.data_format_propagation(next_node)
+
 
 class TFDecoder(object):
-    def __init__(self, pb_model):
+    def __init__(self, pb_model, data_format="NHWC"):
         self.sess = tf.Session()
         self.input_info = dict()
         with gfile.FastGFile(pb_model, 'rb') as f:
@@ -186,7 +234,7 @@ class TFDecoder(object):
         self.sess.run(tf.global_variables_initializer())
 
         self.tf_graph = TFGraph(
-            self.sess.graph._as_graph_def(add_shapes=True)[0])
+            self.sess.graph._as_graph_def(add_shapes=True)[0], data_format)
         self.tf_graph.build()
 
     def _fix_output_shape(self, graph):
