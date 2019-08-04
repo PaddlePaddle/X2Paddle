@@ -55,7 +55,8 @@ class TFOpMapper(OpMapper):
         'Abs': ['abs'],
         'Sigmoid': ['sigmoid'],
         'Exp': ['exp'],
-        'Rsqrt': ['rsqrt']
+        'Rsqrt': ['rsqrt'],
+        'swish_f32': ['swish']
     }
     elementwise_ops = {
         'Add': 'elementwise_add',
@@ -691,18 +692,6 @@ class TFOpMapper(OpMapper):
                                inputs=inputs,
                                output=node,
                                param_attr=None)
-
-    def swish_f32(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        node.fluid_code.add_layer("sigmoid",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=None)
-        inputs = {"x": input, "y": node}
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
 
     def Mean(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)

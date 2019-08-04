@@ -67,10 +67,17 @@ def tf2paddle(model_path, save_dir):
 
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+    from x2paddle.optimizer.tf_optimizer import TFOptimizer
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path)
     mapper = TFOpMapper(model)
+    optimizer = TFOptimizer(mapper)
+    # neccesary optimization
+    optimizer.delete_redundance_code()
+    # optimizer below is experimental
+    optimizer.merge_activation()
+    optimizer.merge_bias()
     mapper.save_inference_model(save_dir)
 
 

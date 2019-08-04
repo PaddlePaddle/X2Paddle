@@ -142,9 +142,9 @@ class OpMapper(object):
         self.add_codes("\ndef x2paddle_net():", 0)
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
-            if hasattr(self, "omit_nodes") and node_name in self.omit_nodes:
-                continue
             node = self.graph.get_node(node_name)
+            if len(node.fluid_code.layers) == 0:
+                continue
             self.add_codes(node.fluid_code.gen_codes(), 1)
 
         self.add_codes("", 0)
