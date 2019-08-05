@@ -50,7 +50,7 @@ x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --
 `model_with_code`中保存了模型参数，和转换后的python模型代码  
 `inference_model`中保存了序列化的模型结构和参数，可直接使用paddle的接口进行加载，见[load_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/1.5/api_guides/low_level/inference.html#api-guide-inference)
 
-## Related Docs
+## 相关文档
 1. [X2Paddle使用过程中常见问题](Q&A.md)  
 2. [如何导出TensorFlow的pb模型](export_tf_model.md)
 3. [X2Paddle测试模型库](test_model_zoo.md)
