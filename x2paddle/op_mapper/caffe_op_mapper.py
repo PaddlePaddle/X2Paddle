@@ -277,8 +277,6 @@ class CaffeOpMapper(OpMapper):
             pool_type = 'max'
         else:
             pool_type = 'avg'
-        assert len(
-            node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'pool_size': kernel,
@@ -296,8 +294,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def ReLU(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {'name': string(node.layer_name)}
         node.fluid_code.add_layer("relu",
@@ -306,7 +302,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def LRN(self, node):
-        assert len(node.inputs) == 1, 'The count of LRN node\'s input is not 1.'
         params = node.layer.lrn_param
         # The window size must be an odd value. For a window
         # size of (2*n+1), Paddle defines depth_radius = n.
@@ -345,8 +340,6 @@ class CaffeOpMapper(OpMapper):
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
-        assert len(node.inputs
-                   ) == 1, 'The count of InnerProduct node\'s input is not 1.'
         params = node.layer.inner_product_param
         assert params.axis == 1
         assert params.bias_term == True
@@ -371,8 +364,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Softmax(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Softmax node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.softmax_param
         axis = params.axis
@@ -386,8 +377,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Slice(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Slice node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.slice_param
         axis = params.axis
@@ -413,9 +402,6 @@ class CaffeOpMapper(OpMapper):
                 break
 
     def Concat(self, node):
-        assert len(
-            node.inputs
-        ) > 1, 'The count of Concat node\'s input is not more than 1.'
         inputs = []
         for i in range(len(node.inputs)):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
@@ -429,8 +415,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def PReLU(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.prelu_param
         mode_bool = params.channel_shared
@@ -453,8 +437,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Sigmoid(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {'name': string(node.layer_name)}
         node.fluid_code.add_layer("sigmoid",
@@ -463,8 +445,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def AbsVal(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {'name': string(node.layer_name)}
         node.fluid_code.add_layer("absval",
@@ -473,8 +453,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Accuracy(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of Accuracy node\'s input is not 2.'
         inputs = []
         inputs[0] = None
         inputs[1] = None
@@ -501,8 +479,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def TanH(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of TanH node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {'name': string(node.layer_name)}
         node.fluid_code.add_layer("tanh",
@@ -511,8 +487,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Eltwise(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of TanH node\'s input is not 2.'
         params = node.layer.eltwise_param
         mode = params.operation
         inputs = []
@@ -687,9 +661,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Reshape(self, node):
-        assert len(node.inputs) == 1 and len(
-            node.outputs
-        ) == 1, 'The count of Reshape node\'s input and output is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         top_count = len(input.layer.top)
         is_inplace, = False if top_count == 1 else True
@@ -706,9 +677,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def ArgMax(self, node):
-        assert len(node.inputs) == 1 and len(
-            node.outputs
-        ) == 1, 'The count of ArgMax node\'s input and output is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         input_shape = node.input_shape[0]
         params = node.layer.argmax_param
@@ -745,8 +713,6 @@ class CaffeOpMapper(OpMapper):
                                       param_attr=attr)
 
     def Crop(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of Crop node\'s input is not 2.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         example = self.graph.get_bottom_node(node, idx=1, copy=True)
         params = node.layer.crop_param
@@ -770,9 +736,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Flatten(self, noed):
-        assert len(
-            node.inputs
-        ) == 1, 'The count of DetectionOutput node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         shape = node.output_shape[0]
         attr = {'shape': shape, 'name': string(node.layer_name)}
@@ -782,8 +745,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Power(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Permute node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.power_param
         power = params.power
@@ -806,8 +767,6 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Reduction(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of Reduction node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.reduction_param
         operation = params.operation

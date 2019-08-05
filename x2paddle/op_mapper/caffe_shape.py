@@ -13,91 +13,48 @@
 # limitations under the License.
 
 import math
+import numbers
 
 
-def get_params_w_h(params):
+def get_kernel_parameters(params):
+    [k_h, k_w] = [1, 1]
+    if isinstance(params.kernel_size, numbers.Number):
+        [k_h, k_w] = [params.kernel_size] * 2
+    elif len(params.kernel_size) > 0:
+        k_h = params.kernel_h if params.kernel_h else params.kernel_size[0]
+        k_w = params.kernel_w if params.kernel_w else params.kernel_size[
+            len(params.kernel_size) - 1]
+    [s_h, s_w] = [1, 1]
+    if isinstance(params.stride, numbers.Number):
+        [s_h, s_w] = [params.stride] * 2
+    elif len(params.stride) > 0:
+        s_h = params.stride_h if params.stride_h else params.stride[0]
+        s_w = params.stride_w if params.stride_w else params.stride[
+            len(params.stride) - 1]
+    [p_h, p_w] = [0, 0]
+    if isinstance(params.pad, numbers.Number):
+        [p_h, p_w] = [params.pad] * 2
+    elif len(params.pad) > 0:
+        p_h = params.pad_h if params.pad_h else params.pad[0]
+        p_w = params.pad_w if params.pad_w else params.pad[len(params.pad) - 1]
+    dila_h = dila_w = 1
     if hasattr(params, 'dilation'):
-        if len(params.dilation) == 0:
-            dila_h = 1
-            dila_w = 1
-        elif len(params.dilation) == 1:
-            dila_h = params.dilation[0]
-            dila_w = params.dilation[0]
-        else:
+        dila_len = len(params.dilation)
+        if dila_len == 2:
             dila_h = params.dilation[0]
             dila_w = params.dilation[1]
-    else:
-        dila_h = 1
-        dila_w = 1
-
-    if not isinstance(getattr(params, 'pad'), int):
-        if len(params.pad) == 0:
-            pad_h = 0
-            pad_w = 0
-        elif len(params.pad) == 1:
-            pad_h = params.pad[0]
-            pad_w = params.pad[0]
+        elif dila_len == 1:
+            dila_h = dila_w = params.dilation[0]
         else:
-            pad_h, pad_w, = params.pad[0]
-            pad_w = params.pad[1]
-        if params.pad_h != 0 or params.pad_w != 0:
-            pad_h = params.pad_h
-            pad_w = params.pad_w
-    else:
-        if params.pad_h != 0 or params.pad_w != 0:
-            pad_h = params.pad_h
-            pad_w = params.pad_w
-        else:
-            pad_h = getattr(params, 'pad')
-            pad_w = getattr(params, 'pad')
-
-    if not isinstance(getattr(params, 'kernel_size'), int):
-        if len(params.kernel_size) == 0:
-            kernel_h = 1
-            kernel_w = 1
-        elif len(params.kernel_size) == 1:
-            kernel_h = params.kernel_size[0]
-            kernel_w = params.kernel_size[0]
-        else:
-            kernel_h = params.kernel_size[0]
-            kernel_w = params.kernel_size[1]
-        if params.kernel_h != 0 or params.kernel_w != 0:
-            kernel_h = params.kernel_h
-            kernel_w = params.kernel_w
-    else:
-        if params.kernel_h != 0 or params.kernel_w != 0:
-            kernel_h = params.kernel_h
-            kernel_w = params.kernel_w
-        else:
-            kernel_h = getattr(params, 'kernel_size')
-            kernel_w = getattr(params, 'kernel_size')
-    if not isinstance(getattr(params, 'stride'), int):
-        if len(params.stride) == 0:
-            stride_h = 1
-            stride_w = 1
-        elif len(params.stride) == 1:
-            stride_h = params.stride[0]
-            stride_w = params.stride[0]
-        else:
-            stride_h = params.stride[0]
-            stride_w = params.stride[1]
-        if params.stride_h != 0 or params.stride_w != 0:
-            stride_h = params.stride_h
-            stride_w = params.stride_w
-    else:
-        if params.stride_h != 0 or params.stride_w != 0:
-            stride_h = params.stride_h
-            stride_w = params.stride_w
-        else:
-            stride_h = getattr(params, 'stride')
-            stride_w = getattr(params, 'stride')
-    return dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w
+            assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
+                dila_len)
+    return dila_h, dila_w, p_h, p_w, k_h, k_w, s_h, s_w
 
 
 def get_strided_kernel_output_shape(params, input_shape, round_func):
     i_h = input_shape[2]
     i_w = input_shape[3]
-    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_params_w_h(
+    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_kernel_parameters(
         params)
     o_h = (i_h + 2 * pad_h - (dila_h *
                               (kernel_h - 1) + 1)) / float(stride_h) + 1
@@ -105,10 +62,8 @@ def get_strided_kernel_output_shape(params, input_shape, round_func):
                               (kernel_w - 1) + 1)) / float(stride_w) + 1
     o_h = int(round_func(o_h))
     o_w = int(round_func(o_w))
-
     has_c_o = hasattr(params, 'num_output')
     c = params.num_output if has_c_o else input_shape[1]
-
     return [[input_shape[0], c, o_h, o_w]]
 
 
