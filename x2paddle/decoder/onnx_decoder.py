@@ -118,32 +118,32 @@ class ONNXGraphNode(GraphNode):
 class ONNXGraph(Graph):
     def __init__(self, model):
         super(ONNXGraph, self).__init__(model)
-        self.inner_nodes = []
         self.initializer = {}
-        
+
     def get_inner_nodes(self):
         """
         generate inner node of ONNX model
         """
+        inner_nodes = []
         if not isinstance(self.model, onnx.GraphProto):
             logger.error('graph is not a GraphProto instance')
             return
         for initializer in self.model.initializer:
             name = initializer.name
-            self.inner_nodes.append(name)
+            inner_nodes.append(name)
+        return inner_nodes
     
     def _make_input_nodes(self):
-        self.get_inner_nodes()
+        inner_nodes = self.get_inner_nodes()
         input_nodes = [value.name for value in self.model.input]
         for node in input_nodes:
-            if node not in self.inner_nodes:
+            if node not in inner_nodes:
                 self.input_nodes.append(node)
                 
     def _make_output_nodes(self):
         for output in self.model.output:
              self.output_nodes.append(output.name)
-       
-    
+
     def build_value_refs(self, nodes):
         """
         build op reference of inputs and outputs

@@ -23,6 +23,7 @@ import logging as _logging
 from collections import OrderedDict as _dict
 _logger = _logging.getLogger(__name__)
 
+
 def _shape_or_none(value_infos, val_name):
     if isinstance(val_name, GraphNode):
         val_name = val_name.layer_name
@@ -201,7 +202,6 @@ class ONNXOpMapper(OpMapper):
         # check if ops in model are all supported
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
-
             
         #generate code for input data
         for name in self.graph.input_nodes:
