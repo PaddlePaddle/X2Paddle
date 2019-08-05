@@ -38,9 +38,3 @@ def run_net(param_dir="./"):
                        param_dir,
                        fluid.default_main_program(),
                        predicate=if_exist)
-
-    fluid.io.save_inference_model(dirname='inference_model',
-                                  feeded_var_names=[i.name for i in inputs],
-                                  target_vars=outputs,
-                                  executor=exe,
-                                  params_filename="__params__")
