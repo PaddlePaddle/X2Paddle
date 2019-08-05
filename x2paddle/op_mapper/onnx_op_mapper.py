@@ -155,9 +155,6 @@ DEFAULT_IOA_CONSTRAINT = {
         (lambda i, o, a: a.get('bias', 0) == a.get('lambd', 0.5),
          'only SoftShrink with bias = lambd is supported'),
     ],
-    #        'Softmax':
-    #            [(lambda i, o, a: a.get('axis', 1) == -2, 'Paddle fluid Softmax works on dim -2 only'),
-    #            ],
     'OneHot': [
         (lambda i, o, a: a.get('axis', -1) == -1,
          'only axis = -1 is supported'),
@@ -180,6 +177,21 @@ class ONNXOpMapper(OpMapper):
         self.weights = dict()
         self.omit_weights = list()
         self.omit_nodes = list()
+        
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            op = node.layer_type
+            print('Translating node{}: op is {}'.format(node.layer_name, op))
+            if op in DEFAULT_OP_MAPPING:
+                 self._default(node)
+            elif hasattr(self, op):
+                func = getattr(self, op)
+                func(node)
+        #mapping weight info
+        for name, value_info in self.decoder.graph_value_infos.items():
+            if 'weight' in value_info and name not in self.omit_weights:
+                weight = value_info['weight']
+                self.weights[name] = weight
         
     def op_checker(self):
         unsupported_ops = set()
@@ -204,65 +216,36 @@ class ONNXOpMapper(OpMapper):
             raise Exception("Model are not supported yet.")
             
         #generate code for input data
-        for name in self.graph.input_nodes:
-            value_info = self.decoder.graph_value_infos[name]
-            self.input_shapes.append(value_info['shape'])
-            attr = {
-            "dtype": string(value_info['dtype']),
-            "shape": value_info['shape'],
-            "name": string(name),
-            "append_batch_size":'False'}
-            fluid_code = FluidCode()
-            fluid_code.add_layer("data",
-                                  inputs=None,
-                                  output=name,
-                                  param_attr=attr)
-            self.net_code += fluid_code.gen_codes()
+
+#         for name in self.graph.input_nodes:
+#             value_info = self.decoder.graph_value_infos[name]
+#             self.input_shapes.append(value_info['shape'])
+#             attr = {
+#             "dtype": string(value_info['dtype']),
+#             "shape": value_info['shape'],
+#             "name": string(name),
+#             "append_batch_size":'False'}
+#             fluid_code = FluidCode()
+#             fluid_code.add_layer("data",
+#                                   inputs=None,
+#                                   output=name,
+#                                   param_attr=attr)
+#             self.net_code += fluid_code.gen_codes()
+#             print(self.graph.input_nodes)
             
         #mapping op
-        for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
-            op = node.layer_type
-            print('Translating node{}: op is {}'.format(node.layer_name, op))
-            if op in DEFAULT_OP_MAPPING:
-                 self._default(node)
-            elif hasattr(self, op):
-                func = getattr(self, op)
-                func(node)
+
                 
-        #mapping weight info
-        for name, value_info in self.decoder.graph_value_infos.items():
-            if 'weight' in value_info and name not in self.omit_weights:
-                weight = value_info['weight']
-                self.weights[name] = weight
-                if name not in self.omit_nodes:
-                    shape = weight.shape
-                    dtype = weight.dtype
-                    if shape is None:
-                        shape = _shape_or_none(value_infos, name)
-                    if shape is None:
-                        shape = list(value.shape)
-                    fluid_code = FluidCode()
-                    attr = {
-                            'dtype': string(dtype),
-                            'shape': shape,
-                            'name':string(name),
-                            'default_initializer':'Constant(0.0)',
-                            'attr':string(name)}
-                    fluid_code.add_layer("create_parameter",
-                                      inputs=None,
-                                      output=name,
-                                      param_attr=attr)
-                    self.net_code += fluid_code.gen_codes()
+
 
         #generate code for op
         for i in range(len(self.graph.topo_sort)):
-            if name not in self.omit_nodes:
-                node_name = self.graph.topo_sort[i]
-                if node_name in self.omit_nodes:
-                    continue
-                node = self.graph.get_node(node_name)
-                self.net_code += node.fluid_code.gen_codes()
+            node_name = self.graph.topo_sort[i]
+            if node_name in self.omit_nodes:
+                continue
+            node = self.graph.get_node(node_name)
+            self.net_code += node.fluid_code.gen_codes()
+
     
     def _default(self, node, *args, name='', **kwargs):
         inputs = node.layer.input
@@ -308,6 +291,40 @@ class ONNXOpMapper(OpMapper):
             attr['name'] = string(node.layer_name)
         node.fluid_code.add_layer(fluid_op, 
                                 inputs=', '.join(val_inps), output = val_outs[0], param_attr=attr)
+        
+    def place_holder(self, node):
+        value_info = self.decoder.graph_value_infos[node.layer_name]
+        self.input_shapes.append(value_info['shape'])
+        attr = {
+            "dtype": string(value_info['dtype']),
+            "shape": value_info['shape'],
+            "name": string(node.layer_name),
+            "append_batch_size":'False'}
+
+        node.fluid_code.add_layer("data",
+                                  inputs=None,
+                                  output=node,
+                                  param_attr=attr)
+
+    def create_parameter(self, node):
+        value_infos = self.decoder.graph_value_infos[node.layer_name]
+        shape = value_infos['shape']
+        dtype = value_infos['dtype']
+        if shape is None:
+            shape = _shape_or_none(self.decoder.graph_value_infos, parameter)
+        if shape is None:
+            shape = list(value.shape)
+        attr = {
+            'dtype': string(dtype),
+            'shape': shape,
+            'name': string(node.layer_name),
+            'attr': string(node.layer_name),
+            'default_initializer':'Constant(0.0)'
+        }
+        node.fluid_code.add_layer("create_parameter",
+                                  inputs=None,
+                                  output=node,
+                                  param_attr=attr)
 
     def _pad_if_asymmetric(self, node, pads, val_name, value_infos):  # pads: SSEE
         assert len(pads) & 1 == 0
@@ -548,7 +565,7 @@ class ONNXOpMapper(OpMapper):
                     'the behavior of Paddle fluid maybe undefined', name, inputs,
                     outputs)
         
-        # if input reshape is initializer, reshape initializer by numpy
+        # if input is initializer, reshape initializer by numpy
         if isinstance(val_x, str):
             if val_x  in self.decoder.graph_value_infos:
                 self.omit_nodes.append(val_x)
@@ -778,10 +795,10 @@ class ONNXOpMapper(OpMapper):
         val_mean = self.graph.get_node(node.layer.input[3], forGenCode=True, copy=True)
         val_var = self.graph.get_node(node.layer.input[4], forGenCode=True, copy=True)
         
-        self.omit_nodes.append(val_scale)
-        self.omit_nodes.append(val_b)
-        self.omit_nodes.append(val_mean)
-        self.omit_nodes.append(val_var)
+        self.omit_nodes.append(val_scale.layer_name)
+        self.omit_nodes.append(val_b.layer_name)
+        self.omit_nodes.append(val_mean.layer_name)
+        self.omit_nodes.append(val_var.layer_name)
         
         momentum = node.get_attr('momentum', .9)
         epsilon = node.get_attr('epsilon', 1e-5)
@@ -791,10 +808,10 @@ class ONNXOpMapper(OpMapper):
                 "epsilon":epsilon,
                 "data_layout":string('NCHW'),
                 "is_test":'True',
-                "param_attr": string(val_scale),
-                "bias_attr": string(val_b),
-                "moving_mean_name": string(val_mean), 
-                "moving_variance_name": string(val_var),
+                "param_attr": string(val_scale.layer_name),
+                "bias_attr": string(val_b.layer_name),
+                "moving_mean_name": string(val_mean.layer_name), 
+                "moving_variance_name": string(val_var.layer_name),
                 "name": string(node.layer_name)}
         node.fluid_code.add_layer("batch_norm",
                                   inputs=val_x,
@@ -807,28 +824,6 @@ class ONNXOpMapper(OpMapper):
         node.fluid_code.add_layer("softmax",
                                   inputs=val_x,
                                   output=node,
-                                  param_attr=attr)
-
-    def create_parameter(self, node, parameter):
-        dtype = None
-
-        value_infos = self.decoder.graph_value_infos[parameter]
-#             weight = value_info['get_weight']
-        shape = value_infos['shape']
-        dtype = value_infos['dtype']
-        if shape is None:
-            shape = _shape_or_none(self.decoder.graph_value_infos, parameter)
-        if shape is None:
-            shape = list(value.shape)
-        attr = {
-            'dtype': string(dtype),
-            'shape': shape,
-            'name': string(parameter),
-            'attr': string(parameter),
-        }
-        node.fluid_code.add_layer("create_parameter",
-                                  inputs=None,
-                                  output=parameter,
                                   param_attr=attr)
 
     def Transpose(self, node):
@@ -866,7 +861,7 @@ class ONNXOpMapper(OpMapper):
                 "mode":string('channel')}
 
         if isinstance(val_slope,str): 
-            attr["param_attr"] = string(val_slope)
+            attr["param_attr"] = string(val_slope.layer_name)
         else:
             attr["param_attr"] = string(val_slope.layer_name)
         node.fluid_code.add_layer("prelu",
@@ -921,6 +916,7 @@ class ONNXOpMapper(OpMapper):
                                   inputs=val_x,
                                   output=node,
                                   param_attr=attr)
+
     def GlobalAveragePool(self, node):
         val_x = self.graph.get_node(node.layer.input[0], forGenCode=True, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], forGenCode=True, copy=True)
@@ -947,14 +943,14 @@ class ONNXOpMapper(OpMapper):
         val_x = self.graph.get_node(node.layer.input[0], forGenCode=True, copy=True)
         val_w = self.graph.get_node(node.layer.input[1], forGenCode=True, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], forGenCode=True, copy=True)
-        self.omit_nodes.append(val_w)
+        self.omit_nodes.append(val_w.layer_name)
 
         input_shape = _shape_or_none(self.decoder.graph_value_infos, val_x if isinstance(val_x,str) else val_x.layer_name)
 
         has_bias = len(node.layer.input) == 3
         if has_bias:
             val_b = self.graph.get_node(node.layer.input[2], forGenCode=True, copy=True)
-            self.omit_nodes.append(val_b)
+            self.omit_nodes.append(val_b.layer_name)
             
         auto_pad = node.get_attr('auto_pad', 'NOTSET')
 
@@ -985,11 +981,11 @@ class ONNXOpMapper(OpMapper):
                 "padding":paddings,
                 "dilation":dilations,
                 "groups":num_groups,
-                'param_attr':string(val_w),
+                'param_attr':string(val_w.layer_name),
                 "name": string(node.layer_name)
             }
         if has_bias:
-            attr["bias_attr"] = string(val_b)
+            attr["bias_attr"] = string(val_b.layer_name)
         else:
             attr["bias_attr"] = False
         node.fluid_code.add_layer(fluid_op,

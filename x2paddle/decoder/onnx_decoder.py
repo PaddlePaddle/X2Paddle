@@ -115,6 +115,29 @@ class ONNXGraphNode(GraphNode):
             return default
         return self.attr_map[name]
 
+class ONNXGraphValueInfo(GraphNode):
+    def __init__(self, layer, layer_name=None, is_input_node=False):
+        if layer_name is None:
+            super(ONNXGraphValueInfo, self).__init__(layer, layer.name)
+        else:
+            super(ONNXGraphValueInfo, self).__init__(layer, layer_name)
+            
+        if is_input_node:
+            self.layer_type = 'place_holder'
+        else:
+            self.layer_type = 'create_parameter'
+        self.fluid_code = FluidCode()
+        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
+            
+    def __eq__(self, other):
+        if isinstance(other,str):
+            if self.layer.name == other:
+                return True
+        elif self.layer.name == other.layer.name:
+            return True
+        return False
+
+
 class ONNXGraph(Graph):
     def __init__(self, model):
         super(ONNXGraph, self).__init__(model)
@@ -164,6 +187,7 @@ class ONNXGraph(Graph):
         node_in_degrees = [len(set(node.input)) for node in self.model.node]
         node_out_degrees = [len(set(node.output)) for node in self.model.node]
         input_refs, output_refs = self.build_value_refs(self.model.node)
+
         for val_name in input_refs:
             if val_name not in output_refs:
                 for node_idx in input_refs[val_name]:
@@ -172,8 +196,12 @@ class ONNXGraph(Graph):
         for node_idx, degree in enumerate(node_in_degrees):
             if degree == 0:
                 queue.append(node_idx)
+
         while len(queue) > 0:
             node_idx = queue.pop(0)
+            for ipt in self.model.node[node_idx].input:
+                if ipt not in self.topo_sort:
+                    self.topo_sort.append(ipt)
             self.topo_sort.append(self.model.node[node_idx].name)
             for val_name in self.model.node[node_idx].output:
                 output_refs[val_name].remove(node_idx)
@@ -181,28 +209,83 @@ class ONNXGraph(Graph):
                     continue
                 output_refs.pop(val_name)
                 if val_name not in input_refs:
-                    continue
+                    continue 
                 for next_idx in input_refs[val_name]:
                     node_in_degrees[next_idx] -= 1
+                    
                     self.connect(self.model.node[node_idx].name, self.model.node[next_idx].name)
                     if node_in_degrees[next_idx] == 0:
                         queue.insert(0, next_idx)
+
+#     def _get_topo_sort2(self):
+#         """
+#         generate topo_sort of ONNX model
+#         """
+#         model = type(self.model)()
+#         model.CopyFrom(self.model)
+#         node_in_degrees = [len(set(node.input)) for node in model.node]
+#         node_out_degrees = [len(set(node.output)) for node in model.node]
+#         input_refs, output_refs = self.build_value_refs(model.node)
+
+#         check_istopnode = node_in_degrees
+        
+#         for val_name in input_refs:
+#             if val_name not in output_refs:
+#                 for node_idx in input_refs[val_name]:
+#                     check_istopnode[node_idx] -= 1
+#         queue = []
+#         for node_idx, degree in enumerate(check_istopnode):
+#             if degree == 0:
+#                 queue.append(node_idx)
+
+#         while len(queue) > 0:
+#             node_idx = queue.pop(0)
+#             for val_name in model.node[node_idx].input:
+#                 self.topo_sort.append(val_name)
+#                 self.connect(val_name, model.node[node_idx].name)
+#                 node_in_degrees[node_idx] -= 1
+#                 node_name = model.node[node_idx].name
+#                 for next_idx in output_refs[node_name]:
+#                     for val_name in model.node[next_idx].input:
+#                         if self.
+#                         self.topo_sort.append(val_name)
+#                         self.connect(val_name, model.node[node_idx].name)
+#                         node_in_degrees[node_idx] -= 1
+#                     self.connect(node_name, model.node[next_idx].name)
+#                     if node_in_degrees[next_idx] == 0:
+#                         queue.insert(0, next_idx)
+#                         model.node[next_idx].input.remove(node_name)
+
+#             self.topo_sort.append(self.model.node[node_idx].name)
+            
 
     def build(self):
         """
         build topo_sort of ONNX model
         """ 
-        for layer in self.model.node:
-            self.node_map[layer.name] = ONNXGraphNode(layer)
         self._make_input_nodes()
         self._make_output_nodes()
+        
+        for layer in self.model.node:
+            self.node_map[layer.name] = ONNXGraphNode(layer)
+            
+        for layer in self.model.input:
+            if layer.name not in self.node_map:
+                self.node_map[layer.name] = ONNXGraphValueInfo(layer, is_input_node=self.is_input_node(layer))
+
         self._get_topo_sort()
-    
+
+    def is_input_node(self,layer):
+        if layer.name in self.input_nodes:
+            return True
+        return False
+        
+
     def get_nodes(self, names, forGenCode=False, copy=False):
         nodes = []
         for name in names:
             nodes.add(self.get_node( name, forGenCode=forGenCode, copy=copy))
-    
+
     def get_node(self, name, forGenCode=False, copy=False):
         """
         get ONNXGraphNode or (name of input/out) by name
@@ -227,20 +310,18 @@ class ONNXGraph(Graph):
                 node = self.node_map[name]
             return node
 
-        
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
         model = onnx.load(onnx_model)
         check_model(model)
         model = polish_model(model)
-
+        
         model = self.optimize_model_skip_op_for_inference(model)
         model = self.optimize_model_strip_initializer(model)
-        
-        self.model = model
         self.standardize_variable_name(model.graph)
         
         graph_def = model.graph
+        self.model = model
         self.onnx_graph = ONNXGraph(graph_def)
         self.onnx_graph.build()
         self.graph_value_infos = self.inferred_model_value_info(model)
@@ -448,8 +529,8 @@ class ONNXDecoder(object):
             )
         return value_info
 
-    def save_inference_model(self, save_dir):
-        onnx.save(self.model, save_dir+'model.onnx')
+#     def save_inference_model(self, save_dir):
+#         onnx.save(self.model, save_dir+'model.onnx')
         
     def split_model(self, model, outputs=None):
         """
