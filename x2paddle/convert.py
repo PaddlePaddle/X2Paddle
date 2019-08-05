@@ -110,6 +110,30 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     mapper.save_inference_model(save_dir)
 
 
+def onnx2paddle(model_path, save_dir):
+    # check tensorflow installation and version
+    try:
+        import paddle
+        version = paddle.version.full_version
+        if version != '1.5.1':
+            print(
+                "paddle==1.5.1 is required"
+            )
+            return
+    except:
+        print("paddle is not installed, use \"pip install tensorflow\".")
+        return
+
+    from x2paddle.decoder.onnx_decoder import ONNXDecoder
+    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
+
+    print("Now translating model from onnx to paddle.")
+    model = ONNXDecoder(model_path)
+    mapper = ONNXOpMapper(model)
+    mapper.run()
+    mapper.save_python_model(save_dir)
+
+    
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
@@ -139,9 +163,11 @@ def main():
         assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
         caffe2paddle(args.prototxt, args.weight, args.save_dir,
                      args.caffe_proto)
-
+    elif args.framework == "onnx":
+        assert args.model is not None, "--model should be defined while translating onnx model"
+        onnx2paddle(args.model, args.save_dir)
     else:
-        raise Exception("--framework only support tensorflow/caffe now")
+        raise Exception("--framework only support tensorflow/caffe/onnx now")
 
 
 if __name__ == "__main__":
