@@ -131,7 +131,7 @@ def onnx2paddle(model_path, save_dir):
     model = ONNXDecoder(model_path)
     mapper = ONNXOpMapper(model)
     mapper.run()
-    mapper.save_python_model(save_dir)
+    mapper.save_inference_model(save_dir)
 
     
 def main():
