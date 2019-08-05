@@ -7,7 +7,7 @@
 | SqueezeNet | [code](https://github.com/tensorflow/tpu/blob/master/models/official/squeezenet/squeezenet_model.py)|
 | MobileNet_V1 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet_v1.md) |
 | MobileNet_V2 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets/mobilenet) |
-| ShuffleNet_V2 | [code](https://github.com/TropComplique/shufflenet-v2-tensorflow) |
+| ShuffleNet | [code](https://github.com/TropComplique/shufflenet-v2-tensorflow) |
 | mNASNet | [code](https://github.com/tensorflow/tpu/tree/master/models/official/mnasnet) |
 | EfficientNet | [code](https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet) |
 | Inception_V4 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v4.py) |
@@ -23,5 +23,6 @@
 | SqueezeNet | [code](https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.1) |
 | MobileNet_V1 | [code](https://github.com/shicai/MobileNet-Caffe) |
 | MobileNet_V2 | [code](https://github.com/shicai/MobileNet-Caffe) |
+| ShuffleNet | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
