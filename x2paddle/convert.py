@@ -94,7 +94,6 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: x2paddle -f tensorflow -m vgg16.pb -s paddle_model")
         print("Use \"x2paddle -h\" to print the help information")
         return
 
