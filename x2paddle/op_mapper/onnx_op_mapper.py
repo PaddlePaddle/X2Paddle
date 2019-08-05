@@ -179,8 +179,7 @@ class ONNXOpMapper(OpMapper):
         self.weights = dict()
         self.omit_weights = list()
         self.omit_nodes = list()
-        self.external_inputs = []
-        self.external_inputs =self.get_external_inputs()
+        self.graph.input_nodes =self.get_input_nodes()
         
     def op_checker(self):
         unsupported_ops = set()
@@ -206,7 +205,7 @@ class ONNXOpMapper(OpMapper):
 
             
         #generate code for input data
-        for name in self.external_inputs:
+        for name in self.graph.input_nodes :
             value_info = self.decoder.graph_value_infos[name]
             self.input_shapes.append(value_info['shape'])
             attr = {
@@ -265,15 +264,6 @@ class ONNXOpMapper(OpMapper):
                     continue
                 node = self.graph.get_node(node_name)
                 self.net_code += node.fluid_code.gen_codes()
-
-
-    def get_external_inputs(self):
-        external_inputs = []
-        input_nodes = [value.name for value in self.graph.model.input]
-        for node in input_nodes:
-            if node not in self.graph.inner_nodes:
-                external_inputs.append(node)
-        return external_inputs
     
     def _default(self, node, *args, name='', **kwargs):
         inputs = node.layer.input
