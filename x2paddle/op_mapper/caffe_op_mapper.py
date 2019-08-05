@@ -123,22 +123,21 @@ class CaffeOpMapper(OpMapper):
         [k_h, k_w] = [1, 1]
         if isinstance(params.kernel_size, numbers.Number):
             [k_h, k_w] = [params.kernel_size] * 2
-        elif isinstance(params.kernel_size,
-                        list) and len(params.kernel_size) > 0:
+        elif len(params.kernel_size) > 0:
             k_h = params.kernel_h if params.kernel_h else params.kernel_size[0]
             k_w = params.kernel_w if params.kernel_w else params.kernel_size[
                 len(params.kernel_size) - 1]
         [s_h, s_w] = [1, 1]
         if isinstance(params.stride, numbers.Number):
             [s_h, s_w] = [params.stride] * 2
-        elif isinstance(params.stride, list) and len(params.stride) > 0:
+        elif len(params.stride) > 0:
             s_h = params.stride_h if params.stride_h else params.stride[0]
             s_w = params.stride_w if params.stride_w else params.stride[
                 len(params.stride) - 1]
         [p_h, p_w] = [0, 0]
         if isinstance(params.pad, numbers.Number):
             [p_h, p_w] = [params.pad] * 2
-        elif isinstance(params.pad, list) and len(params.pad) > 0:
+        elif len(params.pad) > 0:
             p_h = params.pad_h if params.pad_h else params.pad[0]
             p_w = params.pad_w if params.pad_w else params.pad[len(params.pad) -
                                                                1]
