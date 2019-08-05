@@ -6,7 +6,10 @@ X2Paddle is a toolkit for converting trained model to PaddlePaddle from other de
 
 python >= 3.5  
 paddlepaddle >= 1.5.0  
-tensorflow == 1.14.0  
+
+**以下依赖只需对应安装自己需要的即可**  
+转换tensorflow模型 ： tensorflow == 1.14.0  
+转换caffe模型 ： caffe == 1.0.0  
 
 ## 安装
 ```
@@ -21,13 +24,14 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 ### Caffe
 ```
 x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
+```
 ### ONNX
 待release，目前可使用[onnx2fluid](https://github.com/PaddlePaddle/X2Paddle/tree/master/onnx2fluid)
 ### PyTorch
 可先将pytorch模型导出为onnx，再使用x2paddle转换onnx模型
 ### Keras with tensorflow as backend
 可先将keras模型转成tensorflow模型，再使用x2paddle转换tensorflow模型
-```
+
 ### 参数选项
 | 参数 | |
 |----------|--------------|
