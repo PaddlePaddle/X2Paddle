@@ -21,6 +21,12 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 ### Caffe
 ```
 x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
+### ONNX
+待release，目前可使用[onnx2fluid](https://github.com/PaddlePaddle/X2Paddle/tree/master/onnx2fluid)
+### PyTorch
+可先将pytorch模型导出为onnx，再使用x2paddle转换onnx模型
+### Keras with tensorflow as backend
+可先将keras模型转成tensorflow模型，再使用x2paddle转换tensorflow模型
 ```
 ### 参数选项
 | 参数 | |
