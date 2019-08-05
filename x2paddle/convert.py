@@ -14,6 +14,7 @@
 
 from six import text_type as _text_type
 import argparse
+import sys
 
 
 def arg_parser():
@@ -107,6 +108,10 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 
 
 def main():
+    if len(sys.argv) < 2:
+        print("Use \"x2paddle -h\" to print the help information")
+        return
+
     parser = arg_parser()
     args = parser.parse_args()
 
