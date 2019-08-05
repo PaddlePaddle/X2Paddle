@@ -43,23 +43,23 @@ class Graph(object):
         self.model = model
 
     def build(self):
-        self._make_input_nodes()
-        self._make_output_nodes()
-        self._get_topo_sort()
+        self.get_input_nodes()
+        self.get_output_nodes()
+        self.get_topo_sort()
 
-    def _make_input_nodes(self):
+    def get_input_nodes(self):
         for name, node in self.node_map.items():
             name = name.replace('/', '_').replace('-', '_')
             if len(node.inputs) == 0:
                 self.input_nodes.append(name)
 
-    def _make_output_nodes(self):
+    def get_output_nodes(self):
         for name, node in self.node_map.items():
             name = name.replace('/', '_').replace('-', '_')
             if len(node.outputs) == 0:
                 self.output_nodes.append(name)
 
-    def _get_topo_sort(self):
+    def get_topo_sort(self):
         num_inputs = dict()
         for name, node in self.node_map.items():
             num_inputs[name] = len(node.inputs)
