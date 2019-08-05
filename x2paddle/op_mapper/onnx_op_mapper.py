@@ -179,7 +179,6 @@ class ONNXOpMapper(OpMapper):
         self.weights = dict()
         self.omit_weights = list()
         self.omit_nodes = list()
-        self.graph.input_nodes =self.get_input_nodes()
         
     def op_checker(self):
         unsupported_ops = set()
@@ -205,7 +204,7 @@ class ONNXOpMapper(OpMapper):
 
             
         #generate code for input data
-        for name in self.graph.input_nodes :
+        for name in self.graph.input_nodes:
             value_info = self.decoder.graph_value_infos[name]
             self.input_shapes.append(value_info['shape'])
             attr = {
