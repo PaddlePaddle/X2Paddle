@@ -126,11 +126,12 @@ def onnx2paddle(model_path, save_dir):
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
-
+    from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
     print("Now translating model from onnx to paddle.")
     model = ONNXDecoder(model_path)
     mapper = ONNXOpMapper(model)
-    mapper.run()
+    optimizer = ONNXOptimizer(mapper)
+    optimizer.delete_redundance_code()
     mapper.save_inference_model(save_dir)
 
     
