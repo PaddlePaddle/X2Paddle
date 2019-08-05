@@ -94,20 +94,18 @@ def get_params_w_h(params):
     return dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w
 
 
-def get_filter_output_shape(i_h, i_w, params, round_func):
+def get_strided_kernel_output_shape(params, input_shape, round_func):
+    i_h = input_shape[2]
+    i_w = input_shape[3]
     dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_params_w_h(
         params)
     o_h = (i_h + 2 * pad_h - (dila_h *
                               (kernel_h - 1) + 1)) / float(stride_h) + 1
     o_w = (i_w + 2 * pad_w - (dila_w *
                               (kernel_w - 1) + 1)) / float(stride_w) + 1
-    return (int(round_func(o_h)), int(round_func(o_w)))
+    o_h = int(round_func(o_h))
+    o_w = int(round_func(o_w))
 
-
-def get_strided_kernel_output_shape(params, input_shape, round_func):
-
-    o_h, o_w = get_filter_output_shape(input_shape[2], input_shape[3], params,
-                                       round_func)
     has_c_o = hasattr(params, 'num_output')
     c = params.num_output if has_c_o else input_shape[1]
 
