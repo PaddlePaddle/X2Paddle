@@ -18,6 +18,7 @@ from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx.utils import polish_model
 from onnx.version_converter import convert_version
+from onnx import helper
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
@@ -437,4 +438,70 @@ class ONNXDecoder(object):
     def save_inference_model(self, save_dir):
         onnx.save(self.model, save_dir+'model.onnx')
         
+    def split_model(self, model, outputs=None):
+        """
+        Takes a model and changes its outputs.
+
+        :param model: *ONNX* model
+        :param outputs: new outputs
+        :return: modified model
+        The function removes unneeded files.
+        """
+        if outputs is None:
+            raise RuntimeError("outputs and inputs are None")
+        if outputs == model.graph.output[0].name:
+            return model
+
+        nodes = model.graph.node
+
+        mark_op = {}
+        for node in nodes:
+            mark_op[node.name] = 0
+        keep_nodes = []
+
+        # We mark all the nodes we need to keep.
+        for node in nodes:
+            if node.output[0] == outputs:
+                keep_nodes.append(node)
+                break
+            keep_nodes.append(node)
+
+        infer_shapes = onnx.shape_inference.infer_shapes(model)
+
+        var_out = []
+        value_infos = []
+        for value_info in infer_shapes.graph.value_info:
+            if value_info.name == outputs:
+                var_out.append(value_info)
+                value_infos.append(value_info)
+                break
+            value_infos.append(value_info)
+
+        graph = helper.make_graph(keep_nodes, model.graph.name, model.graph.input, var_out,
+                                  model.graph.initializer, value_info = infer_shapes.graph.value_info)#, 
+
+        onnx_model = helper.make_model(graph)
+        onnx_model.ir_version = model.ir_version
+        onnx_model.producer_name = model.producer_name
+        onnx_model.producer_version = model.producer_version
+        onnx_model.domain = model.domain
+        onnx_model.model_version = model.model_version
+        onnx_model.doc_string = model.doc_string
+
+        if len(onnx_model.graph.input) != len(model.graph.input):
+            raise RuntimeError("Input mismatch {} != {}".format(
+                len(onnx_model.input), len(model.input)))
+        return onnx_model
+
+    def get_dynamic_shape(self, model_onnx, layer, input_shapes):
+        import onnxruntime as rt
+        from onnxruntime.backend import prepare
+        import numpy as np
+        num_onnx = self.split_model(model_onnx, layer)
+        sess = prepare(num_onnx)
+        shape = input_shapes[0]
+        np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
+        output = sess.run(model = sess, inputs = np_images)
+        return output[0].tolist()
+
     

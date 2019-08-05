@@ -19,7 +19,6 @@ from x2paddle.core.util import *
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
 import numpy as np
-from tool.onnx_to_paddle import get_dynamic_shape
 import logging as _logging
 from collections import OrderedDict as _dict
 _logger = _logging.getLogger(__name__)
@@ -543,7 +542,7 @@ class ONNXOpMapper(OpMapper):
         var_reshaped = val_reshaped if isinstance(val_reshaped, str) else val_reshaped.layer_name
         
         if isinstance(val_shape, GraphNode):
-            shape = get_dynamic_shape(self.decoder.model, var_shape, self.input_shapes)
+            shape = self.decoder.get_dynamic_shape(self.decoder.model, var_shape, self.input_shapes)
         else:
             shape = _const_weight_or_none(self.decoder.graph_value_infos, var_shape)
 
