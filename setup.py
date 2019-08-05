@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="x2paddle",
-    version="0.0.1",
+    version="dev-0.4",
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description=
