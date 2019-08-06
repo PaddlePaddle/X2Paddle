@@ -143,15 +143,15 @@ def main():
     parser = arg_parser()
     args = parser.parse_args()
 
-    try:
-        import paddle.fluid as fluid
-        import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 5:
-            print("paddlepaddle>=1.5.0 is required")
-            return
-    except:
-        print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
+#     try:
+#         import paddle.fluid as fluid
+#         import paddle
+#         v0, v1, v2 = paddle.__version__.split('.')
+#         if int(v0) != 1 or int(v1) < 5:
+#             print("paddlepaddle>=1.5.0 is required")
+#             return
+#     except:
+#         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
 
     assert args.framework is not None, "--from is not defined(tensorflow/caffe)"
     assert args.save_dir is not None, "--save_dir is not defined"
