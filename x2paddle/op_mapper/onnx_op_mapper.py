@@ -18,10 +18,13 @@ from x2paddle.core.util import *
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
 from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode
+from x2paddle.op_mapper.onnx_directly_map import default_op_mapping_field_values
+from x2paddle.op_mapper.onnx_directly_map import default_op_mapping
+from x2paddle.op_mapper.onnx_directly_map import default_ioa_constraint
 import numpy as np
 import logging as _logging
 from collections import OrderedDict as _dict
-from x2paddle.op_mapper.onnx_directly_map import default_op_mapping_field_values, default_op_mapping, default_ioa_constraint
+
 
 _logger = _logging.getLogger(__name__)
 
@@ -132,7 +135,6 @@ class ONNXOpMapper(OpMapper):
             for predicate, message in default_ioa_constraint[fluid_op]:
                 assert predicate(inputs, outputs, attrs), message
 
-        # bypass if key absent, drop if mapped key is '' or '_'
         mapped_attrs = {
             attr_mapping.get(key, key): value
             for key, value in attrs.items()
@@ -143,7 +145,6 @@ class ONNXOpMapper(OpMapper):
             mapped_attrs.pop('_')
         fluid_attrs = default_attrs.copy()
         fluid_attrs.update(mapped_attrs)  # as new attrs
-
         val_inps = inputs if input_perm is None else list(map(lambda i: inputs[i],
                                                          input_perm))
         val_outs = outputs if output_perm is None else list(map(lambda i: outputs[i],
@@ -231,9 +232,7 @@ class ONNXOpMapper(OpMapper):
             paddings = np.array(pads).reshape(
             (-1, 4)).transpose().flatten().tolist()  # SSEE -> SESE
         attr['paddings'] = paddings
-        
         if op_independent:
-
             attr['name'] = string(node.layer_name)
             node.fluid_code.add_layer(fluid_op, 
                                     inputs=val_x, output=node, param_attr=attr)
@@ -322,7 +321,6 @@ class ONNXOpMapper(OpMapper):
                 'out_shape':out_shape,
                 'name':string(node.layer_name)
                 }
-        
         # generation
         node.fluid_code.add_layer(fluid_op, inputs=val_x, output = node, param_attr=attr)
 
@@ -404,27 +402,9 @@ class ONNXOpMapper(OpMapper):
                     'input "shape" not inferred, use [1, -1] as dummy value, '
                     'the behavior of Paddle fluid maybe undefined', name, inputs,
                     outputs)
-        
-#         # if input is initializer, reshape initializer by numpy
-#         if isinstance(val_x, str):
-#             if val_x  in self.decoder.graph_value_infos:
-#                 self.omit_nodes.append(val_x)
-#                 self.omit_weights.append(val_shape)
-#                 self.omit_nodes.append(node.layer_name)
-#                 value_info = self.decoder.graph_value_infos[val_x]
-#                 self.decoder.graph_value_infos[node.layer_name] = self.decoder.graph_value_infos.pop(val_x)
-#                 self.decoder.graph_value_infos[node.layer_name]['weight'] = self.decoder.graph_value_infos[node.layer_name]['weight'].reshape(shape)
-
         attr = {
                 'shape': shape,
                 'name': string(node.layer_name)}
-#         if is_const_shape:
-#             node.fluid_code.add_layer('reshape', 
-#                                 inputs=val_x, output=node, param_attr=attr)
-#         else:
-#             var_shape_int32 = var_shape + '_int32'  # explicit variable
-#             node.fluid_code.add_layer('cast', 
-#                                 inputs=val_shape, output=var_shape_int32, param_attr=attr)
         node.fluid_code.add_layer('reshape', 
                                 inputs=val_x, output=node, param_attr=attr)
 

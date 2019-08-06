@@ -439,7 +439,7 @@ class ONNXDecoder(object):
         The function removes unneeded files.
         """
         if outputs is None:
-            raise RuntimeError("outputs and inputs are None")
+            raise RuntimeError("outputs is None")
         if outputs == model.graph.output[0].name:
             return model
         nodes = model.graph.node
