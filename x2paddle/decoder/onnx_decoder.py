@@ -163,10 +163,6 @@ class ONNXGraph(Graph):
             if ipt_data not in inner_nodes:
                 self.data_input.append(ipt_data)
 
-#     def _make_output_nodes(self):
-#         for output in self.model.output:
-#              self.output_nodes.append(output.name)
-
     def build_value_refs(self, nodes):
         """
         build op reference of inputs and outputs
