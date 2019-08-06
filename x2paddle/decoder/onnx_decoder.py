@@ -556,7 +556,7 @@ class ONNXDecoder(object):
                 break
             keep_nodes.append(node)
 
-#         infer_shapes = onnx.shape_inference.infer_shapes(model)
+        infer_shapes = onnx.shape_inference.infer_shapes(model)
 
         var_out = []
         value_infos = []
