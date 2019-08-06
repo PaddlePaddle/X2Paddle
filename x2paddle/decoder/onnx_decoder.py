@@ -28,7 +28,7 @@ import onnx
 import numpy as np
 from copy import deepcopy
 
-DEFAULT_OP_DOMAIN = 'ai.onnx'
+default_op_domain = 'ai.onnx'
 
 
 def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
@@ -44,7 +44,6 @@ def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
                 next_node.input[val_idx] = dst_input_name
                 processed += 1
     return processed
-
 
 def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
     """
@@ -70,6 +69,8 @@ class ONNXGraphNode(GraphNode):
         self.fluid_code = FluidCode()
         self.attr_map = self.get_attr_map()
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
+        self.weight_inputs = list()
+        
     def __eq__(self, other):
         if isinstance(other,str):
             if self.layer.name == other:
@@ -114,17 +115,15 @@ class ONNXGraphNode(GraphNode):
             return default
         return self.attr_map[name]
 
-class ONNXGraphValueInfo(GraphNode):
-    def __init__(self, layer, layer_name=None, is_input_node=False):
+class ONNXGraphDataNode(GraphNode):
+    def __init__(self, layer, layer_name=None):
         if layer_name is None:
-            super(ONNXGraphValueInfo, self).__init__(layer, layer.name)
+            super(ONNXGraphDataNode, self).__init__(layer, layer.name)
         else:
-            super(ONNXGraphValueInfo, self).__init__(layer, layer_name)
+            super(ONNXGraphDataNode, self).__init__(layer, layer_name)
             
-        if is_input_node:
-            self.layer_type = 'place_holder'
-        else:
-            self.layer_type = 'create_parameter'
+        self.layer_type = 'place_holder'
+        self.layer_name = layer_name
         self.fluid_code = FluidCode()
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
             
@@ -136,12 +135,12 @@ class ONNXGraphValueInfo(GraphNode):
             return True
         return False
 
-
 class ONNXGraph(Graph):
     def __init__(self, model):
         super(ONNXGraph, self).__init__(model)
         self.initializer = {}
-
+        self.data_input = list()
+        
     def get_inner_nodes(self):
         """
         generate inner node of ONNX model
@@ -154,14 +153,18 @@ class ONNXGraph(Graph):
             name = initializer.name
             inner_nodes.append(name)
         return inner_nodes
-    
+
     def _make_input_nodes(self):
         inner_nodes = self.get_inner_nodes()
         input_nodes = [value.name for value in self.model.input]
-        for node in input_nodes:
-            if node not in inner_nodes:
-                self.input_nodes.append(node)
-                
+        for ipt_data in input_nodes:
+            if ipt_data not in inner_nodes:
+                self.data_input.append(ipt_data)
+                self.input_nodes.append(ipt_data)
+        for node in self.model.node:
+            if len(node.input) == 0:
+                self.input_nodes.append(node.name)
+
     def _make_output_nodes(self):
         for output in self.model.output:
              self.output_nodes.append(output.name)
@@ -179,85 +182,6 @@ class ONNXGraph(Graph):
                 output_refs.setdefault(val_name, set()).add(idx)
         return input_refs, output_refs
 
-    def _get_topo_sort(self):
-        """
-        generate topo_sort of ONNX model
-        """
-        node_in_degrees = [len(set(node.input)) for node in self.model.node]
-        node_out_degrees = [len(set(node.output)) for node in self.model.node]
-        input_refs, output_refs = self.build_value_refs(self.model.node)
-
-        for val_name in input_refs:
-            if val_name not in output_refs:
-                for node_idx in input_refs[val_name]:
-                    node_in_degrees[node_idx] -= 1
-        queue = []
-        for node_idx, degree in enumerate(node_in_degrees):
-            if degree == 0:
-                queue.append(node_idx)
-
-        while len(queue) > 0:
-            node_idx = queue.pop(0)
-            for ipt in self.model.node[node_idx].input:
-                if ipt not in self.topo_sort:
-                    self.topo_sort.append(ipt)
-            self.topo_sort.append(self.model.node[node_idx].name)
-            for val_name in self.model.node[node_idx].output:
-                output_refs[val_name].remove(node_idx)
-                if len(output_refs[val_name]) > 0:
-                    continue
-                output_refs.pop(val_name)
-                if val_name not in input_refs:
-                    continue 
-                for next_idx in input_refs[val_name]:
-                    node_in_degrees[next_idx] -= 1
-                    
-                    self.connect(self.model.node[node_idx].name, self.model.node[next_idx].name)
-                    if node_in_degrees[next_idx] == 0:
-                        queue.insert(0, next_idx)
-
-#     def _get_topo_sort2(self):
-#         """
-#         generate topo_sort of ONNX model
-#         """
-#         model = type(self.model)()
-#         model.CopyFrom(self.model)
-#         node_in_degrees = [len(set(node.input)) for node in model.node]
-#         node_out_degrees = [len(set(node.output)) for node in model.node]
-#         input_refs, output_refs = self.build_value_refs(model.node)
-
-#         check_istopnode = node_in_degrees
-        
-#         for val_name in input_refs:
-#             if val_name not in output_refs:
-#                 for node_idx in input_refs[val_name]:
-#                     check_istopnode[node_idx] -= 1
-#         queue = []
-#         for node_idx, degree in enumerate(check_istopnode):
-#             if degree == 0:
-#                 queue.append(node_idx)
-
-#         while len(queue) > 0:
-#             node_idx = queue.pop(0)
-#             for val_name in model.node[node_idx].input:
-#                 self.topo_sort.append(val_name)
-#                 self.connect(val_name, model.node[node_idx].name)
-#                 node_in_degrees[node_idx] -= 1
-#                 node_name = model.node[node_idx].name
-#                 for next_idx in output_refs[node_name]:
-#                     for val_name in model.node[next_idx].input:
-#                         if self.
-#                         self.topo_sort.append(val_name)
-#                         self.connect(val_name, model.node[node_idx].name)
-#                         node_in_degrees[node_idx] -= 1
-#                     self.connect(node_name, model.node[next_idx].name)
-#                     if node_in_degrees[next_idx] == 0:
-#                         queue.insert(0, next_idx)
-#                         model.node[next_idx].input.remove(node_name)
-
-#             self.topo_sort.append(self.model.node[node_idx].name)
-            
-
     def build(self):
         """
         build topo_sort of ONNX model
@@ -267,47 +191,24 @@ class ONNXGraph(Graph):
         
         for layer in self.model.node:
             self.node_map[layer.name] = ONNXGraphNode(layer)
-            
-        for layer in self.model.input:
-            if layer.name not in self.node_map:
-                self.node_map[layer.name] = ONNXGraphValueInfo(layer, is_input_node=self.is_input_node(layer))
-
-        self._get_topo_sort()
-
-    def is_input_node(self,layer):
-        if layer.name in self.input_nodes:
-            return True
-        return False
+        for layer in self.input_nodes:
+            if layer not in self.node_map:
+                self.node_map[layer] = ONNXGraphDataNode(layer, layer)
         
+        for layer_name, node in self.node_map.items():
+            if isinstance(node, ONNXGraphNode):
+                for idx, in_node in enumerate(node.layer.input):
+                    if in_node not in self.node_map:
+                        node.weight_inputs.append(in_node)
+                    else:
+                        self.connect(in_node, layer_name)
+        super(ONNXGraph, self)._get_topo_sort()
+        self.input_nodes = self.data_input
 
-    def get_nodes(self, names, forGenCode=False, copy=False):
+    def get_nodes(self, names, copy=False):
         nodes = []
         for name in names:
             nodes.add(self.get_node( name, forGenCode=forGenCode, copy=copy))
-
-    def get_node(self, name, forGenCode=False, copy=False):
-        """
-        get ONNXGraphNode or (name of input/out) by name
-        """
-        if name not in self.node_map:
-            if name.split(':')[0] in self.node_map:
-                name_prefix, idx = name.split(':')
-                if copy:
-                    node = deepcopy(self.node_map[name_prefix])
-                else:
-                    node = self.node_map[name_prefix]
-                node.index = int(idx)
-                return node
-            elif forGenCode:
-                return name
-            else:
-                raise Exception("Graph doesn't have node [%s]." % name)
-        else:
-            if copy:
-                node = deepcopy(self.node_map[name])
-            else:
-                node = self.node_map[name]
-            return node
 
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
@@ -324,7 +225,7 @@ class ONNXDecoder(object):
         self.onnx_graph = ONNXGraph(graph_def)
         self.onnx_graph.build()
         self.graph_value_infos = self.inferred_model_value_info(model)
-        
+
         # add weight info
         for name, weight in self.graph_weights(graph_def):
             value_info = self.graph_value_infos[name]
@@ -363,7 +264,7 @@ class ONNXDecoder(object):
         ret_nodes = ret.graph.node
         nodes_to_remove = []
         for node_idx, node in enumerate(nodes):
-            if not (node.domain == DEFAULT_OP_DOMAIN or node.domain == ''):
+            if not (node.domain == default_op_domain or node.domain == ''):
                 continue
             op_type = node.op_type
             if not (op_type in op_list):
@@ -437,7 +338,7 @@ class ONNXDecoder(object):
             if name in input_refs or name in out_names:
                 ret_inputs.add().CopyFrom(item)
         return ret
-    
+
     def make_variable_name(self, name):
         """
         make a valid code name for ParamAttr
@@ -448,7 +349,7 @@ class ONNXDecoder(object):
         for s in ' .*?\\/-:':  #
             name = name.replace(s, '_')
         return '_'+ name
-    
+
     def graph_weights(self, graph):
         """
         generator for weights of an ONNX model
@@ -462,7 +363,7 @@ class ONNXDecoder(object):
             name = initializer.name
             weight = to_array(initializer)
             yield name, weight
-            
+       
     def standardize_variable_name(self, graph):
         """
         standardize variable name for paddle's code
@@ -484,7 +385,7 @@ class ONNXDecoder(object):
                 node.input[i]=self.make_variable_name(node.input[i])
             for i in range(len(node.output)):
                 node.output[i]=self.make_variable_name(node.output[i])
-            
+   
     def tensor_dtype(self, tensor):
         """
         get ONNX tensor in np.dtype
@@ -498,7 +399,7 @@ class ONNXDecoder(object):
         """
 
         return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
-        
+    
     def inferred_model_value_info(self, model):
         """
         collect value/type info for an ONNX model
@@ -527,7 +428,7 @@ class ONNXDecoder(object):
                 external=True,
             )
         return value_info
-        
+  
     def split_model(self, model, outputs=None):
         """
         Takes a model and changes its outputs.
@@ -541,9 +442,7 @@ class ONNXDecoder(object):
             raise RuntimeError("outputs and inputs are None")
         if outputs == model.graph.output[0].name:
             return model
-
         nodes = model.graph.node
-
         mark_op = {}
         for node in nodes:
             mark_op[node.name] = 0
@@ -568,7 +467,7 @@ class ONNXDecoder(object):
             value_infos.append(value_info)
 
         graph = helper.make_graph(keep_nodes, model.graph.name, model.graph.input, var_out,
-                                  model.graph.initializer)#, 
+                                  model.graph.initializer)
 
         onnx_model = helper.make_model(graph)
         onnx_model.ir_version = model.ir_version
@@ -584,18 +483,12 @@ class ONNXDecoder(object):
         return onnx_model
 
     def get_dynamic_shape(self, model_onnx, layer, input_shapes):
-#         import onnxruntime as rt
-#         from onnxruntime.backend import prepare
-        import numpy as np
         from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
         np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
-        
         num_onnx = self.split_model(model_onnx, layer)
         prepared_backend = prepare(num_onnx)
         output = prepared_backend.run(inputs = np_images)
-#         sess = prepare(num_onnx)
-#       output = sess.run(model = sess, inputs = np_images)
         return output[0].tolist()
 
     
