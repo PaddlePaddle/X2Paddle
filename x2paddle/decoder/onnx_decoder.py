@@ -30,7 +30,6 @@ from copy import deepcopy
 
 default_op_domain = 'ai.onnx'
 
-
 def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
     """
     skip nodes between src_output_name -> dst_input_name and connect this pair
