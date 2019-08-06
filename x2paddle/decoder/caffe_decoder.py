@@ -24,7 +24,7 @@ from x2paddle.op_mapper import caffe_shape
 class CaffeResolver(object):
     def __init__(self, caffe_proto):
         self.proto_path = caffe_proto
-        if self.proto_path == 'None':
+        if self.proto_path is None:
             self.use_default = True
         else:
             self.use_default = False
@@ -143,11 +143,12 @@ class CaffeGraph(Graph):
                                      ]))).to_proto().layer[0])
                     except:
                         print(
-                            "The .py fiel compiled by .proto file does not work for the old style prototxt. "
+                            "The .py file compiled by .proto file does not work for the old style prototxt. "
                         )
                         print("There are 2 solutions for you as below:")
                         print(
-                            "1. install caffe and set \'--caffe_proto=None\'.")
+                            "1. install caffe and don\'t set \'--caffe_proto\'."
+                        )
                         print(
                             "2. modify your .prototxt from the old style to the new style."
                         )
@@ -166,11 +167,12 @@ class CaffeGraph(Graph):
                                      ]))).to_proto().layer[0])
                     except:
                         print(
-                            "The .py fiel compiled by .proto file does not work for the old style prototxt. "
+                            "The .py file compiled by .proto file does not work for the old style prototxt. "
                         )
                         print("There are 2 solutions for you as below:")
                         print(
-                            "1. install caffe and set \'--caffe_proto=None\'.")
+                            "1. install caffe and don\'t set \'--caffe_proto\'."
+                        )
                         print(
                             "2. modify your .prototxt from the old style to the new style."
                         )
@@ -219,10 +221,7 @@ class CaffeGraph(Graph):
 
 
 class CaffeDecoder(object):
-    def __init__(self,
-                 proto_path,
-                 model_path,
-                 caffe_proto='./x2paddle/decoder/caffe_pb2.py'):
+    def __init__(self, proto_path, model_path, caffe_proto=None):
         self.proto_path = proto_path
         self.model_path = model_path
 
