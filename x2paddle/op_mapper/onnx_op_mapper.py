@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.decoder.onnx_decoder import ONNXGraph ONNXGraphValueInfo
 from x2paddle.core.graph import GraphNode
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
+from x2paddle.decoder.onnx_decoder import ONNXGraph ONNXGraphNode
 import numpy as np
 import logging as _logging
 from collections import OrderedDict as _dict
@@ -491,7 +491,7 @@ class ONNXOpMapper(OpMapper):
         var_shape = val_shape if isinstance(val_shape, str) else val_shape.layer_name
         var_reshaped = val_reshaped if isinstance(val_reshaped, str) else val_reshaped.layer_name
         
-        if isinstance(val_shape, ONNXGraphValueInfo):
+        if isinstance(val_shape, ONNXGraphNode:
             shape = self.decoder.get_dynamic_shape(self.decoder.model, var_shape, self.input_shapes)
         else:
             shape = _const_weight_or_none(self.decoder.graph_value_infos, var_shape)

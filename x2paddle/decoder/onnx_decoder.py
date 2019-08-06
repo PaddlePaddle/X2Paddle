@@ -593,7 +593,7 @@ class ONNXDecoder(object):
         
         num_onnx = self.split_model(model_onnx, layer)
         prepared_backend = prepare(num_onnx)
-        output = prepared_backend.run(np_images)
+        output = prepared_backend.run(inputs = np_images)
 #         sess = prepare(num_onnx)
 #       output = sess.run(model = sess, inputs = np_images)
         return output[0].tolist()
