@@ -15,6 +15,10 @@ paddlepaddle >= 1.5.0
 ```
 pip install x2paddle --index-url=https://pypi.org/simple/
 ```
+如果需要使用最新的代码版本，可使用如下方式进行安装  
+```
+pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
+```
 
 ## 使用方法
 ### TensorFlow
