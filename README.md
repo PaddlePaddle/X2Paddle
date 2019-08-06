@@ -26,7 +26,7 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
 ```
 ### ONNX
-即将release，目前仍可使用[onnx2fluid](https://github.com/PaddlePaddle/X2Paddle/tree/master/onnx2fluid)
+即将release，目前仍可使用[onnx2fluid](https://github.com/PaddlePaddle/X2Paddle/tree/release-0.3/onnx2fluid)
 
 ### 参数选项
 | 参数 | |
