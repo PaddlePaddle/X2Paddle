@@ -491,7 +491,7 @@ class ONNXOpMapper(OpMapper):
         var_shape = val_shape if isinstance(val_shape, str) else val_shape.layer_name
         var_reshaped = val_reshaped if isinstance(val_reshaped, str) else val_reshaped.layer_name
         
-        if isinstance(val_shape, ONNXGraphNode:
+        if isinstance(val_shape, ONNXGraphNode):
             shape = self.decoder.get_dynamic_shape(self.decoder.model, var_shape, self.input_shapes)
         else:
             shape = _const_weight_or_none(self.decoder.graph_value_infos, var_shape)
