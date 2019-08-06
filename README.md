@@ -40,7 +40,7 @@ x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --
 |--weight | 当framework为caffe时，该参数指定caffe模型的参数文件路径 |
 |--save_dir | 指定转换后的模型保存目录路径 |
 |--model | 当framework为tensorflow时，该参数指定tensorflow的pb模型文件路径 |
-|--caffe_proto | [可选]由caffe.proto编译成caffe_pb2.py文件的存放路径，当没有安装caffe或者使用自定义Layer时使用 |
+|--caffe_proto | [可选]由caffe.proto编译成caffe_pb2.py文件的存放路径，当没有安装caffe或者使用自定义Layer时使用，默认为None |
 
 ## 使用转换后的模型
 转换后的模型包括`model_with_code`和`inference_model`两个目录。  
