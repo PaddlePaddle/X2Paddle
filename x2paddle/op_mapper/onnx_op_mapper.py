@@ -21,6 +21,7 @@ from x2paddle.core.fluid_code import FluidCode
 import numpy as np
 import logging as _logging
 from collections import OrderedDict as _dict
+
 _logger = _logging.getLogger(__name__)
 
 
@@ -178,6 +179,9 @@ class ONNXOpMapper(OpMapper):
         self.omit_weights = list()
         self.omit_nodes = list()
         
+        if not self.op_checker():
+            raise Exception("Model are not supported yet.")
+            
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
@@ -209,44 +213,6 @@ class ONNXOpMapper(OpMapper):
                 print(op)
             return False
 
-    def run(self):
-        print("Total nodes: {}".format(len(self.graph.topo_sort)))
-        # check if ops in model are all supported
-        if not self.op_checker():
-            raise Exception("Model are not supported yet.")
-            
-        #generate code for input data
-
-#         for name in self.graph.input_nodes:
-#             value_info = self.decoder.graph_value_infos[name]
-#             self.input_shapes.append(value_info['shape'])
-#             attr = {
-#             "dtype": string(value_info['dtype']),
-#             "shape": value_info['shape'],
-#             "name": string(name),
-#             "append_batch_size":'False'}
-#             fluid_code = FluidCode()
-#             fluid_code.add_layer("data",
-#                                   inputs=None,
-#                                   output=name,
-#                                   param_attr=attr)
-#             self.net_code += fluid_code.gen_codes()
-#             print(self.graph.input_nodes)
-            
-        #mapping op
-
-                
-
-
-        #generate code for op
-        for i in range(len(self.graph.topo_sort)):
-            node_name = self.graph.topo_sort[i]
-            if node_name in self.omit_nodes:
-                continue
-            node = self.graph.get_node(node_name)
-            self.net_code += node.fluid_code.gen_codes()
-
-    
     def _default(self, node, *args, name='', **kwargs):
         inputs = node.layer.input
         outputs = node.layer.output
@@ -336,9 +302,7 @@ class ONNXOpMapper(OpMapper):
                 break
         if symmetric:
                 return pads[:ndims], val_name
-
         val_padded = self.Pad(node, op_independent=False)
-        
         return [0] * ndims, val_padded
     
     def Pad(self, node, op_independent=True):
@@ -382,27 +346,7 @@ class ONNXOpMapper(OpMapper):
             node.fluid_code.add_layer(fluid_op, 
                                     inputs=val_x, output=node.layer_name+'_paded', param_attr=attr)
             return node.layer_name+'_paded'
-        
-#     def Unsqueeze(self, node):
-#         val_x = self.graph.get_node(node.layer.input[0], forGenCode=True, copy=True)
-#         axes = node.get_attr('axes')
-#         if isinstance(val_x, str):   
-#             if val_x  in self.decoder.graph_value_infos:
-#                 self.omit_nodes.append(val_x)
-#                 self.omit_nodes.append(node.layer_name)
-#                 value_info = self.decoder.graph_value_infos[val_x]
-#                 self.decoder.graph_value_infos[node.layer_name] = self.decoder.graph_value_infos.pop(val_x)
-#                 weight = self.decoder.graph_value_infos[node.layer_name]['weight']
-#                 for idx, axs in enumerate(axes):
-#                     weight = np.expand_dims(weight, axis=idx+axs)
-#                 self.decoder.graph_value_infos[node.layer_name]['weight'] = weight
-            
-#         attr = {
-#                 'shape': shape,
-#                 'name': string(node.layer_name)
-#             }
-#         node.fluid_code.add_layer('reshape', 
-#                                 inputs=val_x, output=node, param_attr=attr)
+
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], forGenCode=True, copy=True)
 
@@ -413,7 +357,7 @@ class ONNXOpMapper(OpMapper):
         if output_dtype:
             assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
-    #    dtype = np.dtype('float32') # HINT: force to float32
+        #dtype = np.dtype('float32') # HINT: force to float32
         shape = node.get_attr('shape', None)  #
         if shape is None:
             shape = _shape_or_none(self.decoder.graph_value_infos, val_output)
@@ -565,15 +509,15 @@ class ONNXOpMapper(OpMapper):
                     'the behavior of Paddle fluid maybe undefined', name, inputs,
                     outputs)
         
-        # if input is initializer, reshape initializer by numpy
-        if isinstance(val_x, str):
-            if val_x  in self.decoder.graph_value_infos:
-                self.omit_nodes.append(val_x)
-                self.omit_weights.append(val_shape)
-                self.omit_nodes.append(node.layer_name)
-                value_info = self.decoder.graph_value_infos[val_x]
-                self.decoder.graph_value_infos[node.layer_name] = self.decoder.graph_value_infos.pop(val_x)
-                self.decoder.graph_value_infos[node.layer_name]['weight'] = self.decoder.graph_value_infos[node.layer_name]['weight'].reshape(shape)
+#         # if input is initializer, reshape initializer by numpy
+#         if isinstance(val_x, str):
+#             if val_x  in self.decoder.graph_value_infos:
+#                 self.omit_nodes.append(val_x)
+#                 self.omit_weights.append(val_shape)
+#                 self.omit_nodes.append(node.layer_name)
+#                 value_info = self.decoder.graph_value_infos[val_x]
+#                 self.decoder.graph_value_infos[node.layer_name] = self.decoder.graph_value_infos.pop(val_x)
+#                 self.decoder.graph_value_infos[node.layer_name]['weight'] = self.decoder.graph_value_infos[node.layer_name]['weight'].reshape(shape)
 
         attr = {
                 'shape': shape,
@@ -667,7 +611,7 @@ class ONNXOpMapper(OpMapper):
     def NonMaxSuppression(self, node):
         (val_boxes, val_scores, val_max_output_boxes_per_class, 
          val_iou_threshold, val_score_threshold)= self.graph.get_nodes(node.layer.input, forGenCode=True, copy=True)
-        
+
         center_point_box = node.get_attr('center_point_box', 0)
         
         scores = _const_weight_or_none(self.decoder.graph_value_infos, val_scores)

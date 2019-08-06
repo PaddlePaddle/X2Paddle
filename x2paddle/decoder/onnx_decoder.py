@@ -25,7 +25,6 @@ from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 from onnx.numpy_helper import to_array
 from collections import OrderedDict as Dict
 import onnx
-import copy
 import numpy as np
 from copy import deepcopy
 
