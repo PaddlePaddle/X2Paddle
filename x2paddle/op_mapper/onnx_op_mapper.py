@@ -798,8 +798,8 @@ class ONNXOpMapper(OpMapper):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_w = self.graph.get_node(node.layer.input[1], copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
+        
         self.omit_nodes.append(val_w.layer_name)
-
         input_shape = _shape_or_none(self.decoder.graph_value_infos, val_x if isinstance(val_x,str) else val_x.layer_name)
 
         has_bias = len(node.layer.input) == 3
