@@ -1,4 +1,3 @@
-#coding:utf-8
 #   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
@@ -243,17 +242,12 @@ class TFDecoder(object):
 
             if need_define_shape > 0:
                 if need_define_shape == 1:
-                    print("无法获取到输入结点\"{}\"的shape".format(layer.name))
                     print("Unknown shape for input tensor[tensor name: \"{}\"]".
                           format(layer.name))
                 else:
                     print(
-                        "输入结点\"{}\"的shape为{}，但我们现仅支持batch维为不定长，所以需要你重新设定shape".
-                        format(layer.name, shape))
-                    print(
                         "\nShape[now is {}] for input tensor[tensor name: \"{}\"] not support yet"
                         .format(shape, layer.name))
-                print("需要你手动在下面输入对应这个输入结点的shape:)")
                 print(
                     "Use your keyboard type the shape of input tensor below :)")
 
