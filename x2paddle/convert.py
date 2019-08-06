@@ -119,7 +119,6 @@ def main():
     args = parser.parse_args()
 
     try:
-        import paddle.fluid as fluid
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
         if int(v0) != 1 or int(v1) < 5:

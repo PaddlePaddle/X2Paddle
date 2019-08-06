@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="x2paddle",
-    version="dev-0.4",
+    version="0.4.0",
     author="dltp-sz",
     author_email="dltp-sz@baidu.com",
     description=
