@@ -85,11 +85,12 @@ class ONNXOpMapper(OpMapper):
             node = self.graph.get_node(node_name)
             op = node.layer_type
             print('Translating node{}: op is {}'.format(node.layer_name, op))
-            if op in default_op_mapping:
-                 self._default(node)
-            elif hasattr(self, op):
+            if hasattr(self, op):
                 func = getattr(self, op)
                 func(node)
+            elif op in default_op_mapping:
+                 self._default(node)
+
         #mapping weight info
         for name, value_info in self.decoder.graph_value_infos.items():
             if 'weight' in value_info:
@@ -242,6 +243,21 @@ class ONNXOpMapper(OpMapper):
                                     inputs=val_x, output=node.layer_name+'_paded', param_attr=attr)
             return node.layer_name+'_paded'
 
+    def Unsqueeze(self, node):
+        
+        if len(node.weight_inputs)>0:
+            val_x = node.weight_inputs[0]
+            self.create_parameter(node, val_x)
+        else:
+            val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        axes = node.get_attr('axes')
+        attr = {
+            'axes':axes,
+            'name':string(node.layer_name)
+        }
+        node.fluid_code.add_layer('unsqueeze', 
+                                  inputs= val_x, output=node, param_attr=attr)
+        
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
 
@@ -268,8 +284,8 @@ class ONNXOpMapper(OpMapper):
         if len(value) == 1:  # scalar
             shape = [1]  # WORKAROUND: bad scalar support
             value = value[0]
-            if  dtype.name == 'int64':
-                dtype = 'int32'
+#             if  dtype.name == 'int64':
+#                 dtype = 'int32'
             attr= {
                     'shape':shape,
                     'dtype':string(dtype),
@@ -379,34 +395,57 @@ class ONNXOpMapper(OpMapper):
 
     def Reshape(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_shape = self.graph.get_node(node.layer.input[1], copy=True)
+        if len(node.weight_inputs)>0:
+            val_shape = node.weight_inputs[0]
+        else:
+            val_shape = self.graph.get_node(node.layer.input[1], copy=True)
         val_reshaped = self.graph.get_node(node.layer.output[0], copy=True)
         
         var_shape = val_shape if isinstance(val_shape, str) else val_shape.layer_name
         var_reshaped = val_reshaped if isinstance(val_reshaped, str) else val_reshaped.layer_name
         
+        
         if isinstance(val_shape, ONNXGraphNode):
-            shape = self.decoder.get_dynamic_shape(self.decoder.model, var_shape, self.input_shapes)
+            shape = self.decoder.get_dynamic_shape_from_onnx(self.decoder.model, var_shape, self.input_shapes)
         else:
             shape = _const_weight_or_none(self.decoder.graph_value_infos, var_shape)
 
-            is_const_shape = shape and 'const_value' in self.decoder.graph_value_infos[var_shape]
+        is_const_shape = shape and 'const_value' in self.decoder.graph_value_infos[var_shape]
 
-            if shape is None:
-                shape = _shape_or_none(self.decoder.graph_value_infos, var_reshaped)
-
-            if shape is None:
-                shape = [1, -1]  # who knows
-                _logger.warning(
+        if shape is None:
+            shape = _shape_or_none(self.decoder.graph_value_infos, var_reshaped)
+            
+        shape_dtype = _dtype_or_none(self.decoder.graph_value_infos, var_shape)
+        if shape_dtype is None:
+            _logger.warning(
+            'in op %s(%s -> Reshape -> %s): '
+            'dtype of input "shape" not inferred, int32 assumed', name, inputs,
+            outputs)
+            shape_dtype = _np.dtype('int32')
+        
+        if shape is None:
+            shape = [1, -1]  # who knows
+            _logger.warning(
                     'in %s(%s -> Reshape -> %s): '
                     'input "shape" not inferred, use [1, -1] as dummy value, '
                     'the behavior of Paddle fluid maybe undefined', name, inputs,
                     outputs)
-        attr = {
-                'shape': shape,
+            shape_dtype = _np.dtype('int32')
+        attr = {'shape': shape,
                 'name': string(node.layer_name)}
-        node.fluid_code.add_layer('reshape', 
-                                inputs=val_x, output=node, param_attr=attr)
+        if is_const_shape:
+
+            node.fluid_code.add_layer('reshape', 
+                                    inputs=val_x, output=node, param_attr=attr)
+        else:
+            output_cast = node.layer_name+'cast'
+            shape_dtype = np.dtype('int32')
+            attr_cast = {'dtype': string(shape_dtype)}
+            node.fluid_code.add_layer('cast', 
+                                inputs=val_x, output=output_cast, param_attr=attr_cast)
+        
+            node.fluid_code.add_layer('reshape', 
+                                    inputs=output_cast, output=node, param_attr=attr)
 
     def Cast(self, node):
         val_input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -568,7 +607,7 @@ class ONNXOpMapper(OpMapper):
 
     def Add(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_x = self.graph.get_node(node.layer.input[1], copy=True)
+        val_y = self.graph.get_node(node.layer.input[1], copy=True)
         inputs = {"x": val_x,
                 "y": val_y,
                  }

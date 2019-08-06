@@ -163,6 +163,14 @@ class ONNXGraph(Graph):
         for node in self.model.node:
             if len(node.input) == 0:
                 self.input_nodes.append(node.name)
+            else:
+                flag = 0
+                for ipt in node.input:
+                    if ipt in self.node_map:
+                        flag = 1
+                        break
+                if flag==0:
+                    self.input_nodes.append(node.name)
 
     def _make_output_nodes(self):
         for output in self.model.output:
@@ -187,7 +195,7 @@ class ONNXGraph(Graph):
         """ 
         self._make_input_nodes()
         self._make_output_nodes()
-        
+
         for layer in self.model.node:
             self.node_map[layer.name] = ONNXGraphNode(layer)
         for layer in self.input_nodes:
@@ -442,14 +450,11 @@ class ONNXDecoder(object):
         if outputs == model.graph.output[0].name:
             return model
         nodes = model.graph.node
-        mark_op = {}
-        for node in nodes:
-            mark_op[node.name] = 0
         keep_nodes = []
 
-        # We mark all the nodes we need to keep.
+        # all the nodes we need to keep.
         for node in nodes:
-            if node.output[0] == outputs:
+            if outputs in node.output:
                 keep_nodes.append(node)
                 break
             keep_nodes.append(node)
@@ -457,13 +462,10 @@ class ONNXDecoder(object):
         infer_shapes = onnx.shape_inference.infer_shapes(model)
 
         var_out = []
-        value_infos = []
         for value_info in infer_shapes.graph.value_info:
             if value_info.name == outputs:
                 var_out.append(value_info)
-                value_infos.append(value_info)
                 break
-            value_infos.append(value_info)
 
         graph = helper.make_graph(keep_nodes, model.graph.name, model.graph.input, var_out,
                                   model.graph.initializer)
@@ -481,13 +483,24 @@ class ONNXDecoder(object):
                 len(onnx_model.input), len(model.input)))
         return onnx_model
 
-    def get_dynamic_shape(self, model_onnx, layer, input_shapes):
+    def get_dynamic_shape_from_caffe2(self, model_onnx, layer, input_shapes):
         from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
         np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
         num_onnx = self.split_model(model_onnx, layer)
         prepared_backend = prepare(num_onnx)
         output = prepared_backend.run(inputs = np_images)
+        return output[0].tolist()
+    
+    def get_dynamic_shape_from_onnx(self, model_onnx, layer, input_shapes):
+        import onnxruntime as rt
+        from onnxruntime.backend import prepare
+        import numpy as np
+        num_onnx = self.split_model(model_onnx, layer)
+        sess = prepare(num_onnx)
+        shape = input_shapes[0]
+        np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
+        output = sess.run(model = sess, inputs = np_images)
         return output[0].tolist()
 
     
