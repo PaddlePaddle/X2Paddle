@@ -15,6 +15,7 @@
 from six import text_type as _text_type
 import argparse
 import sys
+import x2paddle
 
 
 def arg_parser():
@@ -49,6 +50,12 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="caffe proto file of caffe model")
+    parser.add_argument("--version",
+                        "-v",
+                        action="store_true",
+                        default=False,
+                        help="get version of x2paddle")
+
     return parser
 
 
@@ -112,11 +119,15 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 
 def main():
     if len(sys.argv) < 2:
-        print("Use \"x2paddle -h\" to print the help information")
+        print("Use \"x2paddle -h\" to print the help information\n")
         return
 
     parser = arg_parser()
     args = parser.parse_args()
+
+    if args.version:
+        print("x2paddle-{} with python>=3.5\n".format(x2paddle.__version__))
+        return
 
     try:
         import paddle

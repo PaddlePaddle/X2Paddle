@@ -20,7 +20,7 @@ paddlepaddle >= 1.5.0
 
 ## 安装
 ```
-pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
+pip install x2paddle --index-url=https://pypi.org/simple/
 ```
 
 ## 使用方法
