@@ -89,14 +89,14 @@ class ONNXOpMapper(OpMapper):
                 func = getattr(self, op)
                 func(node)
             elif op in default_op_mapping:
-                 self._default(node)
+                self._default(node)
 
         #mapping weight info
         for name, value_info in self.decoder.graph_value_infos.items():
             if 'weight' in value_info:
                 weight = value_info['weight']
                 self.weights[name] = weight
-        
+
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
@@ -170,24 +170,28 @@ class ONNXOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def create_parameter(self, node, parameter):
-        value_infos = self.decoder.graph_value_infos[parameter]
+    def create_parameter(self, node, parameter=None):
+        if parameter is None:
+            node_name = node.layer_name
+        else:
+            node_name = parameter.layer_name
+        value_infos = self.decoder.graph_value_infos[node_name]
         shape = value_infos['shape']
         dtype = value_infos['dtype']
         if shape is None:
-            shape = _shape_or_none(self.decoder.graph_value_infos, parameter)
+            shape = _shape_or_none(self.decoder.graph_value_infos, node_name)
         if shape is None:
             shape = list(value.shape)
         attr = {
             'dtype': string(dtype),
             'shape': shape,
-            'name': string(parameter),
-            'attr': string(parameter),
+            'name': string(node.layer_name),
+            'attr': string(node.layer_name),
             'default_initializer':'Constant(0.0)'
         }
         node.fluid_code.add_layer("create_parameter",
                                   inputs=None,
-                                  output=parameter,
+                                  output=node_name,
                                   param_attr=attr)
 
     def _pad_if_asymmetric(self, node, pads, val_name, value_infos):  # pads: SSEE
@@ -208,8 +212,8 @@ class ONNXOpMapper(OpMapper):
         pads = node.get_attr('pads') # required
         mode = node.get_attr('mode', 'constant')  # optional
         value = node.get_attr('value', 0.)  # optional
-        data_shape = _shape_or_none(self.decoder.graph_value_infos, val_x)
-        output_shape = _shape_or_none(self.decoder.graph_value_infos, node)
+        data_shape = _shape_or_none(self.decoder.graph_value_infos, val_x.layer_name)
+        output_shape = _shape_or_none(self.decoder.graph_value_infos, node.layer_name)
         assume_pad2d = False
         attr = {}
         if len(pads) == 4:
@@ -244,12 +248,7 @@ class ONNXOpMapper(OpMapper):
             return node.layer_name+'_paded'
 
     def Unsqueeze(self, node):
-        
-        if len(node.weight_inputs)>0:
-            val_x = node.weight_inputs[0]
-            self.create_parameter(node, val_x)
-        else:
-            val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
         axes = node.get_attr('axes')
         attr = {
             'axes':axes,
@@ -264,28 +263,28 @@ class ONNXOpMapper(OpMapper):
         # interpretation
         value = node.get_attr('value') # required
         dtype = np.dtype(value.dtype)
-        output_dtype = _dtype_or_none(self.decoder.graph_value_infos, val_output)
+        output_dtype = _dtype_or_none(self.decoder.graph_value_infos, val_output.layer_name)
         if output_dtype:
             assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
         #dtype = np.dtype('float32') # HINT: force to float32
         shape = node.get_attr('shape', None)  #
         if shape is None:
-            shape = _shape_or_none(self.decoder.graph_value_infos, val_output)
+            shape = _shape_or_none(self.decoder.graph_value_infos, val_output.layer_name)
         if shape is None:
             shape = list(value.shape)
             _logger.warning(
                 'in (Constant -> %s): '
                 'attribute "shape" of %s not inferred, '
-                'using value as 1-D tensor may lead to fails', outputs, val_output)
+                'using value as 1-D tensor may lead to fails', outputs, val_output.layer_name)
 
         # generation
         value = value.tolist()
         if len(value) == 1:  # scalar
             shape = [1]  # WORKAROUND: bad scalar support
             value = value[0]
-#             if  dtype.name == 'int64':
-#                 dtype = 'int32'
+            if  dtype.name == 'int64':
+                dtype = 'int32'
             attr= {
                     'shape':shape,
                     'dtype':string(dtype),
@@ -303,12 +302,12 @@ class ONNXOpMapper(OpMapper):
         
         # interpretation
         # output shape
-        out_shape_ = _shape_or_none(self.decoder.graph_value_infos, val_y)
+        out_shape_ = _shape_or_none(self.decoder.graph_value_infos, val_y.layer_name)
         if out_shape_ is not None:
             assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
             out_shape_ = out_shape_[2:]
         # try scales
-        scales = _const_weight_or_none(self.decoder.graph_value_infos, val_scales)
+        scales = _const_weight_or_none(self.decoder.graph_value_infos, val_scales.layer_name)
         if scales is not None:
             assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
             assert scales[0] == 1 and scales[
@@ -323,7 +322,7 @@ class ONNXOpMapper(OpMapper):
         else:
             out_shape = None
             if out_shape_ is None:
-                in_shape = _shape_or_none(self.decoder.graph_value_infos, val_x)
+                in_shape = _shape_or_none(self.decoder.graph_value_infos, val_x.layer_name)
                 assert in_shape is not None, 'out_shape required but not inferrable'
                 assert len(in_shape) == 4, 'only 4-D Tensor as X and Y supported'
                 out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
@@ -347,9 +346,9 @@ class ONNXOpMapper(OpMapper):
         # I/O
         val_shape = self.graph.get_node(node.layer.input[0], copy=True)
 
-        shape = _const_weight_or_none(self.decoder.graph_value_infos, val_shape)
+        shape = _const_weight_or_none(self.decoder.graph_value_infos, val_shape.layer_name)
         if shape is None:
-            shape = _shape_or_none(self.decoder.graph_value_infos, node)
+            shape = _shape_or_none(self.decoder.graph_value_infos, node.layer_name)
         assert shape is not None, (
             'given shape is neither const value nor deductible from output, '
             'this is not supported')
@@ -395,27 +394,20 @@ class ONNXOpMapper(OpMapper):
 
     def Reshape(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        if len(node.weight_inputs)>0:
-            val_shape = node.weight_inputs[0]
-        else:
-            val_shape = self.graph.get_node(node.layer.input[1], copy=True)
+        val_shape = self.graph.get_node(node.layer.input[1], copy=True)
         val_reshaped = self.graph.get_node(node.layer.output[0], copy=True)
-        
-        var_shape = val_shape if isinstance(val_shape, str) else val_shape.layer_name
-        var_reshaped = val_reshaped if isinstance(val_reshaped, str) else val_reshaped.layer_name
-        
-        
+    
         if isinstance(val_shape, ONNXGraphNode):
-            shape = self.decoder.get_dynamic_shape_from_onnx(self.decoder.model, var_shape, self.input_shapes)
+            shape = self.decoder.get_dynamic_shape_from_onnx(self.decoder.model, val_shape.layer_name, self.input_shapes)
         else:
-            shape = _const_weight_or_none(self.decoder.graph_value_infos, var_shape)
+            shape = _const_weight_or_none(self.decoder.graph_value_infos, val_shape.layer_name)
 
-        is_const_shape = shape and 'const_value' in self.decoder.graph_value_infos[var_shape]
+        is_const_shape = shape and 'const_value' in self.decoder.graph_value_infos[val_shape.layer_name]
 
         if shape is None:
-            shape = _shape_or_none(self.decoder.graph_value_infos, var_reshaped)
+            shape = _shape_or_none(self.decoder.graph_value_infos, val_reshaped.layer_name)
             
-        shape_dtype = _dtype_or_none(self.decoder.graph_value_infos, var_shape)
+        shape_dtype = _dtype_or_none(self.decoder.graph_value_infos, val_shape.layer_name)
         if shape_dtype is None:
             _logger.warning(
             'in op %s(%s -> Reshape -> %s): '
@@ -433,19 +425,20 @@ class ONNXOpMapper(OpMapper):
             shape_dtype = _np.dtype('int32')
         attr = {'shape': shape,
                 'name': string(node.layer_name)}
-        if is_const_shape:
-
-            node.fluid_code.add_layer('reshape', 
+        node.fluid_code.add_layer('reshape', 
                                     inputs=val_x, output=node, param_attr=attr)
-        else:
-            output_cast = node.layer_name+'cast'
-            shape_dtype = np.dtype('int32')
-            attr_cast = {'dtype': string(shape_dtype)}
-            node.fluid_code.add_layer('cast', 
-                                inputs=val_x, output=output_cast, param_attr=attr_cast)
+#         if is_const_shape:
+#             node.fluid_code.add_layer('reshape', 
+#                                     inputs=val_x, output=node, param_attr=attr)
+#         else:
+#             output_cast = node.layer_name+'cast'
+#             shape_dtype = np.dtype('int32')
+#             attr_cast = {'dtype': string(shape_dtype)}
+#             node.fluid_code.add_layer('cast', 
+#                                 inputs=val_x, output=output_cast, param_attr=attr_cast)
         
-            node.fluid_code.add_layer('reshape', 
-                                    inputs=output_cast, output=node, param_attr=attr)
+#             node.fluid_code.add_layer('reshape', 
+#                                     inputs=output_cast, output=node, param_attr=attr)
 
     def Cast(self, node):
         val_input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -574,15 +567,15 @@ class ONNXOpMapper(OpMapper):
 
     def Gemm(self, node):
         val_a = self.graph.get_node(node.layer.input[0], copy=True)
-        val_b = node.weight_inputs[0]
-        val_c = node.weight_inputs[1]
+        val_b = self.graph.get_node(node.layer.input[1], copy=True)
+        val_c = self.graph.get_node(node.layer.input[2], copy=True)
         
         alpha = node.get_attr('alpha', 1.)  # optional
         beta = node.get_attr('beta', 1.)  # optional
         trans_a = bool(node.get_attr('transA', 0))  # optional
         trans_b = bool(node.get_attr('transB', 0))  # optional
         val_mm = node.layer_name + '_mm'
-        self.create_parameter(node, val_b)
+#         self.create_parameter(node, val_b)
         matmul_inputs={"x":val_a, "y":val_b}
         attr_matmul={
                     "transpose_x":trans_a,
@@ -595,7 +588,7 @@ class ONNXOpMapper(OpMapper):
                                   param_attr=attr_matmul)
         if beta != 0:
             if beta == 1.:
-                self.create_parameter(node, val_c)
+#                 self.create_parameter(node, val_c)
                 add_inputs = {"x": val_mm, "y": val_c}
                 attr = {"name": string(node.layer_name)}
                 node.fluid_code.add_layer("elementwise_add",
@@ -637,6 +630,7 @@ class ONNXOpMapper(OpMapper):
         alpha = node.get_attr('alpha', 0.0001) # optional
         beta = node.get_attr('beta', 0.75) # optional
         bias = node.get_attr('bias', 1.0) # optional
+        
         attr = {
             "n":max(1,size),
             "k":bias,
@@ -651,11 +645,16 @@ class ONNXOpMapper(OpMapper):
         
     def BatchNormalization(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_scale = node.weight_inputs[0]
-        val_b = node.weight_inputs[1]
-        val_mean = node.weight_inputs[2]
-        val_var = node.weight_inputs[3]
-    
+        val_scale = self.graph.get_node(node.layer.input[1], copy=True)
+        val_b = self.graph.get_node(node.layer.input[2], copy=True)
+        val_mean = self.graph.get_node(node.layer.input[3], copy=True)
+        val_var = self.graph.get_node(node.layer.input[4], copy=True)
+        
+        self.omit_nodes.append(val_scale.layer_name)
+        self.omit_nodes.append(val_b.layer_name)
+        self.omit_nodes.append(val_mean.layer_name)
+        self.omit_nodes.append(val_var.layer_name)
+        
         momentum = node.get_attr('momentum', .9)
         epsilon = node.get_attr('epsilon', 1e-5)
         
@@ -664,10 +663,10 @@ class ONNXOpMapper(OpMapper):
                 "epsilon":epsilon,
                 "data_layout":string('NCHW'),
                 "is_test":'True',
-                "param_attr": string(val_scale),
-                "bias_attr": string(val_b),
-                "moving_mean_name": string(val_mean), 
-                "moving_variance_name": string(val_var),
+                "param_attr": string(val_scale.layer_name),
+                "bias_attr": string(val_b.layer_name),
+                "moving_mean_name": string(val_mean.layer_name), 
+                "moving_variance_name": string(val_var.layer_name),
                 "name": string(node.layer_name)}
         node.fluid_code.add_layer("batch_norm",
                                   inputs=val_x,
@@ -797,16 +796,16 @@ class ONNXOpMapper(OpMapper):
 
     def Conv(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_w = node.weight_inputs[0]
+        val_w = self.graph.get_node(node.layer.input[1], copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
-        self.omit_nodes.append(val_w)
+        self.omit_nodes.append(val_w.layer_name)
 
         input_shape = _shape_or_none(self.decoder.graph_value_infos, val_x if isinstance(val_x,str) else val_x.layer_name)
 
         has_bias = len(node.layer.input) == 3
         if has_bias:
             val_b = node.weight_inputs[1]
-
+            self.omit_nodes.append(val_b.layer_name)
         auto_pad = node.get_attr('auto_pad', 'NOTSET')
 
         kernel_shape = _shape(self.decoder.graph_value_infos, val_w)[2:]  # OI...
@@ -836,11 +835,11 @@ class ONNXOpMapper(OpMapper):
                 "padding":paddings,
                 "dilation":dilations,
                 "groups":num_groups,
-                'param_attr':string(val_w),
+                'param_attr':string(val_w.layer_name),
                 "name": string(node.layer_name)
             }
         if has_bias:
-            attr["bias_attr"] = string(val_b)
+            attr["bias_attr"] = string(val_b.layer_name)
         else:
             attr["bias_attr"] = False
         node.fluid_code.add_layer(fluid_op,

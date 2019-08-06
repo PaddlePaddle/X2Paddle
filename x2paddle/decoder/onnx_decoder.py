@@ -115,13 +115,15 @@ class ONNXGraphNode(GraphNode):
         return self.attr_map[name]
 
 class ONNXGraphDataNode(GraphNode):
-    def __init__(self, layer, layer_name=None):
+    def __init__(self, layer, layer_name=None, is_global_input=False):
         if layer_name is None:
             super(ONNXGraphDataNode, self).__init__(layer, layer.name)
         else:
             super(ONNXGraphDataNode, self).__init__(layer, layer_name)
-            
-        self.layer_type = 'place_holder'
+        if is_global_input:
+            self.layer_type = 'place_holder'
+        else:
+            self.layer_type = 'create_parameter'
         self.layer_name = layer_name
         self.fluid_code = FluidCode()
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
@@ -139,6 +141,7 @@ class ONNXGraph(Graph):
         super(ONNXGraph, self).__init__(model)
         self.initializer = {}
         self.data_input = list()
+        self.get_data_input()
         
     def get_inner_nodes(self):
         """
@@ -153,28 +156,16 @@ class ONNXGraph(Graph):
             inner_nodes.append(name)
         return inner_nodes
 
-    def _make_input_nodes(self):
+    def get_data_input(self):
         inner_nodes = self.get_inner_nodes()
         input_nodes = [value.name for value in self.model.input]
         for ipt_data in input_nodes:
             if ipt_data not in inner_nodes:
                 self.data_input.append(ipt_data)
-                self.input_nodes.append(ipt_data)
-        for node in self.model.node:
-            if len(node.input) == 0:
-                self.input_nodes.append(node.name)
-            else:
-                flag = 0
-                for ipt in node.input:
-                    if ipt in self.node_map:
-                        flag = 1
-                        break
-                if flag==0:
-                    self.input_nodes.append(node.name)
 
-    def _make_output_nodes(self):
-        for output in self.model.output:
-             self.output_nodes.append(output.name)
+#     def _make_output_nodes(self):
+#         for output in self.model.output:
+#              self.output_nodes.append(output.name)
 
     def build_value_refs(self, nodes):
         """
@@ -188,20 +179,26 @@ class ONNXGraph(Graph):
             for val_name in node.output:
                 output_refs.setdefault(val_name, set()).add(idx)
         return input_refs, output_refs
-
+    
+    def is_global_input(self, layer):
+        inner_nodes = self.get_inner_nodes()
+        input_nodes = [value.name for value in self.model.input]
+        if layer not in inner_nodes:
+                return True
+        return False
+                      
     def build(self):
         """
         build topo_sort of ONNX model
         """ 
-        self._make_input_nodes()
-        self._make_output_nodes()
-
         for layer in self.model.node:
             self.node_map[layer.name] = ONNXGraphNode(layer)
-        for layer in self.input_nodes:
-            if layer not in self.node_map:
-                self.node_map[layer] = ONNXGraphDataNode(layer, layer)
-        
+
+        for layer in self.model.input:
+            if layer.name not in self.node_map:
+                is_global_input = self.is_global_input(layer.name)
+                self.node_map[layer.name] = ONNXGraphDataNode(layer, layer_name=layer.name, is_global_input=is_global_input)
+
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 for idx, in_node in enumerate(node.layer.input):
@@ -209,13 +206,14 @@ class ONNXGraph(Graph):
                         node.weight_inputs.append(in_node)
                     else:
                         self.connect(in_node, layer_name)
-        super(ONNXGraph, self)._get_topo_sort()
+                        
+        super(ONNXGraph, self).build()
         self.input_nodes = self.data_input
 
     def get_nodes(self, names, copy=False):
         nodes = []
         for name in names:
-            nodes.add(self.get_node( name, forGenCode=forGenCode, copy=copy))
+            nodes.add(self.get_node(name, copy=copy))
 
 class ONNXDecoder(object):
     def __init__(self, onnx_model):

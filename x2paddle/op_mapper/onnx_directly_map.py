@@ -51,7 +51,6 @@ default_op_mapping = {
         'Sqrt': ['sqrt', ['X'], ['Out']],
         'Tanh': ['tanh', ['X'], ['Out']],
         'ThresholdedRelu': ['thresholded_relu', ['X'], ['Out'], dict(alpha='threshold')],
-        'Unsqueeze': ['unsqueeze', ['X'], ['Out']], # attrs bypassed, FIXME: emit unsqueeze2
         ## binary ops ##
         'Add': ['elementwise_add', ['X', 'Y'], ['Out'], dict(), dict(axis=-1)],
         'And': ['logical_and', ['X', 'Y'], ['Out']],
