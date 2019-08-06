@@ -48,7 +48,7 @@ def arg_parser():
     parser.add_argument("--caffe_proto",
                         "-c",
                         type=_text_type,
-                        default=None,
+                        default='./x2paddle/decoder/caffe_pb2.py',
                         help="caffe proto file of caffe model")
     parser.add_argument("--version",
                         "-v",
@@ -92,7 +92,8 @@ def tf2paddle(model_path, save_dir):
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
     if caffe_proto is not None:
         import os
-        if not os.path.isfile(caffe_proto + 'caffe_pb2.py'):
+        print(caffe_proto)
+        if caffe_proto != 'None' and not os.path.isfile(caffe_proto):
             print("The file that resolve caffe is not exist.")
             return
     else:

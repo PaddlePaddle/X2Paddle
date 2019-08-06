@@ -22,18 +22,21 @@ from x2paddle.op_mapper import caffe_shape
 
 
 class CaffeResolver(object):
-    def __init__(self, caffe_proto_folder=None):
-        self.proto_path = caffe_proto_folder
-        if self.proto_path == None:
+    def __init__(self, caffe_proto):
+        self.proto_path = caffe_proto
+        if self.proto_path == 'None':
             self.use_default = True
         else:
             self.use_default = False
         self.import_caffe()
 
     def import_caffepb(self):
-        sys.path.append(self.proto_path)
-        import caffe_pb2
-        return caffe_pb2
+        (filepath,
+         tempfilename) = os.path.split(os.path.abspath(self.proto_path))
+        (filename, extension) = os.path.splitext(tempfilename)
+        sys.path.append(filepath)
+        out = __import__(filename)
+        return out
 
     def import_caffe(self):
         self.caffe = None
@@ -139,9 +142,16 @@ class CaffeGraph(Graph):
                                 dim=[dims[0], dims[1], dims[2], dims[3]
                                      ]))).to_proto().layer[0])
                     except:
-                        raise ImportError(
-                            'The .proto file does not work for the old style prototxt. You must install the caffe or modify the old style to new style in .protottx file.'
+                        print(
+                            "The .py fiel compiled by .proto file does not work for the old style prototxt. "
                         )
+                        print("There are 2 solutions for you as below:")
+                        print(
+                            "1. install caffe and set \'--caffe_proto=None\'.")
+                        print(
+                            "2. modify your .prototxt from the old style to the new style."
+                        )
+                        sys.exit(-1)
                     data.name = self.model.input[i]
                     data.top[0] = self.model.input[i]
             else:
@@ -155,9 +165,16 @@ class CaffeGraph(Graph):
                                 dim=[dims[0], dims[1], dims[2], dims[3]
                                      ]))).to_proto().layer[0])
                     except:
-                        raise ImportError(
-                            'The .proto file does not work for the old style prototxt. You must install the caffe or modify the old style to new style in .protottx file.'
+                        print(
+                            "The .py fiel compiled by .proto file does not work for the old style prototxt. "
                         )
+                        print("There are 2 solutions for you as below:")
+                        print(
+                            "1. install caffe and set \'--caffe_proto=None\'.")
+                        print(
+                            "2. modify your .prototxt from the old style to the new style."
+                        )
+                        sys.exit(-1)
                     data.name = self.model.input[i]
                     data.top[0] = self.model.input[i]
             layers = [data] + layers
@@ -202,11 +219,14 @@ class CaffeGraph(Graph):
 
 
 class CaffeDecoder(object):
-    def __init__(self, proto_path, model_path, caffe_proto_folder=None):
+    def __init__(self,
+                 proto_path,
+                 model_path,
+                 caffe_proto='./x2paddle/decoder/caffe_pb2.py'):
         self.proto_path = proto_path
         self.model_path = model_path
 
-        self.resolver = CaffeResolver(caffe_proto_folder=caffe_proto_folder)
+        self.resolver = CaffeResolver(caffe_proto=caffe_proto)
         self.net = self.resolver.NetParameter()
         with open(proto_path, 'rb') as proto_file:
             proto_str = proto_file.read()
