@@ -556,7 +556,7 @@ class ONNXDecoder(object):
                 break
             keep_nodes.append(node)
 
-        infer_shapes = onnx.shape_inference.infer_shapes(model)
+#         infer_shapes = onnx.shape_inference.infer_shapes(model)
 
         var_out = []
         value_infos = []
@@ -568,7 +568,7 @@ class ONNXDecoder(object):
             value_infos.append(value_info)
 
         graph = helper.make_graph(keep_nodes, model.graph.name, model.graph.input, var_out,
-                                  model.graph.initializer, value_info = infer_shapes.graph.value_info)#, 
+                                  model.graph.initializer)#, 
 
         onnx_model = helper.make_model(graph)
         onnx_model.ir_version = model.ir_version
