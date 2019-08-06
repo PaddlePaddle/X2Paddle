@@ -527,9 +527,6 @@ class ONNXDecoder(object):
                 external=True,
             )
         return value_info
-
-#     def save_inference_model(self, save_dir):
-#         onnx.save(self.model, save_dir+'model.onnx')
         
     def split_model(self, model, outputs=None):
         """
@@ -587,14 +584,18 @@ class ONNXDecoder(object):
         return onnx_model
 
     def get_dynamic_shape(self, model_onnx, layer, input_shapes):
-        import onnxruntime as rt
-        from onnxruntime.backend import prepare
+#         import onnxruntime as rt
+#         from onnxruntime.backend import prepare
         import numpy as np
-        num_onnx = self.split_model(model_onnx, layer)
-        sess = prepare(num_onnx)
+        from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
         np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
-        output = sess.run(model = sess, inputs = np_images)
+        
+        num_onnx = self.split_model(model_onnx, layer)
+        prepared_backend = prepare(num_onnx)
+        output = prepared_backend.run(np_images)
+#         sess = prepare(num_onnx)
+#       output = sess.run(model = sess, inputs = np_images)
         return output[0].tolist()
 
     
