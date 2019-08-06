@@ -17,7 +17,7 @@ from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.decoder.onnx_decoder import ONNXGraph ONNXGraphNode
+from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode
 import numpy as np
 import logging as _logging
 from collections import OrderedDict as _dict
