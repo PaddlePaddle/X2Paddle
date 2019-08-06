@@ -114,14 +114,14 @@ def onnx2paddle(model_path, save_dir):
     # check tensorflow installation and version
     try:
         import onnx
-        version = onnx.version.full_version
-        if version != '1.5.1':
+        version = onnx.version.version
+        if version != '1.5.0':
             print(
-                "paddle==1.5.1 is required"
+                "onnx==1.5.0 is required"
             )
             return
     except:
-        print("paddle is not installed, use \"pip install tensorflow\".")
+        print("onnx is not installed, use \"pip install onnx==1.5.0\".")
         return
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
