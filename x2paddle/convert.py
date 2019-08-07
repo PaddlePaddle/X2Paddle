@@ -45,11 +45,11 @@ def arg_parser():
                         default=None,
                         help="define which deeplearning framework")
     parser.add_argument(
-                        "--caffe_proto",
-                        "-c",
-                        type=_text_type,
-                        default=None,
-                        help="the .py file compiled by caffe proto file of caffe model")
+        "--caffe_proto",
+        "-c",
+        type=_text_type,
+        default=None,
+        help="the .py file compiled by caffe proto file of caffe model")
     parser.add_argument("--version",
                         "-v",
                         action="store_true",
