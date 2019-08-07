@@ -25,9 +25,7 @@ import numpy as np
 import logging as _logging
 from collections import OrderedDict as _dict
 
-
 _logger = _logging.getLogger(__name__)
-
 
 def _const_weight_or_none(node):
     if 'Constant' in node.layer_name:
@@ -48,7 +46,7 @@ class ONNXOpMapper(OpMapper):
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
 
-        #mapping op info
+        #mapping op
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
@@ -106,7 +104,7 @@ class ONNXOpMapper(OpMapper):
         if '_' in mapped_attrs:
             mapped_attrs.pop('_')
         fluid_attrs = default_attrs.copy()
-        fluid_attrs.update(mapped_attrs)  # as new attrs
+        fluid_attrs.update(mapped_attrs)
         val_inps = inputs if input_perm is None else list(map(lambda i: inputs[i],
                                                          input_perm))
         val_outs = outputs if output_perm is None else list(map(lambda i: outputs[i],
@@ -165,9 +163,9 @@ class ONNXOpMapper(OpMapper):
     
     def Pad(self, node, op_independent=True):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        pads = node.get_attr('pads') # required
-        mode = node.get_attr('mode', 'constant')  # optional
-        value = node.get_attr('value', 0.)  # optional
+        pads = node.get_attr('pads') 
+        mode = node.get_attr('mode', 'constant') 
+        value = node.get_attr('value', 0.)
         data_shape = val_x.out_shapes
         output_shape = node.out_shapes
         assume_pad2d = False
@@ -216,15 +214,13 @@ class ONNXOpMapper(OpMapper):
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
 
-        # interpretation
-        value = node.get_attr('value') # required
+        value = node.get_attr('value')
         dtype = np.dtype(value.dtype)
         output_dtype = val_output.dtype
         if output_dtype:
             assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
-        #dtype = np.dtype('float32') # HINT: force to float32
-        shape = node.get_attr('shape', None)  #
+        shape = node.get_attr('shape', None)
         if shape is None:
             shape = val_output.out_shapes
         if shape is None:
@@ -234,10 +230,9 @@ class ONNXOpMapper(OpMapper):
                 'attribute "shape" of %s not inferred, '
                 'using value as 1-D tensor may lead to fails', val_output.layer_name, val_output.layer_name)
 
-        # generation
         value = value.tolist()
         if len(value) == 1:  # scalar
-            shape = [1]  # WORKAROUND: bad scalar support
+            shape = [1]
             value = value[0]
             if  dtype.name == 'int64':
                 dtype = 'int32'
@@ -255,13 +250,10 @@ class ONNXOpMapper(OpMapper):
         val_scales = self.graph.get_node(node.layer.input[1], copy=True)
         val_y, = self.graph.get_node(node.layer.output[0], copy=True)
         
-        # interpretation
-        # output shape
         out_shape_ = val_y.out_shapes
         if out_shape_ is not None:
             assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
             out_shape_ = out_shape_[2:]
-        # try scales
         scales = _const_weight_or_none(val_scales)
         if scales is not None:
             assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
@@ -270,7 +262,6 @@ class ONNXOpMapper(OpMapper):
             assert scales[2] == scales[
                 3], 'only aspect-ratio-invariant scale supported'
         scale = scales[2] if scales else None
-        # try input shape
         if scale is None:
             assert out_shape_, 'neither scales nor output shape is available'
             out_shape = out_shape_
@@ -283,7 +274,7 @@ class ONNXOpMapper(OpMapper):
                 out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
         
         mode = node.get_attr('mode', 'nearest')
-        fluid_op = 'resize_{}'.format(mode)  # not sure bilinear will be linear?
+        fluid_op = 'resize_{}'.format(mode)
         name_attr = ', name={}'.format(repr(name)) if name else ''
         
         attr = {
@@ -291,14 +282,9 @@ class ONNXOpMapper(OpMapper):
                 'out_shape':out_shape,
                 'name':string(node.layer_name)
                 }
-        # generation
         node.fluid_code.add_layer(fluid_op, inputs=val_x, output = node, param_attr=attr)
 
     def ConstantOfShape(self, node):
-        """
-        onnx::ConstantOfShape-9:
-        """
-        # I/O
         val_shape = self.graph.get_node(node.layer.input[0], copy=True)
 
         shape = _const_weight_or_none(val_shape)
@@ -310,12 +296,11 @@ class ONNXOpMapper(OpMapper):
             'given shape is neither const value nor deductible from output, '
             'this is not supported')
         
-        value = node.get_attr('value') # required
+        value = node.get_attr('value')
         dtype = value.dtype
-        # generation
         value = value.tolist()
-        if len(value) == 1:  # scalar
-            shape = [1]  # WORKAROUND: bad scalar support
+        if len(value) == 1: 
+            shape = [1] 
             value = value[0]
             if  dtype.name == 'int64':
                 dtype = 'int32'
@@ -328,17 +313,12 @@ class ONNXOpMapper(OpMapper):
                                     inputs=None, output=node, param_attr=attr)
 
     def Split(self, node):
-        """
-        onnx::Split-2:
-        """
-        # I/O
         val_input = self.graph.get_node(node.layer.input[0], copy=True)
         var_outs = [val for val in node.layer.input]
 
-        # interpretation
         fluid_op = 'split'
-        split = node.get_attr['split']  # required
-        axis =  node.get_attr('axis', 0)  # optional
+        split = node.get_attr['split']  
+        axis =  node.get_attr('axis', 0)
         attr= {
                 'split':split,
                 'axis':axis,
@@ -354,6 +334,7 @@ class ONNXOpMapper(OpMapper):
         shape = None
         if isinstance(val_shape, ONNXGraphDataNode):
             self.omit_nodes.append(val_shape.layer_name)
+        
         # catch dynamic graph shape
         if isinstance(val_shape, ONNXGraphNode):
             shape = self.decoder.get_dynamic_shape_from_caffe2(self.decoder.model, 
@@ -386,10 +367,8 @@ class ONNXOpMapper(OpMapper):
         val_input = self.graph.get_node(node.layer.input[0], copy=True)
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
 
-        # interpretation
-        dtype = node.get_attr('to') # required
-        
-        if not isinstance(dtype, np.dtype):  # additional: possible np.dtype
+        dtype = node.get_attr('to') 
+        if not isinstance(dtype, np.dtype): 
             dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
             
         output_dtype = val_output.dtype
@@ -432,12 +411,11 @@ class ONNXOpMapper(OpMapper):
                                   param_attr=attr)
         
     def _roi_pool(self, node, fluid_op=None):
-        # I/O
+        
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_rois = self.graph.get_node(node.layer.input[1], copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
 
-        # interpretation
         spatial_scale = node.get_attr('spatial_scale') # required
         pooled_height, pooled_width = node.get_attr('pooled_shape')  # required
         
@@ -452,7 +430,6 @@ class ONNXOpMapper(OpMapper):
             output_channels = node.get_attr['output_channels']
             attr['output_channels']= output_channels
             
-        # generation
         node.fluid_code.add_layer(fluid_op,
                                   inputs=','.join([valx,val_rois]),
                                   output=node,

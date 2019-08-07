@@ -399,10 +399,6 @@ class ONNXDecoder(object):
     def split_model(self, model, outputs=None):
         """
         Takes a model and changes its outputs.
-        :param model: *ONNX* model
-        :param outputs: new outputs
-        :return: modified model
-        The function removes unneeded files.
         """
         if outputs is None:
             raise RuntimeError("outputs is None")
@@ -443,6 +439,9 @@ class ONNXDecoder(object):
         return onnx_model
 
     def get_dynamic_shape_from_caffe2(self, model_onnx, layer, input_shapes):
+        """
+        get dynamic shape from caffe2.backend
+        """
         from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
         np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
@@ -452,6 +451,9 @@ class ONNXDecoder(object):
         return output[0].tolist()
     
     def get_dynamic_shape_from_onnx(self, model_onnx, layer, input_shapes):
+        """
+        get dynamic shape from onnxruntime
+        """
         import onnxruntime as rt
         from onnxruntime.backend import prepare
         import numpy as np
