@@ -49,6 +49,11 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="caffe proto file of caffe model")
+    parser.add_argument("--version",
+                        "-v",
+                        action="store_true",
+                        default=False,
+                        help="get version of x2paddle")
     return parser
 
 
