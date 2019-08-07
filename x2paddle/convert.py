@@ -55,6 +55,7 @@ def arg_parser():
                         action="store_true",
                         default=False,
                         help="get version of x2paddle")
+
     return parser
 
 
