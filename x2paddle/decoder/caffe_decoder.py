@@ -23,42 +23,20 @@ from x2paddle.op_mapper import caffe_shape
 
 class CaffeResolver(object):
     def __init__(self, caffe_proto):
-        self.proto_path = caffe_proto
-        if self.proto_path is None:
-            self.use_default = True
-        else:
-            self.use_default = False
+        self.caffe_proto = caffe_proto
         self.import_caffe()
 
     def import_caffepb(self):
         (filepath,
-         tempfilename) = os.path.split(os.path.abspath(self.proto_path))
+         tempfilename) = os.path.split(os.path.abspath(self.caffe_proto))
         (filename, extension) = os.path.splitext(tempfilename)
         sys.path.append(filepath)
         out = __import__(filename)
         return out
 
     def import_caffe(self):
-        self.caffe = None
-        self.caffepb = None
-        if self.use_default:
-            try:
-                # Try to import PyCaffe first
-                import caffe
-                self.caffe = caffe
-            except ImportError:
-                # Fall back to the protobuf implementation
-                self.caffepb = self.import_caffepb()
-        else:
-            self.caffepb = self.import_caffepb()
-        if self.caffe:
-            # Use the protobuf code from the imported distribution.
-            # This way, Caffe variants with custom layers will work.
-            self.caffepb = self.caffe.proto.caffe_pb2
+        self.caffepb = self.import_caffepb()
         self.NetParameter = self.caffepb.NetParameter
-
-    def has_pycaffe(self):
-        return self.caffe is not None
 
 
 class CaffeGraphNode(GraphNode):
@@ -125,62 +103,6 @@ class CaffeGraph(Graph):
         layers = self.model.layers or self.model.layer
         layers = self.filter_layers(layers)
 
-        inputs_num = len(self.model.input)
-        if inputs_num != 0:
-            input_dims_num = len(self.model.input_dim)
-            if input_dims_num != 0:
-                if input_dims_num > 0 and input_dims_num != inputs_num * 4:
-                    raise Error('invalid input_dim[%d] param in prototxt' %
-                                (input_dims_num))
-                for i in range(inputs_num):
-                    dims = self.model.input_dim[i * 4:(i + 1) * 4]
-                    data = self.model.layer.add()
-                    try:
-                        from caffe import layers as L
-                        data.CopyFrom(
-                            L.Input(input_param=dict(shape=dict(
-                                dim=[dims[0], dims[1], dims[2], dims[3]
-                                     ]))).to_proto().layer[0])
-                    except:
-                        print(
-                            "The .py file compiled by .proto file does not work for the old style prototxt. "
-                        )
-                        print("There are 2 solutions for you as below:")
-                        print(
-                            "1. install caffe and don\'t set \'--caffe_proto\'."
-                        )
-                        print(
-                            "2. modify your .prototxt from the old style to the new style."
-                        )
-                        sys.exit(-1)
-                    data.name = self.model.input[i]
-                    data.top[0] = self.model.input[i]
-            else:
-                for i in range(inputs_num):
-                    dims = self.model.input_shape[i].dim[0:4]
-                    data = self.model.layer.add()
-                    try:
-                        from caffe import layers as L
-                        data.CopyFrom(
-                            L.Input(input_param=dict(shape=dict(
-                                dim=[dims[0], dims[1], dims[2], dims[3]
-                                     ]))).to_proto().layer[0])
-                    except:
-                        print(
-                            "The .py file compiled by .proto file does not work for the old style prototxt. "
-                        )
-                        print("There are 2 solutions for you as below:")
-                        print(
-                            "1. install caffe and don\'t set \'--caffe_proto\'."
-                        )
-                        print(
-                            "2. modify your .prototxt from the old style to the new style."
-                        )
-                        sys.exit(-1)
-                    data.name = self.model.input[i]
-                    data.top[0] = self.model.input[i]
-            layers = [data] + layers
-
         top_layer = {}
         for layer in layers:
             self.node_map[layer.name] = CaffeGraphNode(layer)
@@ -202,7 +124,7 @@ class CaffeGraph(Graph):
                 node = self.node_map[layer_name]
                 node.set_params(data)
             else:
-                raise Exception('Ignoring parameters for non-existent layer: %s' % \
+                print('Ignoring parameters for non-existent layer: %s' % \
                        layer_name)
 
         super(CaffeGraph, self).build()
@@ -221,34 +143,19 @@ class CaffeGraph(Graph):
 
 
 class CaffeDecoder(object):
-    def __init__(self, proto_path, model_path, caffe_proto=None):
+    def __init__(self, proto_path, model_path, caffe_proto):
         self.proto_path = proto_path
         self.model_path = model_path
 
         self.resolver = CaffeResolver(caffe_proto=caffe_proto)
         self.net = self.resolver.NetParameter()
         with open(proto_path, 'rb') as proto_file:
-            proto_str = proto_file.read()
+            proto_str = self.old2new(proto_file)
             text_format.Merge(proto_str, self.net)
 
-        self.load()
+        self.load_using_pb()
         self.caffe_graph = CaffeGraph(self.net, self.params)
         self.caffe_graph.build()
-
-    def load(self):
-        if self.resolver.has_pycaffe():
-            self.load_using_caffe()
-        else:
-            self.load_using_pb()
-
-    def load_using_caffe(self):
-        caffe = self.resolver.caffe
-        caffe.set_mode_cpu()
-        print(self.proto_path)
-        print(self.model_path)
-        net = caffe.Net(self.proto_path, self.model_path, caffe.TEST)
-        data = lambda blob: blob.data
-        self.params = [(k, list(map(data, v))) for k, v in net.params.items()]
 
     def load_using_pb(self):
         data = self.resolver.NetParameter()
@@ -271,3 +178,69 @@ class CaffeDecoder(object):
             data = np.array(blob.data, dtype=np.float32).reshape(c_o, c_i, h, w)
             transformed.append(data)
         return transformed
+
+    def old2new(self, proto_file):
+        part1_str = ''
+        part2_str = ''
+        part3_str = ''
+        is_input = False
+        dims = []
+        line = proto_file.readline()
+        print('Check if it is a new style of caffe...')
+        while line:
+            l_str = bytes.decode(line)
+            if l_str.replace(' ', '').startswith('input:'):
+                part2_str += 'layer {\n'
+                part2_str += (
+                    '  name: ' +
+                    l_str.strip().replace(' ', '').split('input:')[-1] + '\n')
+                part2_str += '  type: \"Input\"\n'
+                part2_str += (
+                    '  top: ' +
+                    l_str.strip().replace(' ', '').split('input:')[-1] + '\n')
+                is_input = True
+                line = proto_file.readline()
+                continue
+            elif l_str.replace(' ', '').startswith('input_dim:'):
+                dims.append(
+                    int(l_str.strip().replace(' ', '').split('input_dim:')[-1]))
+                if len(dims) == 4:
+                    part2_str += '  input_param { shape: { dim: ' + str(dims[0]) + \
+                                               ' dim: ' + str(dims[1]) + \
+                                               ' dim: ' + str(dims[2]) + \
+                                               ' dim: ' + str(dims[3]) + ' } }\n'
+                    dims = []
+                    part2_str += '}\n'
+                line = proto_file.readline()
+                if bytes.decode(line).replace(' ', '').startswith('}'):
+                    line = proto_file.readline()
+                continue
+            elif l_str.replace(' ', '').startswith('input_shape'):
+                part2_str += l_str.replace('input_shape',
+                                           'input_param { shape: ')
+                l_str = bytes.decode(proto_file.readline())
+                while l_str:
+                    if '}' in l_str:
+                        part2_str += l_str + '\n}\n}'
+                        break
+                    else:
+                        part2_str += l_str
+                    l_str = bytes.decode(proto_file.readline())
+                line = proto_file.readline()
+                continue
+            if not is_input:
+                part1_str += bytes.decode(line)
+            else:
+                part3_str += bytes.decode(line)
+            line = proto_file.readline()
+        out = part1_str + part2_str + part3_str
+        layer_str = 'layer{'
+        part = out.split(layer_str)
+        if len(part) == 1:
+            layer_str = 'layer {'
+            part = out.split(layer_str)
+        for i in range(len(part)):
+            if part[i].strip().replace(' ', '') == '' or part[i].count(':') > 1:
+                continue
+            out = out.replace(layer_str + part[i], part[i].replace(' ', ''))
+        return str.encode(out)

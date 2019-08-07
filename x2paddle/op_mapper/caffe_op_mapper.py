@@ -27,10 +27,6 @@ class CaffeOpMapper(OpMapper):
         self.weights = dict()
         resolver = decoder.resolver
         self.used_custom_layers = {}
-        if resolver.has_pycaffe():
-            self.did_use_pb = False
-        else:
-            self.did_use_pb = True
 
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
         for node_name in self.graph.topo_sort:
@@ -79,8 +75,6 @@ class CaffeOpMapper(OpMapper):
 
     def adjust_parameters(self, node):
         data = node.data
-        if not self.did_use_pb:
-            return data
         # When using the protobuf-backend, each parameter initially has four dimensions.
         # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
         # This implementation takes care of the common cases. However, it does leave the
@@ -93,6 +87,8 @@ class CaffeOpMapper(OpMapper):
             squeeze_indices.append(0)  # Squeeze FC.
 
         for idx in squeeze_indices:
+            print('Transform the weights of {}...'.format(node.layer_name +
+                                                          str(idx)))
             if idx >= len(data):
                 continue
 
@@ -892,7 +888,7 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def Flatten(self, noed):
+    def Flatten(self, node):
         assert len(
             node.inputs
         ) == 1, 'The count of DetectionOutput node\'s input is not 1.'

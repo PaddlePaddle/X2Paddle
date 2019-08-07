@@ -49,7 +49,7 @@ def arg_parser():
         "--caffe_proto",
         "-c",
         type=_text_type,
-        default=None,
+        default='./x2paddle/decoder/caffe_pb2.py',
         help="the .py file compiled by caffe proto file of caffe model")
     parser.add_argument("--version",
                         "-v",
@@ -91,24 +91,10 @@ def tf2paddle(model_path, save_dir):
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
-    if caffe_proto is not None:
-        import os
-        if caffe_proto is not None and not os.path.isfile(caffe_proto):
-            print("The .py file compiled by caffe.proto is not exist.")
-            return
-    else:
-        try:
-            import caffe
-            version = caffe.__version__
-            if version != '1.0.0':
-                print("caffe == 1.0.0 is required")
-                return
-        except:
-            print("Caffe is not installed.")
-            print(
-                "You have 2 options: 1. install caffe 2. compile the caffe.proto"
-            )
-            return
+    import os
+    if caffe_proto is not None and not os.path.isfile(caffe_proto):
+        print("The .py file compiled by caffe.proto is not exist.")
+        return
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
 
