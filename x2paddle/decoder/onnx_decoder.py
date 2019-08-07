@@ -30,34 +30,6 @@ from copy import deepcopy
 
 default_op_domain = 'ai.onnx'
 
-def skip_node_forward(nodes, src_output_name, dst_input_name, input_refs):
-    """
-    skip nodes between src_output_name -> dst_input_name and connect this pair
-    """
-
-    processed = 0
-    for next_idx in input_refs[src_output_name]:
-        next_node = nodes[next_idx]
-        for val_idx, next_input_name in enumerate(next_node.input):
-            if next_input_name == src_output_name:
-                next_node.input[val_idx] = dst_input_name
-                processed += 1
-    return processed
-
-def skip_node_backward(nodes, src_input_name, dst_output_name, output_refs):
-    """
-    skip nodes between dst_output_name -> src_input_name and connect this pair
-    """
-
-    processed = 0
-    for prev_idx in output_refs[src_input_name]:
-        prev_node = nodes[prev_idx]
-        for val_idx, prev_output_name in enumerate(prev_node.output):
-            if prev_output_name == src_input_name:
-                prev_node.output[val_idx] = dst_output_name
-                processed += 1
-    return processed
-
 class ONNXGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
@@ -69,18 +41,25 @@ class ONNXGraphNode(GraphNode):
         self.attr_map = self.get_attr_map()
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
         self.weight_inputs = list()
-        
-    def __eq__(self, other):
-        if isinstance(other,str):
-            if self.layer.name == other:
-                return True
-        elif self.layer.name == other.layer.name:
-            return True
-        return False
+        self.out_shapes = None
+        self.dtype = None
         
     def get_attr_map(self):
+        """
+        convert ONNX node attributes to dict
+        """
         return {attr.name: self.get_attribute_value2(attr) for attr in self.layer.attribute} 
-        
+
+    @property
+    def value(self):
+        assert 'Constant' in self.layer_type, "Only Constant node has value."
+
+        attr = self.layer.attr['value']
+        if 'value' in self.attr_map:
+            return default
+        return self.attr_map[name]
+        return tensor_util.MakeNdarray(field)
+
     def get_attribute_value2(self,attr):
         """
         get_attribute_value enhanced
@@ -97,19 +76,10 @@ class ONNXGraphNode(GraphNode):
             value = get_attribute_value(attr)
         return value
 
-    def set_inputs(self):
-        self.inputs = self.layer.input
-
-    def set_outputs(self):
-        self.outputs = self.layer.output
-
-    def node_attrs(node):
-        """
-        convert ONNX node attributes to dict
-        """
-        return {attr.name: get_attribute_value2(attr) for attr in node.attribute}  # dict
-
     def get_attr(self, name, default=None):
+        """
+        get_attribute_value from attr_map
+        """
         if name not in self.attr_map:
             return default
         return self.attr_map[name]
@@ -126,22 +96,29 @@ class ONNXGraphDataNode(GraphNode):
             self.layer_type = 'create_parameter'
         self.layer_name = layer_name
         self.fluid_code = FluidCode()
-        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
-            
-    def __eq__(self, other):
-        if isinstance(other,str):
-            if self.layer.name == other:
-                return True
-        elif self.layer.name == other.layer.name:
-            return True
-        return False
+        self.weight = None
+        self.embeded_as = None
+
+    @property
+    def out_shapes(self):
+        values = self.layer.type.tensor_type.shape.dim
+        out_shapes = list()
+        out_shapes = [dim.dim_value for dim in values]
+        return out_shapes
+
+    @property
+    def dtype(self):
+        dtype = self.layer.type.tensor_type.elem_type
+
+        return TENSOR_TYPE_TO_NP_TYPE[dtype]
+
 
 class ONNXGraph(Graph):
     def __init__(self, model):
         super(ONNXGraph, self).__init__(model)
         self.initializer = {}
-        self.data_input = list()
-        self.get_data_input()
+        self.place_holder_nodes = list()
+        self.get_place_holder_nodes()
         
     def get_inner_nodes(self):
         """
@@ -156,25 +133,12 @@ class ONNXGraph(Graph):
             inner_nodes.append(name)
         return inner_nodes
 
-    def get_data_input(self):
+    def get_place_holder_nodes(self):
         inner_nodes = self.get_inner_nodes()
         input_nodes = [value.name for value in self.model.input]
         for ipt_data in input_nodes:
             if ipt_data not in inner_nodes:
-                self.data_input.append(ipt_data)
-
-    def build_value_refs(self, nodes):
-        """
-        build op reference of inputs and outputs
-        """
-        input_refs = Dict()
-        output_refs = Dict()
-        for idx, node in enumerate(nodes):
-            for val_name in node.input:
-                input_refs.setdefault(val_name, set()).add(idx)
-            for val_name in node.output:
-                output_refs.setdefault(val_name, set()).add(idx)
-        return input_refs, output_refs
+                self.place_holder_nodes.append(ipt_data)
     
     def is_global_input(self, layer):
         inner_nodes = self.get_inner_nodes()
@@ -182,58 +146,84 @@ class ONNXGraph(Graph):
         if layer not in inner_nodes:
                 return True
         return False
-                      
+    
     def build(self):
         """
         build topo_sort of ONNX model
         """ 
         for layer in self.model.node:
             self.node_map[layer.name] = ONNXGraphNode(layer)
-
+        
+        #set op node's dtype and out_shapes
+        for item in self.model.value_info:
+            if item.name in self.node_map:
+                self.node_map[item.name].dtype = TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type]
+                self.node_map[item.name].out_shapes = [dim.dim_value for dim in item.type.tensor_type.shape.dim]
+            
         for layer in self.model.input:
             if layer.name not in self.node_map:
                 is_global_input = self.is_global_input(layer.name)
-                self.node_map[layer.name] = ONNXGraphDataNode(layer, layer_name=layer.name, is_global_input=is_global_input)
+                self.node_map[layer.name] = ONNXGraphDataNode(layer, layer_name=layer.name,
+                                                              is_global_input=is_global_input)
+        #set data node's weight
+        for name, weight in self.graph_weights(self.model):
+            if name in self.node_map:
+                if  isinstance(self.node_map[name], ONNXGraphDataNode):
+                    self.node_map[name].weight = weight
+                    self.node_map[name].embeded_as = []
 
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 for idx, in_node in enumerate(node.layer.input):
                     if in_node not in self.node_map:
-                        node.weight_inputs.append(in_node)
+                        raise Exception(
+                                'input[{}] of node[{}] does not exist in node_map'.
+                                format(in_node, layer_name))
                     else:
                         self.connect(in_node, layer_name)
                         
         super(ONNXGraph, self).build()
-        self.input_nodes = self.data_input
+        
+        self.input_nodes = self.place_holder_nodes
 
     def get_nodes(self, names, copy=False):
         nodes = []
         for name in names:
             nodes.add(self.get_node(name, copy=copy))
+            
+    def graph_weights(self, graph):
+        """
+        generator for weights
+        """
 
+        if not isinstance(graph, onnx.GraphProto):
+            logger.error('graph is not a GraphProto instance')
+            return
+
+        for initializer in graph.initializer:
+            name = initializer.name
+            weight = to_array(initializer)
+            yield name, weight
+    
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
         model = onnx.load(onnx_model)
+        print('model ir_version: {}, op version: {}'.format
+              (model.ir_version, model.opset_import))
+        
         check_model(model)
+        model = convert_version(model, 9)
         model = polish_model(model)
         
         model = self.optimize_model_skip_op_for_inference(model)
         model = self.optimize_model_strip_initializer(model)
         self.standardize_variable_name(model.graph)
         
-        graph_def = model.graph
         self.model = model
+        graph_def = model.graph
+        
         self.onnx_graph = ONNXGraph(graph_def)
         self.onnx_graph.build()
-        self.graph_value_infos = self.inferred_model_value_info(model)
-
-        # add weight info
-        for name, weight in self.graph_weights(graph_def):
-            value_info = self.graph_value_infos[name]
-            value_info['embeded_as'] = []
-            value_info['get_weight'] = (lambda w: lambda: w.tolist())(
-                weight)
-            value_info['weight'] = weight
 
     def build_value_refs(self, nodes):
         """
@@ -247,6 +237,35 @@ class ONNXDecoder(object):
             for val_name in node.output:
                 output_refs.setdefault(val_name, set()).add(idx)
         return input_refs, output_refs
+
+
+    def skip_node_forward(self, nodes, src_output_name, dst_input_name, input_refs):
+        """
+        skip nodes between src_output_name -> dst_input_name and connect this pair
+        """
+
+        processed = 0
+        for next_idx in input_refs[src_output_name]:
+            next_node = nodes[next_idx]
+            for val_idx, next_input_name in enumerate(next_node.input):
+                if next_input_name == src_output_name:
+                    next_node.input[val_idx] = dst_input_name
+                    processed += 1
+        return processed
+
+    def skip_node_backward(self, nodes, src_input_name, dst_output_name, output_refs):
+        """
+        skip nodes between dst_output_name -> src_input_name and connect this pair
+        """
+
+        processed = 0
+        for prev_idx in output_refs[src_input_name]:
+            prev_node = nodes[prev_idx]
+            for val_idx, prev_output_name in enumerate(prev_node.output):
+                if prev_output_name == src_input_name:
+                    prev_node.output[val_idx] = dst_output_name
+                    processed += 1
+        return processed
     
     def optimize_model_skip_op_for_inference(self, model, op_list=None):
         """
@@ -257,11 +276,8 @@ class ONNXDecoder(object):
             
         nodes = model.graph.node
         input_refs, output_refs = self.build_value_refs(nodes)
-
         ret = type(model)()
         ret.CopyFrom(model)
-        ret.graph.ClearField(
-            'value_info')  # WORKAROUND: onnx do not drop old value_info
         ret_nodes = ret.graph.node
         nodes_to_remove = []
         for node_idx, node in enumerate(nodes):
@@ -283,23 +299,23 @@ class ONNXDecoder(object):
                 output_name = node.output[0]
 
             if output_name in input_refs:
-                processed = skip_node_forward(ret_nodes, output_name, input_name,
+                processed = self.skip_node_forward(ret_nodes, output_name, input_name,
                                               input_refs)
             elif input_name in output_refs:
-                processed = skip_node_backward(ret_nodes, input_name, output_name,
+                processed = self.skip_node_backward(ret_nodes, input_name, output_name,
                                                output_refs)
             else:
                 processed = -1
 
             if processed > 0:
                 nodes_to_remove.append(node_idx)
-                print('skip op %d: %s -> %s -> %s', node_idx, input_name,
-                             node.op_type, output_name)
+                print('skip op {}: {} -> {} -> {}'.format(node_idx, input_name,
+                             node.op_type, output_name))
             elif processed == 0:
                 print('weird, no node processed')
             else:
-                print('standalone op %d: %s -> %s -> %s not skipped',
-                               node_idx, input_name, node.op_type, output_name)
+                print('standalone op {}: {} -> {} -> {} not skipped'.format(
+                               node_idx, input_name, node.op_type, output_name))
 
         nodes_to_remove.sort(reverse=True)
         for node_idx in nodes_to_remove:
@@ -316,9 +332,6 @@ class ONNXDecoder(object):
 
         ret = type(model)()
         ret.CopyFrom(model)
-        ret.graph.ClearField(
-            'value_info')  # WORKAROUND: onnx do not drop old value_info
-
         # strip initializers
         ret.graph.ClearField('initializer')
         ret_initializers = ret.graph.initializer
@@ -350,20 +363,6 @@ class ONNXDecoder(object):
         for s in ' .*?\\/-:':  #
             name = name.replace(s, '_')
         return '_'+ name
-
-    def graph_weights(self, graph):
-        """
-        generator for weights of an ONNX model
-        """
-
-        if not isinstance(graph, onnx.GraphProto):
-            logger.error('graph is not a GraphProto instance')
-            return
-
-        for initializer in graph.initializer:
-            name = initializer.name
-            weight = to_array(initializer)
-            yield name, weight
        
     def standardize_variable_name(self, graph):
         """
@@ -387,53 +386,9 @@ class ONNXDecoder(object):
             for i in range(len(node.output)):
                 node.output[i]=self.make_variable_name(node.output[i])
    
-    def tensor_dtype(self, tensor):
-        """
-        get ONNX tensor in np.dtype
-        """
-
-        return TENSOR_TYPE_TO_NP_TYPE[tensor.type.tensor_type.elem_type]
-
-    def tensor_shape(self, tensor):
-        """
-        get ONNX tensor shape
-        """
-
-        return [dim.dim_value for dim in tensor.type.tensor_type.shape.dim]
-    
-    def inferred_model_value_info(self, model):
-        """
-        collect value/type info for an ONNX model
-        """
-        model = infer_shapes(model)
-        graph = model.graph
-        value_info = Dict()
-        for item in graph.value_info:
-            value_info[item.name] = dict(
-                dtype=self.tensor_dtype(item),
-                shape=self.tensor_shape(item),
-                external=False,
-            )
-        for item in graph.input:
-            assert item.name not in value_info
-            value_info[item.name] = dict(
-                dtype=self.tensor_dtype(item),
-                shape=self.tensor_shape(item),
-                external=True,
-            )
-        for item in graph.output:
-            #assert item.name not in value_info, 'bypass-model not supported'
-            value_info[item.name] = dict(
-                dtype=self.tensor_dtype(item),
-                shape=self.tensor_shape(item),
-                external=True,
-            )
-        return value_info
-  
     def split_model(self, model, outputs=None):
         """
         Takes a model and changes its outputs.
-
         :param model: *ONNX* model
         :param outputs: new outputs
         :return: modified model
@@ -482,7 +437,7 @@ class ONNXDecoder(object):
         shape = input_shapes[0]
         np_images= np.random.rand(shape[0],shape[1],shape[2],shape[3]).astype('float32')
         num_onnx = self.split_model(model_onnx, layer)
-        prepared_backend = prepare(num_onnx)
+        prepared_backend = prepare(num_onnx, device = 'CPU')
         output = prepared_backend.run(inputs = np_images)
         return output[0].tolist()
     
