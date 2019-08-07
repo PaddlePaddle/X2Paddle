@@ -8,3 +8,6 @@ x2paddle/.ipynb_checkpoints/convert-checkpoint.py
 *checkpoint.py
 /tool/
 *.onnx
+onnx_model/
+onnx_model_not_support/
+onnx_model_supported/
