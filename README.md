@@ -13,7 +13,7 @@ paddlepaddle >= 1.5.0
 
 ## 安装
 ```
-pip install x2paddle --index-url=https://pypi.org/simple/
+pip install x2paddle
 ```
 如果需要使用最新的代码版本，可使用如下方式进行安装  
 ```
