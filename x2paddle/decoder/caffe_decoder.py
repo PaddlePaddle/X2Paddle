@@ -146,6 +146,11 @@ class CaffeDecoder(object):
     def __init__(self, proto_path, model_path, caffe_proto):
         self.proto_path = proto_path
         self.model_path = model_path
+        if caffe_proto is None:
+            caffe_proto = './x2paddle/decoder/caffe_pb2.py'
+        if caffe_proto is not None and not os.path.isfile(caffe_proto):
+            raise Exception(
+                "The .py file compiled by caffe.proto is not exist.")
 
         self.resolver = CaffeResolver(caffe_proto=caffe_proto)
         self.net = self.resolver.NetParameter()
