@@ -58,7 +58,6 @@ class ONNXGraphNode(GraphNode):
         if 'value' in self.attr_map:
             return default
         return self.attr_map[name]
-        return tensor_util.MakeNdarray(field)
 
     def get_attribute_value2(self,attr):
         """

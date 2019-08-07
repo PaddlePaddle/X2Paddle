@@ -118,7 +118,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 
 
 def onnx2paddle(model_path, save_dir):
-    # check tensorflow installation and version
+    # check onnx installation and version
     try:
         import onnx
         version = onnx.version.version
