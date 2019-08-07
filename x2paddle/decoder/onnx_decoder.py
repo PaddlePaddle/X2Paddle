@@ -134,16 +134,20 @@ class ONNXGraph(Graph):
         return inner_nodes
 
     def get_place_holder_nodes(self):
+        """
+        generate place_holder node of ONNX model
+        """
         inner_nodes = self.get_inner_nodes()
         input_nodes = [value.name for value in self.model.input]
         for ipt_data in input_nodes:
             if ipt_data not in inner_nodes:
                 self.place_holder_nodes.append(ipt_data)
     
-    def is_global_input(self, layer):
-        inner_nodes = self.get_inner_nodes()
-        input_nodes = [value.name for value in self.model.input]
-        if layer not in inner_nodes:
+    def is_place_holder_nodes(self, layer):
+        """
+        return layer is or not place_holder node
+        """
+        if layer not in self.place_holder_nodes:
                 return True
         return False
     
@@ -162,16 +166,17 @@ class ONNXGraph(Graph):
             
         for layer in self.model.input:
             if layer.name not in self.node_map:
-                is_global_input = self.is_global_input(layer.name)
+                is_place_holder = self.is_place_holder_nodes(layer.name)
                 self.node_map[layer.name] = ONNXGraphDataNode(layer, layer_name=layer.name,
-                                                              is_global_input=is_global_input)
+                                                              is_global_input=is_place_holder)
         #set data node's weight
         for name, weight in self.graph_weights(self.model):
             if name in self.node_map:
                 if  isinstance(self.node_map[name], ONNXGraphDataNode):
                     self.node_map[name].weight = weight
                     self.node_map[name].embeded_as = []
-
+                    
+        #generate connection between nodes for topo
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 for idx, in_node in enumerate(node.layer.input):
@@ -181,12 +186,17 @@ class ONNXGraph(Graph):
                                 format(in_node, layer_name))
                     else:
                         self.connect(in_node, layer_name)
-                        
+        
+        #generate topo           
         super(ONNXGraph, self).build()
         
+        #generate topo
         self.input_nodes = self.place_holder_nodes
 
     def get_nodes(self, names, copy=False):
+        """
+        get nodes by more than one name
+        """
         nodes = []
         for name in names:
             nodes.add(self.get_node(name, copy=copy))
