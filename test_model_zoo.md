@@ -30,7 +30,7 @@
 # ONNX
 
 | 模型 | 来源 | operator version|
-|-------|--------|
+|-------|--------|---------|
 | Resnet18 | [torchvison.model.resnet18](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
 | Resnet34 | [torchvison.model.resnet34](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
 | Resnet50 | [torchvison.model.resnet50](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
