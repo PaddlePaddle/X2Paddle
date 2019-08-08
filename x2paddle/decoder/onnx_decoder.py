@@ -464,10 +464,12 @@ class ONNXDecoder(object):
             import torch
             version = torch.__version__
             if '1.1.0' not in version:
-                print("torch==1.1.0 is required")
+                print("your model have dynamic graph, torch==1.1.0 is required")
                 return
         except:
-            print("onnx is not installed, use \"pip install torch==1.1.0\".")
+            print(
+                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
+            )
             return
         from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
