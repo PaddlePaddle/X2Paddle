@@ -15,7 +15,6 @@
 from six import text_type as _text_type
 import argparse
 import sys
-import x2paddle
 
 
 def arg_parser():
@@ -100,9 +99,32 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     mapper.save_inference_model(save_dir)
 
 
+def onnx2paddle(model_path, save_dir):
+    # check onnx installation and version
+    try:
+        import onnx
+        version = onnx.version.version
+        if version != '1.5.0':
+            print("onnx==1.5.0 is required")
+            return
+    except:
+        print("onnx is not installed, use \"pip install onnx==1.5.0\".")
+        return
+
+    from x2paddle.decoder.onnx_decoder import ONNXDecoder
+    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
+    from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
+    print("Now translating model from onnx to paddle.")
+    model = ONNXDecoder(model_path)
+    mapper = ONNXOpMapper(model)
+    optimizer = ONNXOptimizer(mapper)
+    optimizer.delete_redundance_code()
+    mapper.save_inference_model(save_dir)
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Use \"x2paddle -h\" to print the help information\n")
+        print("Use \"x2paddle -h\" to print the help information")
         return
 
     parser = arg_parser()
@@ -120,7 +142,6 @@ def main():
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
-
     assert args.framework is not None, "--from is not defined(tensorflow/caffe)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
@@ -132,9 +153,11 @@ def main():
         assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
         caffe2paddle(args.prototxt, args.weight, args.save_dir,
                      args.caffe_proto)
-
+    elif args.framework == "onnx":
+        assert args.model is not None, "--model should be defined while translating onnx model"
+        onnx2paddle(args.model, args.save_dir)
     else:
-        raise Exception("--framework only support tensorflow/caffe now")
+        raise Exception("--framework only support tensorflow/caffe/onnx now")
 
 
 if __name__ == "__main__":
