@@ -3,7 +3,7 @@ from x2paddle.core.util import *
 
 
 def priorbox_shape(input_shape, max_size=None, aspect_ratio=None):
-    fc_shape = input_shapes[0]
+    fc_shape = input_shape[0]
     N = 1
     if not max_size == None:
         N += 1
@@ -18,26 +18,27 @@ def priorbox_layer(inputs,
                    step=0.0,
                    offset=0.5,
                    min_size=None,
-                   max_size=None,
+                   max_size=[],
                    aspect_ratio=[1.0],
                    flip=False,
                    clip=False,
                    variance=[0.1, 0.1, 0.2, 0.2],
                    input_shape=None,
                    name=None):
-    input = input_shape[0]
-    image = input_shape[1]
+    input = inputs[0]
+    image = inputs[1]
     steps = tuple(step) if type(step) is list or type(step) is tuple else (step,
                                                                            step)
+
     box, variance_ = fluid.layers.prior_box(input,
                                             image,
-                                            min_sizes=list(min_size),
-                                            max_sizes=list(max_size),
-                                            aspect_ratios=list(aspect_ratio),
-                                            variance=list(variance),
+                                            min_sizes=min_size,
+                                            max_sizes=max_size,
+                                            aspect_ratios=aspect_ratio,
+                                            variance=variance,
                                             flip=flip,
                                             clip=clip,
-                                            steps=step,
+                                            steps=steps,
                                             offset=offset,
                                             name=name,
                                             min_max_aspect_ratios_order=True)

@@ -63,17 +63,6 @@ class CaffeGraphNode(GraphNode):
     def set_params(self, params):
         self.data = params
 
-    def set_output_shape(self, input_shape, is_input=True):
-        func_name = 'shape_' + self.layer_type.lower()
-        if is_input:
-            self.output_shape = getattr(caffe_shape, func_name)(self.layer,
-                                                                input_shape)
-        else:
-            self.output_shape = input_shape
-
-    def set_input_shape(self, input_shape):
-        self.input_shape = input_shape
-
 
 class CaffeGraph(Graph):
     def __init__(self, model, params):

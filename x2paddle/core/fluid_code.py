@@ -14,6 +14,7 @@
 
 from x2paddle.core.graph import GraphNode
 import collections
+from x2paddle.core.util import *
 
 
 class Layer(object):
@@ -81,6 +82,8 @@ class Layer(object):
 
         param_attr = collections.OrderedDict(self.param_attr)
         for key, value in param_attr.items():
+            if '\n' in str(value):
+                value = string(str(value).replace('\n', ','))
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
