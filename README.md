@@ -12,7 +12,7 @@ paddlepaddle >= 1.5.0
 **以下依赖只需对应安装自己需要的即可**  
 转换tensorflow模型 ： tensorflow == 1.14.0  
 转换caffe模型 ： caffe == 1.0.0  
-转换onnx模型 ： onnx == 1.5.0  pytorch == 1.5.0(optional for dynamic graph)
+转换onnx模型 ： onnx == 1.5.0  pytorch == 1.1.0
 ## 安装
 ```
 pip install x2paddle
