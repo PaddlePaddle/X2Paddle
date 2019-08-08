@@ -1,4 +1,4 @@
-目前我们在如下模型列表中测试了X2Paddle的转换
+目前X2Paddle支持40+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换
 
 # TensorFlow
 
@@ -26,6 +26,7 @@
 | ShuffleNet | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
+
 
 # ONNX
 
