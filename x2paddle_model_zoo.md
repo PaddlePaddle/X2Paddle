@@ -1,4 +1,4 @@
-目前我们在如下模型列表中测试了X2Paddle的转换
+目前X2Paddle支持40+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换
 
 # TensorFlow
 
