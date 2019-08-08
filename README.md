@@ -50,7 +50,7 @@ x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --
 ## 相关文档
 1. [X2Paddle使用过程中常见问题](Q&A.md)  
 2. [如何导出TensorFlow的pb模型](export_tf_model.md)
-3. [X2Paddle测试模型库](test_model_zoo.md)
+3. [X2Paddle测试模型库](x2paddle_model_zoo.md)
 
 ## 更新历史
 2019.08.05  
