@@ -1,4 +1,6 @@
 # X2Paddle
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 X2Paddle支持将其余深度学习框架训练得到的模型，转换至PaddlePaddle模型。  
 X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.
 
