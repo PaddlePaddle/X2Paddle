@@ -461,6 +461,15 @@ class ONNXDecoder(object):
         """
         get dynamic shape from caffe2.backend
         """
+        try:
+            import torch
+            version = torch.__version__
+            if '1.1.0' not in version:
+                print("torch==1.1.0 is required")
+                return
+        except:
+            print("onnx is not installed, use \"pip install torch==1.1.0\".")
+            return
         from caffe2.python.onnx.backend import prepare
         shape = input_shapes[0]
         np_images = np.random.rand(shape[0], shape[1], shape[2],
