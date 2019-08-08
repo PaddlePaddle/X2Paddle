@@ -355,16 +355,16 @@ class ONNXOpMapper(OpMapper):
         if shape_dtype is None:
             _logger.warning(
                 'in op %s(%s -> Reshape -> %s): '
-                'dtype of input "shape" not inferred, int32 assumed', name,
-                inputs, outputs)
+                'dtype of input "shape" not inferred, int32 assumed',
+                node.layer_name, val_x.layer_name, val_reshaped.layer_name)
             shape_dtype = _np.dtype('int32')
         if shape is None:
             shape = [1, -1]
             _logger.warning(
                 'in %s(%s -> Reshape -> %s): '
                 'input "shape" not inferred, use [1, -1] as dummy value, '
-                'the behavior of Paddle fluid maybe undefined', name, inputs,
-                outputs)
+                'the behavior of Paddle fluid maybe undefined', node.layer_name,
+                val_x.layer_name, val_reshaped.layer_name)
         attr = {'shape': shape, 'name': string(node.layer_name)}
 
         node.fluid_code.add_layer('reshape',
@@ -532,6 +532,8 @@ class ONNXOpMapper(OpMapper):
         momentum = node.get_attr('momentum', .9)
         epsilon = node.get_attr('epsilon', 1e-5)
 
+        # Attribute: spatial is used in BatchNormalization-1,6,7
+        spatial = bool(node.get_attr('spatial'))
         attr = {
             "momentum": momentum,
             "epsilon": epsilon,
@@ -541,6 +543,7 @@ class ONNXOpMapper(OpMapper):
             "bias_attr": string(val_b.layer_name),
             "moving_mean_name": string(val_mean.layer_name),
             "moving_variance_name": string(val_var.layer_name),
+            "use_global_stats": spatial,
             "name": string(node.layer_name)
         }
         node.fluid_code.add_layer("batch_norm",

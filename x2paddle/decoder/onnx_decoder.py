@@ -27,8 +27,10 @@ from collections import OrderedDict as Dict
 import onnx
 import numpy as np
 from copy import deepcopy
+import logging as _logging
 
 default_op_domain = 'ai.onnx'
+_logger = _logging.getLogger(__name__)
 
 
 class ONNXGraphNode(GraphNode):
@@ -229,10 +231,17 @@ class ONNXDecoder(object):
     def __init__(self, onnx_model):
         model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
-            model.ir_version, model.opset_import))
+            model.ir_version, model.opset_import[0].version))
 
+        if model.opset_import[0].version < 9:
+            _logger.warning(
+                'Now, onnx2paddle main support convert onnx model opset_verison == 9,'
+                'opset_verison of your onnx model is %d < 9,'
+                'some operator may cannot convert.',
+                model.opset_import[0].version)
         check_model(model)
-        model = convert_version(model, 9)
+
+        #         model = convert_version(model, 10)
         model = polish_model(model)
 
         model = self.optimize_model_skip_op_for_inference(model)
@@ -263,7 +272,6 @@ class ONNXDecoder(object):
         """
         skip nodes between src_output_name -> dst_input_name and connect this pair
         """
-
         processed = 0
         for next_idx in input_refs[src_output_name]:
             next_node = nodes[next_idx]
@@ -278,7 +286,6 @@ class ONNXDecoder(object):
         """
         skip nodes between dst_output_name -> src_input_name and connect this pair
         """
-
         processed = 0
         for prev_idx in output_refs[src_input_name]:
             prev_node = nodes[prev_idx]

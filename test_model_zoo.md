@@ -26,3 +26,30 @@
 | ShuffleNet | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
+
+# ONNX
+
+| 模型 | 来源 | operator version|
+|-------|--------|
+| Resnet18 | [torchvison.model.resnet18](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
+| Resnet34 | [torchvison.model.resnet34](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
+| Resnet50 | [torchvison.model.resnet50](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
+| Resnet101 | [torchvison.model.resnet101](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
+| Vgg11 | [torchvison.model.vgg11](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
+| Vgg11_bn | [torchvison.model.vgg11_bn](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
+| Vgg19| [torchvison.model.vgg16_bn](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
+| Densenet121 | [torchvison.model.densenet121](https://github.com/pytorch/vision/blob/master/torchvision/models/densenet.py) |9|
+| Alexnet | [onnx official](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
+| Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
+| Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
+
+
+目前onnx2paddle主要支持onnx operator version 9，关于如何使用torchvison的model:
+```
+import torch
+import torchvision
+dummy_input = torch.randn(1, 3, 224, 224) #根据不同模型调整shape
+resnet18 = torchvision.models.resnet18(pretrained=True)
+torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)#"resnet18.onnx"为onnx model的存储路径
+
+```
