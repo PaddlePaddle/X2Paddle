@@ -646,7 +646,7 @@ class ONNXOpMapper(OpMapper):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
         input_shape = val_x.out_shapes
-        output_shape = _val_y.out_shapes
+        output_shape = val_y.out_shapes
         assert input_shape is not None or output_shape is not None, 'poolnd not inferred'  # N
         if input_shape:
             poolnd = len(input_shape) - 2  # NC...
