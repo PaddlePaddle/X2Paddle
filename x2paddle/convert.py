@@ -93,10 +93,14 @@ def tf2paddle(model_path, save_dir):
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
+    from x2paddle.optimizer.caffe_optimizer import CaffeOptimizer
 
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
+    optimizer = CaffeOptimizer(mapper)
+    optimizer.merge_bn_scale()
+    optimizer.merge_op_activation()
     mapper.save_inference_model(save_dir)
 
 
