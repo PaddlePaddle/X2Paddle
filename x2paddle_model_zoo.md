@@ -47,8 +47,12 @@
 ```
 import torch
 import torchvision
-dummy_input = torch.randn(1, 3, 224, 224) #根据不同模型调整shape
+
+#根据不同模型调整输入的shape
+dummy_input = torch.randn(1, 3, 224, 224)
 resnet18 = torchvision.models.resnet18(pretrained=True)
-torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)#"resnet18.onnx"为onnx model的存储路径
+
+#"resnet18.onnx"为onnx model的存储路径
+torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)
 
 ```

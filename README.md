@@ -12,7 +12,7 @@ paddlepaddle >= 1.5.0
 **以下依赖只需对应安装自己需要的即可**  
 转换tensorflow模型 ： tensorflow == 1.14.0  
 转换caffe模型 ： caffe == 1.0.0  
-
+转换onnx模型 ： onnx == 1.5.0  pytorch == 1.1.0
 ## 安装
 ```
 pip install x2paddle
@@ -32,8 +32,9 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
 ```
 ### ONNX
-即将release，目前仍可使用[onnx2fluid](https://github.com/PaddlePaddle/X2Paddle/tree/release-0.3/onnx2fluid)
-
+```
+x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
+```
 ### 参数选项
 | 参数 | |
 |----------|--------------|
