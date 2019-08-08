@@ -359,7 +359,7 @@ class ONNXOpMapper(OpMapper):
                 inputs, outputs)
             shape_dtype = _np.dtype('int32')
         if shape is None:
-            shape = [1, -1]  # who knows
+            shape = [1, -1]
             _logger.warning(
                 'in %s(%s -> Reshape -> %s): '
                 'input "shape" not inferred, use [1, -1] as dummy value, '
@@ -418,55 +418,6 @@ class ONNXOpMapper(OpMapper):
                                   inputs=val_x,
                                   output=node,
                                   param_attr=attr)
-
-    def _roi_pool(self, node, fluid_op=None):
-
-        val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_rois = self.graph.get_node(node.layer.input[1], copy=True)
-        val_y = self.graph.get_node(node.layer.output[0], copy=True)
-
-        spatial_scale = node.get_attr('spatial_scale')  # required
-        pooled_height, pooled_width = node.get_attr('pooled_shape')  # required
-
-        attr = {'pooled_height': pooled_height, 'spatial_scale': spatial_scale}
-        feature_attr = ''
-        is_max_pool = fluid_op == 'roi_pool'
-        if 'sampling_ratio' in node.attr_map:  #
-            sampling_ratio = node.get_attr['sampling_ratio']
-            attr['sampling_ratio'] = sampling_ratio
-        if 'output_channels' in node.attr_map:  #
-            output_channels = node.get_attr['output_channels']
-            attr['output_channels'] = output_channels
-
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=','.join([valx, val_rois]),
-                                  output=node,
-                                  param_attr=attr)
-
-    def RoiAlign(self, node):
-        self._roi_pool(node, fluid_op='roi_align')
-
-    def NonMaxSuppression(self, node):
-        (val_boxes, val_scores, val_max_output_boxes_per_class,
-         val_iou_threshold,
-         val_score_threshold) = self.graph.get_nodes(node.layer.input,
-                                                     copy=True)
-
-        center_point_box = node.get_attr('center_point_box', 0)
-
-        scores = _const_weight_or_none(val_scores)
-        max_output_boxes_per_class = _const_weight_or_none(
-            val_max_output_boxes_per_class)
-        iou_threshold = _const_weight_or_none(val_iou_threshold)
-        score_threshold = _const_weight_or_none(val_score_threshold)
-        if center_point_box == 1:
-            pass
-        attr = {
-            'scores': scores,
-            'score_threshold': score_threshold,
-            'nms_threshold': iou_threshold,
-            'nms_top_k': max_output_boxes_per_class,
-        }
 
     def Concat(self, node):
         inputs = []
