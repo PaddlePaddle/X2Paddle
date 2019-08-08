@@ -27,7 +27,6 @@
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
 
-
 # ONNX
 
 | 模型 | 来源 | operator version|
@@ -43,7 +42,6 @@
 | Alexnet | [torchvison.model.alexnet](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
 | Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
 | Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
-
 
 目前onnx2paddle主要支持onnx operator version 9，关于如何使用torchvison的model:
 ```

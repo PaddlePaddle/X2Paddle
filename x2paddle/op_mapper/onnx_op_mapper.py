@@ -49,6 +49,12 @@ class ONNXOpMapper(OpMapper):
             raise Exception("Model are not supported yet.")
 
         #mapping op
+
+        print("Total nodes: {}".format(
+            sum([
+                isinstance(node, ONNXGraphNode)
+                for name, node in self.graph.node_map.items()
+            ])))
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type

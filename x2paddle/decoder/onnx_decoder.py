@@ -241,7 +241,6 @@ class ONNXDecoder(object):
                 model.opset_import[0].version)
         check_model(model)
 
-        #         model = convert_version(model, 10)
         model = polish_model(model)
 
         model = self.optimize_model_skip_op_for_inference(model)
