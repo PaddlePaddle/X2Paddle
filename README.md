@@ -1,4 +1,6 @@
 # X2Paddle
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)  
 X2Paddle支持将其余深度学习框架训练得到的模型，转换至PaddlePaddle模型。  
 X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.
 
@@ -48,9 +50,9 @@ x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --
 `inference_model`中保存了序列化的模型结构和参数，可直接使用paddle的接口进行加载，见[load_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/1.5/api_guides/low_level/inference.html#api-guide-inference)
 
 ## 相关文档
-1. [X2Paddle使用过程中常见问题](Q&A.md)  
+1. [X2Paddle使用过程中常见问题](FAQ.md)  
 2. [如何导出TensorFlow的pb模型](export_tf_model.md)
-3. [X2Paddle测试模型库](test_model_zoo.md)
+3. [X2Paddle测试模型库](x2paddle_model_zoo.md)
 
 ## 更新历史
 2019.08.05  
