@@ -37,7 +37,7 @@
 | Resnet101 | [torchvison.model.resnet101](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |9|
 | Vgg11 | [torchvison.model.vgg11](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
 | Vgg11_bn | [torchvison.model.vgg11_bn](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
-| Vgg19| [torchvison.model.vgg16_bn](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
+| Vgg19| [torchvison.model.vgg19](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |9|
 | Densenet121 | [torchvison.model.densenet121](https://github.com/pytorch/vision/blob/master/torchvision/models/densenet.py) |9|
 | Alexnet | [torchvison.model.alexnet](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
 | Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
