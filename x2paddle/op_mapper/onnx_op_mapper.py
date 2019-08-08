@@ -62,7 +62,7 @@ class ONNXOpMapper(OpMapper):
                 func = getattr(self, op)
                 func(node)
             elif op in default_op_mapping:
-                self._default(node)
+                self.directly_map(node)
 
     def op_checker(self):
         unsupported_ops = set()
@@ -80,7 +80,7 @@ class ONNXOpMapper(OpMapper):
                 print(op)
             return False
 
-    def _default(self, node, *args, name='', **kwargs):
+    def directly_map(self, node, *args, name='', **kwargs):
         inputs = node.layer.input
         outputs = node.layer.output
         op_type = node.layer_type
@@ -544,7 +544,7 @@ class ONNXOpMapper(OpMapper):
             "momentum": momentum,
             "epsilon": epsilon,
             "data_layout": string('NCHW'),
-            "is_test": 'True',
+            "is_test": True,
             "param_attr": string(val_scale.layer_name),
             "bias_attr": string(val_b.layer_name),
             "moving_mean_name": string(val_mean.layer_name),

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from collections import OrderedDict as _dict
+import numpy as _np
 
 default_op_mapping_field_values = _dict()
 default_op_mapping_field_values['FLUID_OP'] = ''
@@ -30,6 +31,21 @@ default_op_mapping = {
     'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'],
             dict(),
             dict(axis=-1)],
+    'Clip': [
+        'clip', ['X'], ['Out'],
+        dict(),
+        dict(
+            min=(_np.asarray([255, 255, 127, 255],
+                             dtype=_np.uint8).view(_np.float32)),
+            max=(_np.asarray([255, 255, 127, 127],
+                             dtype=_np.uint8).view(_np.float32)),
+        )
+    ],
+    'ReduceMean': [
+        'reduce_mean', ['X'], ['Out'],
+        dict(axes='dim', keepdims='keep_dim'),
+        dict(keep_dim=1)
+    ]
 }
 
 default_ioa_constraint = {
