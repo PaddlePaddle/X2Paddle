@@ -64,7 +64,7 @@ bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
   from . import roipooling
   ```
   
-***步骤三 运行转换代码***
+***步骤四 运行转换代码***
 ```
 # 在X2Paddle目录下安装x2paddle
 python setup.py install
