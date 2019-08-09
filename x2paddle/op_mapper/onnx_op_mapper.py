@@ -418,7 +418,7 @@ class ONNXOpMapper(OpMapper):
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
         input_shape = val_x.out_shapes
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_UPPER":
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
             pad_w = get_same_padding(input_shape[3], kernel_shape[1],
@@ -652,7 +652,7 @@ class ONNXOpMapper(OpMapper):
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
         input_shape = val_x.out_shapes
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_UPPER":
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
             pad_w = get_same_padding(input_shape[3], kernel_shape[1],
@@ -724,7 +724,7 @@ class ONNXOpMapper(OpMapper):
 
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_UPPER":
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
             pad_w = get_same_padding(input_shape[3], kernel_shape[1],
