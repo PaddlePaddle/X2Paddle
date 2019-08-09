@@ -32,7 +32,7 @@ bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
     | name | str(默认为None) | mylayer的名字 |
     | 其余 | 默认为None | 命名为Caffe模型的model.prototxt中mylayer_param中每个参数的名字 |  
   
-     功能：运用PaddlePaddle完成组网来实现`mylayer`的功能
+     功能：运用PaddlePaddle完成组网来实现`mylayer`的功能         
      返回：一个Variable或Tensor，为组网后的结果
     
   3. `def mylayer_weights(name, data=None)`  
@@ -42,7 +42,7 @@ bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
     | name | str | mylayer的名字 |
     | data | list(默认为None) | 由Caffe模型的model.caffemodel获得的关于mylayer的参数 |
   
-     功能：为每个参数（例如kernel、bias等）命名；同时，若Caffe中该层参数与PaddlePaddle中参数的格式不一致，则需要的变换操作也在该函数中实现。
+     功能：为每个参数（例如kernel、bias等）命名；同时，若Caffe中该层参数与PaddlePaddle中参数的格式不一致，则需要的变换操作也在该函数中实现。     
      返回：一个list，包含每个参数的名字。
      
 - 在mylayer.py中注册`mylayer`，主要运用下述代码实现：
