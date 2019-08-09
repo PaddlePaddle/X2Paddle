@@ -23,7 +23,7 @@ def arg_parser():
                         "-m",
                         type=_text_type,
                         default=None,
-                        help="model file path")
+                        help="define model file path for tensorflow or onnx")
     parser.add_argument("--prototxt",
                         "-p",
                         type=_text_type,
@@ -39,17 +39,19 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="path to save translated model")
-    parser.add_argument("--framework",
-                        "-f",
-                        type=_text_type,
-                        default=None,
-                        help="define which deeplearning framework")
+    parser.add_argument(
+        "--framework",
+        "-f",
+        type=_text_type,
+        default=None,
+        help="define which deeplearning framework(tensorflow/caffe/onnx)")
     parser.add_argument(
         "--caffe_proto",
         "-c",
         type=_text_type,
         default=None,
-        help="the .py file compiled by caffe proto file of caffe model")
+        help="optional: the .py file compiled by caffe proto file of caffe model"
+    )
     parser.add_argument("--version",
                         "-v",
                         action="store_true",
