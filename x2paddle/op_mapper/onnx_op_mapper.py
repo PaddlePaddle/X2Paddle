@@ -36,6 +36,14 @@ def _const_weight_or_none(node):
     return None
 
 
+def get_same_padding(in_size, kernel_size, stride):
+    new_size = int(math.ceil(in_size * 1.0 / stride))
+    pad_size = (new_size - 1) * stride + kernel_size - in_size
+    pad0 = int(pad_size / 2)
+    pad1 = pad_size - pad0
+    return [pad0, pad1]
+
+
 class ONNXOpMapper(OpMapper):
     def __init__(self, decoder):
         super(ONNXOpMapper, self).__init__()
@@ -397,9 +405,8 @@ class ONNXOpMapper(OpMapper):
 
     def AveragePool(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        assert node.get_attr(
-            'auto_pad',
-            'NOTSET') == 'NOTSET', 'only auto_pad = NOTSET is supported'
+
+        auto_pad = node.get_attr('auto_pad', 'NOTSET')
         kernel_shape = node.get_attr("kernel_shape")
         poolnd = len(kernel_shape)
         strides = node.get_attr("strides")
@@ -408,8 +415,16 @@ class ONNXOpMapper(OpMapper):
         pads = node.get_attr('pads', [0] * (poolnd * 2))
         fluid_op = 'pool{}d'.format(poolnd)
         assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
-
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
+
+        input_shape = val_x.out_shapes
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
+            pad_h = get_same_padding(input_shape[2], kernel_shape[0],
+                                     strides[0])
+            pad_w = get_same_padding(input_shape[3], kernel_shape[1],
+                                     strides[1])
+            attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
+
         attr = {
             "pool_size": kernel_shape,
             "pool_type": string('avg'),
@@ -621,10 +636,8 @@ class ONNXOpMapper(OpMapper):
 
     def MaxPool(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        assert node.get_attr(
-            'auto_pad', 'NOTSET'
-        ) == 'NOTSET', 'only auto_pad = NOTSET is supported'  # optional
 
+        auto_pad = node.get_attr('auto_pad', 'NOTSET')
         assert node.get_attr(
             "dilations") is None, 'only dilations = 0 is supported'  # optional
 
@@ -637,6 +650,15 @@ class ONNXOpMapper(OpMapper):
         fluid_op = 'pool{}d'.format(poolnd)
         assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
+
+        input_shape = val_x.out_shapes
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
+            pad_h = get_same_padding(input_shape[2], kernel_shape[0],
+                                     strides[0])
+            pad_w = get_same_padding(input_shape[3], kernel_shape[1],
+                                     strides[1])
+            attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
+
         attr = {
             "pool_size": kernel_shape,
             "pool_type": string("max"),
@@ -702,7 +724,7 @@ class ONNXOpMapper(OpMapper):
 
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_UPPER":
+        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
             pad_w = get_same_padding(input_shape[3], kernel_shape[1],

@@ -45,7 +45,9 @@ default_op_mapping = {
         'reduce_mean', ['X'], ['Out'],
         dict(axes='dim', keepdims='keep_dim'),
         dict(keep_dim=1)
-    ]
+    ],
+    'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
+                  dict(), dict(alpha=.01)]
 }
 
 default_ioa_constraint = {

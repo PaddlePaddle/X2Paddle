@@ -42,17 +42,21 @@
 | Alexnet | [torchvison.model.alexnet](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
 | Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
 | Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
+| Mobilenet_v2 | [pytorch(personal practice)](https://github.com/tonylins/pytorch-mobilenet-v2) |9|
 
-目前onnx2paddle主要支持onnx operator version 9，关于如何使用torchvison的model:
+目前onnx2paddle主要支持onnx operator version 9；
+如何将torchvison或者个人开发者写的pytroch model转换成onnx model:
 ```
 import torch
 import torchvision
 
 #根据不同模型调整输入的shape
 dummy_input = torch.randn(1, 3, 224, 224)
+
+#预训练后的pytorch model
 resnet18 = torchvision.models.resnet18(pretrained=True)
 
-#"resnet18.onnx"为onnx model的存储路径
+#"resnet18.onnx"为onnx model的存储路径，1.1
 torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)
 
 ```
