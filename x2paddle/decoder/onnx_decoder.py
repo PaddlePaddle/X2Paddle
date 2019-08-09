@@ -181,6 +181,7 @@ class ONNXGraph(Graph):
                     layer,
                     layer_name=layer.name,
                     is_global_input=is_place_holder)
+
         #set data node's weight
         for name, weight in self.graph_weights(self.model):
             if name in self.node_map:
@@ -405,8 +406,7 @@ class ONNXDecoder(object):
         for item in graph.value_info:
             item.name = self.make_variable_name(item.name)
         for node in graph.node:
-            if node.name == '':
-                node.name = node.output[0]
+            node.name = node.output[0]
             node.name = self.make_variable_name(node.name)
             for i in range(len(node.input)):
                 node.input[i] = self.make_variable_name(node.input[i])
