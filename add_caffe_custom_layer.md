@@ -55,3 +55,11 @@ bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
   from . import mylayer
   ```
   
+***步骤三 运行转换代码***
+```
+x2paddle --framework=caffe 
+         --prototxt=deploy.proto 
+         --weight=deploy.caffemodel 
+         --save_dir=pd_model 
+         --caffe_proto=/home/root/caffe/src/caffe/proto/caffe_pb2.py
+```
