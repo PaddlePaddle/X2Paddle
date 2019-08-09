@@ -131,6 +131,8 @@ def onnx2paddle(model_path, save_dir):
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
+        print("For more information, please follow our github repo below:)")
+        print("\nGithub: https://github.com/PaddlePaddle/X2Paddle.git\n")
         return
 
     parser = arg_parser()
