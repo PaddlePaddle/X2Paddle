@@ -1,6 +1,6 @@
 ## 如何转换Caffe自定义Layer
 
-本文档介绍如何将Caffe自定义Layer转换为PaddlePaddle模型中对应的实现, 用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换。
+本文档介绍如何将Caffe自定义Layer转换为PaddlePaddle模型中的对应实现, 用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换。
 
 ***步骤一 编译caffe.proto***    
 使用脚本./tools/compile.sh将caffe.proto（包含所需的自定义Layer信息）编译成我们所需的目标语言（Python）         
