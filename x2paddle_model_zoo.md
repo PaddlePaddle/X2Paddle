@@ -44,7 +44,7 @@
 | Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
 | Mobilenet_v2 | [pytorch(personal practice)](https://github.com/tonylins/pytorch-mobilenet-v2) |9|
 
-目前onnx2paddle主要支持onnx operator version 9；
+目前onnx2paddle主要支持onnx operator version 9；  
 如何将torchvison或者个人开发者写的pytroch model转换成onnx model:
 ```
 import torch
