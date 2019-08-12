@@ -10,7 +10,7 @@ pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 
 ***步骤二 编译caffe.proto***   
 该步骤依赖protobuf编译器，其安装过程有以下两种方式：
-> 选择一：pip install protobuf          
+> 选择一：(1) pip install protobuf (2) pip install protobuf-compiler             
 > 选择二：使用[官方源码](https://github.com/protocolbuffers/protobuf)进行编译
 
 使用脚本./tools/compile.sh将caffe.proto（包含所需的自定义Layer信息）编译成我们所需的目标语言（Python）         
