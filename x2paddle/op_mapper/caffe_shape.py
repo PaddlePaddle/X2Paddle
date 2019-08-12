@@ -74,11 +74,12 @@ def shape_convolution(layer, input_shape):
 
 
 def shape_deconvolution(layer, input_shape):
-    h_i = input_shape[2]
-    w_i = input_shape[3]
+
+    h_i = input_shape[0][2]
+    w_i = input_shape[0][3]
 
     params = layer.convolution_param
-    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_params_w_h(
+    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_kernel_parameters(
         params)
 
     h_o = (h_i - 1) * stride_h - 2 * pad_h + dila_h * (kernel_h - 1) + 1
@@ -122,6 +123,16 @@ def shape_softmax(layer, input_shape):
 
 def shape_input(layer, input_shape):
     return [list(layer.input_param.shape[0].dim)]
+
+
+def shape_memorydata(layer, input_shape):
+    params = layer.memory_data_param
+    shape = []
+    shape.append(int(params.batch_size))
+    shape.append(int(params.channels))
+    shape.append(int(params.height))
+    shape.append(int(params.width))
+    return [shape]
 
 
 def shape_concat(layer, input_shape):

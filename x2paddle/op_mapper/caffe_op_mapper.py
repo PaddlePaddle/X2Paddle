@@ -22,6 +22,13 @@ from x2paddle.op_mapper.caffe_custom_layer import *
 
 
 class CaffeOpMapper(OpMapper):
+    directly_map_ops = {
+        'ReLU': 'relu',
+        'AbsVal': 'abs',
+        'Sigmoid': 'sigmoid',
+        'TanH': 'tanh',
+    }
+
     def __init__(self, decoder):
         super(CaffeOpMapper, self).__init__()
         self.graph = decoder.caffe_graph
@@ -40,8 +47,12 @@ class CaffeOpMapper(OpMapper):
             elif op in custom_layers:
                 self.set_node_shape(node, is_fluid_op=False)
                 self.deal_custom_layer(node)
+            elif op in self.directly_map_ops:
+                self.set_node_shape(node)
+                self.directly_map(node)
             else:
-                raise Exception("Model are not supported yet.")
+                raise Exception(
+                    "The op {} in model is not supported yet.".format(op))
 
     def op_checker(self):
         unsupported_ops = set()
@@ -180,6 +191,22 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+    def MemoryData(self, node):
+        # TODO(syf): Paddlepaddle can't fully support
+        shape = node.output_shape[0][1:]
+        dtype = 'float32'
+        attr = {
+            'dtype': string(dtype),
+            'shape': shape,
+            'name': string(node.layer_name)
+        }
+        node.fluid_code.add_layer("data",
+                                  inputs=None,
+                                  output=node.layer_name + '0',
+                                  param_attr=attr)
+        node.fluid_code.add_note('{} = [{}]'.format(node.layer_name,
+                                                    node.layer_name + '0'))
+
     def Convolution(self, node):
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
@@ -286,16 +313,6 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
         node.fluid_code.add_layer("pool2d",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ReLU(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        attr = {'name': string(node.layer_name)}
-        node.fluid_code.add_layer("relu",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
@@ -445,26 +462,6 @@ class CaffeOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def Sigmoid(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        attr = {'name': string(node.layer_name)}
-        node.fluid_code.add_layer("sigmoid",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def AbsVal(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        attr = {'name': string(node.layer_name)}
-        node.fluid_code.add_layer("absval",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
     def Accuracy(self, node):
         assert len(
             node.inputs) == 2, 'The count of Accuracy node\'s input is not 2.'
@@ -489,16 +486,6 @@ class CaffeOpMapper(OpMapper):
         attr = {'k': top_k}
         node.fluid_code.add_layer("accuracy",
                                   inputs=inputs,
-                                  output=node,
-                                  param_attr=attr)
-
-    def TanH(self, node):
-        assert len(
-            node.inputs) == 1, 'The count of TanH node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        attr = {'name': string(node.layer_name)}
-        node.fluid_code.add_layer("tanh",
-                                  inputs=input,
                                   output=node,
                                   param_attr=attr)
 
@@ -892,3 +879,13 @@ class CaffeOpMapper(OpMapper):
                                   is_custom_layer=True)
         if op not in self.used_custom_layers:
             self.used_custom_layers[op] = custom_code
+
+    def directly_map(self, node):
+        assert node.layer_type in self.directly_map_ops
+        op_info = self.directly_map_ops[node.layer_type]
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        attr = {'name': string(node.layer_name)}
+        node.fluid_code.add_layer(op_info,
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
