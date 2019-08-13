@@ -24,6 +24,7 @@ default_op_mapping_field_values['DEFAULTS'] = dict()
 default_op_mapping_field_values['INPUT_PERM'] = None
 default_op_mapping_field_values['OUTPUT_PERM'] = None
 default_op_mapping_field_values['FILL_NAME_FIELD'] = True
+
 default_op_mapping = {
     'Gather': ['gather', ['X'], ['Out'],
                dict(axis='')],
@@ -47,7 +48,14 @@ default_op_mapping = {
         dict(keep_dim=1)
     ],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
-                  dict(), dict(alpha=.01)]
+                  dict(), dict(alpha=.01)],
+    'Tanh': ['tanh', ['X'], ['Out']],
+}
+
+activefunc_op_mapping = {
+    'Relu': ['relu', ['X'], ['Out']],
+    'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
+                  dict(), dict(alpha=.01)],
 }
 
 default_ioa_constraint = {

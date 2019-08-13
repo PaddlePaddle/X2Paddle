@@ -44,7 +44,7 @@ class ONNXGraphNode(GraphNode):
         self.attr_map = self.get_attr_map()
         self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
         self.weight_inputs = list()
-        self.out_shapes = None
+        self.out_shapes = list()
         self.dtype = None
 
     def get_attr_map(self):
@@ -58,11 +58,11 @@ class ONNXGraphNode(GraphNode):
 
     @property
     def value(self):
-        assert 'Constant' in self.layer_type, "Only Constant node has value."
-
-        attr = self.layer.attr['value']
-        if 'value' in self.attr_map:
-            return default
+        assert 'Constant' in self.layer_type, "Only Constant | ConstantOfShape node has value."
+        print(self.layer)
+        attr = self.layer.attribute['value']
+        if 'value' not in self.attr_map:
+            return None
         return self.attr_map[name]
 
     def get_attribute_value2(self, attr):
@@ -110,13 +110,12 @@ class ONNXGraphDataNode(GraphNode):
     def out_shapes(self):
         values = self.layer.type.tensor_type.shape.dim
         out_shapes = list()
-        out_shapes = [dim.dim_value for dim in values]
+        out_shapes.append([dim.dim_value for dim in values])
         return out_shapes
 
     @property
     def dtype(self):
         dtype = self.layer.type.tensor_type.elem_type
-
         return TENSOR_TYPE_TO_NP_TYPE[dtype]
 
 
@@ -126,6 +125,7 @@ class ONNXGraph(Graph):
         self.initializer = {}
         self.place_holder_nodes = list()
         self.get_place_holder_nodes()
+        self.value_infos = self.inferred_model_value_info(model)
 
     def get_inner_nodes(self):
         """
@@ -163,16 +163,12 @@ class ONNXGraph(Graph):
         build topo_sort of ONNX model
         """
         for layer in self.model.node:
-            self.node_map[layer.name] = ONNXGraphNode(layer)
-
-        #set op node's dtype and out_shapes
-        for item in self.model.value_info:
-            if item.name in self.node_map:
-                self.node_map[item.name].dtype = TENSOR_TYPE_TO_NP_TYPE[
-                    item.type.tensor_type.elem_type]
-                self.node_map[item.name].out_shapes = [
-                    dim.dim_value for dim in item.type.tensor_type.shape.dim
-                ]
+            node = ONNXGraphNode(layer)
+            self.node_map[layer.name] = node
+            for opt in layer.output:
+                value_info = self.value_infos[opt]
+                node.dtype = value_info['dtype']
+                node.out_shapes.append(value_info['shape'])
 
         for layer in self.model.input:
             if layer.name not in self.node_map:
@@ -200,7 +196,9 @@ class ONNXGraph(Graph):
                     else:
                         self.connect(in_node, layer_name)
 
-        #generate topo
+
+#         print([layer_name for layer_name, node in self.node_map.items()])
+#generate topo
         super(ONNXGraph, self).build()
 
         self.input_nodes = self.place_holder_nodes
@@ -227,6 +225,42 @@ class ONNXGraph(Graph):
             weight = to_array(initializer)
             yield name, weight
 
+    def inferred_model_value_info(self, graph):
+        """
+        collect value/type info for an ONNX model
+        """
+
+        assert isinstance(graph,
+                          onnx.GraphProto), 'model is not a ModelProto instance'
+
+        value_info = Dict()
+        for item in graph.value_info:
+            value_info[item.name] = {
+                'dtype':
+                TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+                'shape':
+                [dim.dim_value for dim in item.type.tensor_type.shape.dim],
+                'external': False
+            }
+        for item in graph.input:
+            assert item.name not in value_info
+            value_info[item.name] = {
+                'dtype':
+                TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+                'shape':
+                [dim.dim_value for dim in item.type.tensor_type.shape.dim],
+                'external': True
+            }
+        for item in graph.output:
+            value_info[item.name] = {
+                'dtype':
+                TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+                'shape':
+                [dim.dim_value for dim in item.type.tensor_type.shape.dim],
+                'external': True
+            }
+        return value_info
+
 
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
@@ -241,7 +275,6 @@ class ONNXDecoder(object):
                 'some operator may cannot convert.',
                 model.opset_import[0].version)
         check_model(model)
-
         model = polish_model(model)
 
         model = self.optimize_model_skip_op_for_inference(model)
@@ -253,6 +286,8 @@ class ONNXDecoder(object):
 
         self.onnx_graph = ONNXGraph(graph_def)
         self.onnx_graph.build()
+
+        self.results_of_inference = dict()
 
     def build_value_refs(self, nodes):
         """
@@ -456,10 +491,7 @@ class ONNXDecoder(object):
                 len(onnx_model.input), len(model.input)))
         return onnx_model
 
-    def get_dynamic_shape_from_caffe2(self, layer, input_shapes):
-        """
-        get dynamic shape from caffe2.backend
-        """
+    def get_results_of_inference(self, model, input_shapes):
         try:
             import torch
             version = torch.__version__
@@ -472,26 +504,27 @@ class ONNXDecoder(object):
             )
             return
         from caffe2.python.onnx.backend import prepare
-        shape = input_shapes[0]
-        np_images = np.random.rand(shape[0], shape[1], shape[2],
-                                   shape[3]).astype('float32')
-        num_onnx = self.split_model(self.model, layer)
-        prepared_backend = prepare(num_onnx, device='CPU')
-        output = prepared_backend.run(inputs=np_images)
-        return output[0].tolist()
 
-    def get_dynamic_shape_from_onnx(self, layer, input_shapes):
-        """
-        get dynamic shape from onnxruntime
-        """
-        import onnxruntime as rt
-        from onnxruntime.backend import prepare
-        import numpy as np
-        num_onnx = self.split_model(self.model, layer)
-        sess = prepare(num_onnx)
         shape = input_shapes[0]
-        print(shape)
         np_images = np.random.rand(shape[0], shape[1], shape[2],
                                    shape[3]).astype('float32')
-        output = sess.run(model=sess, inputs=np_images)
-        return output[0].tolist()
+
+        infer_shapes = onnx.shape_inference.infer_shapes(model)
+        model.graph.ClearField('output')
+        model.graph.output.MergeFrom(infer_shapes.graph.value_info)
+
+        prepared_backend = prepare(model, device='CPU')
+        output = prepared_backend.run(inputs=np_images)
+
+        for idx, value_info in enumerate(infer_shapes.graph.value_info):
+            self.results_of_inference[value_info.name] = output[idx]
+        return
+
+    def get_dynamic_shape_from_caffe2(self, layer, input_shapes):
+        """
+        get dynamic shape from caffe2.backend
+        """
+        if len(self.results_of_inference) == 0:
+            self.get_results_of_inference(self.model, input_shapes)
+        output = self.results_of_inference[layer]
+        return output.tolist()
