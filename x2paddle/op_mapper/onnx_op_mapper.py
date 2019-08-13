@@ -21,6 +21,7 @@ from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDat
 from x2paddle.op_mapper.onnx_directly_map import default_op_mapping_field_values
 from x2paddle.op_mapper.onnx_directly_map import default_op_mapping
 from x2paddle.op_mapper.onnx_directly_map import default_ioa_constraint
+from x2paddle.op_mapper.onnx_custom_layer import *
 import numpy as np
 import onnx.numpy_helper as numpy_helper
 import logging as _logging
@@ -53,12 +54,12 @@ class ONNXOpMapper(OpMapper):
         self.input_shapes = []
         self.weights = dict()
         self.omit_nodes = list()
+        self.used_custom_layers = dict()
 
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
 
         #mapping op
-
         print("Total nodes: {}".format(
             sum([
                 isinstance(node, ONNXGraphNode)
@@ -67,19 +68,22 @@ class ONNXOpMapper(OpMapper):
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
-            #             print('translate{} layer_type is {}'.format(node_name, op))
             if hasattr(self, op):
                 func = getattr(self, op)
                 func(node)
             elif op in default_op_mapping:
                 self.directly_map(node)
+            elif op in custom_layers:
+                self.deal_custom_layer(node)
 
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
-            if not hasattr(self, op) and op not in default_op_mapping:
+            if not hasattr(
+                    self, op
+            ) and op not in default_op_mapping and op not in custom_layers:
                 unsupported_ops.add(op)
         if len(unsupported_ops) == 0:
             return True
@@ -134,6 +138,23 @@ class ONNXOpMapper(OpMapper):
                                   inputs=', '.join(val_inps),
                                   output=val_outs[0],
                                   param_attr=attr)
+
+    def deal_custom_layer(self, node):
+        op = node.layer_type
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        custom_code, func = make_custom_layer(node)
+        params = get_params(node.layer, node.layer_type)
+        arg_names, kwargs = set_args(func, params)
+        kwargs['name'] = string(node.layer_name)
+        inputs_node = []
+        inputs_node.append(node.inputs[0])
+        node.fluid_code.add_layer(func.__code__.co_name,
+                                  inputs=inputs_node[0],
+                                  output=node,
+                                  param_attr=kwargs,
+                                  is_custom_layer=True)
+        if op not in self.used_custom_layers:
+            self.used_custom_layers[op] = custom_code
 
     def place_holder(self, node):
         self.input_shapes.append(node.out_shapes[0])
@@ -575,42 +596,6 @@ class ONNXOpMapper(OpMapper):
                                   inputs=val_x,
                                   output=node,
                                   param_attr=attr)
-
-    def InstanceNormalization(self, node):
-        '''
-        y = scale * (x - mean) / sqrt(variance + epsilon) + B
-        '''
-
-        val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        val_scale = self.graph.get_node(node.layer.input[1], copy=True)
-        val_b = self.graph.get_node(node.layer.input[2], copy=True)
-
-        epsilon = node.get_attr('epsilon', 1e-5)
-        num_out_channels = val_scale.out_shapes[0][0]
-        attr = {
-            "groups": num_out_channels,
-            "epsilon": epsilon,
-            "param_attr": string(val_scale.layer_name),
-            "bias_attr": string(val_b.layer_name),
-            "name": string(node.layer_name)
-        }
-        if val_scale.layer_type == 'Constant':
-            self.weights[val_scale.layer_name] = val_scale.get_attr('value')
-
-        if val_b.layer_type == 'Constant':
-            self.weights[val_b.layer_name] = val_b.get_attr('value')
-
-#         node_data_norm = node.layer_name +'data_norm'
-        node.fluid_code.add_layer("group_norm",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
-
-
-#         node.fluid_code.add_layer("elementwise_add",
-#                                   val_x.layer_name +','+ node_data_norm,
-#                                   output=node,
-#                                   param_attr=attr)
 
     def Softmax(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
