@@ -150,7 +150,7 @@ def main():
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
-    assert args.framework is not None, "--from is not defined(tensorflow/caffe)"
+    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
     if args.framework == "tensorflow":
