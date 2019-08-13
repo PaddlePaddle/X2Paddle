@@ -823,14 +823,13 @@ class ONNXOpMapper(OpMapper):
         paddings, var_x = self._pad_if_asymmetric(node, pads, val_x)
 
         output_size = [0, 0]
-        print(val_x.out_shapes[0])
+
         output_size[0] = (val_x.out_shapes[0][2] -
                           1) * strides[0] - 2 * paddings[0] + dilations[0] * (
                               kernel_shape[0] - 1) + 1 + out_padding[0]
         output_size[1] = (val_x.out_shapes[0][3] -
                           1) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
-        print(output_size)
         attr = {
             'num_filters': num_out_channels,
             'output_size': output_size or None,
