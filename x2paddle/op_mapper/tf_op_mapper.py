@@ -503,6 +503,7 @@ class TFOpMapper(OpMapper):
             "stride": strides[2:4],
             "dilation": dilations[2:4],
             "groups": k_size[3] * in_shape[1],
+            "use_cudnn": False,
             "padding": padding
         }
         node.fluid_code.add_layer("conv2d",
