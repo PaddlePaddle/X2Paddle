@@ -2,6 +2,9 @@
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 
+### X2Paddle已经发布0.4版本，最新代码在develop分支：）
+develop分支： https://github.com/PaddlePaddle/X2Paddle/tree/develop
+
 # 简介
 
 X2Paddle支持将Caffe和TensorFlow模型转至PaddlePaddle模型，同时我们目前维护了TensorFlow/Caffe与PaddlePaddle接口对比分析文档。  
