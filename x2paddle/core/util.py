@@ -25,7 +25,8 @@ def string(param):
 # This func will copy to generate code file
 def run_net(param_dir="./"):
     import os
-    inputs, outputs = x2paddle_net()
+    x2paddle_obj = X2Paddle()
+    inputs, outputs = x2paddle_obj.x2paddle_net()
     exe = fluid.Executor(fluid.CPUPlace())
     exe.run(fluid.default_startup_program())
 

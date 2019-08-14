@@ -94,9 +94,11 @@ class OpMapper(object):
         import paddle.fluid as fluid
         py_code_dir = os.path.join(save_dir, "model_with_code")
         sys.path.append(py_code_dir)
+        from model import X2Paddle
         import model
         try:
-            inputs, outputs = model.x2paddle_net()
+            x2paddle_obj = X2Paddle()
+            inputs, outputs = x2paddle_obj.x2paddle_net()
             input_names = [input.name for input in inputs]
             exe = fluid.Executor(fluid.CPUPlace())
             exe.run(fluid.default_startup_program())
@@ -139,13 +141,23 @@ class OpMapper(object):
                 self.add_codes(layer_code, 0)
                 self.add_codes("", 0)
 
-        self.add_codes("\ndef x2paddle_net():", 0)
+        self.add_codes("\nclass X2Paddle(object):", 0)
+        self.add_codes("def x2paddle_net(self):", 1)
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
             if len(node.fluid_code.layers) == 0:
                 continue
-            self.add_codes(node.fluid_code.gen_codes(), 1)
+            node_code = node.fluid_code.gen_codes()
+            self.add_codes(node_code, 2)
+            part = node_code[-1].split('=')
+            if '.' in part[0]:
+                ppart = part[0].split('.')
+            else:
+                ppart = part
+            node_out_name = ppart[0].replace(' ', '')
+            self.add_codes("self.{} = {}".format(node_out_name, node_out_name),
+                           2)
 
         self.add_codes("", 0)
 
@@ -160,7 +172,7 @@ class OpMapper(object):
 
         return_code = "return {}, {}".format(input_str, output_str)
 
-        self.add_codes(return_code, 1)
+        self.add_codes(return_code, 2)
         self.add_codes("", 0)
 
         self.add_codes(inspect.getsourcelines(run_net)[0])
