@@ -15,7 +15,7 @@ paddlepaddle >= 1.5.0
 转换onnx模型 ： onnx == 1.5.0  pytorch == 1.1.0
 ## 安装
 ```
-pip install x2paddle==0.4.3
+pip install x2paddle
 ```
 如果需要使用最新的代码版本，可使用如下方式进行安装  
 ```
