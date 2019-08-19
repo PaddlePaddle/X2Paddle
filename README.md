@@ -11,7 +11,7 @@ X2Paddle is a toolkit for converting trained model to PaddlePaddle from other de
 3. 解决Windows上保存模型无法加载的问题
 4. 新增optimizer，优化代码结构，合并conv、batch_norm的bias和激活函数  
 
-** 如果你需要之前版本的tensorflow2fluid/caffe2fluid/onnx2fluid，可以继续访问release-0.3分支，获取之前版本的代码使用。**
+**如果你需要之前版本的tensorflow2fluid/caffe2fluid/onnx2fluid，可以继续访问release-0.3分支，获取之前版本的代码使用。**
 
 ## 环境依赖
 
