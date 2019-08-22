@@ -23,15 +23,17 @@ paddlepaddle >= 1.5.0
 转换caffe模型 ： caffe == 1.0.0  
 转换onnx模型 ： onnx == 1.5.0  pytorch == 1.1.0
 ## 安装
-### 安装方式一
-```
-pip install x2paddle
-```
-### 安装方式二
-如果需要使用最新的代码版本，可使用如下方式进行安装  
+### 安装方式一（推荐）
+使用最新的代码版本，可使用如下方式进行安装  
 ```
 pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 ```
+
+### 安装方式二
+```
+pip install x2paddle
+```
+
 ### 安装方式三
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
