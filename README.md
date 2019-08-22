@@ -30,6 +30,7 @@ pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 ```
 
 ### 安装方式二
+我们会定期更新pip源上的x2paddle版本
 ```
 pip install x2paddle
 ```
