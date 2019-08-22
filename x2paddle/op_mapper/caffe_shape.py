@@ -151,10 +151,22 @@ def shape_concat(layer, input_shape):
 
 def shape_slice(layer, input_shape):
     inshape = input_shape[0]
+
+    top_len = len(layer.top)
     params = layer.slice_param
     axis = params.axis
-    count = inshape[axis]
+    slice_dim = params.slice_dim
+    if slice_dim != 1 and axis == 1:
+        axis = slice_dim
     points = list(params.slice_point)
+    count = inshape[axis]
+    if len(points) == 0:
+        assert count % top_len == 0, "the parameter of Slice is wrong"
+        part = count / top_len
+        t = part
+        while t < count:
+            points.append(int(t))
+            t += part
     points = [0] + points + [count]
     output_shape = []
     for i in range(len(points)):

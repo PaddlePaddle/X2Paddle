@@ -399,9 +399,22 @@ class CaffeOpMapper(OpMapper):
         assert len(
             node.inputs) == 1, 'The count of Slice node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        top_len = len(node.layer.top)
         params = node.layer.slice_param
         axis = params.axis
+        slice_dim = params.slice_dim
+        if slice_dim != 1 and axis == 1:
+            axis = slice_dim
         points = list(params.slice_point)
+
+        if len(points) == 0:
+            dims = node.input_shape[0][axis]
+            assert dims % top_len == 0, "the parameter of Slice is wrong"
+            part = dims / top_len
+            t = part
+            while t < dims:
+                points.append(int(t))
+                t += part
         maxint32 = 2147483647
         points = [0] + points
         points.append(maxint32)
@@ -421,7 +434,7 @@ class CaffeOpMapper(OpMapper):
                 node.layer_name, node.layer_name + '_' + str(i)))
             if i == len(points) - 2:
                 break
-
+                
     def Concat(self, node):
         assert len(
             node.inputs
@@ -570,9 +583,7 @@ class CaffeOpMapper(OpMapper):
                                       param_attr=attr)
 
     def BatchNorm(self, node):
-        assert len(node.inputs) == 1 and len(
-            node.outputs
-        ) == 1, 'The count of BatchNorm node\'s input and output is not 1.'
+        assert len(node.inputs) == 1, 'The count of BatchNorm node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.batch_norm_param
         if hasattr(params, 'eps'):
