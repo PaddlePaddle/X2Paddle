@@ -27,6 +27,11 @@ def run_net(param_dir="./"):
     import os
     x2paddle_obj = X2Paddle()
     inputs, outputs = x2paddle_obj.x2paddle_net()
+    for i, out in enumerate(outputs):
+        if isinstance(out, list):
+            for out_part in out:
+                outputs.append(out_part)
+            del outputs[i]
     exe = fluid.Executor(fluid.CPUPlace())
     exe.run(fluid.default_startup_program())
 

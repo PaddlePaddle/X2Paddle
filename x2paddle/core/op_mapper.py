@@ -112,7 +112,11 @@ class OpMapper(object):
                                py_code_dir,
                                fluid.default_main_program(),
                                predicate=if_exist)
-
+            for i, out in enumerate(outputs):
+                if isinstance(out, list):
+                    for out_part in out:
+                        outputs.append(out_part)
+                    del outputs[i]
             fluid.io.save_inference_model(dirname=os.path.join(
                 save_dir, "inference_model"),
                                           feeded_var_names=input_names,
