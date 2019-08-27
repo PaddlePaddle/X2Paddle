@@ -39,7 +39,7 @@ class TFGraphNode(GraphNode):
         self.pd_data_format = "NCHW"
         self.fluid_code = FluidCode()
 
-        self.dtype_map = {1: "float32", 3: "int32", 4: "int8", 9: "int64"}
+        self.dtype_map = {1: "float32", 3: "int32", 4: "uint8", 9: "int64"}
 
     @property
     def out_shapes(self):
@@ -52,7 +52,11 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        dtype = self.layer.attr["dtype"].type
+        keys = ['dtype', 'Tidx', 'T']
+        for k in keys:
+            dtype = self.layer.attr[k].type
+            if dtype > 0:
+                break
         if dtype not in self.dtype_map:
             raise Exception("Dtype[{}] not in dtype_map".format(dtype))
         return self.dtype_map[dtype]
@@ -198,9 +202,10 @@ class TFGraph(Graph):
 
 
 class TFDecoder(object):
-    def __init__(self, pb_model, data_format="NHWC"):
+    def __init__(self, pb_model, data_format="NHWC", define_input_shape=False):
         self.sess = tf.Session()
         self.input_info = dict()
+        self.define_input_shape = define_input_shape
         with gfile.FastGFile(pb_model, 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
@@ -229,10 +234,15 @@ class TFDecoder(object):
             if layer.op != "Placeholder":
                 continue
             graph_node = TFGraphNode(layer)
-            dtype = graph_node.dtype
+            dtype = graph_node.layer.attr['dtype'].type
+            print("========dtype", dtype)
 
             need_define_shape = 0
-            if not graph_node.get_attr("shape"):
+            if self.define_input_shape:
+                need_define_shape = 3
+            elif graph_node.layer.attr[
+                    'shape'].shape.unknown_rank or not graph_node.get_attr(
+                        "shape"):
                 need_define_shape = 1
             else:
                 value = graph_node.layer.attr["shape"].shape
@@ -241,12 +251,20 @@ class TFDecoder(object):
                     need_define_shape = 2
 
             if need_define_shape > 0:
+                shape = None
+                if graph_node.get_attr("shape"):
+                    value = value = graph_node.layer.attr["shape"].shape
+                    shape = [dim.size for dim in value.dim]
                 if need_define_shape == 1:
                     print("Unknown shape for input tensor[tensor name: \"{}\"]".
                           format(layer.name))
-                else:
+                elif need_define_shape == 2:
                     print(
                         "\nShape[now is {}] for input tensor[tensor name: \"{}\"] not support yet"
+                        .format(shape, layer.name))
+                else:
+                    print(
+                        "Define shape[now is {}] for input tensor[tensor name: \"{}\']"
                         .format(shape, layer.name))
                 print(
                     "Use your keyboard type the shape of input tensor below :)")
@@ -264,12 +282,14 @@ class TFDecoder(object):
                     for dim in shape.strip().split(',')
                 ]
                 assert shape.count(None) <= 1, "Only one dimension can be None"
+                print("]]]]]]]]]dtype", dtype)
                 x2paddle_input = tf.placeholder(dtype=dtype,
                                                 shape=shape,
                                                 name="x2paddle_{}".format(
                                                     layer.name))
                 input_map["{}:0".format(layer.name)] = x2paddle_input
-                shape[shape.index(None)] = -1
+                if shape.count(None) > 0:
+                    shape[shape.index(None)] = -1
                 self.input_info["x2paddle_{}".format(layer.name)] = (shape,
                                                                      dtype)
             else:

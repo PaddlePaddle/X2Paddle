@@ -64,11 +64,8 @@ class Layer(object):
                     else:
                         layer_code = layer_code + key + "={}, ".format(
                             input.layer_name)
-                elif isinstance(input, str):
-                    layer_code = layer_code + key + "={}, ".format(input)
                 else:
-                    raise Exception(
-                        "Element of inputs should GraphNode or String")
+                    layer_code = layer_code + key + "={}, ".format(input)
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
                 layer_code += (self.inputs.layer_name +
