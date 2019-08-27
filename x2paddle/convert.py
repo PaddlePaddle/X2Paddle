@@ -57,11 +57,25 @@ def arg_parser():
                         action="store_true",
                         default=False,
                         help="get version of x2paddle")
+    parser.add_argument(
+        "--without_data_format_optimization",
+        "-wo",
+        action="store_true",
+        default=False,
+        help="tf model conversion without data format optimization")
+    parser.add_argument("--define_input_shape",
+                        "-d",
+                        action="store_true",
+                        default=False,
+                        help="define input shape for tf model")
 
     return parser
 
 
-def tf2paddle(model_path, save_dir):
+def tf2paddle(model_path,
+              save_dir,
+              without_data_format_optimization=False,
+              define_input_shape=False):
     # check tensorflow installation and version
     try:
         import tensorflow as tf
@@ -77,17 +91,24 @@ def tf2paddle(model_path, save_dir):
 
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+    from x2paddle.op_mapper.tf_op_mapper_nhwc import TFOpMapperNHWC
     from x2paddle.optimizer.tf_optimizer import TFOptimizer
 
     print("Now translating model from tensorflow to paddle.")
-    model = TFDecoder(model_path)
-    mapper = TFOpMapper(model)
-    optimizer = TFOptimizer(mapper)
-    # neccesary optimization
-    optimizer.delete_redundance_code()
-    # optimizer below is experimental
-    optimizer.merge_activation()
-    optimizer.merge_bias()
+    model = TFDecoder(model_path, define_input_shape=define_input_shape)
+    if not without_data_format_optimization:
+        mapper = TFOpMapper(model)
+        optimizer = TFOptimizer(mapper)
+        # neccesary optimization
+        optimizer.delete_redundance_code()
+        # optimizer below is experimental
+        optimizer.merge_activation()
+        optimizer.merge_bias()
+    else:
+        mapper = TFOpMapperNHWC(model)
+        optimizer = TFOptimizer(mapper)
+        optimizer.delete_redundance_code()
+        optimizer.strip_graph()
     mapper.save_inference_model(save_dir)
 
 
@@ -155,7 +176,14 @@ def main():
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
-        tf2paddle(args.model, args.save_dir)
+        without_data_format_optimization = False
+        define_input_shape = False
+        if args.without_data_format_optimization:
+            without_data_format_optimization = True
+        if args.define_input_shape:
+            define_input_shape = True
+        tf2paddle(args.model, args.save_dir, without_data_format_optimization,
+                  define_input_shape)
 
     elif args.framework == "caffe":
         assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"

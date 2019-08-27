@@ -37,18 +37,82 @@ class TFOptimizer(object):
         self.graph = op_mapper.graph
 
     def delete_redundance_code(self):
+        #        print("==========omit_nodes============")
+        #        for node_name in set(self.op_mapper.omit_nodes):
+        #            node = self.graph.get_node(node_name)
+        #            print(node.layer_name, self.op_mapper.omit_nodes.count(node.layer_name), len(node.outputs), node.outputs)
+        #        print("================================")
         for node_name in self.graph.topo_sort:
             if node_name in self.op_mapper.omit_nodes:
                 node = self.graph.get_node(node_name)
+                if node is None:
+                    continue
                 omit_freq = self.op_mapper.omit_nodes.count(node_name)
                 if len(node.outputs) <= omit_freq:
                     node.fluid_code.clear()
+
+                    # remove node from graph
+                    input_names = node.inputs
+                    output_names = node.outputs
+                    for in_name in input_names:
+                        in_node = self.graph.get_node(in_name)
+                        index = in_node.outputs.index(node_name)
+                        del in_node.outputs[index]
+                    for out_name in output_names:
+                        out_node = self.graph.get_node(out_name)
+                        index = out_node.inputs.index(node_name)
+                        del out_node.inputs[index]
+                    del self.graph.node_map[node_name]
+
+    def strip_graph(self):
+        #        print("=============")
+        #        for i, node_name in enumerate(self.graph.topo_sort):
+        #            node = self.graph.get_node(node_name)
+        #            if node is None:
+        #                continue
+        #            print(node.layer_name, node.inputs)
+        #        print("================")
+        visited_nodes = set()
+
+        def visit(node_name):
+            if node_name in visited_nodes:
+                return
+            visited_nodes.add(node_name)
+            input_names = self.graph.get_node(node_name).inputs
+            for in_name in input_names:
+                visit(in_name)
+
+        for node_name in self.graph.output_nodes:
+            visit(node_name)
+
+#        print("=============visited nodes++++++++++++")
+#        for name in visited_nodes:
+#            print(name)
+#        print("===================================")
+        for i, node_name in enumerate(self.graph.topo_sort):
+            if node_name not in visited_nodes:
+                node = self.graph.get_node(node_name)
+                if node is None:
+                    continue
+                input_names = node.inputs
+                output_names = node.outputs
+                for in_name in input_names:
+                    in_node = self.graph.get_node(in_name)
+                    index = in_node.outputs.index(node_name)
+                    del in_node.outputs[index]
+                for out_name in output_names:
+                    out_node = self.graph.get_node(out_name)
+                    index = out_node.inputs.index(node_name)
+                    del out_node.inputs[index]
+                del self.graph.node_map[node_name]
 
     # TODO activation merge
     def merge_activation(self):
         act_nodes = list()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if node.layer_type in self.activation_ops:
                 act_nodes.append(node_name)
 
@@ -75,6 +139,8 @@ class TFOptimizer(object):
     def merge_bias(self):
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if node.layer_type == "BiasAdd":
                 input = self.graph.get_node(node.inputs[0])
                 if input.layer_type not in self.layers_with_bias:
@@ -105,3 +171,27 @@ class TFOptimizer(object):
                             'act'] = node.fluid_code.layers[-1].param_attr[
                                 'act']
                     node.fluid_code.clear()
+
+
+#    def remove_transpose(self):
+#        optimize_ops = ['Conv2D', 'MaxPool', 'FusedBatchNorm', 'DepthwiseConv2dNative', 'AvgPool', 'Pad', 'Conv2DBackpropInput', 'ResizeNearestNeighbor', 'ResizeBilinear']
+#        for node_name in self.graph.topo_sort:
+#            node = self.graph.get_node(node_name)
+#            if node.layer_type not in optimize_ops:
+#                continue
+#            if node.fluid_code.layers[-1].op != "transpose" or node.fluid_code.layers[-1].param_attr["perm"] != [0, 2, 3, 1]:
+#                continue
+#            output_names = node.outputs
+#            can_be_removed = True
+#            for out_name in outputs_names:
+#                out_node = self.graph.get_node(out_name)
+#                if out_node.fluid_code.layers[0].op != "transpose" or out_node.fluid_code.layers[-1].param_attr["perm"] != [0, 3, 1, 2]:
+#                    can_be_removed = False
+#                    break
+#            if can_be_removed and len(output_names) > 0:
+#                last_out = node.fluid_code.layers[-1].inputs
+#                del node.fluid_code.layers[-1]
+#                for out_name in outputs_names:
+#                    out_node = self.graph.get_node(out_name)
+#                    del out_node.fluid_code.layers[0]
+#                    out_node.fluid_code.layers[0].inputs = last_out

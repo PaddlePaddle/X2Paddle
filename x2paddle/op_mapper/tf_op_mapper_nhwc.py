@@ -29,26 +29,7 @@ def get_same_padding(in_size, kernel_size, stride):
     return [pad0, pad1]
 
 
-def nhwc_dim_to_nchw(node, dim):
-    tf_data_format = list(node.tf_data_format)
-    pd_data_format = list(node.pd_data_format)
-    if isinstance(dim, list):
-        for i in range(len(dim)):
-            char = tf_data_format[dim[i]]
-            dim[i] = pd_data_format.index(char)
-    else:
-        char = tf_data_format[dim]
-        dim = pd_data_format.index(char)
-    return dim
-
-    if dim < 0:
-        dim += 4
-    if dim > 0:
-        dim = (dim + 1) % 4 + int((dim + 1) / 4)
-    return dim
-
-
-class TFOpMapper(OpMapper):
+class TFOpMapperNHWC(OpMapper):
     directly_map_ops = {
         'Relu': ['relu'],
         'Relu6': ['relu6'],
@@ -71,7 +52,7 @@ class TFOpMapper(OpMapper):
     }
 
     def __init__(self, decoder):
-        super(TFOpMapper, self).__init__()
+        super(TFOpMapperNHWC, self).__init__()
         self.decoder = decoder
         self.graph = decoder.tf_graph
         self.weights = dict()
@@ -86,8 +67,8 @@ class TFOpMapper(OpMapper):
             idx = self.graph.input_nodes.index(name)
             del self.graph.input_nodes[idx]
 
-        print("Total nodes: {}".format(len(self.graph.topo_sort)))
         unsupported_ops = set()
+        print("Total nodes: {}".format(len(self.graph.topo_sort)))
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
@@ -106,11 +87,12 @@ class TFOpMapper(OpMapper):
                 func(node)
             else:
                 unsupported_ops.add(op)
+                continue
         if len(unsupported_ops) > 0:
-            print("=========={} Ops are not supported yet======".format(
+            print("========= {} OPs are not supported yet ===========".format(
                 len(unsupported_ops)))
             for op in unsupported_ops:
-                print("========== {} ==========".format(op))
+                print("========== {} ============".format(op))
             sys.exit(-1)
 
     def add_omit_nodes(self, in_node_name, out_node_name):
@@ -161,16 +143,8 @@ class TFOpMapper(OpMapper):
                 raise Exception("Unexpected situation happend")
 
         if len(x_shape) == 4 and len(y_shape) == 1:
-            if x_input.tf_data_format == "NHWC":
-                axis = 1
-            else:
-                axis = -1
-            attr = {"axis": axis}
             inputs = {"x": x_input, "y": y_input}
-            node.fluid_code.add_layer(op_type,
-                                      inputs=inputs,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(op_type, inputs=inputs, output=node)
             return
 
         is_sub_seq = True
@@ -195,10 +169,6 @@ class TFOpMapper(OpMapper):
                     else:
                         raise Exception("Unexpected situation happend")
             if x_need_expand:
-                if len(x_expand_times) == 3 and x.tf_data_format == "NHWC":
-                    x_expand_times = [x_expand_times[i] for i in [2, 0, 1]]
-                if len(x_expand_times) == 4 and x.tf_data_format == "NHWC":
-                    x_expand_times = [x_expand_times[i] for i in [0, 3, 1, 2]]
                 attr = {"expand_times": x_expand_times}
                 node.fluid_code.add_layer("expand",
                                           inputs=x_input,
@@ -206,10 +176,6 @@ class TFOpMapper(OpMapper):
                                           param_attr=attr)
                 x_input = "x_tmp"
             if y_need_expand:
-                if len(y_expand_times) == 3 and y.tf_data_format == "NHWC":
-                    y_expand_times = [y_expand_times[i] for i in [2, 0, 1]]
-                if len(y_expand_times) == 4 and y.tf_data_format == "NHWC":
-                    y_expand_times = [y_expand_times[i] for i in [0, 3, 1, 2]]
                 attr = {"expand_times": y_expand_times}
                 node.fluid_code.add_layer("expand",
                                           inputs=y_input,
@@ -226,10 +192,6 @@ class TFOpMapper(OpMapper):
         shape = node.out_shapes[0]
         assert len(shape) != 0, "Unknown shape of input nodes[{}].".format(
             node.layer_name)
-        if node.tf_data_format == "NHWC" and len(shape) == 4:
-            shape = [shape[i] for i in [0, 3, 1, 2]]
-        elif node.tf_data_format == "NCHW" and len(shape) == 4:
-            self.graph.data_format_propagation(node)
         dtype = node.dtype
         attr = {
             'dtype': string(dtype),
@@ -254,17 +216,6 @@ class TFOpMapper(OpMapper):
 
         self.weights[node.layer_name] = node.value
 
-        if node.tf_data_format == "NHWC":
-            if len(shape) == 4:
-                shape = [shape[i] for i in [0, 3, 1, 2]]
-            if len(shape) == 3:
-                shape = [shape[i] for i in [2, 0, 1]]
-                self.weights[node.layer_name] = numpy.transpose(
-                    node.value, (2, 0, 1))
-        elif node.tf_data_format == "NCHW":
-            if len(shape) == 4:
-                self.graph.data_format_propagation(node)
-
         attr = {
             'dtype': string(dtype),
             'shape': shape,
@@ -284,46 +235,11 @@ class TFOpMapper(OpMapper):
         perm.fluid_code.clear()
         perm = perm.value.tolist()
 
-        if perm == [0, 3, 1, 2] and input.data_format == "NHWC":
-            node.fluid_code.add_layer("assign",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=None)
-            node.tf_data_format = "NCHW"
-            self.graph.data_format_propagation(node)
-        elif perm == [0, 2, 3, 1] and input.tf_data_format == "NCHW":
-            node.fluid_code.add_layer("assign",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=None)
-            node.tf_data_format = "NHWC"
-            self.graph.data_format_propagation(node)
-        elif len(input.out_shapes[0]) > 4:
-            print(input.layer_name, input.tf_data_format, input.pd_data_format)
-            tf_data_format = list(input.tf_data_format)
-            pd_data_format = list(input.pd_data_format)
-            new_perm = [i for i in range(len(perm))]
-            for i in range(len(perm)):
-                char0 = tf_data_format[i]
-                char1 = tf_data_format[perm[i]]
-                index0 = pd_data_format.index(char0)
-                index1 = pd_data_format.index(char1)
-                new_perm[index0] = index1
-            node.tf_data_format = [tf_data_format[i] for i in perm]
-            node.pd_data_format = [pd_data_format[i] for i in perm]
-            attr = {'perm': new_perm}
-            node.fluid_code.add_layer("transpose",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-        elif len(node.out_shapes[0]) != 4:
-            attr = {'perm': perm}
-            node.fluid_code.add_layer("transpose",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-        else:
-            raise Exception("Unexpected situation happend in Transpose OP")
+        attr = {'perm': perm}
+        node.fluid_code.add_layer("transpose",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
 
     def MaxPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -337,14 +253,17 @@ class TFOpMapper(OpMapper):
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
-        padding = 0
 
         if not channel_first:
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             k_size = [k_size[i] for i in [0, 3, 1, 2]]
-        else:
-            self.graph.data_format_propagation(node)
+            input = node
 
         if pad_mode == "SAME":
             pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
@@ -352,21 +271,28 @@ class TFOpMapper(OpMapper):
             pad_h = pad_h[0] + pad_h[1]
             pad_w = pad_w[0] + pad_w[1]
             attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
-            node.fluid_code.add_layer("pad2d",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-            input = node
+            if pad_h + pad_w != 0:
+                node.fluid_code.add_layer("pad2d",
+                                          inputs=input,
+                                          output=node,
+                                          param_attr=attr)
+                input = node
         attr = {
             "pool_size": k_size[2:4],
             "pool_type": string("max"),
-            "pool_padding": padding,
             "pool_stride": strides[2:4]
         }
         node.fluid_code.add_layer("pool2d",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def Conv2D(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -395,8 +321,12 @@ class TFOpMapper(OpMapper):
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-        else:
-            self.graph.data_format_propagation(node)
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
 
         if pad_mode == "SAME":
             pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
@@ -423,19 +353,21 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def BiasAdd(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         bias = self.graph.get_node(node.layer.input[1], copy=True)
-        axis = -1
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            axis = 1
         inputs = {"x": input, "y": bias}
-        attr = {"axis": axis}
         node.fluid_code.add_layer("elementwise_add",
                                   inputs=inputs,
                                   output=node,
-                                  param_attr=attr)
+                                  param_attr=None)
 
     def FusedBatchNorm(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -454,8 +386,14 @@ class TFOpMapper(OpMapper):
         self.add_omit_nodes(beta.layer_name, node.layer_name)
         self.add_omit_nodes(moving_mean.layer_name, node.layer_name)
         self.add_omit_nodes(moving_var.layer_name, node.layer_name)
-        if channel_first:
-            self.data_format_propagation(node)
+
+        if not channel_first:
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
 
         attr = {
             "epsilon": node.get_attr("epsilon"),
@@ -470,6 +408,13 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def DepthwiseConv2dNative(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -498,8 +443,12 @@ class TFOpMapper(OpMapper):
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-        else:
-            self.data_format_propagation(node)
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
 
         if pad_mode == "SAME":
             pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
@@ -530,6 +479,13 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
+
     def Reshape(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         param = self.graph.get_node(node.layer.input[1], copy=True)
@@ -540,10 +496,6 @@ class TFOpMapper(OpMapper):
             # Here is a trick method to solove tensor parameter in tensorflow
             shape = self.decoder.infer_shape_tensor(param, node.out_shapes[0])
             if shape.count(-1) <= 1:
-                attr = {"shape": shape}
-                self.add_omit_nodes(param.layer_name, node.layer_name)
-            elif shape.count(-1) == 2 and shape[0] == -1:
-                shape[0] = 0
                 attr = {"shape": shape}
                 self.add_omit_nodes(param.layer_name, node.layer_name)
             else:
@@ -564,26 +516,6 @@ class TFOpMapper(OpMapper):
                     new_param += (node.layer_name + "[{}]".format(i) + ", ")
                 new_param = new_param.strip(", ") + "]"
                 attr = {"shape": new_param}
-        if len(attr["shape"]) == 4 and node.tf_data_format == "NHWC":
-            input_shape = self.decoder.infer_tensor(input).shape
-            if input_shape[1] == attr["shape"][1]:
-                attr["shape"] = [attr["shape"][i] for i in [0, 3, 1, 2]]
-            else:
-                perm = {"perm": [0, 2, 3, 1]}
-                node.fluid_code.add_layer("transpose",
-                                          inputs=input,
-                                          output=node,
-                                          param_attr=perm)
-                node.fluid_code.add_layer("reshape",
-                                          inputs=node,
-                                          output=node,
-                                          param_attr=attr)
-                perm = {"perm": [0, 3, 1, 2]}
-                node.fluid_code.add_layer("transpose",
-                                          inputs=node,
-                                          output=node,
-                                          param_attr=perm)
-                return
         node.fluid_code.add_layer("reshape",
                                   inputs=input,
                                   output=node,
@@ -606,8 +538,12 @@ class TFOpMapper(OpMapper):
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             k_size = [k_size[i] for i in [0, 3, 1, 2]]
-        else:
-            self.graph.data_format_propagation(node)
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
 
         attr = {
             "pool_size": k_size[2:4],
@@ -625,6 +561,13 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
+
     def SplitV(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         num_sections = self.graph.get_node(node.layer.input[1], copy=True)
@@ -634,8 +577,6 @@ class TFOpMapper(OpMapper):
         self.add_omit_nodes(num_sections.layer_name, node.layer_name)
         self.add_omit_nodes(dim.layer_name, node.layer_name)
         dim = dim.value
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            dim = nhwc_dim_to_nchw(input, dim)
         attr = {
             "num_or_sections": num_sections.value.tolist(),
             "dim": dim.value
@@ -654,9 +595,9 @@ class TFOpMapper(OpMapper):
         assert axis.layer_type == "Const"
         self.add_omit_nodes(axis.layer_name, node.layer_name)
         axis = axis.value
-        if inputs[0].tf_data_format == "NHWC" and len(
-                inputs[0].out_shapes[0]) == 4:
-            axis = nhwc_dim_to_nchw(inputs[0], axis)
+        if axis < 0:
+            axis += len(inputs[0].out_shapes[0])
+
         attr = {"axis": axis}
         node.fluid_code.add_layer("concat",
                                   inputs=inputs,
@@ -671,15 +612,9 @@ class TFOpMapper(OpMapper):
             expand_times = expand_times.value.tolist()
         else:
             expand_times = self.decoder.infer_shape_tensor(expand_times)
-        if input.tf_data_format == "NHWC":
-            if len(input.out_shapes[0]) == 4:
-                expand_times = [expand_times[i] for i in [0, 3, 1, 2]]
-            elif len(input.out_shape[0]) == 3:
-                expand_times = [expand_times[i] for i in [2, 0, 1]]
         for i in range(len(expand_times)):
             if expand_times[i] < 0:
                 expand_times[i] = 1
-
         attr = {"expand_times": expand_times}
         node.fluid_code.add_layer("expand",
                                   inputs=input,
@@ -691,16 +626,6 @@ class TFOpMapper(OpMapper):
             self.graph.get_node(name, copy=True) for name in node.layer.input
         ]
         axis = node.get_attr("axis")
-        if inputs[0].tf_data_format == "NHWC" and len(
-                inputs[0].out_shapes[0]) == 4:
-            tf_data_format = list(inputs[0].tf_data_format)
-            tf_data_format.insert(axis, str(len(tf_data_format)))
-            axis = nhwc_dim_to_nchw(inputs[0], axis)
-            pd_data_format = list(inputs[0].pd_data_format)
-            pd_data_format.insert(axis, str(len(pd_data_format)))
-            node.tf_data_format = "".join(tf_data_format)
-            node.pd_data_format = "".join(pd_data_format)
-
         attr = {"axis": axis}
         node.fluid_code.add_layer("stack",
                                   inputs=inputs,
@@ -713,16 +638,40 @@ class TFOpMapper(OpMapper):
         assert paddings.layer_type == "Const", "Padding should be Const"
         self.add_omit_nodes(paddings.layer_name, node.layer_name)
         paddings = paddings.value.flatten().tolist()
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            paddings = [paddings[i] for i in [0, 1, 6, 7, 2, 3, 4, 5]]
+        data_format = input.tf_data_format
 
-        pad_op = "pad"
         if len(input.out_shapes[0]) == 4:
-            if paddings[0] + paddings[1] + paddings[2] + paddings[3] == 0:
-                paddings = paddings[4:]
-                pad_op = "pad2d"
+            new_padding = None
+            if input.tf_data_format == "NHWC":
+                if paddings[0] + paddings[1] + paddings[6] + paddings[7] == 0:
+                    new_padding = paddings[2:6]
+            else:
+                if paddings[0] + paddings[1] + paddings[2] + paddings[3] == 0:
+                    new_padding = paddings[4:]
+            if new_padding is not None:
+                if input.tf_data_format == "NHWC":
+                    attr = {"perm": [0, 3, 1, 2]}
+                    node.fluid_code.add_layer("transpose",
+                                              inputs=input,
+                                              output=node,
+                                              param_attr=attr)
+                    input = node
+                attr = {"paddings": new_padding}
+                node.fluid_code.add_layer("pad2d",
+                                          inputs=input,
+                                          output=node,
+                                          param_attr=attr)
+                if input.tf_data_format == "NHWC":
+                    attr = {"perm": [0, 2, 3, 1]}
+                    node.fluid_code.add_layer("transpose",
+                                              inputs=node,
+                                              output=node,
+                                              param_attr=attr)
+
+                return
+
         attr = {"paddings": paddings}
-        node.fluid_code.add_layer(pad_op,
+        node.fluid_code.add_layer("pad",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
@@ -731,6 +680,9 @@ class TFOpMapper(OpMapper):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
         delta = self.graph.get_node(node.layer.input[2], copy=True)
+        self.add_omit_nodes(start.layer_name, node.layer_name)
+        self.add_omit_nodes(limit.layer_name, node.layer_name)
+        self.add_omit_nodes(delta.layer_name, node.layer_name)
         if start.layer_type == "Const":
             start = start.value
         else:
@@ -743,11 +695,13 @@ class TFOpMapper(OpMapper):
             delta = delta.value
         else:
             delta = self.decoder.infer_tensor(delta)
-        self.add_omit_nodes(start.layer_name, node.layer_name)
-        self.add_omit_nodes(limit.layer_name, node.layer_name)
-        self.add_omit_nodes(delta.layer_name, node.layer_name)
-
-        inputs = {"start": start, "end": limit, "step": delta}
+        dtype = node.dtype
+        inputs = {
+            "start": start,
+            "end": limit,
+            "step": delta,
+            "dtype": string(dtype)
+        }
         attr = {"dtype": string(node.dtype)}
         node.fluid_code.add_layer("range",
                                   inputs=inputs,
@@ -760,10 +714,6 @@ class TFOpMapper(OpMapper):
         assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
         dims = reduce_idx.value.tolist()
         keep_dims = node.get_attr("keep_dims")
-
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            for i in range(len(dims)):
-                dims[i] = nhwc_dim_to_nchw(input, dims[i])
 
         attr = {"dim": dims, "keep_dim": keep_dims}
         node.fluid_code.add_layer("reduce_mean",
@@ -799,8 +749,6 @@ class TFOpMapper(OpMapper):
         assert axis.layer_type == "Const", "ArgMax only support Const parameter"
         self.add_omit_nodes(axis.layer_name, node.layer_name)
         axis = axis.value
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            axis = nhwc_dim_to_nchw(input, axis)
         attr = {"axis": axis}
         node.fluid_code.add_layer("argmax",
                                   inputs=input,
@@ -819,32 +767,85 @@ class TFOpMapper(OpMapper):
         self.add_omit_nodes(end.layer_name, node.layer_name)
         self.add_omit_nodes(strides.layer_name, node.layer_name)
         strides = strides.value.tolist()
-        assert len(set(strides)) == 1 and strides[0] == 1
+        assert len(set(strides)) == 1 and strides[
+            0] == 1, "Only support strides be 1 in StridedSlice OP"
 
         begin = begin.value.tolist()
         end = end.value.tolist()
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            begin = [begin[i] for i in [0, 3, 1, 2]]
-            end = [end[i] for i in [0, 3, 1, 2]]
 
         for i in range(len(end)):
             if end[i] == 0:
                 end[i] = 999999
 
+        begin_mask = node.get_attr('begin_mask')
+        end_mask = node.get_attr('end_mask')
+        ellipsis_mask = node.get_attr('ellipsis_mask')
+        new_axis_mask = node.get_attr('new_axis_mask')
+        shrink_axis_mask = node.get_attr('shrink_axis_mask')
+
+        assert ellipsis_mask == 0, "(OP:{} Name:{})Only support ellipsis_mask be 0[now: {}] n StridedSlice OP".format(
+            node.layer_type, node.layer.name, ellipsis_mask)
+
+        # TODO codes without validation
+        # Use it carefully
+        new_begin = list()
+        new_end = list()
+        new_axes = list()
+        shrink_axes = list()
+        for i, item in enumerate(begin):
+            mask = (new_axis_mask >> i) & 1
+            if mask != 0:
+                new_axes.append(i)
+                continue
+
+            mask = (shrink_axis_mask >> i) & 1
+            if mask != 0:
+                shrink_axes.append(i)
+
+            mask = (begin_mask >> i) & 1
+            if mask != 0:
+                new_begin.append(0)
+            else:
+                new_begin.append(item)
+
+            mask = (end_mask >> i) & 1
+            if mask != 0:
+                new_end.append(999999)
+            else:
+                new_end.append(end[i])
+
         attr = {
-            "axes": [i for i in range(len(strides))],
-            "starts": begin,
-            "ends": end
+            "axes": [i for i in range(len(new_begin))],
+            "starts": new_begin,
+            "ends": new_end
         }
         node.fluid_code.add_layer("slice",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+        print(node.layer.name)
+        if len(new_axes) > 0:
+            attr = {"axes": new_axes}
+            node.fluid_code.add_layer("unsqueeze",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
+        if len(shrink_axes) > 0:
+            if len(input.out_shapes[0]) + len(new_axes) <= 1:
+                pass
+            else:
+                attr = {"axes": shrink_axes}
+                node.fluid_code.add_layer("squeeze",
+                                          inputs=node,
+                                          output=node,
+                                          param_attr=attr)
 
     def Slice(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         begin = self.graph.get_node(node.layer.input[1], copy=True)
         size = self.graph.get_node(node.layer.input[2], copy=True)
+        #        assert begin.layer_type == "Const"
+        #        assert size.layer_type == "Const"
         self.add_omit_nodes(begin.layer_name, node.layer_name)
         self.add_omit_nodes(size.layer_name, node.layer_name)
         if begin.layer_type == "Const":
@@ -855,10 +856,6 @@ class TFOpMapper(OpMapper):
             size = size.value.tolist()
         else:
             size = self.decoder.infer_tensor(size).tolist()
-
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            size = [size[i] for i in [0, 3, 1, 2]]
-            begin = [begin[i] for i in [0, 3, 1, 2]]
 
         attr = {"shape": size, "offsets": begin}
         node.fluid_code.add_layer("crop",
@@ -871,6 +868,7 @@ class TFOpMapper(OpMapper):
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
         assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
         self.add_omit_nodes(kernel.layer_name, node.layer_name)
+
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
             in_shape = self.decoder.infer_tensor(input).shape
@@ -890,9 +888,12 @@ class TFOpMapper(OpMapper):
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-        else:
-            self.data_format_propagation(node)
-
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
         padding = 0
         if pad_mode == "SAME":
             pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
@@ -915,11 +916,16 @@ class TFOpMapper(OpMapper):
             "dilation": dilations[2:4],
             "padding": padding
         }
-        node.fluid_code.add_layer(
-            "conv2d_transpose",
-            inputs=input if channel_first and pad_mode != "SAME" else node,
-            output=node,
-            param_attr=attr)
+        node.fluid_code.add_layer("conv2d_transpose",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def Max(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -927,8 +933,6 @@ class TFOpMapper(OpMapper):
         assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
         keep_dims = node.get_attr("keep_dims")
         dim = reduce_idx.value.tolist()
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            dim = nhwc_dim_to_nchw(input, dim)
 
         attr = {"dim": dim, "keep_dim": keep_dims}
         node.fluid_code.add_layer("reduce_max",
@@ -942,8 +946,6 @@ class TFOpMapper(OpMapper):
         assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
         keep_dims = node.get_attr("keep_dims")
         dim = reduce_idx.value.tolist()
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            dim = nhwc_dim_to_nchw(input, dim)
 
         attr = {"dim": dim, "keep_dim": keep_dims}
         node.fluid_code.add_layer("reduce_sum",
@@ -976,11 +978,10 @@ class TFOpMapper(OpMapper):
     def Split(self, node):
         dim = self.graph.get_node(node.layer.input[0], copy=True)
         input = self.graph.get_node(node.layer.input[1], copy=True)
+        assert dim.layer_type == "Const"
         self.add_omit_nodes(dim.layer_name, node.layer_name)
         num_split = node.get_attr('num_split')
         dim = dim.value
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            dim = nhwc_dim_to_nchw(input, dim)
 
         attr = {"num_or_sections": num_split, "dim": dim}
         node.fluid_code.add_layer("split",
@@ -991,9 +992,6 @@ class TFOpMapper(OpMapper):
     def Squeeze(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         squeeze_dims = node.get_attr('squeeze_dims')
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            for i in range(len(squeeze_dims)):
-                squeeze_dims[i] = nhwc_dim_to_nchw(input, squeeze_dims[i])
         attr = {"axes": squeeze_dims}
         node.fluid_code.add_layer("squeeze",
                                   inputs=input,
@@ -1003,10 +1001,6 @@ class TFOpMapper(OpMapper):
     def Softmax(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         axis = node.get_attr("axis")
-        if axis is None:
-            axis = -1 + len(input.out_shapes[0])
-        if input.tf_data_format == "NHWC" and len(input.out_shapes[0]) == 4:
-            axis = nhwc_dim_to_nchw(input, axis)
         attr = {"axis": axis}
         node.fluid_code.add_layer("softmax",
                                   inputs=input,
@@ -1020,46 +1014,22 @@ class TFOpMapper(OpMapper):
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {"align_corners": align_corners, "out_shape": resize_shape}
-        node.fluid_code.add_layer("resize_nearest",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeBilinear(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {
-            "align_corners": align_corners,
-            "out_shape": resize_shape,
-            "align_mode": 1
-        }
-        node.fluid_code.add_layer("resize_bilinear",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeNearestNeighbor(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
             resize_shape = self.decoder.infer_shape_tensor(
                 resize_shape, node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
+        attr = {"perm": [0, 3, 1, 2]}
+        node.fluid_code.add_layer("transpose",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
         attr = {"align_corners": align_corners, "out_shape": resize_shape}
         node.fluid_code.add_layer("resize_nearest",
-                                  inputs=input,
+                                  inputs=node,
+                                  output=node,
+                                  param_attr=attr)
+        attr = {"perm": [0, 2, 3, 1]}
+        node.fluid_code.add_layer("transpose",
+                                  inputs=node,
                                   output=node,
                                   param_attr=attr)
 
@@ -1073,12 +1043,22 @@ class TFOpMapper(OpMapper):
             resize_shape = self.decoder.infer_shape_tensor(
                 resize_shape, node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
+        attr = {"perm": [0, 3, 1, 2]}
+        node.fluid_code.add_layer("transpose",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
         attr = {
             "align_corners": align_corners,
             "out_shape": resize_shape,
             "align_mode": 1
         }
         node.fluid_code.add_layer("resize_bilinear",
-                                  inputs=input,
+                                  inputs=node,
+                                  output=node,
+                                  param_attr=attr)
+        attr = {"perm": [0, 2, 3, 1]}
+        node.fluid_code.add_layer("transpose",
+                                  inputs=node,
                                   output=node,
                                   param_attr=attr)
