@@ -95,6 +95,15 @@ class TFOpMapperNHWC(OpMapper):
                 print("========== {} ============".format(op))
             sys.exit(-1)
 
+    def add_omit_nodes(self, in_node_name, out_node_name):
+        in_node = self.graph.get_node(in_node_name)
+        out_node = self.graph.get_node(out_node_name)
+        index = in_node.outputs.index(out_node_name)
+        del in_node.outputs[index]
+        index = out_node.inputs.index(in_node_name)
+        del out_node.inputs[index]
+        self.omit_nodes.append(in_node.layer_name)
+
     def directly_map(self, node):
         assert node.layer_type in self.directly_map_ops
         op_info = self.directly_map_ops[node.layer_type]
@@ -289,10 +298,7 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
         assert kernel.layer_type == "Const", "Kernel of Conv2D should be Const"
-        self.omit_nodes.append(kernel.layer_name)
-
-        node.fluid_code.add_note("#{} : {}".format(node.layer.name,
-                                                   node.layer_name))
+        self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
@@ -376,10 +382,10 @@ class TFOpMapperNHWC(OpMapper):
         assert beta.layer_type == "Const"
         assert moving_mean.layer_type == "Const"
         assert moving_var.layer_type == "Const"
-        self.omit_nodes.append(gamma.layer_name)
-        self.omit_nodes.append(beta.layer_name)
-        self.omit_nodes.append(moving_mean.layer_name)
-        self.omit_nodes.append(moving_var.layer_name)
+        self.add_omit_nodes(gamma.layer_name, node.layer_name)
+        self.add_omit_nodes(beta.layer_name, node.layer_name)
+        self.add_omit_nodes(moving_mean.layer_name, node.layer_name)
+        self.add_omit_nodes(moving_var.layer_name, node.layer_name)
 
         if not channel_first:
             attr = {"perm": [0, 3, 1, 2]}
@@ -414,7 +420,7 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
         assert kernel.layer_type == "Const", "Kernel of DepthwiseConv2DNative should be Const"
-        self.omit_nodes.append(kernel.layer_name)
+        self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
@@ -485,13 +491,13 @@ class TFOpMapperNHWC(OpMapper):
         param = self.graph.get_node(node.layer.input[1], copy=True)
         if param.layer_type == "Const":
             attr = {"shape": param.value.tolist()}
-            self.omit_nodes.append(param.layer_name)
+            self.add_omit_nodes(param.layer_name, node.layer_name)
         else:
             # Here is a trick method to solove tensor parameter in tensorflow
             shape = self.decoder.infer_shape_tensor(param, node.out_shapes[0])
             if shape.count(-1) <= 1:
                 attr = {"shape": shape}
-                self.omit_nodes.append(param.layer_name)
+                self.add_omit_nodes(param.layer_name, node.layer_name)
             else:
                 assert len(param.out_shapes[0]
                            ) == 1, "Unexpected situation of shape parameter"
@@ -568,8 +574,8 @@ class TFOpMapperNHWC(OpMapper):
         dim = self.graph.get_node(node.layer.input[2], copy=True)
         assert num_sections.layer_type == "Const"
         assert dim.layer_type == "Const"
-        self.omit_nodes.append(num_sections.layer_name)
-        self.omit_nodes.append(dim.layer_name)
+        self.add_omit_nodes(num_sections.layer_name, node.layer_name)
+        self.add_omit_nodes(dim.layer_name, node.layer_name)
         dim = dim.value
         attr = {
             "num_or_sections": num_sections.value.tolist(),
@@ -587,7 +593,7 @@ class TFOpMapperNHWC(OpMapper):
         ]
         axis = self.graph.get_node(node.layer.input[-1], copy=True)
         assert axis.layer_type == "Const"
-        self.omit_nodes.append(axis.layer_name)
+        self.add_omit_nodes(axis.layer_name, node.layer_name)
         axis = axis.value
         if axis < 0:
             axis += len(inputs[0].out_shapes[0])
@@ -601,7 +607,7 @@ class TFOpMapperNHWC(OpMapper):
     def Tile(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         expand_times = self.graph.get_node(node.layer.input[1], copy=True)
-        self.omit_nodes.append(expand_times.layer_name)
+        self.add_omit_nodes(expand_times.layer_name, node.layer_name)
         if expand_times.layer_type == "Const":
             expand_times = expand_times.value.tolist()
         else:
@@ -630,7 +636,7 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         paddings = self.graph.get_node(node.layer.input[1], copy=True)
         assert paddings.layer_type == "Const", "Padding should be Const"
-        self.omit_nodes.append(paddings.layer_name)
+        self.add_omit_nodes(paddings.layer_name, node.layer_name)
         paddings = paddings.value.flatten().tolist()
         data_format = input.tf_data_format
 
@@ -674,9 +680,9 @@ class TFOpMapperNHWC(OpMapper):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
         delta = self.graph.get_node(node.layer.input[2], copy=True)
-        self.omit_nodes.append(start.layer_name)
-        self.omit_nodes.append(limit.layer_name)
-        self.omit_nodes.append(delta.layer_name)
+        self.add_omit_nodes(start.layer_name, node.layer_name)
+        self.add_omit_nodes(limit.layer_name, node.layer_name)
+        self.add_omit_nodes(delta.layer_name, node.layer_name)
         if start.layer_type == "Const":
             start = start.value
         else:
@@ -741,7 +747,7 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         axis = self.graph.get_node(node.layer.input[1], copy=True)
         assert axis.layer_type == "Const", "ArgMax only support Const parameter"
-        self.omit_nodes.append(axis.layer_name)
+        self.add_omit_nodes(axis.layer_name, node.layer_name)
         axis = axis.value
         attr = {"axis": axis}
         node.fluid_code.add_layer("argmax",
@@ -757,9 +763,9 @@ class TFOpMapperNHWC(OpMapper):
         assert begin.layer_type == "Const"
         assert end.layer_type == "Const"
         assert strides.layer_type == "Const"
-        self.omit_nodes.append(begin.layer_name)
-        self.omit_nodes.append(end.layer_name)
-        self.omit_nodes.append(strides.layer_name)
+        self.add_omit_nodes(begin.layer_name, node.layer_name)
+        self.add_omit_nodes(end.layer_name, node.layer_name)
+        self.add_omit_nodes(strides.layer_name, node.layer_name)
         strides = strides.value.tolist()
         assert len(set(strides)) == 1 and strides[
             0] == 1, "Only support strides be 1 in StridedSlice OP"
@@ -840,8 +846,8 @@ class TFOpMapperNHWC(OpMapper):
         size = self.graph.get_node(node.layer.input[2], copy=True)
         #        assert begin.layer_type == "Const"
         #        assert size.layer_type == "Const"
-        self.omit_nodes.append(begin.layer_name)
-        self.omit_nodes.append(size.layer_name)
+        self.add_omit_nodes(begin.layer_name, node.layer_name)
+        self.add_omit_nodes(size.layer_name, node.layer_name)
         if begin.layer_type == "Const":
             begin = begin.value.tolist()
         else:
@@ -861,7 +867,7 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
         assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
-        self.omit_nodes.append(kernel.layer_name)
+        self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
@@ -973,7 +979,7 @@ class TFOpMapperNHWC(OpMapper):
         dim = self.graph.get_node(node.layer.input[0], copy=True)
         input = self.graph.get_node(node.layer.input[1], copy=True)
         assert dim.layer_type == "Const"
-        self.omit_nodes.append(dim.layer_name)
+        self.add_omit_nodes(dim.layer_name, node.layer_name)
         num_split = node.get_attr('num_split')
         dim = dim.value
 
@@ -1004,7 +1010,7 @@ class TFOpMapperNHWC(OpMapper):
     def ResizeNearestNeighbor(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.omit_nodes.append(resize_shape.layer_name)
+        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
@@ -1030,7 +1036,7 @@ class TFOpMapperNHWC(OpMapper):
     def ResizeBilinear(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.omit_nodes.append(resize_shape.layer_name)
+        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:

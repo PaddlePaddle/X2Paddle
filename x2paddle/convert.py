@@ -108,6 +108,7 @@ def tf2paddle(model_path,
         mapper = TFOpMapperNHWC(model)
         optimizer = TFOptimizer(mapper)
         optimizer.delete_redundance_code()
+        optimizer.strip_graph()
     mapper.save_inference_model(save_dir)
 
 

@@ -148,6 +148,8 @@ class OpMapper(object):
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if len(node.fluid_code.layers) == 0:
                 continue
             self.add_codes(node.fluid_code.gen_codes(), 1)
