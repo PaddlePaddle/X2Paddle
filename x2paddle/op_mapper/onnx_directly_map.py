@@ -47,13 +47,42 @@ default_op_mapping = {
         dict(axes='dim', keepdims='keep_dim'),
         dict(keep_dim=1)
     ],
+    'ReduceSum': [
+        'reduce_sum', ['X'], ['Out'],
+        dict(axes='dim', keepdims='keep_dim'),
+        dict(keep_dim=1)
+    ],
+
+    #active function
+    'Relu': ['relu', ['X'], ['Out']],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
                   dict(), dict(alpha=.01)],
+    'Elu': ['elu', ['X'], ['Out'],
+            dict(), dict(alpha=1.)],
+    'ThresholdedRelu': [
+        'thresholded_relu', ['X'], ['Out'],
+        dict(alpha='threshold'),
+        dict(alpha=1.)
+    ],
     'Tanh': ['tanh', ['X'], ['Out']],
+    'Sigmoid': ['sigmoid', ['X'], ['Out']],
+    'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'],
+            dict(),
+            dict(axis=-1)],  # TODO: pow for scalar exponent
+    'HardSigmoid': [
+        'hard_sigmoid', ['X'], ['Out'],
+        dict(alpha='slope', beta='offset'),
+        dict(slope=.2, offset=.5)
+    ],
+    'Softsign': ['softsign', ['X'], ['Out']],
+    'Softplus': ['softplus', ['X'], ['Out']],
+    'Exp': ['exp', ['X'], ['Out']],
+    'Softmax': ['softmax', ['X'], ['Out'],
+                dict(axis=''),
+                dict(axis=1)],
 }
 
 activefunc_op_mapping = {
-    'Relu': ['relu', ['X'], ['Out']],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
                   dict(), dict(alpha=.01)],
 }

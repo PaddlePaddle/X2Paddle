@@ -14,7 +14,6 @@
 
 # TODO useless node remove
 from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
-from x2paddle.core.util import *
 
 
 class ONNXOptimizer(object):

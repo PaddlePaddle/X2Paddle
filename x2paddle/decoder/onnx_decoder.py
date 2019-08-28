@@ -23,6 +23,7 @@ from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 from onnx.numpy_helper import to_array
+from onnx import AttributeProto, TensorProto, GraphProto
 from collections import OrderedDict as Dict
 import onnx
 import numpy as np
@@ -59,7 +60,6 @@ class ONNXGraphNode(GraphNode):
     @property
     def value(self):
         assert 'Constant' in self.layer_type, "Only Constant | ConstantOfShape node has value."
-        print(self.layer)
         attr = self.layer.attribute['value']
         if 'value' not in self.attr_map:
             return None
@@ -120,12 +120,15 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, model):
-        super(ONNXGraph, self).__init__(model)
+    def __init__(self, graph, onnx_model):
+        super(ONNXGraph, self).__init__(graph)
+        self.onnx_model = onnx_model
         self.initializer = {}
         self.place_holder_nodes = list()
         self.get_place_holder_nodes()
-        self.value_infos = self.inferred_model_value_info(model)
+
+        self.value_infos = self.inferred_model_value_info(graph)
+        self.results_of_inference = dict()
 
     def get_inner_nodes(self):
         """
@@ -162,13 +165,22 @@ class ONNXGraph(Graph):
         """
         build topo_sort of ONNX model
         """
+        data_node = self.place_holder_nodes[0]
+        value_info = self.value_infos[data_node]
+        input_shape = value_info['shape']
+        self.get_results_of_inference(self.onnx_model, input_shape)
         for layer in self.model.node:
             node = ONNXGraphNode(layer)
             self.node_map[layer.name] = node
             for opt in layer.output:
-                value_info = self.value_infos[opt]
-                node.dtype = value_info['dtype']
-                node.out_shapes.append(value_info['shape'])
+                if opt in self.value_infos:
+                    value_info = self.value_infos[opt]
+                    node.dtype = value_info['dtype']
+                    node.out_shapes.append(value_info['shape'])
+                else:
+                    _, dtype, shape = self.get_dynamic_shape(opt)
+                    node.dtype = dtype
+                    node.out_shapes.append(shape)
 
         for layer in self.model.input:
             if layer.name not in self.node_map:
@@ -195,10 +207,7 @@ class ONNXGraph(Graph):
                             format(in_node, layer_name))
                     else:
                         self.connect(in_node, layer_name)
-
-
-#         print([layer_name for layer_name, node in self.node_map.items()])
-#generate topo
+        #generate topo
         super(ONNXGraph, self).build()
 
         self.input_nodes = self.place_holder_nodes
@@ -229,7 +238,6 @@ class ONNXGraph(Graph):
         """
         collect value/type info for an ONNX model
         """
-
         assert isinstance(graph,
                           onnx.GraphProto), 'model is not a ModelProto instance'
 
@@ -252,6 +260,7 @@ class ONNXGraph(Graph):
                 'external': True
             }
         for item in graph.output:
+            assert item.name not in value_info
             value_info[item.name] = {
                 'dtype':
                 TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
@@ -261,33 +270,73 @@ class ONNXGraph(Graph):
             }
         return value_info
 
+    def get_results_of_inference(self, model, shape):
+        try:
+            import torch
+            version = torch.__version__
+            if '1.1.0' not in version:
+                print("your model have dynamic graph, torch==1.1.0 is required")
+                return
+        except:
+            print(
+                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
+            )
+            return
+        from x2paddle.decoder.onnx_backend import prepare
+
+        np_images = np.random.rand(shape[0], shape[1], shape[2],
+                                   shape[3]).astype('float32')
+
+        outputs = []
+        for node in model.graph.node:
+            value_info = helper.make_tensor_value_info(node.name,
+                                                       TensorProto.UNDEFINED,
+                                                       [])
+            outputs.append(value_info)
+
+        while len(outputs) > 0:
+            tmp_outputs = outputs[:254]
+            model.graph.ClearField('output')
+            model.graph.output.MergeFrom(tmp_outputs)
+            prepared_backend = prepare(model,
+                                       device='CPU',
+                                       no_check_UNSAFE=True)
+            res = prepared_backend.run(inputs=np_images)
+            for idx, info in enumerate(tmp_outputs):
+                self.results_of_inference[info.name] = res[idx]
+            outputs = outputs[254:]
+        return
+
+    def get_dynamic_shape(self, layer):
+        """
+        get dynamic shape from caffe2.backend
+        """
+        output = self.results_of_inference[layer]
+        return output.tolist(), output.dtype, output.shape
+
 
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
         model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             model.ir_version, model.opset_import[0].version))
-
         if model.opset_import[0].version < 9:
             _logger.warning(
                 'Now, onnx2paddle main support convert onnx model opset_verison == 9,'
                 'opset_verison of your onnx model is %d < 9,'
                 'some operator may cannot convert.',
                 model.opset_import[0].version)
-        check_model(model)
-        model = polish_model(model)
 
+        check_model(model)
+        model = onnx.shape_inference.infer_shapes(model)
         model = self.optimize_model_skip_op_for_inference(model)
         model = self.optimize_model_strip_initializer(model)
         self.standardize_variable_name(model.graph)
 
         self.model = model
         graph_def = model.graph
-
-        self.onnx_graph = ONNXGraph(graph_def)
+        self.onnx_graph = ONNXGraph(graph_def, model)
         self.onnx_graph.build()
-
-        self.results_of_inference = dict()
 
     def build_value_refs(self, nodes):
         """
@@ -369,9 +418,13 @@ class ONNXDecoder(object):
                                                     output_name, output_refs)
             else:
                 processed = -1
-
             if processed > 0:
                 nodes_to_remove.append(node_idx)
+                for value_info in ret.graph.value_info:
+                    for output in node.output:
+                        if value_info.name == output:
+                            ret.graph.value_info.remove(value_info)
+
                 print('skip op {}: {} -> {} -> {}'.format(
                     node_idx, input_name, node.op_type, output_name))
             elif processed == 0:
@@ -431,7 +484,6 @@ class ONNXDecoder(object):
         """
         standardize variable name for paddle's code
         """
-
         for initializer in graph.initializer:
             initializer.name = self.make_variable_name(initializer.name)
         for ipt in graph.input:
@@ -490,41 +542,3 @@ class ONNXDecoder(object):
             raise RuntimeError("Input mismatch {} != {}".format(
                 len(onnx_model.input), len(model.input)))
         return onnx_model
-
-    def get_results_of_inference(self, model, input_shapes):
-        try:
-            import torch
-            version = torch.__version__
-            if '1.1.0' not in version:
-                print("your model have dynamic graph, torch==1.1.0 is required")
-                return
-        except:
-            print(
-                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
-            )
-            return
-        from caffe2.python.onnx.backend import prepare
-
-        shape = input_shapes[0]
-        np_images = np.random.rand(shape[0], shape[1], shape[2],
-                                   shape[3]).astype('float32')
-
-        infer_shapes = onnx.shape_inference.infer_shapes(model)
-        model.graph.ClearField('output')
-        model.graph.output.MergeFrom(infer_shapes.graph.value_info)
-
-        prepared_backend = prepare(model, device='CPU')
-        output = prepared_backend.run(inputs=np_images)
-
-        for idx, value_info in enumerate(infer_shapes.graph.value_info):
-            self.results_of_inference[value_info.name] = output[idx]
-        return
-
-    def get_dynamic_shape_from_caffe2(self, layer, input_shapes):
-        """
-        get dynamic shape from caffe2.backend
-        """
-        if len(self.results_of_inference) == 0:
-            self.get_results_of_inference(self.model, input_shapes)
-        output = self.results_of_inference[layer]
-        return output.tolist()

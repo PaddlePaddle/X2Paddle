@@ -1,5 +1,4 @@
 from .register import register
-from x2paddle.core.util import *
 
 
 def InstanceNormalization_shape(input_shape):

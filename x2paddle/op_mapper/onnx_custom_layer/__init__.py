@@ -1,5 +1,4 @@
 from .register import get_registered_layers
-
 #custom layer import begins
 
 from . import InstanceNormalization
