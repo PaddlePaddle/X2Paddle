@@ -980,39 +980,3 @@ class ONNXOpMapper(OpMapper):
                                   inputs=val_x,
                                   output=node,
                                   param_attr=attr)
-
-
-#     def NonMaxSuppression(self, node):
-#         boxes = self.graph.get_node(node.layer.input[0], copy=True)
-#         scores = self.graph.get_node(node.layer.input[1], copy=True)
-#         max_output_boxes_per_class = self.graph.get_node(node.layer.input[2], copy=True)
-#         iou_threshold = self.graph.get_node(node.layer.input[3], copy=True)
-#         score_threshold = self.graph.get_node(node.layer.input[4], copy=True)
-
-#         self.omit_nodes.append(max_output_boxes_per_class)
-#         self.omit_nodes.append(iou_threshold)
-#         self.omit_nodes.append(score_threshold)
-
-#         iou_threshold_val = iou_threshold.weight
-#         center_point_box = node.get_attr('center_point_box', 0)
-#         score_threshold_val = score_threshold.weight
-
-#         attr = {
-#             'num_filters': num_out_channels,
-#             'output_size': output_size or None,
-#             'filter_size': kernel_shape,
-#             'padding': paddings,
-#             'stride': strides,
-#             'dilation': dilations,
-#             'groups': num_groups,
-#             'param_attr': string(val_w.layer_name),
-#             'bias_attr': string(val_b.layer_name),
-#             'name': string(node.layer_name),
-#         }
-
-#         node.fluid_code.add_layer('multiclass_nms',
-#                                   inputs= boxes.layer_name ',' + scores.layer_name,
-#                                   output=node,
-#                                   param_attr=attr)
-
-#         pass
