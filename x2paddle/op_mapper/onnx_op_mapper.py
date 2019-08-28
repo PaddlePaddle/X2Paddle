@@ -640,13 +640,13 @@ class ONNXOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Sum(self, node):
-        val_inps = [val for val in node.layer.input]
-        flag = 1
+        val_inps = node.layer.input
         inputs = {
             "x": val_inps[0],
             "y": val_inps[1],
         }
         node.fluid_code.add_layer("elementwise_add", inputs=inputs, output=node)
+
         for ipt in val_inps[2:]:
             inputs = {
                 "x": node.layer_name,
