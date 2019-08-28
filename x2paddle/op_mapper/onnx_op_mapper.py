@@ -640,10 +640,21 @@ class ONNXOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Sum(self, node):
-        var_inps = [val for val in node.layer.input]
-        node.fluid_code.add_layer("sum",
-                                  inputs='[' + ', '.join(var_inps) + ']',
-                                  output=node)
+        val_inps = node.layer.input
+        inputs = {
+            "x": val_inps[0],
+            "y": val_inps[1],
+        }
+        node.fluid_code.add_layer("elementwise_add", inputs=inputs, output=node)
+
+        for ipt in val_inps[2:]:
+            inputs = {
+                "x": node.layer_name,
+                "y": ipt,
+            }
+            node.fluid_code.add_layer("elementwise_add",
+                                      inputs=inputs,
+                                      output=node)
 
     def MatMul(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
