@@ -35,15 +35,15 @@ paddle.fluid.layers.pool2d(
 #### 输出大小 
 Caffe：输出大小计算方式如下所示，
 ```
-H_out = (H_in-ksize[0]+2*padding[0])/strides[0]+1
-W_out = (W_in-ksize[1]+2*padding[1])/strides[1]+1
+H_out = (H_in-ksize[0]+2*padding[0]+strides[0]-1)/strides[0]+1
+W_out = (W_in-ksize[1]+2*padding[1]+strides[1]-1)/strides[1]+1
 ```
 
 PaddlePaddle：`ceil_mode`为`Ture`时，输出大小计算方式与Caffe一致；当`ceil_mode`为`False`时，输出大小计算方式如下所示，
 ```
 # ceil_model为False时，计算公式
-H_out = (H_in-ksize[0]+2*padding[0]+strides[0]-1)/strides[0]+1
-W_out = (W_in-ksize[1]+2*padding[1]+strides[1]-1)/strides[1]+1
+H_out = (H_in-ksize[0]+2*padding[0])/strides[0]+1
+W_out = (W_in-ksize[1]+2*padding[1])/strides[1]+1
 ```
 
 #### 池化方式
