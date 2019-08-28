@@ -24,6 +24,7 @@ default_op_mapping_field_values['DEFAULTS'] = dict()
 default_op_mapping_field_values['INPUT_PERM'] = None
 default_op_mapping_field_values['OUTPUT_PERM'] = None
 default_op_mapping_field_values['FILL_NAME_FIELD'] = True
+
 default_op_mapping = {
     'Gather': ['gather', ['X'], ['Out'],
                dict(axis='')],
@@ -46,8 +47,44 @@ default_op_mapping = {
         dict(axes='dim', keepdims='keep_dim'),
         dict(keep_dim=1)
     ],
+    'ReduceSum': [
+        'reduce_sum', ['X'], ['Out'],
+        dict(axes='dim', keepdims='keep_dim'),
+        dict(keep_dim=1)
+    ],
+
+    #active function
+    'Relu': ['relu', ['X'], ['Out']],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
-                  dict(), dict(alpha=.01)]
+                  dict(), dict(alpha=.01)],
+    'Elu': ['elu', ['X'], ['Out'],
+            dict(), dict(alpha=1.)],
+    'ThresholdedRelu': [
+        'thresholded_relu', ['X'], ['Out'],
+        dict(alpha='threshold'),
+        dict(alpha=1.)
+    ],
+    'Tanh': ['tanh', ['X'], ['Out']],
+    'Sigmoid': ['sigmoid', ['X'], ['Out']],
+    'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'],
+            dict(),
+            dict(axis=-1)],  # TODO: pow for scalar exponent
+    'HardSigmoid': [
+        'hard_sigmoid', ['X'], ['Out'],
+        dict(alpha='slope', beta='offset'),
+        dict(slope=.2, offset=.5)
+    ],
+    'Softsign': ['softsign', ['X'], ['Out']],
+    'Softplus': ['softplus', ['X'], ['Out']],
+    'Exp': ['exp', ['X'], ['Out']],
+    'Softmax': ['softmax', ['X'], ['Out'],
+                dict(axis=''),
+                dict(axis=1)],
+}
+
+activefunc_op_mapping = {
+    'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
+                  dict(), dict(alpha=.01)],
 }
 
 default_ioa_constraint = {
