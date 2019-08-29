@@ -12,10 +12,10 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的�
 python >= 3.5  
 paddlepaddle >= 1.5.0  
 
-**以下依赖只需对应安装自己需要的即可**  
-转换tensorflow模型 ： tensorflow == 1.14.0  
-转换caffe模型 ： caffe == 1.0.0  
-转换onnx模型 ： onnx == 1.5.0  pytorch == 1.1.0
+**按需安装以下依赖**  
+tensorflow ： tensorflow == 1.14.0  
+caffe ： caffe == 1.0.0  
+onnx ： onnx == 1.5.0  pytorch == 1.1.0
 
 ## 安装
 ### 安装方式一（推荐）
@@ -60,6 +60,8 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 |--save_dir | 指定转换后的模型保存目录路径 |
 |--model | 当framework为tensorflow/pmmx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
 |--caffe_proto | [可选]由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
+|--without_data_format_optimization | [可选] For TensorFlow, 当指定该参数时，关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
+|--define_input_shape | [可选] For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](FAQ.md) |
 
 
 ## 使用转换后的模型
