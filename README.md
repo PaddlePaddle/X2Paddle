@@ -67,6 +67,11 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 `model_with_code`中保存了模型参数，和转换后的python模型代码  
 `inference_model`中保存了序列化的模型结构和参数，可直接使用paddle的接口进行加载，见[load_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/1.5/api_guides/low_level/inference.html#api-guide-inference)
 
+## 小工具
+X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README.md)
+1. 检测模型是否在PaddleLite中支持  
+2. 合并模型参数文件
+
 ## 相关文档
 1. [X2Paddle使用过程中常见问题](FAQ.md)  
 2. [如何导出TensorFlow的pb模型](export_tf_model.md)
