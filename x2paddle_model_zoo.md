@@ -36,7 +36,7 @@
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
 
 ## ONNX
-**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](../pytorch_to_onnx.md)
+**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](pytorch_to_onnx.md)
 
 | 模型 | 来源 | operator version|
 |-------|--------|---------|
