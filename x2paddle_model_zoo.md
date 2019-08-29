@@ -59,7 +59,7 @@ dummy_input = torch.randn(1, 3, 224, 224)
 #预训练后的pytorch model
 resnet18 = torchvision.models.resnet18(pretrained=True)
 
-#"resnet18.onnx"为onnx model的存储路径，1.1
+#"resnet18.onnx"为onnx model的存储路径
 torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)
 
 ```
