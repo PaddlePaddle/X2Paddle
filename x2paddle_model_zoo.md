@@ -42,6 +42,7 @@
 | Alexnet | [torchvison.model.alexnet](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
 | Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
 | Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
+| Mobilenet_v2 | [pytorch(personal practice)](https://github.com/tonylins/pytorch-mobilenet-v2) |9|
 | Mnasnet_a1 | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
 | Efficientnet_b0 | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
 | squeezenet | [onnx official](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz) |9|
@@ -58,7 +59,7 @@ dummy_input = torch.randn(1, 3, 224, 224)
 #预训练后的pytorch model
 resnet18 = torchvision.models.resnet18(pretrained=True)
 
-#"resnet18.onnx"为onnx model的存储路径
+#"resnet18.onnx"为onnx model的存储路径，1.1
 torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)
 
 ```
