@@ -17,9 +17,9 @@
 | VGG16 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/vgg.py) |-|
 | ResNet_V1_101 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v1.py) |-|
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/resnet_v2.py) |-|
-| UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) 
+| UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |-|
 |MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |-|
-|YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 转换需要关闭NHWC->NCHW的优化，见[文档Q2](https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md) |
+|YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 转换需要关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
 
 # Caffe
 
