@@ -78,6 +78,8 @@ def tf2paddle(model_path,
               define_input_shape=False):
     # check tensorflow installation and version
     try:
+        import os
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
         import tensorflow as tf
         version = tf.__version__
         if version >= '2.0.0' or version < '1.0.0':
@@ -109,6 +111,9 @@ def tf2paddle(model_path,
         optimizer = TFOptimizer(mapper)
         optimizer.delete_redundance_code()
         optimizer.strip_graph()
+        optimizer.merge_activation()
+        optimizer.merge_bias()
+        optimizer.remove_transpose()
     mapper.save_inference_model(save_dir)
 
 
