@@ -297,10 +297,6 @@ class TFOpMapper(OpMapper):
         perm = perm.value.tolist()
 
         if perm == [0, 3, 1, 2] and input.data_format == "NHWC":
-            #            node.fluid_code.add_layer("assign",
-            #                                      inputs=input,
-            #                                      output=node,
-            #                                      param_attr=None)
             input_name = input.layer_name
             if hasattr(input, "index"):
                 input_name = input_name + "[{}]".format(input.index)
@@ -1005,20 +1001,6 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
-
-
-#    def FloorDiv(self, node):
-#        x = self.graph.get_node(node.layer.input[0], copy=True)
-#        y = self.graph.get_node(node.layer.input[1], copy=True)
-#        inputs = {'x': x, 'y': y}
-#        node.fluid_code.add_layer("elementwise_div",
-#                                  inputs=inputs,
-#                                  output=node,
-#                                  param_attr=None)
-#        node.fluid_code.add_layer("floor",
-#                                  inputs=node,
-#                                  output=node,
-#                                  param_attr=None)
 
     def Split(self, node):
         dim = self.graph.get_node(node.layer.input[0], copy=True)

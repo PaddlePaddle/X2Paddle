@@ -852,8 +852,6 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         begin = self.graph.get_node(node.layer.input[1], copy=True)
         size = self.graph.get_node(node.layer.input[2], copy=True)
-        #        assert begin.layer_type == "Const"
-        #        assert size.layer_type == "Const"
         self.add_omit_nodes(begin.layer_name, node.layer_name)
         self.add_omit_nodes(size.layer_name, node.layer_name)
         if begin.layer_type == "Const":
