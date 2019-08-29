@@ -42,7 +42,9 @@
 | Alexnet | [torchvison.model.alexnet](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py) |9|
 | Shufflenet | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/shufflenet) |9|
 | Inception_v2 | [onnx official](https://github.com/onnx/models/tree/master/vision/classification/inception_and_googlenet/inception_v2) |9|
-| Mobilenet_v2 | [pytorch(personal practice)](https://github.com/tonylins/pytorch-mobilenet-v2) |9|
+| Mnasnet_a1 | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
+| Efficientnet_b0 | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
+| squeezenet | [onnx official](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz) |9|
 
 目前onnx2paddle主要支持onnx operator version 9；
 如何将torchvison或者个人开发者写的pytroch model转换成onnx model:
