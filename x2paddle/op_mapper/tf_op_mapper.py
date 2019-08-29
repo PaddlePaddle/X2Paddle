@@ -314,15 +314,9 @@ class TFOpMapper(OpMapper):
                 input_name = input_name + "[{}]".format(input.index)
             node.fluid_code.add_layer("{} = {}").format(node.layer_name,
                                                         input_name)
-            #
-            #            node.fluid_code.add_layer("assign",
-            #                                      inputs=input,
-            #                                      output=node,
-            #                                      param_attr=None)
             node.tf_data_format = "NHWC"
             self.graph.data_format_propagation(node)
         elif len(input.out_shapes[0]) > 4:
-            print(input.layer_name, input.tf_data_format, input.pd_data_format)
             tf_data_format = list(input.tf_data_format)
             pd_data_format = list(input.pd_data_format)
             new_perm = [i for i in range(len(perm))]

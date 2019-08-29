@@ -39,11 +39,6 @@ class TFOptimizer(object):
         self.graph = op_mapper.graph
 
     def delete_redundance_code(self):
-        #        print("==========omit_nodes============")
-        #        for node_name in set(self.op_mapper.omit_nodes):
-        #            node = self.graph.get_node(node_name)
-        #            print(node.layer_name, self.op_mapper.omit_nodes.count(node.layer_name), len(node.outputs), node.outputs)
-        #        print("================================")
         for node_name in self.graph.topo_sort:
             if node_name in self.op_mapper.omit_nodes:
                 node = self.graph.get_node(node_name)
@@ -67,13 +62,6 @@ class TFOptimizer(object):
                     del self.graph.node_map[node_name]
 
     def strip_graph(self):
-        #        print("=============")
-        #        for i, node_name in enumerate(self.graph.topo_sort):
-        #            node = self.graph.get_node(node_name)
-        #            if node is None:
-        #                continue
-        #            print(node.layer_name, node.inputs)
-        #        print("================")
         visited_nodes = set()
 
         def visit(node_name):
@@ -87,10 +75,6 @@ class TFOptimizer(object):
         for node_name in self.graph.output_nodes:
             visit(node_name)
 
-#        print("=============visited nodes++++++++++++")
-#        for name in visited_nodes:
-#            print(name)
-#        print("===================================")
         for i, node_name in enumerate(self.graph.topo_sort):
             if node_name not in visited_nodes:
                 node = self.graph.get_node(node_name)
@@ -221,9 +205,6 @@ class TFOptimizer(object):
                     if out_node.layer_type == "BiasAdd":
                         del out_node.fluid_code.layers[0]
                         out_node.fluid_code.layers[0].inputs['x'] = last_out
-
-
-#                        out_node.fluid_code.layers[0].param_attr["axis"] = 1
                     else:
                         del out_node.fluid_code.layers[0]
                         out_node.fluid_code.layers[0].inputs = last_out
