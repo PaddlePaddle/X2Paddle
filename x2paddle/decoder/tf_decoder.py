@@ -15,7 +15,6 @@
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
 from tensorflow.python.framework import tensor_util
-from tensorflow.python.platform import gfile
 from tensorflow.core.framework import attr_value_pb2
 import tensorflow as tf
 import copy as cp
@@ -140,7 +139,7 @@ class TFGraph(Graph):
             raise Exception("Node[{}] not in graph".format(node_name))
         inputs = self.node_map[node_name].inputs
         outputs = self.node_map[node_name].outputs
-        assert len(inputs) == 1
+        #        assert len(inputs) == 1
         input_node = self.node_map[inputs[0]]
         idx = input_node.outputs.index(node_name)
         del input_node.outputs[idx]
@@ -205,18 +204,28 @@ class TFGraph(Graph):
 
 class TFDecoder(object):
     def __init__(self, pb_model, data_format="NHWC", define_input_shape=False):
-        self.sess = tf.Session()
+        try:
+            self.sess = tf.compat.v1.Session()
+        except:
+            self.sess = tf.Session()
         self.input_info = dict()
         self.define_input_shape = define_input_shape
-        with gfile.FastGFile(pb_model, 'rb') as f:
-            graph_def = tf.GraphDef()
+        with open(pb_model, 'rb') as f:
+            try:
+                graph_def = tf.compat.v1.GraphDef()
+            except:
+                graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             input_map = self._check_input_shape(graph_def)
             self._fix_output_shape(graph_def)
             self.sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
-        self.sess.run(tf.global_variables_initializer())
+        try:
+            initializer = tf.compat.v1.global_variables_initializer()
+        except:
+            initializer = tf.global_variables_initializer()
+        self.sess.run(initializer)
 
         self.tf_graph = TFGraph(
             self.sess.graph._as_graph_def(add_shapes=True)[0], data_format)
@@ -237,7 +246,6 @@ class TFDecoder(object):
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
-            print("========dtype", dtype)
 
             need_define_shape = 0
             if self.define_input_shape:
@@ -284,11 +292,17 @@ class TFDecoder(object):
                     for dim in shape.strip().split(',')
                 ]
                 assert shape.count(None) <= 1, "Only one dimension can be None"
-                print("]]]]]]]]]dtype", dtype)
-                x2paddle_input = tf.placeholder(dtype=dtype,
-                                                shape=shape,
-                                                name="x2paddle_{}".format(
-                                                    layer.name))
+                try:
+                    x2paddle_input = tf.compat.v1.placeholder(
+                        dtype=dtype,
+                        shape=shape,
+                        name="x2paddle_{}".format(layer.name))
+                except:
+                    x2paddle_input = tf.placeholder(dtype=dtype,
+                                                    shape=shape,
+                                                    name="x2paddle_{}".format(
+                                                        layer.name))
+
                 input_map["{}:0".format(layer.name)] = x2paddle_input
                 if shape.count(None) > 0:
                     shape[shape.index(None)] = -1
@@ -304,7 +318,6 @@ class TFDecoder(object):
     # trick method
     # should be removed after PaddlePaddle V1.6 been released
     def infer_tensor(self, graph_node):
-        print("========== Use infer_tensor for tensor: ", graph_node.layer.name)
         if hasattr(graph_node, "index"):
             tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
         else:
@@ -320,8 +333,6 @@ class TFDecoder(object):
         return self.sess.run([output_tensor], feed)[0]
 
     def infer_shape_tensor(self, graph_node, out_shape=None):
-        print("========== Use infer_shape_tensor for tensor: ",
-              graph_node.layer.name)
         if hasattr(graph_node, "index"):
             tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
         else:
