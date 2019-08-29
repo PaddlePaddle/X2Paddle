@@ -1,8 +1,9 @@
-目前X2Paddle支持40+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
+# X2Paddle模型测试库
+> 目前X2Paddle支持40+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
 
-受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会即时跟进：）
+**注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会即时跟进：）
 
-# TensorFlow
+## TensorFlow
 
 | 模型 | 代码 | 备注 |
 |------|----------|------|
@@ -23,7 +24,7 @@
 |Inception_V4| [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) | - |
 |Inception_ResNet_V2| [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) | - |
 
-# Caffe
+## Caffe
 
 | 模型 | 代码 |
 |-------|--------|
@@ -34,7 +35,8 @@
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
 
-# ONNX
+## ONNX
+**注：** 部分模型来源于PyTorch，PyTorch的转换可参考文档
 
 | 模型 | 来源 | operator version|
 |-------|--------|---------|
@@ -54,19 +56,3 @@
 | EfficientNet | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
 | SqueezeNet | [onnx official](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz) |9|
 
-目前onnx2paddle主要支持onnx operator version 9；  
-如何将torchvison或者个人开发者写的pytroch model转换成onnx model:
-```
-import torch
-import torchvision
-
-#根据不同模型调整输入的shape
-dummy_input = torch.randn(1, 3, 224, 224)
-
-#预训练后的pytorch model
-resnet18 = torchvision.models.resnet18(pretrained=True)
-
-#"resnet18.onnx"为onnx model的存储路径
-torch.onnx.export(resnet18, dummy_input, "resnet18.onnx",verbose=True)
-
-```
