@@ -75,7 +75,8 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 ## 相关文档
 1. [X2Paddle使用过程中常见问题](FAQ.md)  
 2. [如何导出TensorFlow的pb模型](export_tf_model.md)
-3. [X2Paddle测试模型库](x2paddle_model_zoo.md)
+3. [X2Paddle测试模型库](x2paddle_model_zoo.md)  
+4. [PyTorch模型导出为ONNX模型](pytorch_to_onnx.md)
 
 ## 更新历史
 2019.08.05  
