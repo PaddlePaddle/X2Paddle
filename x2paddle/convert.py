@@ -165,7 +165,9 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print("x2paddle-{} with python>=3.5\n".format(x2paddle.__version__))
+        import x2paddle
+        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.5.0\n".format(
+            x2paddle.__version__))
         return
 
     try:
