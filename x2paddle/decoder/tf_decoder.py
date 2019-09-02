@@ -176,7 +176,7 @@ class TFGraph(Graph):
     def _remove_identity_node(self):
         identity_node = list()
         for node_name, node in self.node_map.items():
-            if node.layer_type == "Identity":
+            if node.layer_type == "Identity" or node.layer_type == "StopGradient":
                 identity_node.append(node_name)
 
         for node_name in identity_node:
@@ -374,3 +374,38 @@ class TFDecoder(object):
             return results[0].tolist()
         else:
             raise Exception("Couldn't infer a stable shape shape tensor value")
+
+    def infer_tensor_shape(self, graph_node):
+        if hasattr(graph_node, "index"):
+            tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
+        else:
+            tensor_name = graph_node.layer.name + ":0"
+        feed = dict()
+        batch_size = [2, 3, 5]
+        shapes = list()
+        for b in batch_size:
+            for input_name, info in self.input_info.items():
+                (shape, dtype) = cp.deepcopy(info)
+                input_tensor = self.sess.graph.get_tensor_by_name(input_name +
+                                                                  ":0")
+                if shape.count(-1) > 0:
+                    shape[shape.index(-1)] = b
+                feed[input_tensor] = numpy.random.random_sample(shape)
+            output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
+            shape = self.sess.run([output_tensor], feed)[0].shape
+            shapes.append(numpy.array(shape))
+
+        compare01 = (shapes[0] == shapes[1])
+        compare12 = (shapes[1] == shapes[2])
+
+        if compare01.all() and compare12.all():
+            return shape[0].tolist()
+
+        if (compare01 == compare12).all():
+            index = numpy.argwhere(compare01 == False).flatten()
+            if index.shape[0] != 1:
+                raise Exception("There's not only one unstable dimension")
+            if index[0] != 0:
+                raise Exception("Batch size not in the first dimension")
+            shapes[0][0] = -1
+            return shapes[0].tolist()
