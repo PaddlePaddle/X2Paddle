@@ -13,6 +13,6 @@ X2Paddle转换后产出的路径下包括两个目录，
 
 其中在`inference_model`中，X2Paddle将每个参数独立保存在不同的文件中（文件名和参数名一致），用户可使用`merge_params.py`将参数文件合并成一个文件使用
 ```
-python tools/merge_params paddle_model/inference_model  new_model_dir
+python tools/merge_params.py paddle_model/inference_model  new_model_dir
 ```
 合并参数后的模型保存在`new_model_dir`中
