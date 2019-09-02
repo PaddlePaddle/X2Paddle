@@ -40,16 +40,7 @@
 | Unet | [code](https://github.com/jolibrain/deepdetect/blob/master/templates/caffe/unet/deploy.prototxt) |
 | VGGNet | [code](https://gist.github.com/ksimonyan/211839e770f7b538e2d8#file-vgg_ilsvrc_16_layers_deploy-prototxt) |
 
-【备注】
-部分非官方op（不在[官网](http://caffe.berkeleyvision.org/tutorial/layers)上的op）支持的版本如下：
 
-| op | 该版本实现代码 |
-|-------|--------|
-| PriorBox | [code](https://github.com/weiliu89/caffe/blob/ssd/src/caffe/layers/prior_box_layer.cpp) |
-| DetectionOutput | [code](https://github.com/weiliu89/caffe/blob/ssd/src/caffe/layers/detection_output_layer.cpp) |
-| ConvolutionDepthwise | [code](https://github.com/farmingyard/caffe-mobilenet/blob/master/conv_dw_layer.cpp) |
-| ShuffleChannel | [code](https://github.com/farmingyard/ShuffleNet/blob/master/shuffle_channel_layer.cpp) |
-| Permute | [code](https://github.com/weiliu89/caffe/blob/ssd/src/caffe/layers/permute_layer.cpp) |
 
 
 
