@@ -308,7 +308,7 @@ class CaffeOpMapper(OpMapper):
             'pool_padding': pad,
             'ceil_mode': ceil_mode,
             'pool_type': string(pool_type),
-            'exclusive': True,
+            'exclusive': False,
             'global_pooling': global_pool,
             'name': string(node.layer_name)
         }

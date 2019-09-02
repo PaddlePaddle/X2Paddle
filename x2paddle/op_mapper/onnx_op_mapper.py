@@ -14,14 +14,16 @@
 
 from x2paddle.core.graph import GraphNode
 from x2paddle.core.op_mapper import OpMapper
-from x2paddle.core.util import *
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
 from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
 from x2paddle.op_mapper.onnx_directly_map import default_op_mapping_field_values
 from x2paddle.op_mapper.onnx_directly_map import default_op_mapping
 from x2paddle.op_mapper.onnx_directly_map import default_ioa_constraint
+from x2paddle.op_mapper.onnx_custom_layer import *
+from x2paddle.core.util import string
 import numpy as np
+import onnx.numpy_helper as numpy_helper
 import logging as _logging
 from collections import OrderedDict as _dict
 
@@ -52,12 +54,12 @@ class ONNXOpMapper(OpMapper):
         self.input_shapes = []
         self.weights = dict()
         self.omit_nodes = list()
+        self.used_custom_layers = dict()
 
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
 
         #mapping op
-
         print("Total nodes: {}".format(
             sum([
                 isinstance(node, ONNXGraphNode)
@@ -71,13 +73,17 @@ class ONNXOpMapper(OpMapper):
                 func(node)
             elif op in default_op_mapping:
                 self.directly_map(node)
+            elif op in custom_layers:
+                self.deal_custom_layer(node)
 
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
-            if not hasattr(self, op) and op not in default_op_mapping:
+            if not hasattr(
+                    self, op
+            ) and op not in default_op_mapping and op not in custom_layers:
                 unsupported_ops.add(op)
         if len(unsupported_ops) == 0:
             return True
@@ -133,11 +139,28 @@ class ONNXOpMapper(OpMapper):
                                   output=val_outs[0],
                                   param_attr=attr)
 
+    def deal_custom_layer(self, node):
+        op = node.layer_type
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        custom_code, func = make_custom_layer(node)
+        params = get_params(node.layer, node.layer_type)
+        arg_names, kwargs = set_args(func, params)
+        kwargs['name'] = string(node.layer_name)
+        inputs_node = []
+        inputs_node.append(node.inputs[0])
+        node.fluid_code.add_layer(func.__code__.co_name,
+                                  inputs=inputs_node[0],
+                                  output=node,
+                                  param_attr=kwargs,
+                                  is_custom_layer=True)
+        if op not in self.used_custom_layers:
+            self.used_custom_layers[op] = custom_code
+
     def place_holder(self, node):
-        self.input_shapes.append(node.out_shapes)
+        self.input_shapes.append(node.out_shapes[0])
         attr = {
             "dtype": string(node.dtype),
-            "shape": node.out_shapes,
+            "shape": node.out_shapes[0],
             "name": string(node.layer_name),
             "append_batch_size": 'False'
         }
@@ -151,7 +174,7 @@ class ONNXOpMapper(OpMapper):
         if parameter is not None:
             node = parameter
         dtype = node.dtype
-        shape = node.out_shapes
+        shape = node.out_shapes[0]
 
         self.weights[node.layer_name] = node.weight
         attr = {
@@ -179,13 +202,55 @@ class ONNXOpMapper(OpMapper):
         val_padded = self.Pad(node, op_independent=False)
         return [0] * ndims, val_padded
 
+    def _interpolate(self, node):
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        val_scales = self.graph.get_node(node.layer.input[1], copy=True)
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
+
+        out_shape_ = val_y.out_shapes[0]
+        if out_shape_ is not None:
+            assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
+            out_shape_ = out_shape_[2:]
+        scales = _const_weight_or_none(val_scales)
+        if scales is not None:
+            assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
+            assert scales[0] == 1 and scales[
+                1] == 1, 'only scale on (NC)HW supported'
+            assert scales[2] == scales[
+                3], 'only aspect-ratio-invariant scale supported'
+        scale = scales[2] if scales else None
+        if scale is None:
+            assert out_shape_, 'neither scales nor output shape is available'
+            out_shape = out_shape_
+        else:
+            out_shape = None
+            if out_shape_ is None:
+                in_shape = val_x.out_shapes[0]
+                assert in_shape is not None, 'out_shape required but not inferrable'
+                assert len(
+                    in_shape) == 4, 'only 4-D Tensor as X and Y supported'
+                out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
+
+        mode = node.get_attr('mode', 'nearest')
+        fluid_op = 'resize_{}'.format(mode)
+
+        attr = {
+            'scale': scale,
+            'out_shape': out_shape,
+            'name': string(node.layer_name)
+        }
+        node.fluid_code.add_layer(fluid_op,
+                                  inputs=val_x,
+                                  output=node,
+                                  param_attr=attr)
+
     def Pad(self, node, op_independent=True):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         pads = node.get_attr('pads')
         mode = node.get_attr('mode', 'constant')
         value = node.get_attr('value', 0.)
-        data_shape = val_x.out_shapes
-        output_shape = node.out_shapes
+        data_shape = val_x.out_shapes[0]
+        output_shape = node.out_shapes[0]
         assume_pad2d = False
         attr = {}
         if len(pads) == 4:
@@ -200,8 +265,6 @@ class ONNXOpMapper(OpMapper):
             attr['mode'] = string(mode)
         else:
             attr = {'pad_value': value}
-            assert mode == 'constant', 'mode {} is supported only in pad2d'.format(
-                mode)
             fluid_op = 'pad'
         if len(pads) == 4:
             paddings = np.array(pads).reshape(
@@ -209,6 +272,10 @@ class ONNXOpMapper(OpMapper):
         elif len(pads) == 8:
             paddings = np.array(pads).reshape(
                 (-1, 4)).transpose().flatten().tolist()  # SSEE -> SESE
+            if sum(paddings[:4]) == 0:
+                fluid_op = 'pad2d'
+                paddings = paddings[4:]
+                attr['mode'] = string(mode)
         attr['paddings'] = paddings
         if op_independent:
             attr['name'] = string(node.layer_name)
@@ -233,6 +300,17 @@ class ONNXOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+    def Shrink(self, node):
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        bias = node.get_attr('bias')
+        lambd = node.get_attr('lambd')
+        assert bias == 0.0, 'not support bias!=0'
+        attr = {'threshold': lambd, 'name': node.layer_name}
+        node.fluid_code.add_layer('hard_shrink',
+                                  inputs=val_x,
+                                  output=node,
+                                  param_attr=attr)
+
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
 
@@ -244,7 +322,7 @@ class ONNXOpMapper(OpMapper):
 
         shape = node.get_attr('shape', None)
         if shape is None:
-            shape = val_output.out_shapes
+            shape = val_output.out_shapes[0]
         if shape is None:
             shape = list(value.shape)
             _logger.warning(
@@ -253,8 +331,8 @@ class ONNXOpMapper(OpMapper):
                 'using value as 1-D tensor may lead to fails',
                 val_output.layer_name, val_output.layer_name)
 
-        value = value.tolist()
         if len(value) == 1:  # scalar
+            value = value.tolist()
             shape = [1]
             value = value[0]
             if dtype.name == 'int64':
@@ -264,14 +342,27 @@ class ONNXOpMapper(OpMapper):
                                       inputs=None,
                                       output=node,
                                       param_attr=attr)
+        else:
+            value = np.reshape(value, shape)
+            self.weights[node.layer_name] = value
+            attr = {
+                'dtype': string(dtype),
+                'shape': shape,
+                'name': string(node.layer_name),
+                'attr': string(node.layer_name),
+                'default_initializer': 'Constant(0.0)'
+            }
+            node.fluid_code.add_layer("create_parameter",
+                                      inputs=None,
+                                      output=node,
+                                      param_attr=attr)
 
     def Resize(self, node):
-        # I/O
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_scales = self.graph.get_node(node.layer.input[1], copy=True)
-        val_y, = self.graph.get_node(node.layer.output[0], copy=True)
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
 
-        out_shape_ = val_y.out_shapes
+        out_shape_ = val_y.out_shapes[0]
         if out_shape_ is not None:
             assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
             out_shape_ = out_shape_[2:]
@@ -289,7 +380,7 @@ class ONNXOpMapper(OpMapper):
         else:
             out_shape = None
             if out_shape_ is None:
-                in_shape = val_x.out_shapes
+                in_shape = val_x.out_shapes[0]
                 assert in_shape is not None, 'out_shape required but not inferrable'
                 assert len(
                     in_shape) == 4, 'only 4-D Tensor as X and Y supported'
@@ -297,8 +388,6 @@ class ONNXOpMapper(OpMapper):
 
         mode = node.get_attr('mode', 'nearest')
         fluid_op = 'resize_{}'.format(mode)
-        name_attr = ', name={}'.format(repr(name)) if name else ''
-
         attr = {
             'scale': scale,
             'out_shape': out_shape,
@@ -309,13 +398,40 @@ class ONNXOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+    def Upsample(self, node):
+        self._interpolate(node)
+
+    def Slice(self, node):
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
+
+        axes = node.get_attr('axes')
+        starts = node.get_attr('starts')
+        ends = node.get_attr('ends')
+        shape = val_x.out_shapes[0]
+
+        if shape is not None:
+            for idx, value in enumerate(starts):
+                if value > 2**63 - 1 // 2:
+                    value = value - ONNX_INT_MAX
+                    starts[idx] = shape[axes[idx]] + value
+            for idx, value in enumerate(ends):
+                if value > 2**63 - 1 // 2:
+                    value = value - ONNX_INT_MAX
+                    ends[idx] = shape[axes[idx]] + value
+        attr = {"axes": axes, "starts": starts, "ends": ends}
+        node.fluid_code.add_layer('slice',
+                                  inputs=val_x,
+                                  output=node,
+                                  param_attr=attr)
+
     def ConstantOfShape(self, node):
         val_shape = self.graph.get_node(node.layer.input[0], copy=True)
-
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
         shape = _const_weight_or_none(val_shape)
 
         if shape is None:
-            shape = node.out_shapes
+            shape = node.out_shapes[0]
 
         assert shape is not None, (
             'given shape is neither const value nor deductible from output, '
@@ -359,10 +475,10 @@ class ONNXOpMapper(OpMapper):
 
         # catch dynamic graph shape
         if isinstance(val_shape, ONNXGraphNode):
-            shape = self.decoder.get_dynamic_shape_from_caffe2(
-                val_shape.layer_name, self.input_shapes)
+            shape, _, _ = self.decoder.onnx_graph.get_dynamic_shape(
+                val_shape.layer_name)
         if shape is None:
-            shape = val_reshaped.out_shapes
+            shape = val_reshaped.out_shapes[0]
 
         shape_dtype = val_shape.dtype
 
@@ -415,9 +531,10 @@ class ONNXOpMapper(OpMapper):
         pads = node.get_attr('pads', [0] * (poolnd * 2))
         fluid_op = 'pool{}d'.format(poolnd)
         assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
+
+        input_shape = val_x.out_shapes[0]
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        input_shape = val_x.out_shapes
         if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
@@ -523,10 +640,21 @@ class ONNXOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Sum(self, node):
-        var_inps = [val for val in node.layer.input]
-        node.fluid_code.add_layer("sum",
-                                  inputs='[' + ', '.join(var_inps) + ']',
-                                  output=node)
+        val_inps = node.layer.input
+        inputs = {
+            "x": val_inps[0],
+            "y": val_inps[1],
+        }
+        node.fluid_code.add_layer("elementwise_add", inputs=inputs, output=node)
+
+        for ipt in val_inps[2:]:
+            inputs = {
+                "x": node.layer_name,
+                "y": ipt,
+            }
+            node.fluid_code.add_layer("elementwise_add",
+                                      inputs=inputs,
+                                      output=node)
 
     def MatMul(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
@@ -572,14 +700,6 @@ class ONNXOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-    def Softmax(self, node):
-        val_x = self.graph.get_node(node.layer.input[0], copy=True)
-        attr = {"name": string(node.layer_name)}
-        node.fluid_code.add_layer("softmax",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
-
     def Transpose(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         perm = node.get_attr('perm')
@@ -589,15 +709,79 @@ class ONNXOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
+    def Mul(self, node):
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        val_y = self.graph.get_node(node.layer.input[1], copy=True)
+
+        val_x_shape = val_x.out_shapes[0]
+        val_y_shape = val_y.out_shapes[0]
+
+        slice_idx = 0
+        for dim in val_y_shape:
+            if dim == 1:
+                slice_idx += 1
+            else:
+                break
+        attr = {"name": string(node.layer_name)}
+        if slice_idx < len(val_y_shape) and slice_idx > 0:
+            val_y_reshaped = val_y_shape[slice_idx:]
+            var_y_reshaped = val_y.layer_name + '_reshaped'
+            attr_reshaped = {
+                'shape': val_y_reshaped,
+                'name': string(var_y_reshaped)
+            }
+            node.fluid_code.add_layer('reshape',
+                                      inputs=val_y,
+                                      output=var_y_reshaped,
+                                      param_attr=attr_reshaped)
+            inputs = {'x': val_x, 'y': var_y_reshaped}
+            node.fluid_code.add_layer("elementwise_mul",
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=attr)
+        else:
+            inputs = {'x': val_x, 'y': val_y}
+            node.fluid_code.add_layer("elementwise_mul",
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=attr)
+
     def Div(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {'x': val_x, 'y': val_y}
+
+        val_x_shape = val_x.out_shapes[0]
+        val_y_shape = val_y.out_shapes[0]
+
+        slice_idx = 0
+        for dim in val_y_shape:
+            if dim == 1:
+                slice_idx += 1
+            else:
+                break
         attr = {"name": string(node.layer_name)}
-        node.fluid_code.add_layer("elementwise_div",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=attr)
+        if slice_idx < len(val_y_shape) and slice_idx > 0:
+            val_y_reshaped = val_y_shape[slice_idx:]
+            var_y_reshaped = val_y.layer_name + '_reshaped'
+            attr_reshaped = {
+                'shape': val_y_reshaped,
+                'name': string(var_y_reshaped)
+            }
+            node.fluid_code.add_layer('reshape',
+                                      inputs=val_y,
+                                      output=var_y_reshaped,
+                                      param_attr=attr_reshaped)
+            inputs = {'x': val_x, 'y': var_y_reshaped}
+            node.fluid_code.add_layer("elementwise_div",
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=attr)
+        else:
+            inputs = {'x': val_x, 'y': val_y}
+            node.fluid_code.add_layer("elementwise_div",
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=attr)
 
     def Relu(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
@@ -610,12 +794,17 @@ class ONNXOpMapper(OpMapper):
     def PRelu(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_slope = self.graph.get_node(node.layer.input[1], copy=True)
-        attr = {"name": string(node.layer_name), "mode": string('channel')}
 
-        if isinstance(val_slope, str):
-            attr["param_attr"] = string(val_slope.layer_name)
-        else:
-            attr["param_attr"] = string(val_slope.layer_name)
+        mode = 'channel'
+        shape_slope = val_slope.out_shapes[0]
+        if len(shape_slope) == 1:
+            mode = 'all'
+        elif len(shape_slope) > 2:
+            mode = 'element'
+        attr = {
+            "param_attr": string(val_slope.layer_name),
+            'mode': string(mode)
+        }
         node.fluid_code.add_layer("prelu",
                                   inputs=val_x,
                                   output=node,
@@ -649,9 +838,10 @@ class ONNXOpMapper(OpMapper):
         pads = node.get_attr('pads', [0] * (poolnd * 2))  # optional
         fluid_op = 'pool{}d'.format(poolnd)
         assert 2 <= poolnd <= 3, 'only pool2d and pool3d is supported'
+
+        input_shape = val_x.out_shapes[0]
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        input_shape = val_x.out_shapes
         if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             pad_h = get_same_padding(input_shape[2], kernel_shape[0],
                                      strides[0])
@@ -676,8 +866,8 @@ class ONNXOpMapper(OpMapper):
     def GlobalAveragePool(self, node):
         val_x = self.graph.get_node(node.layer.input[0], copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
-        input_shape = val_x.out_shapes
-        output_shape = val_y.out_shapes
+        input_shape = val_x.out_shapes[0]
+        output_shape = val_y.out_shapes[0]
         assert input_shape is not None or output_shape is not None, 'poolnd not inferred'  # N
         if input_shape:
             poolnd = len(input_shape) - 2  # NC...
@@ -701,7 +891,6 @@ class ONNXOpMapper(OpMapper):
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
 
         self.omit_nodes.append(val_w.layer_name)
-        input_shape = val_x.out_shapes
 
         has_bias = len(node.layer.input) == 3
         if has_bias:
@@ -709,12 +898,12 @@ class ONNXOpMapper(OpMapper):
             self.omit_nodes.append(val_b.layer_name)
         auto_pad = node.get_attr('auto_pad', 'NOTSET')
 
-        kernel_shape = val_w.out_shapes[2:]  # OI...
+        kernel_shape = val_w.out_shapes[0][2:]  # OI...
         assert kernel_shape == node.get_attr(
             'kernel_shape'), 'kernel_shape in attr unmatches value_info'  # HW
         convnd = len(kernel_shape)
         assert 2 <= convnd <= 3, 'only conv2d and conv3d is supported'
-        num_out_channels = val_w.out_shapes[0]  # OI...
+        num_out_channels = val_w.out_shapes[0][0]  # OI...
         fluid_op = 'conv{}d'.format(convnd)
 
         num_groups = node.get_attr('group', 1)
@@ -722,6 +911,7 @@ class ONNXOpMapper(OpMapper):
         dilations = node.get_attr('dilations', [1] * convnd)  # optional
         pads = node.get_attr('pads', [0] * (convnd * 2))  # optional
 
+        input_shape = val_x.out_shapes[0]
         paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
 
         if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
@@ -745,6 +935,58 @@ class ONNXOpMapper(OpMapper):
             attr["bias_attr"] = string(val_b.layer_name)
         else:
             attr["bias_attr"] = False
+        node.fluid_code.add_layer(fluid_op,
+                                  inputs=val_x,
+                                  output=node,
+                                  param_attr=attr)
+
+    def ConvTranspose(self, node):
+        val_x = self.graph.get_node(node.layer.input[0], copy=True)
+        val_w = self.graph.get_node(node.layer.input[1], copy=True)
+        val_b = self.graph.get_node(node.layer.input[2], copy=True)
+
+        self.omit_nodes.append(val_w.layer_name)
+        self.omit_nodes.append(val_b.layer_name)
+
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
+
+        auto_pad = node.get_attr('auto_pad', 'NOTSET')
+        out_padding = node.get_attr('output_padding', [0, 0])
+        kernel_shape = node.get_attr('kernel_shape', val_w.out_shapes[0][2:])
+        assert kernel_shape, 'kernel_shape not inferred'
+        convnd = len(kernel_shape)
+        assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose supported'
+        num_out_channels = val_w.out_shapes[0][1]
+        fluid_op = 'conv{}d_transpose'.format(convnd)
+
+        num_groups = node.get_attr('group', 1)
+        strides = node.get_attr('strides', [1] * convnd)
+        dilations = node.get_attr('dilations', [1] * convnd)
+        output_size = node.get_attr('output_shape', [])
+        pads = node.get_attr('pads', [0] * (convnd * 2))
+
+        paddings, var_x = self._pad_if_asymmetric(node, pads, val_x)
+
+        output_size = [0, 0]
+
+        output_size[0] = (val_x.out_shapes[0][2] -
+                          1) * strides[0] - 2 * paddings[0] + dilations[0] * (
+                              kernel_shape[0] - 1) + 1 + out_padding[0]
+        output_size[1] = (val_x.out_shapes[0][3] -
+                          1) * strides[1] - 2 * paddings[1] + dilations[1] * (
+                              kernel_shape[1] - 1) + 1 + out_padding[1]
+        attr = {
+            'num_filters': num_out_channels,
+            'output_size': output_size or None,
+            'filter_size': kernel_shape,
+            'padding': paddings,
+            'stride': strides,
+            'dilation': dilations,
+            'groups': num_groups,
+            'param_attr': string(val_w.layer_name),
+            'bias_attr': string(val_b.layer_name),
+            'name': string(node.layer_name),
+        }
         node.fluid_code.add_layer(fluid_op,
                                   inputs=val_x,
                                   output=node,
