@@ -48,7 +48,8 @@ class TFOpMapperNHWC(OpMapper):
         'RealDiv': 'elementwise_div',
         'Sub': 'elementwise_sub',
         'Maximum': 'elementwise_max',
-        'Mul': 'elementwise_mul'
+        'Mul': 'elementwise_mul',
+        'FloorDiv': 'elementwise_floordiv'
     }
 
     def __init__(self, decoder):
@@ -200,14 +201,15 @@ class TFOpMapperNHWC(OpMapper):
         assert len(shape) != 0, "Unknown shape of input nodes[{}].".format(
             node.layer_name)
         dtype = node.dtype
+        if shape[0] < 0:
+            self.batch_node = node
         attr = {
             'dtype': string(dtype),
             'shape': shape,
             'name': string(node.layer_name),
             'append_batch_size': False
         }
-        if shape[0] < 0:
-            self.batch_node = node
+
         node.fluid_code.add_layer("data",
                                   inputs=None,
                                   output=node,
@@ -987,19 +989,6 @@ class TFOpMapperNHWC(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
-
-    def FloorDiv(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {'x': x, 'y': y}
-        node.fluid_code.add_layer("elementwise_div",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
-        node.fluid_code.add_layer("floor",
-                                  inputs=node,
-                                  output=node,
-                                  param_attr=None)
 
     def Split(self, node):
         dim = self.graph.get_node(node.layer.input[0], copy=True)
