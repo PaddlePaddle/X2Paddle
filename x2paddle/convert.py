@@ -113,6 +113,7 @@ def tf2paddle(model_path,
         optimizer.strip_graph()
         optimizer.merge_activation()
         optimizer.merge_bias()
+        optimizer.make_nchw_input_output()
         optimizer.remove_transpose()
     mapper.save_inference_model(save_dir)
 

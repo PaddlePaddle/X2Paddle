@@ -14,7 +14,9 @@
 
 # TODO useless node remove
 from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+from x2paddle.core.fluid_code import Layer
 from x2paddle.core.util import *
+import copy as cp
 
 
 class TFOptimizer(object):
@@ -92,7 +94,6 @@ class TFOptimizer(object):
                     del out_node.inputs[index]
                 del self.graph.node_map[node_name]
 
-    # TODO activation merge
     def merge_activation(self):
         act_nodes = list()
         for node_name in self.graph.topo_sort:
@@ -126,7 +127,6 @@ class TFOptimizer(object):
                 0].output
             self.graph.remove_node(act_node_name)
 
-    # TODO bias merge
     def merge_bias(self):
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
@@ -170,41 +170,184 @@ class TFOptimizer(object):
                     self.graph.remove_node(node.layer_name)
 
     def remove_transpose(self):
+        graph_copy = cp.deepcopy(self.graph)
+        nhwc_insensitive_ops = [
+            'Relu', 'Relu6', 'Abs', 'Sigmoid', 'Exp', 'Rsqrt', 'swish_f32',
+            'LeakyRelu', 'Cast'
+        ]
+        elementwise_ops = [
+            'Sub', 'Add', 'RealDiv', 'Maximum', 'Mul', 'FloorDiv',
+            'GreaterEqual'
+        ]
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in nhwc_insensitive_ops:
+                graph_copy.remove_node(node_name)
+
         optimize_ops = [
             'Conv2D', 'MaxPool', 'FusedBatchNorm', 'DepthwiseConv2dNative',
             'AvgPool', 'Pad', 'Conv2DBackpropInput', 'ResizeNearestNeighbor',
-            'ResizeBilinear'
+            'ResizeBilinear', "Placeholder"
         ]
+
         for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
+            node = graph_copy.get_node(node_name)
             if node is None:
                 continue
-            if node.layer_type not in optimize_ops:
-                continue
-            if node.fluid_code.layers[
-                    -1].op != "transpose" or node.fluid_code.layers[
-                        -1].param_attr["perm"] != [0, 2, 3, 1]:
-                continue
-            output_names = node.outputs
-            can_be_removed = True
-            for out_name in output_names:
-                out_node = self.graph.get_node(out_name)
-                if out_node.layer_type == "BiasAdd":
-                    can_be_removed = True
-                if out_node.fluid_code.layers[
-                        0].op != "transpose" or out_node.fluid_code.layers[
-                            0].param_attr["perm"] != [0, 3, 1, 2]:
-                    can_be_removed = False
-                    break
-
-            if can_be_removed and len(output_names) > 0:
-                last_out = node.fluid_code.layers[-1].inputs
-                del node.fluid_code.layers[-1]
-                for out_name in output_names:
-                    out_node = self.graph.get_node(out_name)
-                    if out_node.layer_type == "BiasAdd":
-                        del out_node.fluid_code.layers[0]
-                        out_node.fluid_code.layers[0].inputs['x'] = last_out
+            if node.layer_type in elementwise_ops:
+                is_nhwc = True
+                for in_name in node.inputs:
+                    in_node = graph_copy.get_node(in_name)
+                    if hasattr(in_node, "is_nhwc"):
+                        if not in_node.is_nhwc:
+                            is_nhwc = False
                     else:
+                        if len(in_node.fluid_code.layers) < 2:
+                            is_nhwc = False
+                            continue
+                        if in_node.fluid_code.layers[
+                                -1].op != "transpose" or in_node.fluid_code.layers[
+                                    -1].param_attr["perm"] != [0, 2, 3, 1]:
+                            is_nhwc = False
+                            continue
+                node.is_nhwc = is_nhwc
+
+        for i in range(len(self.graph.topo_sort)):
+            node_name = self.graph.topo_sort[-1 * i - 1]
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in elementwise_ops:
+                can_be_removed = True
+                if len(node.fluid_code.layers) > 1:
+                    can_be_removed = False
+                if not node.is_nhwc:
+                    can_be_removed = False
+                for out_name in node.outputs:
+                    out_node = graph_copy.get_node(out_name)
+                    if hasattr(out_node, "is_nhwc"):
+                        if not out_node.is_nhwc:
+                            can_be_removed = False
+                    else:
+                        if len(out_node.fluid_code.layers) < 2:
+                            can_be_removed = False
+                            break
+                        if out_node.fluid_code.layers[
+                                0].op != "transpose" or out_node.fluid_code.layers[
+                                    0].param_attr["perm"] != [0, 3, 1, 2]:
+                            can_be_removed = False
+                            break
+                node.can_be_removed = can_be_removed
+
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in optimize_ops:
+                if node.fluid_code.layers[
+                        -1].op != "transpose" or node.fluid_code.layers[
+                            -1].param_attr["perm"] != [0, 2, 3, 1]:
+                    continue
+                can_be_removed = True
+                output_names = node.outputs
+                for out_name in output_names:
+                    out_node = graph_copy.get_node(out_name)
+                    if hasattr(out_node, "can_be_removed"):
+                        if not out_node.can_be_removed:
+                            can_be_removed = False
+                            break
+                    elif out_node.fluid_code.layers[
+                            0].op != "transpose" or out_node.fluid_code.layers[
+                                0].param_attr["perm"] != [0, 3, 1, 2]:
+                        can_be_removed = False
+                        break
+                if can_be_removed and len(node.fluid_code.layers) > 1:
+                    true_node = self.graph.get_node(node_name)
+                    if true_node.layer_type == "Placeholder":
+                        index = self.graph.input_nodes.index(
+                            true_node.fluid_code.layers[-2].output)
+                        if isinstance(true_node.fluid_code.layers[-1].output,
+                                      str):
+                            self.graph.input_nodes[
+                                index] = true_node.fluid_code.layers[-1].output
+                        else:
+                            self.graph.input_nodes[
+                                index] = true_node.fluid_code.layers[
+                                    -1].output.layer_name
+                    true_node.fluid_code.layers[
+                        -2].output = true_node.fluid_code.layers[-1].output
+                    node.removed = True
+                    del true_node.fluid_code.layers[-1]
+                    for out_name in output_names:
+                        out_node = self.graph.get_node(out_name)
+                        if out_node.layer_type in elementwise_ops:
+                            continue
+                        out_node.fluid_code.layers[
+                            1].inputs = out_node.fluid_code.layers[0].inputs
                         del out_node.fluid_code.layers[0]
-                        out_node.fluid_code.layers[0].inputs = last_out
+
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in elementwise_ops:
+                if not node.can_be_removed:
+                    true_node = self.graph.get_node(node_name)
+                    for i, in_name in enumerate(node.inputs):
+                        in_node = graph_copy.get_node(in_name)
+                        if hasattr(in_node, "is_nhwc") and in_node.is_nhwc:
+                            if i == 0:
+                                l = Layer()
+                                l.op = "transpose"
+                                l.inputs = true_node.fluid_code.layers[
+                                    0].inputs["x"]
+                                l.param_attr = {"perm": [0, 2, 3, 1]}
+                                l.output = "nhwc_" + l.inputs.layer_name
+                                true_node.fluid_code.layers[0].inputs[
+                                    "x"] = l.output
+                                true_node.fluid_code.layers.insert(0, l)
+                            elif i == 1:
+                                l = Layer()
+                                l.op = "transpose"
+                                l.inputs = true_node.fluid_code.layers[
+                                    0].inputs["y"]
+                                l.param_attr = {"perm": [0, 2, 3, 1]}
+                                l.output = "nhwc_" + l.inputs.layer_name
+                                true_node.fluid_code.layers[0].inputs[
+                                    "y"] = l.output
+                                true_node.fluid_code.layers.insert(0, l)
+                            else:
+                                raise Exception("Unexpected situation happend")
+                    continue
+                else:
+                    for out_name in node.outputs:
+                        out_node = self.graph.get_node(out_name)
+                        if out_node.layer_type not in elementwise_ops:
+                            assert out_node.fluid_code.layers[
+                                0].op == "transpose", "unexpected situation happend"
+                            out_node.fluid_code.layers[
+                                1].inputs = out_node.fluid_code.layers[0].inputs
+                            del out_node.fluid_code.layers[0]
+
+    def make_nchw_input_output(self):
+        for i, name in enumerate(self.graph.input_nodes):
+            node = self.graph.get_node(name)
+            if len(node.out_shapes[0]) == 4 and node.tf_data_format == "NHWC":
+                shape = node.fluid_code.layers[0].param_attr["shape"]
+                shape = [shape[i] for i in [0, 3, 1, 2]]
+                node.fluid_code.layers[0].param_attr["shape"] = shape
+                node.fluid_code.layers[0].output = "nhwc_" + name
+                attr = {"perm": [0, 2, 3, 1]}
+                node.fluid_code.add_layer("transpose",
+                                          inputs="nhwc_" + name,
+                                          output=node,
+                                          param_attr=attr)
+                self.graph.input_nodes[i] = "nhwc_" + name
+        for i, name in enumerate(self.graph.output_nodes):
+            node = self.graph.get_node(name)
+            if node.layer_type != "transpose":
+                if node.fluid_code.layers[-1].op == "transpose":
+                    node.fluid_code.layers[-2].output = name
+                    del node.fluid_code.layers[-1]
