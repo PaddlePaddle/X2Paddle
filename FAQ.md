@@ -10,4 +10,4 @@ A: 如果并非是由缺少OP导致，那可能是由于TensorFlow模型转换�
 x2paddle -f tensorflow -m tf.pb -s pd-model --without_data_format_optimization --define_input_shape
 ```
 
-> 1. 目前Tensorflow的CV模型大部分均为`NHWC`的输入格式，而Paddle的默认输入格式为`NCHW`，因此X2Paddle在转换过程中，会对如`axis`， `shape`等参数进行转换，适应Paddle的NCHW格式。但在这种情况下，可能会由于TensorFlow模型太复杂，导致出错。  
+> 1. 目前Tensorflow的CV模型大部分均为`NHWC`的输入格式，而Paddle的默认输入格式为`NCHW`，因此X2Paddle在转换过程中，会对如`axis`， `shape`等参数进行转换，适应Paddle的NCHW格式。但在这种情况下，可能会由于TensorFlow模型太复杂，导致出错。  指定`--without_data_format_optimization`后，会停止对`axis`，`shape`等参数的优化（这可能会带来一定数量的transpose操作）
