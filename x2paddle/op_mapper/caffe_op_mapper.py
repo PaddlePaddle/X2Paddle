@@ -39,6 +39,8 @@ class CaffeOpMapper(OpMapper):
         print("Total nodes: {}".format(len(self.graph.topo_sort)))
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
+            if node.layer_type == 'DepthwiseConvolution':
+                node.layer_type = 'ConvolutionDepthwise'
             op = node.layer_type
             if hasattr(self, op):
                 self.set_node_shape(node)
