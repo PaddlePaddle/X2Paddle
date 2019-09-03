@@ -190,7 +190,6 @@ class CaffeGraph(Graph):
                     top_layer[out_name] = [layer.name]
                 else:
                     top_layer[out_name].append(layer.name)
-
         for layer_name, data in self.params:
             if layer_name in self.node_map:
                 node = self.node_map[layer_name]
