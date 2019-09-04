@@ -124,8 +124,8 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.optimizer.caffe_optimizer import CaffeOptimizer
     import google.protobuf as gpb
     ver_str = gpb.__version__.replace('.', '')
-    ver_int = int(ver_str)
-    assert ver_int >= 360, 'The version of protobuf must be larger than 3.6.0!'
+    ver_int = int(ver_str[0:2])
+    assert ver_int >= 36, 'The version of protobuf must be larger than 3.6.0!'
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
