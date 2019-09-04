@@ -106,6 +106,8 @@ def tf2paddle(model_path,
         # optimizer below is experimental
         optimizer.merge_activation()
         optimizer.merge_bias()
+        optimizer.merge_batch_norm()
+        optimizer.merge_prelu()
     else:
         mapper = TFOpMapperNHWC(model)
         optimizer = TFOptimizer(mapper)
