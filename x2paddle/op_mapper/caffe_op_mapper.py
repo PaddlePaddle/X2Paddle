@@ -135,23 +135,32 @@ class CaffeOpMapper(OpMapper):
         if isinstance(params.kernel_size, numbers.Number):
             [k_h, k_w] = [params.kernel_size] * 2
         elif len(params.kernel_size) > 0:
-            k_h = params.kernel_h if params.kernel_h else params.kernel_size[0]
-            k_w = params.kernel_w if params.kernel_w else params.kernel_size[
+            k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[0]
+            k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
                 len(params.kernel_size) - 1]
+        elif params.kernel_h > 0 or params.kernel_w > 0:
+            k_h = params.kernel_h
+            k_w = params.kernel_w
         [s_h, s_w] = [1, 1]
         if isinstance(params.stride, numbers.Number):
             [s_h, s_w] = [params.stride] * 2
         elif len(params.stride) > 0:
-            s_h = params.stride_h if params.stride_h else params.stride[0]
-            s_w = params.stride_w if params.stride_w else params.stride[
+            s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
+            s_w = params.stride_w if params.stride_w > 0 else params.stride[
                 len(params.stride) - 1]
+        elif params.stride_h > 0 or params.stride_w > 0:
+            s_h = params.stride_h
+            s_w = params.stride_w
         [p_h, p_w] = [0, 0]
         if isinstance(params.pad, numbers.Number):
             [p_h, p_w] = [params.pad] * 2
         elif len(params.pad) > 0:
-            p_h = params.pad_h if params.pad_h else params.pad[0]
-            p_w = params.pad_w if params.pad_w else params.pad[len(params.pad) -
-                                                               1]
+            p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
+            p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) -
+                                                                  1]
+        elif params.pad_h > 0 or params.pad_w > 0:
+            p_h = params.pad_h
+            p_w = params.pad_w
         dila_h = dila_w = 1
         group = 1
         c_o = 1
@@ -211,15 +220,22 @@ class CaffeOpMapper(OpMapper):
 
     def Convolution(self, node):
         data = node.data
-        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_weights'] = data[0]
-        if len(data) == 2:
-            self.weights[node.layer_name + '_bias'] = data[1]
         params = node.layer.convolution_param
         channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
             node.layer_type, params)
+        if data is None:
+            data = []
+            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
+            node.layer_name, node.layer_type))
+            input_c = node.input_shape[0][1]
+            output_c = channel
+            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]))
+            data.append(np.zeros([output_c,]))
+        else:
+            data = self.adjust_parameters(node)
+        self.weights[node.layer_name + '_weights'] = data[0]
+        if len(data) == 2:
+            self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of Convolution node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
@@ -251,15 +267,22 @@ class CaffeOpMapper(OpMapper):
 
     def Deconvolution(self, node):
         data = node.data
-        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_weights'] = data[0]
-        if len(data) == 2:
-            self.weights[node.layer_name + '_bias'] = data[1]
         params = node.layer.convolution_param
         channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
             node.layer_type, params)
+        if data is None:
+            data = []
+            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
+            node.layer_name, node.layer_type))
+            input_c = node.input_shape[0][1]
+            output_c = channel
+            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]))
+            data.append(np.zeros([output_c,]))
+        else:
+            data = self.adjust_parameters(node)
+        self.weights[node.layer_name + '_weights'] = data[0]
+        if len(data) == 2:
+            self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of Deconvolution node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
@@ -344,24 +367,32 @@ class CaffeOpMapper(OpMapper):
 
     def InnerProduct(self, node):
         data = node.data
-        assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        data = self.adjust_parameters(node)
-        # Reshape the parameters to Paddle's ordering
-        transpose_order = (1, 0)
-        w = data[0]
-        fc_shape = w.shape
-        output_channels = fc_shape[0]
-        w = w.reshape((output_channels, -1))
-        w = w.transpose(transpose_order)
-        data[0] = w
+        params = node.layer.inner_product_param
+        if data is None:
+            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0.'.format(
+            node.layer_name, node.layer_type))
+            input_c = node.input_shape[0][1]
+            output_c = params.num_output
+            data = []
+            data.append(np.zeros([input_c, output_c]))
+            data.append(np.zeros([output_c]))
+        else:
+            data = self.adjust_parameters(node)
+            # Reshape the parameters to Paddle's ordering
+            transpose_order = (1, 0)
+            w = data[0]
+            fc_shape = w.shape
+            output_channels = fc_shape[0]
+            w = w.reshape((output_channels, -1))
+            w = w.transpose(transpose_order)
+            data[0] = w
 
         self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
             self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of InnerProduct node\'s input is not 1.'
-        params = node.layer.inner_product_param
+        #params = node.layer.inner_product_param
         assert params.axis == 1
         assert params.bias_term == True
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
@@ -592,9 +623,16 @@ class CaffeOpMapper(OpMapper):
             eps = params.eps
         else:
             eps = 1e-5
-        assert len(node.data) == 3
-        node.data = [np.squeeze(i) for i in node.data]
-        mean, variance, scale = node.data
+        if node.data is None or len(node.data) != 3:
+            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
+            node.layer_name, node.layer_type))
+            input_c = node.input_shape[0][1]
+            mean = np.zeros([input_c,])
+            variance = np.zeros([input_c,])
+            scale = 0
+        else:
+            node.data = [np.squeeze(i) for i in node.data]
+            mean, variance, scale = node.data
         # Prescale the stats
         scaling_factor = 1.0 / scale if scale != 0 else 0
         mean *= scaling_factor
@@ -616,9 +654,15 @@ class CaffeOpMapper(OpMapper):
                                   param_attr=attr)
 
     def Scale(self, node):
-
-        self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0])
-        self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1])
+        if node.data is None:
+            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
+            node.layer_name, node.layer_type))
+            input_c = node.input_shape[0][1]
+            self.weights[node.layer_name + '_scale'] = np.zeros([input_c,])
+            self.weights[node.layer_name + '_offset'] = np.zeros([input_c,])
+        else:
+            self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0])
+            self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1])
         params = node.layer.scale_param
         axis = params.axis
         num_axes = params.num_axes
