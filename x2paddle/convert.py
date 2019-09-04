@@ -118,7 +118,7 @@ def onnx2paddle(model_path, save_dir):
             return
     except:
         print(
-                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
+                "your model have dynamic graph, we use caffe2 to inference graph, please use \"pip install torch==1.1.0\"."
             )
         return
     print("Now translating model from onnx to paddle.")
