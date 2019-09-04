@@ -116,11 +116,11 @@ def onnx2paddle(model_path, save_dir):
         if '1.1.0' not in version:
             print("your model have dynamic graph, torch==1.1.0 is required")
             return
-        except:
-            print(
+    except:
+        print(
                 "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
             )
-            return
+        return
     print("Now translating model from onnx to paddle.")
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
