@@ -271,17 +271,6 @@ class ONNXGraph(Graph):
         return value_info
 
     def get_results_of_inference(self, model, shape):
-        try:
-            import torch
-            version = torch.__version__
-            if '1.1.0' not in version:
-                print("your model have dynamic graph, torch==1.1.0 is required")
-                return
-        except:
-            print(
-                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
-            )
-            return
         from x2paddle.decoder.onnx_backend import prepare
 
         np_images = np.random.rand(shape[0], shape[1], shape[2],
