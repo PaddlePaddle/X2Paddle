@@ -31,9 +31,19 @@
 | SqueezeNet | [code](https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.1) |
 | MobileNet_V1 | [code](https://github.com/shicai/MobileNet-Caffe) |
 | MobileNet_V2 | [code](https://github.com/shicai/MobileNet-Caffe) |
-| ShuffleNet | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
+| ShuffleNet_v2 | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
+| Mobilenet_SSD | [code](https://github.com/chuanqi305/MobileNet-SSD) |
+| ResNet18 | [code](https://github.com/HolmesShuan/ResNet-18-Caffemodel-on-ImageNet/blob/master/deploy.prototxt) |
+| ResNet50 | [code](https://github.com/soeaver/caffe-model/blob/master/cls/resnet/deploy_resnet50.prototxt) |
+| Unet | [code](https://github.com/jolibrain/deepdetect/blob/master/templates/caffe/unet/deploy.prototxt) |
+| VGGNet | [code](https://gist.github.com/ksimonyan/211839e770f7b538e2d8#file-vgg_ilsvrc_16_layers_deploy-prototxt) |
+
+
+
+
+
 
 ## ONNX
 **注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](pytorch_to_onnx.md)
