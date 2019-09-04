@@ -229,8 +229,8 @@ class CaffeOpMapper(OpMapper):
             node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
             output_c = channel
-            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]))
-            data.append(np.zeros([output_c,]))
+            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype('float32'))
+            data.append(np.zeros([output_c,])).astype('float32')
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -276,8 +276,8 @@ class CaffeOpMapper(OpMapper):
             node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
             output_c = channel
-            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]))
-            data.append(np.zeros([output_c,]))
+            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype('float32'))
+            data.append(np.zeros([output_c,]).astype('float32'))
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -374,8 +374,8 @@ class CaffeOpMapper(OpMapper):
             input_c = node.input_shape[0][1]
             output_c = params.num_output
             data = []
-            data.append(np.zeros([input_c, output_c]))
-            data.append(np.zeros([output_c]))
+            data.append(np.zeros([input_c, output_c]).astype('float32').astype('float32'))
+            data.append(np.zeros([output_c]).astype('float32').astype('float32'))
         else:
             data = self.adjust_parameters(node)
             # Reshape the parameters to Paddle's ordering
@@ -627,8 +627,8 @@ class CaffeOpMapper(OpMapper):
             print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
             node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
-            mean = np.zeros([input_c,])
-            variance = np.zeros([input_c,])
+            mean = np.zeros([input_c,]).astype('float32')
+            variance = np.zeros([input_c,]).astype('float32')
             scale = 0
         else:
             node.data = [np.squeeze(i) for i in node.data]
@@ -658,8 +658,8 @@ class CaffeOpMapper(OpMapper):
             print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
             node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
-            self.weights[node.layer_name + '_scale'] = np.zeros([input_c,])
-            self.weights[node.layer_name + '_offset'] = np.zeros([input_c,])
+            self.weights[node.layer_name + '_scale'] = np.zeros([input_c,]).astype('float32')
+            self.weights[node.layer_name + '_offset'] = np.zeros([input_c,]).astype('float32')
         else:
             self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0])
             self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1])
