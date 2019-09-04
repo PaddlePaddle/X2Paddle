@@ -13,104 +13,67 @@
 # limitations under the License.
 
 import math
+import numbers
+from functools import reduce
 
 
-def get_params_w_h(params):
+def get_kernel_parameters(params):
+    [k_h, k_w] = [1, 1]
+    if isinstance(params.kernel_size, numbers.Number):
+        [k_h, k_w] = [params.kernel_size] * 2
+    elif len(params.kernel_size) > 0:
+        k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[0]
+        k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
+            len(params.kernel_size) - 1]
+    elif params.kernel_h > 0 or params.kernel_w > 0:
+        k_h = params.kernel_h
+        k_w = params.kernel_w
+    [s_h, s_w] = [1, 1]
+    if isinstance(params.stride, numbers.Number):
+        [s_h, s_w] = [params.stride] * 2
+    elif len(params.stride) > 0:
+        s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
+        s_w = params.stride_w if params.stride_w > 0 else params.stride[
+            len(params.stride) - 1]
+    elif params.stride_h > 0 or params.stride_w > 0:
+        s_h = params.stride_h
+        s_w = params.stride_w
+    [p_h, p_w] = [0, 0]
+    if isinstance(params.pad, numbers.Number):
+        [p_h, p_w] = [params.pad] * 2
+    elif len(params.pad) > 0:
+        p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
+        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) - 1]
+    elif params.pad_h > 0 or params.pad_w > 0:
+        p_h = params.pad_h
+        p_w = params.pad_w
+    dila_h = dila_w = 1
     if hasattr(params, 'dilation'):
-        if len(params.dilation) == 0:
-            dila_h = 1
-            dila_w = 1
-        elif len(params.dilation) == 1:
-            dila_h = params.dilation[0]
-            dila_w = params.dilation[0]
-        else:
+        dila_len = len(params.dilation)
+        if dila_len == 2:
             dila_h = params.dilation[0]
             dila_w = params.dilation[1]
-    else:
-        dila_h = 1
-        dila_w = 1
-
-    if not isinstance(getattr(params, 'pad'), int):
-        if len(params.pad) == 0:
-            pad_h = 0
-            pad_w = 0
-        elif len(params.pad) == 1:
-            pad_h = params.pad[0]
-            pad_w = params.pad[0]
+        elif dila_len == 1:
+            dila_h = dila_w = params.dilation[0]
         else:
-            pad_h, pad_w, = params.pad[0]
-            pad_w = params.pad[1]
-        if params.pad_h != 0 or params.pad_w != 0:
-            pad_h = params.pad_h
-            pad_w = params.pad_w
-    else:
-        if params.pad_h != 0 or params.pad_w != 0:
-            pad_h = params.pad_h
-            pad_w = params.pad_w
-        else:
-            pad_h = getattr(params, 'pad')
-            pad_w = getattr(params, 'pad')
-
-    if not isinstance(getattr(params, 'kernel_size'), int):
-        if len(params.kernel_size) == 0:
-            kernel_h = 1
-            kernel_w = 1
-        elif len(params.kernel_size) == 1:
-            kernel_h = params.kernel_size[0]
-            kernel_w = params.kernel_size[0]
-        else:
-            kernel_h = params.kernel_size[0]
-            kernel_w = params.kernel_size[1]
-        if params.kernel_h != 0 or params.kernel_w != 0:
-            kernel_h = params.kernel_h
-            kernel_w = params.kernel_w
-    else:
-        if params.kernel_h != 0 or params.kernel_w != 0:
-            kernel_h = params.kernel_h
-            kernel_w = params.kernel_w
-        else:
-            kernel_h = getattr(params, 'kernel_size')
-            kernel_w = getattr(params, 'kernel_size')
-    if not isinstance(getattr(params, 'stride'), int):
-        if len(params.stride) == 0:
-            stride_h = 1
-            stride_w = 1
-        elif len(params.stride) == 1:
-            stride_h = params.stride[0]
-            stride_w = params.stride[0]
-        else:
-            stride_h = params.stride[0]
-            stride_w = params.stride[1]
-        if params.stride_h != 0 or params.stride_w != 0:
-            stride_h = params.stride_h
-            stride_w = params.stride_w
-    else:
-        if params.stride_h != 0 or params.stride_w != 0:
-            stride_h = params.stride_h
-            stride_w = params.stride_w
-        else:
-            stride_h = getattr(params, 'stride')
-            stride_w = getattr(params, 'stride')
-    return dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w
+            assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
+                dila_len)
+    return dila_h, dila_w, p_h, p_w, k_h, k_w, s_h, s_w
 
 
-def get_filter_output_shape(i_h, i_w, params, round_func):
-    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_params_w_h(
+def get_strided_kernel_output_shape(params, input_shape, round_func):
+    i_h = input_shape[2]
+    i_w = input_shape[3]
+    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_kernel_parameters(
         params)
     o_h = (i_h + 2 * pad_h - (dila_h *
                               (kernel_h - 1) + 1)) / float(stride_h) + 1
     o_w = (i_w + 2 * pad_w - (dila_w *
                               (kernel_w - 1) + 1)) / float(stride_w) + 1
-    return (int(round_func(o_h)), int(round_func(o_w)))
-
-
-def get_strided_kernel_output_shape(params, input_shape, round_func):
-
-    o_h, o_w = get_filter_output_shape(input_shape[2], input_shape[3], params,
-                                       round_func)
+    o_h = int(round_func(o_h))
+    o_w = int(round_func(o_w))
     has_c_o = hasattr(params, 'num_output')
     c = params.num_output if has_c_o else input_shape[1]
-
     return [[input_shape[0], c, o_h, o_w]]
 
 
@@ -120,11 +83,12 @@ def shape_convolution(layer, input_shape):
 
 
 def shape_deconvolution(layer, input_shape):
-    h_i = input_shape[2]
-    w_i = input_shape[3]
+
+    h_i = input_shape[0][2]
+    w_i = input_shape[0][3]
 
     params = layer.convolution_param
-    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_params_w_h(
+    dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_kernel_parameters(
         params)
 
     h_o = (h_i - 1) * stride_h - 2 * pad_h + dila_h * (kernel_h - 1) + 1
@@ -170,13 +134,25 @@ def shape_input(layer, input_shape):
     return [list(layer.input_param.shape[0].dim)]
 
 
+def shape_memorydata(layer, input_shape):
+    params = layer.memory_data_param
+    shape = []
+    shape.append(int(params.batch_size))
+    shape.append(int(params.channels))
+    shape.append(int(params.height))
+    shape.append(int(params.width))
+    return [shape]
+
+
 def shape_concat(layer, input_shape):
     params = layer.concat_param
     axis = params.axis
     output_shape = None
     for shape in input_shape:
         if output_shape is None:
-            output_shape = shape
+            output_shape = []
+            for i in range(len(shape)):
+                output_shape.append(shape[i])
         else:
             output_shape[axis] += shape[axis]
     return [output_shape]
@@ -184,14 +160,28 @@ def shape_concat(layer, input_shape):
 
 def shape_slice(layer, input_shape):
     inshape = input_shape[0]
+
+    top_len = len(layer.top)
     params = layer.slice_param
     axis = params.axis
-    count = inshape[axis]
+    slice_dim = params.slice_dim
+    if slice_dim != 1 and axis == 1:
+        axis = slice_dim
     points = list(params.slice_point)
+    count = inshape[axis]
+    if len(points) == 0:
+        assert count % top_len == 0, "the parameter of Slice is wrong"
+        part = count / top_len
+        t = part
+        while t < count:
+            points.append(int(t))
+            t += part
     points = [0] + points + [count]
     output_shape = []
     for i in range(len(points)):
-        shape = inshape
+        shape = []
+        for ii in range(len(inshape)):
+            shape.append(inshape[ii])
         size = points[i + 1] - points[i]
         shape[axis] = size
         output_shape.append(shape)
@@ -238,8 +228,8 @@ def shape_reshape(layer, input_shape):
 
     inshape = input_shape[0]
     params = layer.reshape_param
-    axis = params.axis if hasattr(params, axis) else 0
-    num_axes = params.num_axes if hasattr(params, num_axes) else -1
+    axis = params.axis if hasattr(params, 'axis') else 0
+    num_axes = params.num_axes if hasattr(params, 'num_axes') else -1
     if inshape[0] == -1:
         inshape[0] = 1
     input_count = count(inshape)
@@ -262,14 +252,14 @@ def shape_reshape(layer, input_shape):
 
     num_axes_replaced = end_axis - start_axis
     num_axes_retained = input_num_axes - num_axes_replaced
-    num_new_axes = len(shape['dim'])
+    num_new_axes = len(list(params.shape.dim))
     outshape = []
 
     for i in range(start_axis):
         outshape.append(inshape[i])
 
     for i in range(num_new_axes):
-        outshape.append(shape['dim'][i])
+        outshape.append(params.shape.dim[i])
 
     for i in range(end_axis, input_num_axes):
         outshape.append(inshape[i])
@@ -281,7 +271,7 @@ def shape_reshape(layer, input_shape):
     copy_axes = []
     constant_count = 1
     for i in range(num_new_axes):
-        top_dim = shape['dim'][i]
+        top_dim = params.shape.dim[i]
         if top_dim == 0:
             copy_axes.append(i)
             copy_axis_index = start_axis + i
@@ -297,24 +287,20 @@ def shape_reshape(layer, input_shape):
         l = inshape[0:start_axis]
         if len(l) > 0:
             explicit_count *= count(l)
-
         l = inshape[end_axis:]
         if len(l) > 0:
             explicit_count *= count(l)
-
         for i in range(len(copy_axes)):
             explicit_count *= outshape[start_axis + copy_axes[i]]
-
         assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
                 "must be divisible by product of the specified dimensions[%d] "\
                 % (input_count, explicit_count)
-        outshape[start_axis + inferred_axis] = input_count / explicit_count
+        outshape[start_axis + inferred_axis] = int(input_count / explicit_count)
 
     output_count = count(outshape)
     assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
         output_count, input_count)
-    if inshape[0] == -1:
-        outshape[0] = -1
+    outshape[0] = -1
     return [outshape]
 
 
@@ -345,18 +331,22 @@ def shape_crop(layer, input_shape):
 
 def shape_flatten(layer, input_shape):
     assert len(input_shape) == 1, "the number of flatten's inputs must be 1"
+    inshape = input_shape[0]
     params = layer.flatten_param
     start_axis = params.axis
     end_axis = params.end_axis
     if start_axis < 0:
-        start_axis += len(input_shape[0])
+        start_axis += len(inshape)
     if end_axis < 0:
-        end_axis += len(input_shape[0]) + 1
+        end_axis += len(inshape) + 1
     assert start_axis <= end_axis, 'invalid axis[%d] or end_axis[%d] params'\
             % (start_axis, end_axis)
-    output_shape = [0] * (start_axis - 0) + [
-        -1
-    ] + [0] * (len(input_shape[0]) - end_axis)
+    output_shape = inshape[0:start_axis]
+    if len(inshape[start_axis:end_axis]) != 0:
+        flat_sz = reduce(lambda a, b: a * b, inshape[start_axis:end_axis])
+        output_shape += [flat_sz]
+    output_shape += inshape[end_axis:len(inshape)]
+    output_shape[0] = -1
     return [output_shape]
 
 

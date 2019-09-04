@@ -23,7 +23,7 @@ def arg_parser():
                         "-m",
                         type=_text_type,
                         default=None,
-                        help="model file path")
+                        help="define model file path for tensorflow or onnx")
     parser.add_argument("--prototxt",
                         "-p",
                         type=_text_type,
@@ -39,29 +39,47 @@ def arg_parser():
                         type=_text_type,
                         default=None,
                         help="path to save translated model")
-    parser.add_argument("--framework",
-                        "-f",
-                        type=_text_type,
-                        default=None,
-                        help="define which deeplearning framework")
+    parser.add_argument(
+        "--framework",
+        "-f",
+        type=_text_type,
+        default=None,
+        help="define which deeplearning framework(tensorflow/caffe/onnx)")
     parser.add_argument(
         "--caffe_proto",
         "-c",
         type=_text_type,
         default=None,
-        help="the .py file compiled by caffe proto file of caffe model")
+        help="optional: the .py file compiled by caffe proto file of caffe model"
+    )
     parser.add_argument("--version",
                         "-v",
                         action="store_true",
                         default=False,
                         help="get version of x2paddle")
+    parser.add_argument(
+        "--without_data_format_optimization",
+        "-wo",
+        action="store_true",
+        default=False,
+        help="tf model conversion without data format optimization")
+    parser.add_argument("--define_input_shape",
+                        "-d",
+                        action="store_true",
+                        default=False,
+                        help="define input shape for tf model")
 
     return parser
 
 
-def tf2paddle(model_path, save_dir):
+def tf2paddle(model_path,
+              save_dir,
+              without_data_format_optimization=False,
+              define_input_shape=False):
     # check tensorflow installation and version
     try:
+        import os
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
         import tensorflow as tf
         version = tf.__version__
         if version >= '2.0.0' or version < '1.0.0':
@@ -75,27 +93,47 @@ def tf2paddle(model_path, save_dir):
 
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+    from x2paddle.op_mapper.tf_op_mapper_nhwc import TFOpMapperNHWC
     from x2paddle.optimizer.tf_optimizer import TFOptimizer
 
     print("Now translating model from tensorflow to paddle.")
-    model = TFDecoder(model_path)
-    mapper = TFOpMapper(model)
-    optimizer = TFOptimizer(mapper)
-    # neccesary optimization
-    optimizer.delete_redundance_code()
-    # optimizer below is experimental
-    optimizer.merge_activation()
-    optimizer.merge_bias()
+    model = TFDecoder(model_path, define_input_shape=define_input_shape)
+    if not without_data_format_optimization:
+        mapper = TFOpMapper(model)
+        optimizer = TFOptimizer(mapper)
+        # neccesary optimization
+        optimizer.delete_redundance_code()
+        # optimizer below is experimental
+        optimizer.merge_activation()
+        optimizer.merge_bias()
+        optimizer.merge_batch_norm()
+        optimizer.merge_prelu()
+    else:
+        mapper = TFOpMapperNHWC(model)
+        optimizer = TFOptimizer(mapper)
+        optimizer.delete_redundance_code()
+        optimizer.strip_graph()
+        optimizer.merge_activation()
+        optimizer.merge_bias()
+        optimizer.make_nchw_input_output()
+        optimizer.remove_transpose()
     mapper.save_inference_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
-
+    from x2paddle.optimizer.caffe_optimizer import CaffeOptimizer
+    import google.protobuf as gpb
+    ver_str = gpb.__version__.replace('.', '')
+    ver_int = int(ver_str[0:2])
+    assert ver_int >= 36, 'The version of protobuf must be larger than 3.6.0!'
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
+    optimizer = CaffeOptimizer(mapper)
+    optimizer.merge_bn_scale()
+    optimizer.merge_op_activation()
     mapper.save_inference_model(save_dir)
 
 
@@ -139,13 +177,17 @@ def onnx2paddle(model_path, save_dir):
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
+        print("For more information, please follow our github repo below:)")
+        print("\nGithub: https://github.com/PaddlePaddle/X2Paddle.git\n")
         return
 
     parser = arg_parser()
     args = parser.parse_args()
 
     if args.version:
-        print("x2paddle-{} with python>=3.5\n".format(x2paddle.__version__))
+        import x2paddle
+        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.5.0\n".format(
+            x2paddle.__version__))
         return
 
     try:
@@ -156,12 +198,19 @@ def main():
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
-    assert args.framework is not None, "--from is not defined(tensorflow/caffe)"
+    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
-        tf2paddle(args.model, args.save_dir)
+        without_data_format_optimization = False
+        define_input_shape = False
+        if args.without_data_format_optimization:
+            without_data_format_optimization = True
+        if args.define_input_shape:
+            define_input_shape = True
+        tf2paddle(args.model, args.save_dir, without_data_format_optimization,
+                  define_input_shape)
 
     elif args.framework == "caffe":
         assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
