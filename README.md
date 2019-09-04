@@ -14,7 +14,7 @@ paddlepaddle >= 1.5.0
 
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
-caffe ： caffe == 1.0.0  
+caffe ： 无  
 onnx ： onnx == 1.5.0  pytorch == 1.1.0
 
 ## 安装
