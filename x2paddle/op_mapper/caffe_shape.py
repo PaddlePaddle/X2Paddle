@@ -43,7 +43,8 @@ def get_kernel_parameters(params):
         [p_h, p_w] = [params.pad] * 2
     elif len(params.pad) > 0:
         p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
-        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) - 1]
+        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) -
+                                                               1]
     elif params.pad_h > 0 or params.pad_w > 0:
         p_h = params.pad_h
         p_w = params.pad_w
