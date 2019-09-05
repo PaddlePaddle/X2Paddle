@@ -7,7 +7,7 @@ function abort(){
 
 trap 'abort' 0
 set -e
-
+TRAVIS_BUILD_DIR=${PWD}
 cd $TRAVIS_BUILD_DIR
 export PATH=/usr/bin:$PATH
 pre-commit install

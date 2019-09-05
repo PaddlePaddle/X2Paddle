@@ -135,7 +135,8 @@ class CaffeOpMapper(OpMapper):
         if isinstance(params.kernel_size, numbers.Number):
             [k_h, k_w] = [params.kernel_size] * 2
         elif len(params.kernel_size) > 0:
-            k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[0]
+            k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[
+                0]
             k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
                 len(params.kernel_size) - 1]
         elif params.kernel_h > 0 or params.kernel_w > 0:
@@ -156,8 +157,8 @@ class CaffeOpMapper(OpMapper):
             [p_h, p_w] = [params.pad] * 2
         elif len(params.pad) > 0:
             p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
-            p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) -
-                                                                  1]
+            p_w = params.pad_w if params.pad_w > 0 else params.pad[
+                len(params.pad) - 1]
         elif params.pad_h > 0 or params.pad_w > 0:
             p_h = params.pad_h
             p_w = params.pad_w
@@ -225,12 +226,17 @@ class CaffeOpMapper(OpMapper):
             node.layer_type, params)
         if data is None:
             data = []
-            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
-            node.layer_name, node.layer_type))
+            print(
+                'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
+                .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
             output_c = channel
-            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype('float32'))
-            data.append(np.zeros([output_c,])).astype('float32')
+            data.append(
+                np.zeros([output_c, input_c, kernel[0],
+                          kernel[1]]).astype('float32'))
+            data.append(np.zeros([
+                output_c,
+            ])).astype('float32')
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -272,12 +278,17 @@ class CaffeOpMapper(OpMapper):
             node.layer_type, params)
         if data is None:
             data = []
-            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
-            node.layer_name, node.layer_type))
+            print(
+                'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
+                .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
             output_c = channel
-            data.append(np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype('float32'))
-            data.append(np.zeros([output_c,]).astype('float32'))
+            data.append(
+                np.zeros([output_c, input_c, kernel[0],
+                          kernel[1]]).astype('float32'))
+            data.append(np.zeros([
+                output_c,
+            ]).astype('float32'))
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -369,13 +380,17 @@ class CaffeOpMapper(OpMapper):
         data = node.data
         params = node.layer.inner_product_param
         if data is None:
-            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0.'.format(
-            node.layer_name, node.layer_type))
+            print(
+                'The parameter of {} (type is {}) is not set. So we set the parameters as 0.'
+                .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
             output_c = params.num_output
             data = []
-            data.append(np.zeros([input_c, output_c]).astype('float32').astype('float32'))
-            data.append(np.zeros([output_c]).astype('float32').astype('float32'))
+            data.append(
+                np.zeros([input_c,
+                          output_c]).astype('float32').astype('float32'))
+            data.append(
+                np.zeros([output_c]).astype('float32').astype('float32'))
         else:
             data = self.adjust_parameters(node)
             # Reshape the parameters to Paddle's ordering
@@ -467,7 +482,7 @@ class CaffeOpMapper(OpMapper):
                 node.layer_name, node.layer_name + '_' + str(i)))
             if i == len(points) - 2:
                 break
-                
+
     def Concat(self, node):
         assert len(
             node.inputs
@@ -616,7 +631,8 @@ class CaffeOpMapper(OpMapper):
                                       param_attr=attr)
 
     def BatchNorm(self, node):
-        assert len(node.inputs) == 1, 'The count of BatchNorm node\'s input is not 1.'
+        assert len(
+            node.inputs) == 1, 'The count of BatchNorm node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         params = node.layer.batch_norm_param
         if hasattr(params, 'eps'):
@@ -624,11 +640,16 @@ class CaffeOpMapper(OpMapper):
         else:
             eps = 1e-5
         if node.data is None or len(node.data) != 3:
-            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
-            node.layer_name, node.layer_type))
+            print(
+                'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
+                .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
-            mean = np.zeros([input_c,]).astype('float32')
-            variance = np.zeros([input_c,]).astype('float32')
+            mean = np.zeros([
+                input_c,
+            ]).astype('float32')
+            variance = np.zeros([
+                input_c,
+            ]).astype('float32')
             scale = 0
         else:
             node.data = [np.squeeze(i) for i in node.data]
@@ -655,11 +676,16 @@ class CaffeOpMapper(OpMapper):
 
     def Scale(self, node):
         if node.data is None:
-            print('The parameter of {} (type is {}) is not set. So we set the parameters as 0'.format(
-            node.layer_name, node.layer_type))
+            print(
+                'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
+                .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
-            self.weights[node.layer_name + '_scale'] = np.zeros([input_c,]).astype('float32')
-            self.weights[node.layer_name + '_offset'] = np.zeros([input_c,]).astype('float32')
+            self.weights[node.layer_name + '_scale'] = np.zeros([
+                input_c,
+            ]).astype('float32')
+            self.weights[node.layer_name + '_offset'] = np.zeros([
+                input_c,
+            ]).astype('float32')
         else:
             self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0])
             self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1])

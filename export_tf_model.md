@@ -28,7 +28,7 @@ def freeze_model(sess, output_tensor_names, freeze_model_path):
         f.write(out_graph.SerializeToString())
 
     print("freeze model saved in {}".format(freeze_model_path))
-    
+
 # 加载模型参数
 sess = tf.Session()
 inputs = tf.placeholder(dtype=tf.float32,
