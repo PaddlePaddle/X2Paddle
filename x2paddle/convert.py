@@ -140,6 +140,8 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 def onnx2paddle(model_path, save_dir):
     # check onnx installation and version
     try:
+        import torch
+        import paddle.fluid
         import onnx
         version = onnx.version.version
         if version != '1.5.0':

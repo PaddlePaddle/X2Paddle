@@ -274,9 +274,6 @@ class ONNXGraph(Graph):
         try:
             import torch
             version = torch.__version__
-            if '1.1.0' not in version:
-                print("your model have dynamic graph, torch==1.1.0 is required")
-                return
         except:
             print(
                 "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
