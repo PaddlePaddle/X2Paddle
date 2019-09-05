@@ -33,3 +33,4 @@ if len(unsupported_ops) > 0:
 else:
     print("\n========== Good News! ========")
     print("Good! All ops in this model are supported in Paddle-Lite!\n")
+a = 1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 +1 + 2 
