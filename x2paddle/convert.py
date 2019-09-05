@@ -140,15 +140,6 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
 def onnx2paddle(model_path, save_dir):
     # check onnx installation and version
     try:
-        import onnx
-        version = onnx.version.version
-        if version != '1.5.0':
-            print("onnx==1.5.0 is required")
-            return
-    except:
-        print("onnx is not installed, use \"pip install onnx==1.5.0\".")
-        return
-    try:
         import torch
         version = torch.__version__
         if '1.1.0' not in version:
@@ -158,6 +149,15 @@ def onnx2paddle(model_path, save_dir):
         print(
                 "we use caffe2 to inference graph, please use \"pip install torch==1.1.0\"."
             )
+        return
+    try:
+        import onnx
+        version = onnx.version.version
+        if version != '1.5.0':
+            print("onnx==1.5.0 is required")
+            return
+    except:
+        print("onnx is not installed, use \"pip install onnx==1.5.0\".")
         return
     print("Now translating model from onnx to paddle.")
 
