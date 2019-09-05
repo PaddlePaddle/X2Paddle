@@ -236,11 +236,7 @@ class CaffeDecoder(object):
         data.MergeFromString(open(self.model_path, 'rb').read())
         pair = lambda layer: (layer.name, self.normalize_pb_data(layer))
         layers = data.layers or data.layer
-        import time
-        start = time.time()
         self.params = [pair(layer) for layer in layers if layer.blobs]
-        end = time.time()
-        print('cost:', str(end - start))
 
     def normalize_pb_data(self, layer):
         transformed = []
