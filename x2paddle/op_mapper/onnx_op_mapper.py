@@ -94,7 +94,7 @@ class ONNXOpMapper(OpMapper):
                 print(op)
             return False
 
-    def directly_map(self, node, *args, name='', **kwargs):
+    def directly_map(self, node, name='', *args, **kwargs):
         inputs = node.layer.input
         outputs = node.layer.output
         op_type = node.layer_type
