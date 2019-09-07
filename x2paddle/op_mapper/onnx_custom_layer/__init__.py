@@ -16,6 +16,7 @@ from .register import get_registered_layers
 #custom layer import begins
 
 from . import InstanceNormalization
+from . import NonMaxSuppression
 #custom layer import ends
 
 custom_layers = get_registered_layers()
@@ -93,6 +94,17 @@ def make_custom_layer(node):
     layer_func = custom_layers[layer_type]['layer']
     import inspect
     return inspect.getsource(layer_func), layer_func
+
+
+def make_custom_child_func(node):
+    """ get the code which implement the custom layer function
+    """
+    layer_type = node.layer_type
+    assert layer_type in custom_layers, "layer[%s] not exist in custom layers" % (
+        layer_type)
+    child_func = custom_layers[layer_type]['child_func']
+    import inspect
+    return inspect.getsource(child_func), child_func
 
 
 def deal_weights(node, data=None):

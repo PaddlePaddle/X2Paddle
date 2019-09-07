@@ -89,6 +89,9 @@ def tf2paddle(model_path, save_dir):
     mapper.save_inference_model(save_dir)
 
 
+0
+
+
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper

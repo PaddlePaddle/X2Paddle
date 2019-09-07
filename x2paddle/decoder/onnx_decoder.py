@@ -17,7 +17,6 @@ from x2paddle.core.fluid_code import FluidCode
 from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx.utils import polish_model
-from onnx.version_converter import convert_version
 from onnx import helper
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
@@ -26,6 +25,7 @@ from onnx.numpy_helper import to_array
 from onnx import AttributeProto, TensorProto, GraphProto
 from collections import OrderedDict as Dict
 import onnx
+from onnx.helper import ValueInfoProto
 import numpy as np
 from copy import deepcopy
 import logging as _logging
@@ -47,6 +47,7 @@ class ONNXGraphNode(GraphNode):
         self.weight_inputs = list()
         self.out_shapes = list()
         self.dtype = None
+        self.which_child = {}
 
     def get_attr_map(self):
         """
@@ -60,10 +61,9 @@ class ONNXGraphNode(GraphNode):
     @property
     def value(self):
         assert 'Constant' in self.layer_type, "Only Constant | ConstantOfShape node has value."
-        attr = self.layer.attribute['value']
         if 'value' not in self.attr_map:
             return None
-        return self.attr_map[name]
+        return self.attr_map['value']
 
     def get_attribute_value2(self, attr):
         """
@@ -105,18 +105,29 @@ class ONNXGraphDataNode(GraphNode):
         self.fluid_code = FluidCode()
         self.weight = None
         self.embeded_as = None
+        self.which_child = {}
 
     @property
     def out_shapes(self):
-        values = self.layer.type.tensor_type.shape.dim
-        out_shapes = list()
-        out_shapes.append([dim.dim_value for dim in values])
-        return out_shapes
+        if isinstance(self.layer, ValueInfoProto):
+            values = self.layer.type.tensor_type.shape.dim
+            out_shapes = list()
+            out_shapes.append([dim.dim_value for dim in values])
+            return out_shapes
+        else:
+            values = self.layer.dims
+            out_shapes = list()
+            out_shapes.append(values)
+            return out_shapes
 
     @property
     def dtype(self):
-        dtype = self.layer.type.tensor_type.elem_type
-        return TENSOR_TYPE_TO_NP_TYPE[dtype]
+        if isinstance(self.layer, ValueInfoProto):
+            dtype = self.layer.type.tensor_type.elem_type
+            return TENSOR_TYPE_TO_NP_TYPE[dtype]
+        else:
+            dtype = self.layer.data_type
+            return TENSOR_TYPE_TO_NP_TYPE[dtype]
 
 
 class ONNXGraph(Graph):
@@ -165,18 +176,23 @@ class ONNXGraph(Graph):
         """
         build topo_sort of ONNX model
         """
-        data_node = self.place_holder_nodes[0]
-        value_info = self.value_infos[data_node]
-        input_shape = value_info['shape']
-        self.get_results_of_inference(self.onnx_model, input_shape)
+        data_nodes = self.place_holder_nodes
+        self.get_results_of_inference_rt(self.onnx_model, data_nodes)
+
         for layer in self.model.node:
             node = ONNXGraphNode(layer)
             self.node_map[layer.name] = node
             for opt in layer.output:
                 if opt in self.value_infos:
                     value_info = self.value_infos[opt]
-                    node.dtype = value_info['dtype']
-                    node.out_shapes.append(value_info['shape'])
+                    if len(value_info['shape']
+                           ) == 0 or value_info['dtype'] is None:
+                        _, dtype, shape = self.get_dynamic_shape(opt)
+                        node.dtype = dtype
+                        node.out_shapes.append(shape)
+                    else:
+                        node.dtype = value_info['dtype']
+                        node.out_shapes.append(value_info['shape'])
                 else:
                     _, dtype, shape = self.get_dynamic_shape(opt)
                     node.dtype = dtype
@@ -191,20 +207,40 @@ class ONNXGraph(Graph):
                     is_global_input=is_place_holder)
 
         #set data node's weight
-        for name, weight in self.graph_weights(self.model):
+        for initializer in self.model.initializer:
+            name = initializer.name
+            weight = to_array(initializer)
             if name in self.node_map:
                 if isinstance(self.node_map[name], ONNXGraphDataNode):
                     self.node_map[name].weight = weight
                     self.node_map[name].embeded_as = []
+            else:
+                self.node_map[name] = ONNXGraphDataNode(initializer,
+                                                        layer_name=name,
+                                                        is_global_input=False)
+                self.node_map[name].weight = weight
+                self.node_map[name].embeded_as = []
 
         #generate connection between nodes for topo
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 for idx, in_node in enumerate(node.layer.input):
                     if in_node not in self.node_map:
-                        raise Exception(
-                            'input[{}] of node[{}] does not exist in node_map'.
-                            format(in_node, layer_name))
+                        flag = 0
+                        for nd in self.model.node:
+                            for idx, opt in enumerate(nd.output):
+                                if opt == in_node:
+                                    self.connect(nd.name, layer_name)
+                                    flag = 1
+                                    print(nd.name + '->' + layer_name)
+                                    node.which_child[nd.name] = idx
+                                    break
+                            if flag == 1:
+                                break
+                        if flag == 0:
+                            raise Exception(
+                                'input[{}] of node[{}] does not exist in node_map'
+                                .format(in_node, layer_name))
                     else:
                         self.connect(in_node, layer_name)
         #generate topo
@@ -212,13 +248,14 @@ class ONNXGraph(Graph):
 
         self.input_nodes = self.place_holder_nodes
 
-    def get_nodes(self, names, copy=False):
-        """
-        get nodes by more than one name
-        """
-        nodes = []
-        for name in names:
-            nodes.add(self.get_node(name, copy=copy))
+    def get_input_node(self, node, idx=0, copy=False):
+        if len(node.which_child) == 0:
+            return super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+        else:
+            ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+            if ipt_node.layer_name in node.which_child:
+                ipt_node.index = node.which_child[ipt_node.layer_name]
+            return ipt_node
 
     def graph_weights(self, graph):
         """
@@ -270,7 +307,7 @@ class ONNXGraph(Graph):
             }
         return value_info
 
-    def get_results_of_inference(self, model, shape):
+    def get_results_of_inference(self, model, data_nodes):
         try:
             import torch
             version = torch.__version__
@@ -284,9 +321,11 @@ class ONNXGraph(Graph):
             return
         from x2paddle.decoder.onnx_backend import prepare
 
-        np_images = np.random.rand(shape[0], shape[1], shape[2],
-                                   shape[3]).astype('float32')
-
+        inputs = []
+        for data_node in data_nodes:
+            value_info = self.value_infos[data_node]
+            ipt = np.random.random(value_info['shape']).astype('float32')
+            inputs.append(ipt)
         outputs = []
         for node in model.graph.node:
             value_info = helper.make_tensor_value_info(node.name,
@@ -301,15 +340,46 @@ class ONNXGraph(Graph):
             prepared_backend = prepare(model,
                                        device='CPU',
                                        no_check_UNSAFE=True)
-            res = prepared_backend.run(inputs=np_images)
+            res = prepared_backend.run(inputs=inputs)
             for idx, info in enumerate(tmp_outputs):
                 self.results_of_inference[info.name] = res[idx]
             outputs = outputs[254:]
         return
 
+    def get_results_of_inference_rt(self, model, data_nodes):
+
+        import onnxruntime as rt
+
+        inputs = []
+        for data_node in data_nodes:
+            value_info = self.value_infos[data_node]
+            ipt = np.random.random(value_info['shape']).astype('float32')
+            inputs.append(ipt)
+
+        model = onnx.shape_inference.infer_shapes(model)
+        outputs = []
+        for value_info in model.graph.value_info:
+            outputs.append(value_info)
+
+        model.graph.ClearField('output')
+        model.graph.output.MergeFrom(outputs)
+        onnx.save(model, './onnx_model_infer.onnx')
+
+        sess = rt.InferenceSession('./onnx_model_infer.onnx')
+        inputs_dict = {}
+
+        for i, ipt in enumerate(inputs):
+            inputs_dict[sess.get_inputs()[i].name] = ipt
+
+        res = sess.run(None, input_feed=inputs_dict)
+
+        for idx, info in enumerate(outputs):
+            self.results_of_inference[info.name] = res[idx]
+        return
+
     def get_dynamic_shape(self, layer):
         """
-        get dynamic shape from caffe2.backend
+        get dynamic shape from infer_result
         """
         output = self.results_of_inference[layer]
         return output.tolist(), output.dtype, output.shape
@@ -334,8 +404,8 @@ class ONNXDecoder(object):
         self.standardize_variable_name(model.graph)
 
         self.model = model
-        graph_def = model.graph
-        self.onnx_graph = ONNXGraph(graph_def, model)
+        graph = model.graph
+        self.onnx_graph = ONNXGraph(graph, model)
         self.onnx_graph.build()
 
     def build_value_refs(self, nodes):
@@ -476,7 +546,7 @@ class ONNXDecoder(object):
 
         if name == '':
             raise ValueError('name should not be empty')
-        for s in ' .*?\\/-:':  #
+        for s in ' .*?\\/-:':
             name = name.replace(s, '_')
         return '_' + name
 
@@ -499,46 +569,3 @@ class ONNXDecoder(object):
                 node.input[i] = self.make_variable_name(node.input[i])
             for i in range(len(node.output)):
                 node.output[i] = self.make_variable_name(node.output[i])
-
-    def split_model(self, model, outputs=None):
-        """
-        Takes a model and changes its outputs.
-        """
-        if outputs is None:
-            raise RuntimeError("outputs is None")
-        if outputs == model.graph.output[0].name:
-            return model
-        nodes = model.graph.node
-        keep_nodes = []
-
-        # all the nodes we need to keep.
-        for node in nodes:
-            if outputs in node.output:
-                keep_nodes.append(node)
-                break
-            keep_nodes.append(node)
-
-        infer_shapes = onnx.shape_inference.infer_shapes(model)
-
-        var_out = []
-        for value_info in infer_shapes.graph.value_info:
-            if value_info.name == outputs:
-                var_out.append(value_info)
-                break
-
-        graph = helper.make_graph(keep_nodes, model.graph.name,
-                                  model.graph.input, var_out,
-                                  model.graph.initializer)
-
-        onnx_model = helper.make_model(graph)
-        onnx_model.ir_version = model.ir_version
-        onnx_model.producer_name = model.producer_name
-        onnx_model.producer_version = model.producer_version
-        onnx_model.domain = model.domain
-        onnx_model.model_version = model.model_version
-        onnx_model.doc_string = model.doc_string
-
-        if len(onnx_model.graph.input) != len(model.graph.input):
-            raise RuntimeError("Input mismatch {} != {}".format(
-                len(onnx_model.input), len(model.input)))
-        return onnx_model
