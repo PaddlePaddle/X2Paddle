@@ -14,7 +14,10 @@
 
 # TODO useless node remove
 from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+from x2paddle.core.fluid_code import Layer
 from x2paddle.core.util import *
+import numpy
+import copy as cp
 
 
 class TFOptimizer(object):
@@ -26,10 +29,12 @@ class TFOptimizer(object):
     }
     layers_with_act = [
         'Conv2D', 'BiasAdd', 'DepthwiseConv2dNative', 'Conv2DBackpropInput',
-        'FusedBatchNorm'
+        'FusedBatchNorm', 'conv2d', 'elementwise_add', 'conv2d_transpose',
+        'batch_norm'
     ]
     layers_with_bias = [
-        'Conv2D', 'DepthwiseConv2dNative', 'Conv2DBackpropInput'
+        'Conv2D', 'DepthwiseConv2dNative', 'Conv2DBackpropInput', 'conv2d',
+        'conv2d_transpose'
     ]
 
     def __init__(self, op_mapper):
@@ -40,15 +45,62 @@ class TFOptimizer(object):
         for node_name in self.graph.topo_sort:
             if node_name in self.op_mapper.omit_nodes:
                 node = self.graph.get_node(node_name)
+                if node is None:
+                    continue
                 omit_freq = self.op_mapper.omit_nodes.count(node_name)
                 if len(node.outputs) <= omit_freq:
                     node.fluid_code.clear()
 
-    # TODO activation merge
+                    # remove node from graph
+                    input_names = node.inputs
+                    output_names = node.outputs
+                    for in_name in input_names:
+                        in_node = self.graph.get_node(in_name)
+                        index = in_node.outputs.index(node_name)
+                        del in_node.outputs[index]
+                    for out_name in output_names:
+                        out_node = self.graph.get_node(out_name)
+                        index = out_node.inputs.index(node_name)
+                        del out_node.inputs[index]
+                    del self.graph.node_map[node_name]
+
+    def strip_graph(self):
+        visited_nodes = set()
+
+        def visit(node_name):
+            if node_name in visited_nodes:
+                return
+            visited_nodes.add(node_name)
+            input_names = self.graph.get_node(node_name).inputs
+            for in_name in input_names:
+                visit(in_name)
+
+        for node_name in self.graph.output_nodes:
+            visit(node_name)
+
+        for i, node_name in enumerate(self.graph.topo_sort):
+            if node_name not in visited_nodes:
+                node = self.graph.get_node(node_name)
+                if node is None:
+                    continue
+                input_names = node.inputs
+                output_names = node.outputs
+                for in_name in input_names:
+                    in_node = self.graph.get_node(in_name)
+                    index = in_node.outputs.index(node_name)
+                    del in_node.outputs[index]
+                for out_name in output_names:
+                    out_node = self.graph.get_node(out_name)
+                    index = out_node.inputs.index(node_name)
+                    del out_node.inputs[index]
+                del self.graph.node_map[node_name]
+
     def merge_activation(self):
         act_nodes = list()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if node.layer_type in self.activation_ops:
                 act_nodes.append(node_name)
 
@@ -65,16 +117,22 @@ class TFOptimizer(object):
                 continue
             if len(input.outputs) != 1:
                 continue
-            input.fluid_code.layers[-1].param_attr['act'] = string(
+            index = -1
+            for i in range(len(input.fluid_code.layers)):
+                if input.fluid_code.layers[i].op in self.layers_with_act:
+                    index = i
+                    break
+            input.fluid_code.layers[index].param_attr['act'] = string(
                 self.activation_ops[node.layer_type])
             input.fluid_code.layers[-1].output = node.fluid_code.layers[
                 0].output
             self.graph.remove_node(act_node_name)
 
-    # TODO bias merge
     def merge_bias(self):
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if node.layer_type == "BiasAdd":
                 input = self.graph.get_node(node.inputs[0])
                 if input.layer_type not in self.layers_with_bias:
@@ -87,21 +145,518 @@ class TFOptimizer(object):
                 if 'act' in node.fluid_code.layers[-1].param_attr:
                     bias_with_act = True
                 layer_with_act = False
+                index = -1
+                for i in range(len(input.fluid_code.layers)):
+                    if input.fluid_code.layers[i].op in self.layers_with_bias:
+                        index = i
+                        break
                 if 'act' in input.fluid_code.layers[
-                        -1].param_attr and input.fluid_code.layers[
-                            -1].param_attr['act'] is not None:
+                        index].param_attr and input.fluid_code.layers[
+                            index].param_attr['act'] is not None:
                     layer_with_act = True
 
                 if bias_with_act and layer_with_act:
                     continue
-                if not input.fluid_code.layers[-1].param_attr['bias_attr']:
+                if not input.fluid_code.layers[index].param_attr['bias_attr']:
                     bias_name = node.inputs[1]
-                    input.fluid_code.layers[-1].param_attr[
+                    input.fluid_code.layers[index].param_attr[
                         'bias_attr'] = string(bias_name)
                     input.fluid_code.layers[-1].output = node.fluid_code.layers[
                         0].output
                     if bias_with_act:
-                        input.fluid_code.layers[-1].param_attr[
+                        input.fluid_code.layers[index].param_attr[
                             'act'] = node.fluid_code.layers[-1].param_attr[
                                 'act']
                     node.fluid_code.clear()
+                    self.graph.remove_node(node.layer_name)
+
+    def remove_transpose(self):
+        graph_copy = cp.deepcopy(self.graph)
+        nhwc_insensitive_ops = [
+            'Relu', 'Relu6', 'Abs', 'Sigmoid', 'Exp', 'Rsqrt', 'swish_f32',
+            'LeakyRelu', 'Cast'
+        ]
+        elementwise_ops = [
+            'Sub', 'Add', 'RealDiv', 'Maximum', 'Mul', 'FloorDiv',
+            'GreaterEqual'
+        ]
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in nhwc_insensitive_ops:
+                graph_copy.remove_node(node_name)
+
+        optimize_ops = [
+            'Conv2D', 'MaxPool', 'FusedBatchNorm', 'DepthwiseConv2dNative',
+            'AvgPool', 'Pad', 'Conv2DBackpropInput', 'ResizeNearestNeighbor',
+            'ResizeBilinear', "Placeholder"
+        ]
+
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in elementwise_ops:
+                is_nhwc = True
+                for in_name in node.inputs:
+                    in_node = graph_copy.get_node(in_name)
+                    if hasattr(in_node, "is_nhwc"):
+                        if not in_node.is_nhwc:
+                            is_nhwc = False
+                    else:
+                        if len(in_node.fluid_code.layers) < 2:
+                            is_nhwc = False
+                            continue
+                        if in_node.fluid_code.layers[
+                                -1].op != "transpose" or in_node.fluid_code.layers[
+                                    -1].param_attr["perm"] != [0, 2, 3, 1]:
+                            is_nhwc = False
+                            continue
+                node.is_nhwc = is_nhwc
+
+        for i in range(len(self.graph.topo_sort)):
+            node_name = self.graph.topo_sort[-1 * i - 1]
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in elementwise_ops:
+                can_be_removed = True
+                if len(node.fluid_code.layers) > 1:
+                    can_be_removed = False
+                if not node.is_nhwc:
+                    can_be_removed = False
+                for out_name in node.outputs:
+                    out_node = graph_copy.get_node(out_name)
+                    if hasattr(out_node, "is_nhwc"):
+                        if not out_node.is_nhwc:
+                            can_be_removed = False
+                    else:
+                        if len(out_node.fluid_code.layers) < 2:
+                            can_be_removed = False
+                            break
+                        if out_node.fluid_code.layers[
+                                0].op != "transpose" or out_node.fluid_code.layers[
+                                    0].param_attr["perm"] != [0, 3, 1, 2]:
+                            can_be_removed = False
+                            break
+                node.can_be_removed = can_be_removed
+
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in optimize_ops:
+                if node.fluid_code.layers[
+                        -1].op != "transpose" or node.fluid_code.layers[
+                            -1].param_attr["perm"] != [0, 2, 3, 1]:
+                    continue
+                can_be_removed = True
+                output_names = node.outputs
+                for out_name in output_names:
+                    out_node = graph_copy.get_node(out_name)
+                    if hasattr(out_node, "can_be_removed"):
+                        if not out_node.can_be_removed:
+                            can_be_removed = False
+                            break
+                    elif out_node.fluid_code.layers[
+                            0].op != "transpose" or out_node.fluid_code.layers[
+                                0].param_attr["perm"] != [0, 3, 1, 2]:
+                        can_be_removed = False
+                        break
+                if can_be_removed and len(node.fluid_code.layers) > 1:
+                    true_node = self.graph.get_node(node_name)
+                    if true_node.layer_type == "Placeholder":
+                        index = self.graph.input_nodes.index(
+                            true_node.fluid_code.layers[-2].output)
+                        if isinstance(true_node.fluid_code.layers[-1].output,
+                                      str):
+                            self.graph.input_nodes[
+                                index] = true_node.fluid_code.layers[-1].output
+                        else:
+                            self.graph.input_nodes[
+                                index] = true_node.fluid_code.layers[
+                                    -1].output.layer_name
+                    true_node.fluid_code.layers[
+                        -2].output = true_node.fluid_code.layers[-1].output
+                    node.removed = True
+                    del true_node.fluid_code.layers[-1]
+                    for out_name in output_names:
+                        out_node = self.graph.get_node(out_name)
+                        if out_node.layer_type in elementwise_ops:
+                            continue
+                        out_node.fluid_code.layers[
+                            1].inputs = out_node.fluid_code.layers[0].inputs
+                        del out_node.fluid_code.layers[0]
+
+        for node_name in self.graph.topo_sort:
+            node = graph_copy.get_node(node_name)
+            if node is None:
+                continue
+            if node.layer_type in elementwise_ops:
+                if not node.can_be_removed:
+                    true_node = self.graph.get_node(node_name)
+                    for i, in_name in enumerate(node.inputs):
+                        in_node = graph_copy.get_node(in_name)
+                        if hasattr(in_node, "is_nhwc") and in_node.is_nhwc:
+                            if i == 0:
+                                l = Layer()
+                                l.op = "transpose"
+                                l.inputs = true_node.fluid_code.layers[
+                                    0].inputs["x"]
+                                l.param_attr = {"perm": [0, 2, 3, 1]}
+                                l.output = "nhwc_" + l.inputs.layer_name
+                                true_node.fluid_code.layers[0].inputs[
+                                    "x"] = l.output
+                                true_node.fluid_code.layers.insert(0, l)
+                            elif i == 1:
+                                l = Layer()
+                                l.op = "transpose"
+                                l.inputs = true_node.fluid_code.layers[
+                                    0].inputs["y"]
+                                l.param_attr = {"perm": [0, 2, 3, 1]}
+                                l.output = "nhwc_" + l.inputs.layer_name
+                                true_node.fluid_code.layers[0].inputs[
+                                    "y"] = l.output
+                                true_node.fluid_code.layers.insert(0, l)
+                            else:
+                                raise Exception("Unexpected situation happend")
+                    continue
+                else:
+                    for out_name in node.outputs:
+                        out_node = self.graph.get_node(out_name)
+                        if out_node.layer_type not in elementwise_ops:
+                            assert out_node.fluid_code.layers[
+                                0].op == "transpose", "unexpected situation happend"
+                            out_node.fluid_code.layers[
+                                1].inputs = out_node.fluid_code.layers[0].inputs
+                            del out_node.fluid_code.layers[0]
+
+    def make_nchw_input_output(self):
+        for i, name in enumerate(self.graph.input_nodes):
+            node = self.graph.get_node(name)
+            if len(node.out_shapes[0]) == 4 and node.tf_data_format == "NHWC":
+                shape = node.fluid_code.layers[0].param_attr["shape"]
+                shape = [shape[i] for i in [0, 3, 1, 2]]
+                node.fluid_code.layers[0].param_attr["shape"] = shape
+                node.fluid_code.layers[0].output = "nhwc_" + name
+                attr = {"perm": [0, 2, 3, 1]}
+                node.fluid_code.add_layer("transpose",
+                                          inputs="nhwc_" + name,
+                                          output=node,
+                                          param_attr=attr)
+                self.graph.input_nodes[i] = "nhwc_" + name
+        for i, name in enumerate(self.graph.output_nodes):
+            node = self.graph.get_node(name)
+            if node.layer_type != "transpose":
+                if node.fluid_code.layers[-1].op == "transpose":
+                    node.fluid_code.layers[-2].output = name
+                    del node.fluid_code.layers[-1]
+
+    def merge_batch_norm(self):
+        for i, name in enumerate(self.graph.topo_sort):
+            node = self.graph.get_node(name)
+            if node is None:
+                continue
+            is_batch_norm = True
+            if node.layer_type == "Add":
+                in_nodes0 = [
+                    self.graph.get_node(in_name) for in_name in node.inputs
+                ]
+                if in_nodes0[0].layer_type != "Mul" or in_nodes0[
+                        1].layer_type != "Sub":
+                    is_batch_norm = False
+                    continue
+
+                in_nodes1 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes0[0].inputs
+                ]
+                in_nodes2 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes0[1].inputs
+                ]
+                if len(in_nodes1[0].out_shapes[0]) != 4:
+                    is_batch_norm = False
+                    continue
+                if in_nodes1[1].layer_type != "Mul":
+                    is_batch_norm = False
+                    continue
+
+                if in_nodes2[0].layer_type != "Const" or in_nodes2[
+                        1].layer_type != "Mul":
+                    is_batch_norm = False
+                    continue
+
+                in_nodes3 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes1[1].inputs
+                ]
+                if in_nodes3[0].layer_type != "Rsqrt" or in_nodes3[
+                        1].layer_type != "Const":
+                    is_batch_norm = False
+                    continue
+
+                in_nodes4 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes2[1].inputs
+                ]
+                if in_nodes4[0].layer_type != "Const" or in_nodes4[
+                        1].layer_name != in_nodes1[1].layer_name:
+                    is_batch_norm = False
+                    continue
+
+                in_nodes5 = self.graph.get_node(in_nodes3[0].inputs[0])
+                if in_nodes5.layer_type != "Add":
+                    is_batch_norm = False
+                    continue
+
+                in_nodes6 = [
+                    self.graph.get_node(in_name) for in_name in in_nodes5.inputs
+                ]
+                if in_nodes6[0].layer_type != "Const" or in_nodes6[
+                        1].layer_type != "Const":
+                    is_batch_norm = False
+                    continue
+
+                if len(in_nodes0[0].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes0[1].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes1[1].outputs) != 2:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes2[0].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes2[1].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes3[0].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes3[1].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes4[0].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes5.outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes6[0].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+                if len(in_nodes6[1].outputs) != 1:
+                    is_batch_norm = False
+                    continue
+
+                conv_shape = in_nodes1[0].out_shapes[0]
+                if conv_shape[3] < 0:
+                    is_batch_norm = False
+                    continue
+
+                # moving_variance
+                if in_nodes6[0].value.size != conv_shape[3]:
+                    is_batch_norm = False
+                    continue
+
+                # epsilon
+                if in_nodes6[1].value.size != 1:
+                    is_batch_norm = False
+                    continue
+
+                # gamma
+                if in_nodes3[1].value.size != conv_shape[3]:
+                    is_batch_norm = False
+                    continue
+
+                # moving_mean
+                if in_nodes4[0].value.size != conv_shape[3]:
+                    is_batch_norm = False
+                    continue
+
+                # beta
+                if in_nodes2[0].value.size != conv_shape[3]:
+                    is_batch_norm = False
+                    continue
+
+                if is_batch_norm:
+                    index = in_nodes1[0].outputs.index(in_nodes0[0].layer_name)
+                    del in_nodes1[0].outputs[index]
+                    node.layer_type = "FusedBatchNorm"
+                    node.inputs = [in_nodes1[0].layer_name]
+                    node.outputs = node.outputs
+                    act = node.fluid_code.layers[-1].param_attr.get("act", None)
+                    node.fluid_code.clear()
+                    attr = {
+                        "epsilon": in_nodes6[1].value,
+                        "param_attr": string(in_nodes3[1].layer_name),
+                        "bias_attr": string(in_nodes2[0].layer_name),
+                        "moving_mean_name": string(in_nodes4[0].layer_name),
+                        "moving_variance_name": string(in_nodes6[0].layer_name),
+                        "is_test": True,
+                        "act": act
+                    }
+
+                    node.fluid_code.add_layer(
+                        "batch_norm",
+                        inputs=in_nodes1[0].fluid_code.layers[-1].output,
+                        output=node,
+                        param_attr=attr)
+
+                del self.graph.node_map[in_nodes0[0].layer_name]
+                del self.graph.node_map[in_nodes0[1].layer_name]
+                del self.graph.node_map[in_nodes1[1].layer_name]
+                del self.graph.node_map[in_nodes2[1].layer_name]
+                del self.graph.node_map[in_nodes3[0].layer_name]
+                del self.graph.node_map[in_nodes4[0].layer_name]
+                del self.graph.node_map[in_nodes5.layer_name]
+
+    def merge_prelu(self):
+        for i, name in enumerate(self.graph.topo_sort):
+            node = self.graph.get_node(name)
+            if node is None:
+                continue
+            is_prelu = True
+            if node.layer_type == "Add":
+                in_nodes0 = [
+                    self.graph.get_node(in_name) for in_name in node.inputs
+                ]
+                if in_nodes0[0].layer_type != "Relu" or in_nodes0[
+                        1].layer_type != "Mul":
+                    is_prelu = False
+                    continue
+                if len(in_nodes0[0].outputs) != 1 or len(
+                        in_nodes0[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+
+                in_nodes1 = self.graph.get_node(in_nodes0[0].inputs[0])
+                in_nodes2 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes0[1].inputs
+                ]
+                if in_nodes2[1].layer_type != "Const" or numpy.fabs(
+                        in_nodes2[1].value - 0.5) > 1e-06:
+                    is_prelu = False
+                    continue
+                if in_nodes2[0].layer_type != "Mul":
+                    is_prelu = False
+                    continue
+                if len(in_nodes2[1].outputs) != 1 or len(
+                        in_nodes2[0].outputs) != 1:
+                    is_prelu = False
+                    continue
+
+                in_nodes3 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes2[0].inputs
+                ]
+                if in_nodes3[0].layer_type != "Const" or in_nodes3[
+                        1].layer_type != "Sub":
+                    is_prelu = False
+                    continue
+                if len(in_nodes3[0].outputs) != 1 or len(
+                        in_nodes3[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+
+                in_nodes4 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes3[1].inputs
+                ]
+                if in_nodes4[0].layer_name != in_nodes1.layer_name or in_nodes4[
+                        1].layer_type != "Abs":
+                    is_prelu = False
+                    continue
+                if len(in_nodes4[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+
+                in_nodes5 = self.graph.get_node(in_nodes4[1].inputs[0])
+                if in_nodes5.layer_name != in_nodes1.layer_name:
+                    is_prelu = False
+                    continue
+
+                if len(in_nodes0[0].outputs) != 1:
+                    is_prelu = false
+                    continue
+                if len(in_nodes0[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+                if len(in_nodes1.outputs) < 3:
+                    is_prelu = False
+                    continue
+                if len(in_nodes2[0].outputs) != 1:
+                    is_prelu = false
+                    continue
+                if len(in_nodes2[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+                if len(in_nodes3[0].outputs) != 1:
+                    is_prelu = False
+                    continue
+                if len(in_nodes3[1].outputs) != 1:
+                    is_prelu = false
+                    continue
+                if len(in_nodes4[1].outputs) != 1:
+                    is_prelu = False
+                    continue
+
+                mode = None
+                in_shape = in_nodes1.out_shapes[0]
+                if in_shape == list(in_nodes3[0].value.shape):
+                    mode = "element"
+                elif len(in_nodes3[0].value.shape) == 0:
+                    mode = "all"
+                elif len(in_nodes3[0].value.shape
+                         ) == 1 and in_nodes3[0].value.shape[0] == 1:
+                    mode = "all"
+                elif len(in_shape) == 4 and len(
+                        in_nodes3[0].value.shape
+                ) == 1 and in_nodes3[0].value.shape[0] == in_shape[-1]:
+                    mode = "channel"
+                    weight = self.op_mapper.weights[in_nodes3[0].layer_name]
+                    weight = numpy.expand_dims(weight, 0)
+                    weight = numpy.expand_dims(weight, 2)
+                    weight = numpy.expand_dims(weight, 3)
+                    self.op_mapper.weights[in_nodes3[0].layer_name] = weight
+                    in_nodes3[0].fluid_code.layers[0].param_attr["shape"] = [
+                        1, in_shape[-1], 1, 1
+                    ]
+                else:
+                    is_prelu = False
+                    continue
+
+                if is_prelu:
+                    index = in_nodes1.outputs.index(in_nodes0[0].layer_name)
+                    del in_nodes1.outputs[index]
+                    index = in_nodes1.outputs.index(in_nodes3[1].layer_name)
+                    del in_nodes1.outputs[index]
+                    index = in_nodes1.outputs.index(in_nodes4[1].layer_name)
+                    del in_nodes1.outputs[index]
+
+                    node.layer_type = "Prelu"
+                    node.inputs = [in_nodes1.layer_name]
+                    node.outputs = node.outputs
+                    act = node.fluid_code.layers[-1].param_attr.get("act", None)
+                    node.fluid_code.clear()
+                    attr = {
+                        "mode": string(mode),
+                        "param_attr": string(in_nodes3[0].layer_name)
+                    }
+
+                    node.fluid_code.add_layer(
+                        "prelu",
+                        inputs=in_nodes1.fluid_code.layers[-1].output,
+                        output=node,
+                        param_attr=attr)
+                del self.graph.node_map[in_nodes0[0].layer_name]
+                del self.graph.node_map[in_nodes0[1].layer_name]
+                del self.graph.node_map[in_nodes2[0].layer_name]
+                del self.graph.node_map[in_nodes2[1].layer_name]
+                del self.graph.node_map[in_nodes3[1].layer_name]
+                del self.graph.node_map[in_nodes4[1].layer_name]

@@ -85,7 +85,7 @@ class Graph(object):
                 node.index = int(idx)
                 return node
             else:
-                raise Exception("Graph doesn't have node [%s]." % name)
+                return None
         else:
             if copy:
                 node = cp.copy(self.node_map[name])

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import paddle.fluid as fluid
 from paddle.fluid.proto import framework_pb2
 from x2paddle.core.util import *
 import inspect
@@ -44,6 +45,28 @@ def export_paddle_param(param, param_name, dir):
     fp.write(tensor_desc.SerializeToString())
     param.tofile(fp)
     fp.close()
+
+
+# This func will copy to generate code file
+def run_net(param_dir="./"):
+    import os
+    inputs, outputs = x2paddle_net()
+    for i, out in enumerate(outputs):
+        if isinstance(out, list):
+            for out_part in out:
+                outputs.append(out_part)
+            del outputs[i]
+    exe = fluid.Executor(fluid.CPUPlace())
+    exe.run(fluid.default_startup_program())
+
+    def if_exist(var):
+        b = os.path.exists(os.path.join(param_dir, var.name))
+        return b
+
+    fluid.io.load_vars(exe,
+                       param_dir,
+                       fluid.default_main_program(),
+                       predicate=if_exist)
 
 
 class OpMapper(object):
@@ -97,6 +120,11 @@ class OpMapper(object):
         import model
         try:
             inputs, outputs = model.x2paddle_net()
+            for i, out in enumerate(outputs):
+                if isinstance(out, list):
+                    for out_part in out:
+                        outputs.append(out_part)
+                    del outputs[i]
             input_names = [input.name for input in inputs]
             exe = fluid.Executor(fluid.CPUPlace())
             exe.run(fluid.default_startup_program())
@@ -143,6 +171,8 @@ class OpMapper(object):
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
+            if node is None:
+                continue
             if len(node.fluid_code.layers) == 0:
                 continue
             self.add_codes(node.fluid_code.gen_codes(), 1)

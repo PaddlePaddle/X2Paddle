@@ -15,7 +15,6 @@
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
 from tensorflow.python.framework import tensor_util
-from tensorflow.python.platform import gfile
 from tensorflow.core.framework import attr_value_pb2
 import tensorflow as tf
 import copy as cp
@@ -39,7 +38,7 @@ class TFGraphNode(GraphNode):
         self.pd_data_format = "NCHW"
         self.fluid_code = FluidCode()
 
-        self.dtype_map = {1: "float32", 3: "int32", 4: "int8", 9: "int64"}
+        self.dtype_map = {1: "float32", 3: "int32", 4: "uint8", 9: "int64"}
 
     @property
     def out_shapes(self):
@@ -52,7 +51,11 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        dtype = self.layer.attr["dtype"].type
+        keys = ['dtype', 'Tidx', 'T', 'DstT']
+        for k in keys:
+            dtype = self.layer.attr[k].type
+            if dtype > 0:
+                break
         if dtype not in self.dtype_map:
             raise Exception("Dtype[{}] not in dtype_map".format(dtype))
         return self.dtype_map[dtype]
@@ -125,6 +128,8 @@ class TFGraph(Graph):
             items[0] = self.identity_map[items[0]]
         new_node_name = ":".join(items)
         node = super(TFGraph, self).get_node(new_node_name, copy)
+        if node is None:
+            return None
         if len(items) == 1 and node.layer_type in self.multi_out_ops:
             node.index = 0
         return node
@@ -134,7 +139,7 @@ class TFGraph(Graph):
             raise Exception("Node[{}] not in graph".format(node_name))
         inputs = self.node_map[node_name].inputs
         outputs = self.node_map[node_name].outputs
-        assert len(inputs) == 1
+        #        assert len(inputs) == 1
         input_node = self.node_map[inputs[0]]
         idx = input_node.outputs.index(node_name)
         del input_node.outputs[idx]
@@ -171,7 +176,7 @@ class TFGraph(Graph):
     def _remove_identity_node(self):
         identity_node = list()
         for node_name, node in self.node_map.items():
-            if node.layer_type == "Identity":
+            if node.layer_type == "Identity" or node.layer_type == "StopGradient":
                 identity_node.append(node_name)
 
         for node_name in identity_node:
@@ -198,18 +203,29 @@ class TFGraph(Graph):
 
 
 class TFDecoder(object):
-    def __init__(self, pb_model, data_format="NHWC"):
-        self.sess = tf.Session()
+    def __init__(self, pb_model, data_format="NHWC", define_input_shape=False):
+        try:
+            self.sess = tf.compat.v1.Session()
+        except:
+            self.sess = tf.Session()
         self.input_info = dict()
-        with gfile.FastGFile(pb_model, 'rb') as f:
-            graph_def = tf.GraphDef()
+        self.define_input_shape = define_input_shape
+        with open(pb_model, 'rb') as f:
+            try:
+                graph_def = tf.compat.v1.GraphDef()
+            except:
+                graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             input_map = self._check_input_shape(graph_def)
             self._fix_output_shape(graph_def)
             self.sess.graph.as_default()
             tf.import_graph_def(graph_def, name='', input_map=input_map)
 
-        self.sess.run(tf.global_variables_initializer())
+        try:
+            initializer = tf.compat.v1.global_variables_initializer()
+        except:
+            initializer = tf.global_variables_initializer()
+        self.sess.run(initializer)
 
         self.tf_graph = TFGraph(
             self.sess.graph._as_graph_def(add_shapes=True)[0], data_format)
@@ -229,10 +245,14 @@ class TFDecoder(object):
             if layer.op != "Placeholder":
                 continue
             graph_node = TFGraphNode(layer)
-            dtype = graph_node.dtype
+            dtype = graph_node.layer.attr['dtype'].type
 
             need_define_shape = 0
-            if not graph_node.get_attr("shape"):
+            if self.define_input_shape:
+                need_define_shape = 3
+            elif graph_node.layer.attr[
+                    'shape'].shape.unknown_rank or not graph_node.get_attr(
+                        "shape"):
                 need_define_shape = 1
             else:
                 value = graph_node.layer.attr["shape"].shape
@@ -241,12 +261,20 @@ class TFDecoder(object):
                     need_define_shape = 2
 
             if need_define_shape > 0:
+                shape = None
+                if graph_node.get_attr("shape"):
+                    value = value = graph_node.layer.attr["shape"].shape
+                    shape = [dim.size for dim in value.dim]
                 if need_define_shape == 1:
                     print("Unknown shape for input tensor[tensor name: \"{}\"]".
                           format(layer.name))
-                else:
+                elif need_define_shape == 2:
                     print(
                         "\nShape[now is {}] for input tensor[tensor name: \"{}\"] not support yet"
+                        .format(shape, layer.name))
+                else:
+                    print(
+                        "Define shape[now is {}] for input tensor[tensor name: \"{}\']"
                         .format(shape, layer.name))
                 print(
                     "Use your keyboard type the shape of input tensor below :)")
@@ -264,12 +292,20 @@ class TFDecoder(object):
                     for dim in shape.strip().split(',')
                 ]
                 assert shape.count(None) <= 1, "Only one dimension can be None"
-                x2paddle_input = tf.placeholder(dtype=dtype,
-                                                shape=shape,
-                                                name="x2paddle_{}".format(
-                                                    layer.name))
+                try:
+                    x2paddle_input = tf.compat.v1.placeholder(
+                        dtype=dtype,
+                        shape=shape,
+                        name="x2paddle_{}".format(layer.name))
+                except:
+                    x2paddle_input = tf.placeholder(dtype=dtype,
+                                                    shape=shape,
+                                                    name="x2paddle_{}".format(
+                                                        layer.name))
+
                 input_map["{}:0".format(layer.name)] = x2paddle_input
-                shape[shape.index(None)] = -1
+                if shape.count(None) > 0:
+                    shape[shape.index(None)] = -1
                 self.input_info["x2paddle_{}".format(layer.name)] = (shape,
                                                                      dtype)
             else:
@@ -282,7 +318,6 @@ class TFDecoder(object):
     # trick method
     # should be removed after PaddlePaddle V1.6 been released
     def infer_tensor(self, graph_node):
-        print("========== Use infer_tensor for tensor: ", graph_node.layer.name)
         if hasattr(graph_node, "index"):
             tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
         else:
@@ -298,8 +333,6 @@ class TFDecoder(object):
         return self.sess.run([output_tensor], feed)[0]
 
     def infer_shape_tensor(self, graph_node, out_shape=None):
-        print("========== Use infer_shape_tensor for tensor: ",
-              graph_node.layer.name)
         if hasattr(graph_node, "index"):
             tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
         else:
@@ -341,3 +374,38 @@ class TFDecoder(object):
             return results[0].tolist()
         else:
             raise Exception("Couldn't infer a stable shape shape tensor value")
+
+    def infer_tensor_shape(self, graph_node):
+        if hasattr(graph_node, "index"):
+            tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
+        else:
+            tensor_name = graph_node.layer.name + ":0"
+        feed = dict()
+        batch_size = [2, 3, 5]
+        shapes = list()
+        for b in batch_size:
+            for input_name, info in self.input_info.items():
+                (shape, dtype) = cp.deepcopy(info)
+                input_tensor = self.sess.graph.get_tensor_by_name(input_name +
+                                                                  ":0")
+                if shape.count(-1) > 0:
+                    shape[shape.index(-1)] = b
+                feed[input_tensor] = numpy.random.random_sample(shape)
+            output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
+            shape = self.sess.run([output_tensor], feed)[0].shape
+            shapes.append(numpy.array(shape))
+
+        compare01 = (shapes[0] == shapes[1])
+        compare12 = (shapes[1] == shapes[2])
+
+        if compare01.all() and compare12.all():
+            return shape[0].tolist()
+
+        if (compare01 == compare12).all():
+            index = numpy.argwhere(compare01 == False).flatten()
+            if index.shape[0] != 1:
+                raise Exception("There's not only one unstable dimension")
+            if index[0] != 0:
+                raise Exception("Batch size not in the first dimension")
+            shapes[0][0] = -1
+            return shapes[0].tolist()
