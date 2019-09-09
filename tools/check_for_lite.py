@@ -1,4 +1,4 @@
-import urllib
+from six.moves import urllib
 import sys
 from paddle.fluid.framework import Program
 
