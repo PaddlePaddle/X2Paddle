@@ -129,6 +129,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     ver_str = gpb.__version__.replace('.', '')
     ver_int = int(ver_str[0:2])
     assert ver_int >= 36, 'The version of protobuf must be larger than 3.6.0!'
+    
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
