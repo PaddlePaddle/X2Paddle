@@ -24,6 +24,8 @@ import sys
 def get_same_padding(in_size, kernel_size, stride):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
+    if pad_size < 0:
+        pad_size = 0
     pad0 = int(pad_size / 2)
     pad1 = pad_size - pad0
     return [pad0, pad1]
@@ -500,6 +502,7 @@ class TFOpMapperNHWC(OpMapper):
     def Reshape(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         param = self.graph.get_node(node.layer.input[1], copy=True)
+        is_variable = False
         if param.layer_type == "Const":
             attr = {"shape": param.value.tolist()}
             self.add_omit_nodes(param.layer_name, node.layer_name)
@@ -527,6 +530,24 @@ class TFOpMapperNHWC(OpMapper):
                     new_param += (node.layer_name + "[{}]".format(i) + ", ")
                 new_param = new_param.strip(", ") + "]"
                 attr = {"shape": new_param}
+                is_variable = True
+        # to change [192, -1]->[-1, 192], allways put -1 in the first dimension
+        # optimization for Paddle-Lite
+        in_shape = input.out_shapes[0]
+        if not is_variable and in_shape.count(-1) < 1:
+            total_size = 1
+            for i in range(len(in_shape)):
+                total_size *= in_shape[i]
+            for i in range(len(attr["shape"])):
+                if attr["shape"][i] == 0:
+                    attr["shape"][i] = in_shape[i]
+                if attr["shape"][i] != -1:
+                    total_size /= attr["shape"][i]
+            if attr["shape"].count(-1) > 0:
+                index = attr["shape"].index(-1)
+                attr["shape"][index] = int(total_size)
+                attr["shape"][0] = -1
+
         node.fluid_code.add_layer("reshape",
                                   inputs=input,
                                   output=node,

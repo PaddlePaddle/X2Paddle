@@ -106,6 +106,8 @@ def tf2paddle(model_path,
         # optimizer below is experimental
         optimizer.merge_activation()
         optimizer.merge_bias()
+        optimizer.merge_batch_norm()
+        optimizer.merge_prelu()
     else:
         mapper = TFOpMapperNHWC(model)
         optimizer = TFOptimizer(mapper)
@@ -177,6 +179,9 @@ def main():
             x2paddle.__version__))
         return
 
+    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
+    assert args.save_dir is not None, "--save_dir is not defined"
+
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
@@ -185,8 +190,6 @@ def main():
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
-    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
-    assert args.save_dir is not None, "--save_dir is not defined"
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"

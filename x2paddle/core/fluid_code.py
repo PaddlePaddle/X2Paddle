@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode
-import collections
 from x2paddle.core.util import *
+import collections
+import six
 
 
 class Layer(object):
@@ -28,7 +29,7 @@ class Layer(object):
     def get_code(self):
         layer_code = ""
         if self.output is not None:
-            if isinstance(self.output, str):
+            if isinstance(self.output, six.string_types):
                 layer_code = self.output + " = "
             else:
                 layer_code = self.output.layer_name + " = "
@@ -47,7 +48,7 @@ class Layer(object):
                                     "[{}]".format(input.index) + ", ")
                     else:
                         in_list += (input.layer_name + ", ")
-                elif isinstance(input, str):
+                elif isinstance(input, six.string_types):
                     in_list += (input + ", ")
                 else:
                     raise Exception(
@@ -72,7 +73,7 @@ class Layer(object):
                                "[{}]".format(self.inputs.index) + ", ")
             else:
                 layer_code += (self.inputs.layer_name + ", ")
-        elif isinstance(self.inputs, str):
+        elif isinstance(self.inputs, six.string_types):
             layer_code += (self.inputs + ", ")
         else:
             raise Exception("Unknown type of inputs.")
@@ -119,6 +120,6 @@ class FluidCode(object):
         for layer in self.layers:
             if isinstance(layer, Layer):
                 codes.append(layer.get_code())
-            elif isinstance(layer, str):
+            elif isinstance(layer, six.string_types):
                 codes.append(layer)
         return codes
