@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+from __future__ import division
 import collections
 import copy as cp
 
@@ -98,8 +100,3 @@ class Graph(object):
             raise Exception("node[{}] not in graph".format(dst))
         self.node_map[dst].inputs.append(src)
         self.node_map[src].outputs.append(dst)
-
-    def print(self):
-        for i, tmp in enumerate(self.topo_sort):
-            print(tmp, self.node_map[tmp].layer_type, self.node_map[tmp].inputs,
-                  self.node_map[tmp].outputs)
