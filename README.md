@@ -9,7 +9,7 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的�
 
 ## 环境依赖
 
-python >= 3.5  
+python == 2.7 | python >= 3.5  
 paddlepaddle >= 1.5.0  
 
 **按需安装以下依赖**  
