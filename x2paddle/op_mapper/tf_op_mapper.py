@@ -785,6 +785,9 @@ class TFOpMapper(OpMapper):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
         delta = self.graph.get_node(node.layer.input[2], copy=True)
+        self.add_omit_nodes(start.layer_name, node.layer_name)
+        self.add_omit_nodes(limit.layer_name, node.layer_name)
+        self.add_omit_nodes(delta.layer_name, node.layer_name)
         if start.layer_type == "Const":
             start = start.value
         else:
@@ -797,9 +800,6 @@ class TFOpMapper(OpMapper):
             delta = delta.value
         else:
             delta = self.decoder.infer_tensor(delta)
-        self.add_omit_nodes(start.layer_name, node.layer_name)
-        self.add_omit_nodes(limit.layer_name, node.layer_name)
-        self.add_omit_nodes(delta.layer_name, node.layer_name)
 
         inputs = {"start": start, "end": limit, "step": delta}
         attr = {"dtype": string(node.dtype)}
