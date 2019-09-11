@@ -132,16 +132,14 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, onnx_model, save_dir):
+    def __init__(self, onnx_model):
         super(ONNXGraph, self).__init__(onnx_model.graph)
         self.onnx_model = onnx_model
         self.initializer = {}
         self.place_holder_nodes = list()
         self.get_place_holder_nodes()
-        self.tmp_data_dir = os.path.join(save_dir, 'tmp_data')
         self.value_infos = self.inferred_model_value_info(self.model)
         self.results_of_inference = dict()
-        self.is_inference = False
 
     def get_inner_nodes(self):
         """
@@ -295,7 +293,7 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model, save_dir):
+    def __init__(self, onnx_model):
         model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             model.ir_version, model.opset_import[0].version))
@@ -314,7 +312,7 @@ class ONNXDecoder(object):
 
         self.model = model
         graph = model.graph
-        self.onnx_graph = ONNXGraph(model, save_dir)
+        self.onnx_graph = ONNXGraph(model)
         self.onnx_graph.build()
 
     def build_value_refs(self, nodes):

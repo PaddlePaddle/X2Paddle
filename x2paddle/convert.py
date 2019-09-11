@@ -151,7 +151,7 @@ def onnx2paddle(model_path, save_dir):
     print("Now translating model from onnx to paddle.")
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
-    model = ONNXDecoder(model_path, save_dir)
+    model = ONNXDecoder(model_path)
 
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
     mapper = ONNXOpMapper(model, save_dir)
