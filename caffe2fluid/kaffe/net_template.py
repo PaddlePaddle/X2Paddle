@@ -100,7 +100,7 @@ def main():
     npy_weight = args.npy_path
     fluid_model = args.model_param_path
     outputs = None
-    if len(sys.argv) >= 6:
+    if args.need_layers_name:
         outputs = args.need_layers_name.split(',')
 
     ret = MyNet.convert(npy_weight, fluid_model, outputs)
