@@ -1,4 +1,3 @@
-import onnxruntime as rt
 import os
 import sys
 import numpy as np
@@ -19,6 +18,17 @@ def arg_parser():
 
 
 def main():
+    try:
+        import onnxruntime as rt
+        version = rt.__version__
+        if version != '0.4.0':
+            print("onnxruntime==0.4.0 is required")
+            return
+    except:
+        print(
+            "onnxruntime is not installed, use \"pip install onnxruntime==0.4.0\"."
+        )
+        return
     parser = arg_parser()
     args = parser.parse_args()
 
