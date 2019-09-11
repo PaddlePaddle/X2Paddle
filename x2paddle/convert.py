@@ -154,7 +154,7 @@ def onnx2paddle(model_path, save_dir):
     model = ONNXDecoder(model_path, save_dir)
 
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
-    mapper = ONNXOpMapper(model)
+    mapper = ONNXOpMapper(model, save_dir)
 
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
     optimizer = ONNXOptimizer(mapper)

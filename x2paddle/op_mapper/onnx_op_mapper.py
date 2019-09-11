@@ -23,11 +23,14 @@ from x2paddle.op_mapper.onnx_directly_map import default_ioa_constraint
 from x2paddle.op_mapper.onnx_custom_layer import *
 from x2paddle.core.util import string
 import numpy as np
+import onnx
 import onnx.numpy_helper as numpy_helper
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
 import logging as _logging
 from collections import OrderedDict as _dict
 import math
+import os
+import shutil
 
 _logger = _logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ def get_same_padding(in_size, kernel_size, stride):
 
 
 class ONNXOpMapper(OpMapper):
-    def __init__(self, decoder):
+    def __init__(self, decoder, save_dir):
         super(ONNXOpMapper, self).__init__()
         self.decoder = decoder
         self.graph = decoder.onnx_graph
@@ -57,6 +60,9 @@ class ONNXOpMapper(OpMapper):
         self.weights = dict()
         self.omit_nodes = list()
         self.used_custom_layers = dict()
+        self.is_inference = False
+        self.tmp_data_dir = os.path.join(save_dir, 'tmp_data')
+        self.get_output_shapes()
 
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
@@ -78,6 +84,8 @@ class ONNXOpMapper(OpMapper):
             elif op in custom_layers:
                 self.deal_custom_layer(node)
 
+        self.remove_tmp_data()
+
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
@@ -95,6 +103,80 @@ class ONNXOpMapper(OpMapper):
             for op in unsupported_ops:
                 print(op)
             return False
+
+    def get_results_of_inference(self, model, value_infos, data_nodes):
+        inputs = []
+        for data_node in data_nodes:
+            value_info = value_infos[data_node]
+            ipt = np.random.random(value_info['shape']).astype(
+                value_info['dtype'])
+            inputs.append(ipt)
+
+        model = onnx.shape_inference.infer_shapes(model)
+        outputs = []
+        for value_info in model.graph.value_info:
+            outputs.append(value_info)
+
+        model.graph.ClearField('output')
+        model.graph.output.MergeFrom(outputs)
+        if not os.path.exists(self.tmp_data_dir):
+            os.makedirs(self.tmp_data_dir)
+        onnx.save(model, os.path.join(self.tmp_data_dir,
+                                      'onnx_model_infer.onnx'))
+        np.save(os.path.join(self.tmp_data_dir, 'input_data.npy'), inputs)
+        os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
+        return
+
+    def get_dynamic_shape(self, layer):
+        """
+        get dynamic shape from infer_result
+        """
+        output = np.load(os.path.join(self.tmp_data_dir, layer + '.npy'))
+        return output.tolist(), output.dtype, output.shape
+
+    def get_output_shapes(self):
+        """
+        build topo_sort of ONNX model
+        """
+        nodes = self.decoder.model.graph.node
+        node_map = self.decoder.onnx_graph.node_map
+        value_infos = self.decoder.onnx_graph.value_infos
+        onnx_model = self.decoder.model
+        for layer in nodes:
+            node = node_map[layer.name]
+            for opt in layer.output:
+                if opt in value_infos:
+                    value_info = value_infos[opt]
+                    if len(value_info['shape']
+                           ) == 0 or value_info['dtype'] is None:
+                        if self.is_inference == False:
+                            self.get_results_of_inference(
+                                onnx_model, value_infos,
+                                self.decoder.onnx_graph.place_holder_nodes)
+                            self.is_inference = True
+                        _, dtype, shape = self.get_dynamic_shape(opt)
+                        node.out_shapes.append(shape)
+                        node.dtype = dtype
+                    else:
+                        node.dtype = value_info['dtype']
+                        node.out_shapes.append(value_info['shape'])
+                else:
+                    if self.is_inference == False:
+                        self.get_results_of_inference(
+                            onnx_model, value_infos,
+                            self.decoder.onnx_graph.place_holder_nodes)
+                        self.is_inference = True
+                    _, dtype, shape = self.get_dynamic_shape(opt)
+                    node.dtype = dtype
+                    node.out_shapes.append(shape)
+
+    def remove_tmp_data(self):
+        """
+        remove temporarily generated file
+        """
+        if os.path.exists(self.tmp_data_dir):
+            import shutil
+            shutil.rmtree(self.tmp_data_dir)
 
     def directly_map(self, node, name='', *args, **kwargs):
         inputs = node.layer.input
@@ -299,16 +381,6 @@ class ONNXOpMapper(OpMapper):
                                       param_attr=attr)
             return node.layer_name + '_paded'
 
-    def TopK(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        axes = node.get_attr('axes')
-        k = 10
-        attr = {'k': k, 'name': string(node.layer_name)}
-        node.fluid_code.add_layer('topk',
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
-
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
@@ -436,9 +508,7 @@ class ONNXOpMapper(OpMapper):
                                       param_attr=None)
         elif axis > 0 and len(indices_shape) <= 1:
             perm = list(range(len(val_x.out_shapes[0])))
-            print(val_x.out_shapes[0])
             perm = [axis] + perm[:axis] + perm[axis + 1:]
-            #             perm = [0]
             attr_trans = {'perm': perm}
             name_trans = val_x.layer_name + '_trans'
             node.fluid_code.add_layer('transpose',
@@ -552,8 +622,7 @@ class ONNXOpMapper(OpMapper):
 
         # catch dynamic graph shape
         if isinstance(val_shape, ONNXGraphNode):
-            shape, _, _ = self.decoder.onnx_graph.get_dynamic_shape(
-                val_shape.layer_name)
+            shape, _, _ = self.get_dynamic_shape(val_shape.layer_name)
 
         if shape is None:
             shape = val_reshaped.out_shapes[0]
