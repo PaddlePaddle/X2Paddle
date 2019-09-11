@@ -101,7 +101,6 @@ class ONNXOpMapper(OpMapper):
         outputs = node.layer.output
         op_type = node.layer_type
         attrs = node.attr_map
-
         info = default_op_mapping[op_type]
         info.extend(list(default_op_mapping_field_values.values())[len(info):])
         (
@@ -138,10 +137,11 @@ class ONNXOpMapper(OpMapper):
         val_outs = outputs if output_perm is None else list(
             map(lambda i: outputs[i], output_perm))
         attr = fluid_attrs
-        if fluid_op not in ['shape', 'gather']:
+        assert len(val_inps) == 1, 'directly_map error with multi inputs'
+        if fluid_op not in ['shape']:
             attr['name'] = string(node.layer_name)
         node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_inps,
+                                  inputs=val_inps[0],
                                   output=val_outs[0],
                                   param_attr=attr)
 
@@ -160,7 +160,9 @@ class ONNXOpMapper(OpMapper):
         if op not in self.used_custom_layers:
             self.used_custom_layers[op] = custom_code
             if op + '_child_func' not in self.used_custom_layers:
-                self.used_custom_layers[op + '_child_func'] = child_func_code
+                if child_func_code is not None:
+                    self.used_custom_layers[op +
+                                            '_child_func'] = child_func_code
 
     def place_holder(self, node):
         self.input_shapes.append(node.out_shapes[0])
@@ -422,18 +424,21 @@ class ONNXOpMapper(OpMapper):
         indices = self.graph.get_input_node(node, idx=1, copy=True)
         indices_shape = indices.out_shapes[0]
         axis = node.get_attr('axis')
-        print(indices.layer_name)
-        print(indices_shape)
         assert len(
-            indices_shape) == 1, "Gather op don't support dim of indice >1 "
-        if axis == 0 and len(indices_shape) == 1:
+            indices_shape) <= 1, "Gather op don't support dim of indice >1 "
+        if axis == 0 and len(indices_shape) <= 1:
             node.fluid_code.add_layer('gather',
-                                      inputs=[val_x, indices],
+                                      inputs={
+                                          'input': val_x,
+                                          'index': indices
+                                      },
                                       output=node,
                                       param_attr=None)
-        elif axis > 0 and len(indices_shape) == 1:
-            perm = [range(len(indices_shape))]
+        elif axis > 0 and len(indices_shape) <= 1:
+            perm = list(range(len(val_x.out_shapes[0])))
+            print(val_x.out_shapes[0])
             perm = [axis] + perm[:axis] + perm[axis + 1:]
+            #             perm = [0]
             attr_trans = {'perm': perm}
             name_trans = val_x.layer_name + '_trans'
             node.fluid_code.add_layer('transpose',
@@ -441,7 +446,10 @@ class ONNXOpMapper(OpMapper):
                                       output=name_trans,
                                       param_attr=attr_trans)
             node.fluid_code.add_layer('gather',
-                                      inputs=[name_trans, indices],
+                                      inputs={
+                                          'input': name_trans,
+                                          'index': indices
+                                      },
                                       output=node,
                                       param_attr=None)
             node.fluid_code.add_layer('transpose',
@@ -451,22 +459,28 @@ class ONNXOpMapper(OpMapper):
 
     def Slice(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_starts = self.graph.get_input_node(node, idx=1, copy=True)
-        val_ends = self.graph.get_input_node(node, idx=2, copy=True)
-        val_axes = self.graph.get_input_node(node, idx=3, copy=True)
-        val_steps = self.graph.get_input_node(node, idx=4, copy=True)
+        val_starts, val_ends, val_axes, val_steps = None, None, None, None
+        if len(node.inputs) > 1:
+            starts = self.graph.get_input_node(node, idx=1, copy=True)
+            ends = self.graph.get_input_node(node, idx=2, copy=True)
+            axes = self.graph.get_input_node(node, idx=3, copy=True)
+            steps = self.graph.get_input_node(node, idx=4, copy=True)
+
+            self.omit_nodes.append(starts.layer_name)
+            self.omit_nodes.append(ends.layer_name)
+            self.omit_nodes.append(axes.layer_name)
+            self.omit_nodes.append(steps.layer_name)
+
+            starts = _const_weight_or_none(starts).copy()
+            ends = _const_weight_or_none(ends).copy()
+            axes = _const_weight_or_none(axes)
+            steps = _const_weight_or_none(steps)
+        else:
+            starts = node.get_attr('starts')
+            ends = node.get_attr('ends')
+            axes = node.get_attr('axes')
 
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
-
-        starts = _const_weight_or_none(val_starts).copy()
-        ends = _const_weight_or_none(val_ends).copy()
-        axes = _const_weight_or_none(val_axes)
-        steps = _const_weight_or_none(val_steps)
-
-        self.omit_nodes.append(val_starts.layer_name)
-        self.omit_nodes.append(val_ends.layer_name)
-        self.omit_nodes.append(val_axes.layer_name)
-        self.omit_nodes.append(val_steps.layer_name)
 
         shape = val_x.out_shapes[0]
 
@@ -510,17 +524,21 @@ class ONNXOpMapper(OpMapper):
                                       param_attr=attr)
 
     def Split(self, node):
-        val_input = self.graph.get_input_node(node, idx=0, copy=True)
-        var_outs = [val for val in node.layer.input]
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
 
         fluid_op = 'split'
-        split = node.get_attr['split']
+        split = node.get_attr('split')
         axis = node.get_attr('axis', 0)
-        attr = {'split': split, 'axis': axis, 'name': string(node.layer_name)}
+        attr = {
+            'num_or_sections': split,
+            'dim': axis,
+            'name': string(node.layer_name)
+        }
         # generation
         node.fluid_code.add_layer('split',
-                                  inputs=val_input,
-                                  output=var_outs,
+                                  inputs=val_x,
+                                  output=val_y,
                                   param_attr=attr)
 
     def Reshape(self, node):
@@ -536,6 +554,7 @@ class ONNXOpMapper(OpMapper):
         if isinstance(val_shape, ONNXGraphNode):
             shape, _, _ = self.decoder.onnx_graph.get_dynamic_shape(
                 val_shape.layer_name)
+
         if shape is None:
             shape = val_reshaped.out_shapes[0]
 
@@ -694,6 +713,32 @@ class ONNXOpMapper(OpMapper):
         }
         attr = {"name": string(node.layer_name)}
         node.fluid_code.add_layer("elementwise_add",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=attr)
+
+    def Sub(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs = {
+            "x": val_x,
+            "y": val_y,
+        }
+        attr = {"name": string(node.layer_name)}
+        node.fluid_code.add_layer("elementwise_sub",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=attr)
+
+    def Pow(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs = {
+            "x": val_x,
+            "y": val_y,
+        }
+        attr = {"name": string(node.layer_name)}
+        node.fluid_code.add_layer("elementwise_pow",
                                   inputs=inputs,
                                   output=node,
                                   param_attr=attr)
@@ -916,16 +961,6 @@ class ONNXOpMapper(OpMapper):
                                   inputs=val_x,
                                   output=node,
                                   param_attr=attr)
-
-
-#     def Tile(self, node):
-#         pass
-
-#     def Loop(self, node):
-#         pass
-
-#     def NonMaxSuppression(self, node):
-#         pass
 
     def GlobalAveragePool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)

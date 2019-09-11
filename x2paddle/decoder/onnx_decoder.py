@@ -29,6 +29,7 @@ from onnx.helper import ValueInfoProto
 import numpy as np
 from copy import deepcopy
 import logging as _logging
+import os
 
 default_op_domain = 'ai.onnx'
 _logger = _logging.getLogger(__name__)
@@ -131,15 +132,16 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, graph, onnx_model):
-        super(ONNXGraph, self).__init__(graph)
+    def __init__(self, onnx_model, save_dir):
+        super(ONNXGraph, self).__init__(onnx_model.graph)
         self.onnx_model = onnx_model
         self.initializer = {}
         self.place_holder_nodes = list()
         self.get_place_holder_nodes()
-
-        self.value_infos = self.inferred_model_value_info(graph)
+        self.save_dir = save_dir
+        self.value_infos = self.inferred_model_value_info(self.model)
         self.results_of_inference = dict()
+        self.is_inference = False
 
     def get_inner_nodes(self):
         """
@@ -176,9 +178,6 @@ class ONNXGraph(Graph):
         """
         build topo_sort of ONNX model
         """
-        data_nodes = self.place_holder_nodes
-        self.get_results_of_inference_rt(self.onnx_model, data_nodes)
-
         for layer in self.model.node:
             node = ONNXGraphNode(layer)
             self.node_map[layer.name] = node
@@ -187,13 +186,21 @@ class ONNXGraph(Graph):
                     value_info = self.value_infos[opt]
                     if len(value_info['shape']
                            ) == 0 or value_info['dtype'] is None:
+                        if self.is_inference == False:
+                            self.get_results_of_inference_rt(
+                                self.onnx_model, self.place_holder_nodes)
+                            self.is_inference = True
                         _, dtype, shape = self.get_dynamic_shape(opt)
-                        node.dtype = dtype
                         node.out_shapes.append(shape)
+                        node.dtype = dtype
                     else:
                         node.dtype = value_info['dtype']
                         node.out_shapes.append(value_info['shape'])
                 else:
+                    if self.is_inference == False:
+                        self.get_results_of_inference_rt(
+                            self.onnx_model, self.place_holder_nodes)
+                        self.is_inference = True
                     _, dtype, shape = self.get_dynamic_shape(opt)
                     node.dtype = dtype
                     node.out_shapes.append(shape)
@@ -232,8 +239,8 @@ class ONNXGraph(Graph):
                                 if opt == in_node:
                                     self.connect(nd.name, layer_name)
                                     flag = 1
-                                    print(nd.name + '->' + layer_name)
                                     node.which_child[nd.name] = idx
+                                    self.node_map[nd.name].index = 0
                                     break
                             if flag == 1:
                                 break
@@ -250,7 +257,9 @@ class ONNXGraph(Graph):
 
     def get_input_node(self, node, idx=0, copy=False):
         if len(node.which_child) == 0:
-            return super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+            ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+            return ipt_node
+
         else:
             ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
             if ipt_node.layer_name in node.which_child:
@@ -312,11 +321,13 @@ class ONNXGraph(Graph):
             import torch
             version = torch.__version__
             if '1.1.0' not in version:
-                print("your model have dynamic graph, torch==1.1.0 is required")
+                print(
+                    "shape of somenode need inference, torch==1.1.0 is required"
+                )
                 return
         except:
             print(
-                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
+                "shape of somenode need inference, we use caffe2 to inference graph, please use \"pip install torch==1.1.0\"."
             )
             return
         from x2paddle.decoder.onnx_backend import prepare
@@ -326,6 +337,7 @@ class ONNXGraph(Graph):
             value_info = self.value_infos[data_node]
             ipt = np.random.random(value_info['shape']).astype('float32')
             inputs.append(ipt)
+            print(ipt.shape)
         outputs = []
         for node in model.graph.node:
             value_info = helper.make_tensor_value_info(node.name,
@@ -347,13 +359,11 @@ class ONNXGraph(Graph):
         return
 
     def get_results_of_inference_rt(self, model, data_nodes):
-
-        import onnxruntime as rt
-
         inputs = []
         for data_node in data_nodes:
             value_info = self.value_infos[data_node]
-            ipt = np.random.random(value_info['shape']).astype('float32')
+            ipt = np.random.random(value_info['shape']).astype(
+                value_info['dtype'])
             inputs.append(ipt)
 
         model = onnx.shape_inference.infer_shapes(model)
@@ -363,30 +373,26 @@ class ONNXGraph(Graph):
 
         model.graph.ClearField('output')
         model.graph.output.MergeFrom(outputs)
-        onnx.save(model, './onnx_model_infer.onnx')
-
-        sess = rt.InferenceSession('./onnx_model_infer.onnx')
-        inputs_dict = {}
-
-        for i, ipt in enumerate(inputs):
-            inputs_dict[sess.get_inputs()[i].name] = ipt
-
-        res = sess.run(None, input_feed=inputs_dict)
-
-        for idx, info in enumerate(outputs):
-            self.results_of_inference[info.name] = res[idx]
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+        onnx.save(model, os.path.join(self.save_dir, 'onnx_model_infer.onnx'))
+        np.save(os.path.join(self.save_dir, 'input_data.npy'), inputs)
+        os.system('onnx_infer --save_dir=' + self.save_dir)
+        #         res = np.load(os.path.join(self.save_dir, 'results_of_inference.npy'),allow_pickle=True)
+        #         for idx, info in enumerate(outputs):
+        #             self.results_of_inference[info.name] = res[idx]
         return
 
     def get_dynamic_shape(self, layer):
         """
         get dynamic shape from infer_result
         """
-        output = self.results_of_inference[layer]
+        output = np.load(os.path.join(self.save_dir, layer + '.npy'))
         return output.tolist(), output.dtype, output.shape
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model):
+    def __init__(self, onnx_model, save_dir):
         model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             model.ir_version, model.opset_import[0].version))
@@ -405,7 +411,7 @@ class ONNXDecoder(object):
 
         self.model = model
         graph = model.graph
-        self.onnx_graph = ONNXGraph(graph, model)
+        self.onnx_graph = ONNXGraph(model, save_dir)
         self.onnx_graph.build()
 
     def build_value_refs(self, nodes):

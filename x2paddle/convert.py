@@ -120,9 +120,6 @@ def tf2paddle(model_path,
     mapper.save_inference_model(save_dir)
 
 
-0
-
-
 def caffe2paddle(proto, weight, save_dir, caffe_proto):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe_op_mapper import CaffeOpMapper
@@ -154,7 +151,7 @@ def onnx2paddle(model_path, save_dir):
     print("Now translating model from onnx to paddle.")
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
-    model = ONNXDecoder(model_path)
+    model = ONNXDecoder(model_path, save_dir)
 
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
     mapper = ONNXOpMapper(model)

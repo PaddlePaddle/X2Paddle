@@ -29,12 +29,6 @@ default_op_mapping = {
     'Gather': ['gather', ['X'], ['Out'],
                dict(axis='')],
     'Shape': ['shape', ['X'], ['Out']],
-    'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'],
-            dict(),
-            dict(axis=-1)],
-    'Sub': ['elementwise_sub', ['X', 'Y'], ['Out'],
-            dict(),
-            dict(axis=-1)],
     'Clip': [
         'clip', ['X'], ['Out'],
         dict(),
@@ -74,9 +68,6 @@ default_op_mapping = {
     ],
     'Tanh': ['tanh', ['X'], ['Out']],
     'Sigmoid': ['sigmoid', ['X'], ['Out']],
-    'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'],
-            dict(),
-            dict(axis=-1)],  # TODO: pow for scalar exponent
     'HardSigmoid': [
         'hard_sigmoid', ['X'], ['Out'],
         dict(alpha='slope', beta='offset'),
@@ -87,6 +78,7 @@ default_op_mapping = {
     'Exp': ['exp', ['X'], ['Out']],
     'Softmax': ['softmax', ['X'], ['Out'],
                 dict(), dict(axis=1)],
+    'Sqrt': ['sqrt', ['X'], ['Out']],
 }
 
 activefunc_op_mapping = {

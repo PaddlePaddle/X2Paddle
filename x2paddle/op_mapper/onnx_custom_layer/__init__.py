@@ -100,9 +100,9 @@ def make_custom_child_func(node):
     """ get the code which implement the custom layer function
     """
     layer_type = node.layer_type
-    assert layer_type in custom_layers, "layer[%s] not exist in custom layers" % (
-        layer_type)
     child_func = custom_layers[layer_type]['child_func']
+    if child_func is None:
+        return None, child_func
     import inspect
     return inspect.getsource(child_func), child_func
 

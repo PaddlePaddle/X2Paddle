@@ -24,7 +24,7 @@ def InstanceNormalization_layer(inputs, name=None):
     epsilon = 1e-5
     input_ = inputs[0]
     mean = fluid.layers.reduce_mean(input_, dim=[2, 3], keep_dim=True)
-    var = fluid.layers.reduce_mean(fluid.layers.square(inputs - mean),
+    var = fluid.layers.reduce_mean(fluid.layers.square(input_ - mean),
                                    dim=[2, 3],
                                    keep_dim=True)
     if name is not None:
