@@ -954,6 +954,13 @@ class CaffeOpMapper(OpMapper):
         inputs_node = []
         for i in range(len(node.inputs)):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            if i == 1 and op == 'DetectionOutput':
+                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                print(input.layer_type)
+                while input is not None and input.layer_type != 'Softmax':
+                    input = self.graph.get_bottom_node(input, idx=0, copy=True)
+                assert input is not None, 'This kind of DetectionOutput is not supported!'
+                input = self.graph.get_bottom_node(input, idx=0, copy=True)
             inputs_node.append(input)
         node.fluid_code.add_layer(func.__code__.co_name,
                                   inputs=inputs_node,

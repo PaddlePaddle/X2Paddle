@@ -24,6 +24,8 @@ import sys
 def get_same_padding(in_size, kernel_size, stride):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
+    if pad_size < 0:
+        pad_size = 0
     pad0 = int(pad_size / 2)
     pad1 = pad_size - pad0
     return [pad0, pad1]
@@ -369,12 +371,13 @@ class TFOpMapper(OpMapper):
             pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
             pad_h = pad_h[0] + pad_h[1]
             pad_w = pad_w[0] + pad_w[1]
-            attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
-            node.fluid_code.add_layer("pad2d",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-            input = node
+            if pad_h != 0 or pad_w != 0:
+                attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
+                node.fluid_code.add_layer("pad2d",
+                                          inputs=input,
+                                          output=node,
+                                          param_attr=attr)
+                input = node
         attr = {
             "pool_size": k_size[2:4],
             "pool_type": string("max"),
@@ -551,6 +554,7 @@ class TFOpMapper(OpMapper):
     def Reshape(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         param = self.graph.get_node(node.layer.input[1], copy=True)
+        is_variable = False
         if param.layer_type == "Const":
             attr = {"shape": param.value.tolist()}
             self.add_omit_nodes(param.layer_name, node.layer_name)
@@ -582,6 +586,24 @@ class TFOpMapper(OpMapper):
                     new_param += (node.layer_name + "[{}]".format(i) + ", ")
                 new_param = new_param.strip(", ") + "]"
                 attr = {"shape": new_param}
+                is_variable = True
+
+        # to change [192, -1]->[-1, 192], allways put -1 in the first dimension
+        # optimization for Paddle-Lite
+        in_shape = input.out_shapes[0]
+        if is_variable and in_shape.count(-1) < 1:
+            total_size = 1
+            for i in range(len(in_shape)):
+                total_size *= in_shape[i]
+            for i in range(len(attr["shape"])):
+                if attr["shape"][i] == 0:
+                    attr["shape"][i] = in_shape[i]
+                if attr["shape"][i] != -1:
+                    total_size /= attr["shape"][i]
+            if attr["shape"].count(-1) > 0:
+                index = attr["shape"].index(-1)
+                attr["shape"][index] = int(total_size)
+                attr["shape"][0] = -1
 
         if len(input.out_shapes[0]) == 4 and node.tf_data_format == "NHWC":
             if len(attr["shape"]) < 3:
@@ -763,6 +785,9 @@ class TFOpMapper(OpMapper):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
         delta = self.graph.get_node(node.layer.input[2], copy=True)
+        self.add_omit_nodes(start.layer_name, node.layer_name)
+        self.add_omit_nodes(limit.layer_name, node.layer_name)
+        self.add_omit_nodes(delta.layer_name, node.layer_name)
         if start.layer_type == "Const":
             start = start.value
         else:
@@ -775,9 +800,6 @@ class TFOpMapper(OpMapper):
             delta = delta.value
         else:
             delta = self.decoder.infer_tensor(delta)
-        self.add_omit_nodes(start.layer_name, node.layer_name)
-        self.add_omit_nodes(limit.layer_name, node.layer_name)
-        self.add_omit_nodes(delta.layer_name, node.layer_name)
 
         inputs = {"start": start, "end": limit, "step": delta}
         attr = {"dtype": string(node.dtype)}

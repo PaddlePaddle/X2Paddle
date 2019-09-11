@@ -6,7 +6,7 @@ python:
   - '3.6'
 
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION != 2.7 ]]; then /bin/bash ./scripts/check_code_style.sh; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != 2.7 ]]; then /bin/bash ./tools/check_code_style.sh; fi
 
 notifications:
   email:
