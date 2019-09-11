@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 
-### X2Paddle已经发布0.4版本，最新代码在develop分支：）
+### X2Paddle已经发布0.5版本，提供统一的模型转换工具，支持onnx/caffe/tensorflow，最新代码在develop分支：）
 develop分支： https://github.com/PaddlePaddle/X2Paddle/tree/develop
 
 # 简介
