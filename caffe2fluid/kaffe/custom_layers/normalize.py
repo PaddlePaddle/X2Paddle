@@ -47,8 +47,6 @@ def normalize_layer(input,
     scale_attr = fluid.ParamAttr(name=param_prefix + '_scale')
     scale_param = fluid.layers.create_parameter(
         shape=shape, dtype=input.dtype, name=name, attr=scale_attr)
-    scale_param = fluid.layers.reshape(x=scale_param, \
-                  shape=[1] if channel_shared else [input_shape[0][1]])
     out = fluid.layers.elementwise_mul(
         x=l2_norm, y=scale_param, axis=-1 if channel_shared else 1)
     return out
