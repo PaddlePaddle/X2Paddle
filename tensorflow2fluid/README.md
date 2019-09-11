@@ -1,6 +1,8 @@
+### X2Paddle已经发布0.5版本，提供统一的模型转换工具，支持onnx/caffe/tensorflow，最新代码在develop分支：）
+develop分支： https://github.com/PaddlePaddle/X2Paddle/tree/develop
+
 # tensorflow2fluid
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
-
 
 tensorflow2fluid支持将训练好的TensorFlow模型转换为PaddlePaddle模型，包括基于PaddlePaddle实现的模型前向计算网络python代码，以及PaddlePaddle可加载的模型参数文件。  
 此外在[[doc](doc)]目录中整理了TensorFlow-PaddlePaddle的常用API对比分析。  
