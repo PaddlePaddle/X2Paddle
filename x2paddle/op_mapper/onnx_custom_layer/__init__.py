@@ -16,7 +16,6 @@ from .register import get_registered_layers
 #custom layer import begins
 
 from . import InstanceNormalization
-from . import NonMaxSuppression
 #custom layer import ends
 
 custom_layers = get_registered_layers()
