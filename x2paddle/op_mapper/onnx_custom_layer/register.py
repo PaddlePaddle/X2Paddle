@@ -17,7 +17,7 @@
 g_custom_layers = {}
 
 
-def register(kind, shape, layer, weights):
+def register(kind, shape, layer, child_func, weights):
     """ register a custom layer or a list of custom layers
 
     Args:
@@ -48,6 +48,7 @@ def register(kind, shape, layer, weights):
         g_custom_layers[k] = {
             'shape': shape,
             'layer': layer,
+            'child_func': child_func,
             'weights': weights
         }
 
