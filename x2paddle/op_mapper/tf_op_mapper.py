@@ -591,7 +591,7 @@ class TFOpMapper(OpMapper):
         # to change [192, -1]->[-1, 192], allways put -1 in the first dimension
         # optimization for Paddle-Lite
         in_shape = input.out_shapes[0]
-        if is_variable and in_shape.count(-1) < 1:
+        if not is_variable and in_shape.count(-1) < 1:
             total_size = 1
             for i in range(len(in_shape)):
                 total_size *= in_shape[i]
