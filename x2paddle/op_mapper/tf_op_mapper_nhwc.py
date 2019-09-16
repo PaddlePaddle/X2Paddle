@@ -74,7 +74,7 @@ class TFOpMapperNHWC(OpMapper):
         unsupported_ops = set()
         sys.stderr.write("Total nodes: {}\n".format(len(self.graph.topo_sort)))
         for i, node_name in enumerate(self.graph.topo_sort):
-            sys.stderr.write("\rConverting node {} ...     ".format(i))
+            sys.stderr.write("\rConverting node {} ...     ".format(i + 1))
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if op in self.directly_map_ops:
@@ -99,7 +99,7 @@ class TFOpMapperNHWC(OpMapper):
             for op in unsupported_ops:
                 print("========== {} ============".format(op))
             sys.exit(-1)
-        sys.stderr.write("\nDone\n")
+        sys.stderr.write("\nDone!\n")
 
     def add_omit_nodes(self, in_node_name, out_node_name):
         in_node = self.graph.get_node(in_node_name)

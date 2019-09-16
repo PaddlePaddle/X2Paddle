@@ -29,9 +29,6 @@ default_op_mapping = {
     'Gather': ['gather', ['X'], ['Out'],
                dict(axis='')],
     'Shape': ['shape', ['X'], ['Out']],
-    'Mul': ['elementwise_mul', ['X', 'Y'], ['Out'],
-            dict(),
-            dict(axis=-1)],
     'Clip': [
         'clip', ['X'], ['Out'],
         dict(),
@@ -42,6 +39,7 @@ default_op_mapping = {
                              dtype=_np.uint8).view(_np.float32)),
         )
     ],
+    'Ceil': ['ceil', ['X'], ['Out']],
     'ReduceMean': [
         'reduce_mean', ['X'], ['Out'],
         dict(axes='dim', keepdims='keep_dim'),
@@ -52,7 +50,11 @@ default_op_mapping = {
         dict(axes='dim', keepdims='keep_dim'),
         dict(keep_dim=1)
     ],
-
+    'ReduceMin': [
+        'reduce_min', ['X'], ['Out'],
+        dict(axes='dim', keepdims='keep_dim'),
+        dict(keep_dim=1)
+    ],
     #active function
     'Relu': ['relu', ['X'], ['Out']],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
@@ -66,9 +68,6 @@ default_op_mapping = {
     ],
     'Tanh': ['tanh', ['X'], ['Out']],
     'Sigmoid': ['sigmoid', ['X'], ['Out']],
-    'Pow': ['elementwise_pow', ['X', 'Y'], ['Out'],
-            dict(),
-            dict(axis=-1)],  # TODO: pow for scalar exponent
     'HardSigmoid': [
         'hard_sigmoid', ['X'], ['Out'],
         dict(alpha='slope', beta='offset'),
@@ -78,8 +77,8 @@ default_op_mapping = {
     'Softplus': ['softplus', ['X'], ['Out']],
     'Exp': ['exp', ['X'], ['Out']],
     'Softmax': ['softmax', ['X'], ['Out'],
-                dict(axis=''),
-                dict(axis=1)],
+                dict(), dict(axis=1)],
+    'Sqrt': ['sqrt', ['X'], ['Out']],
 }
 
 activefunc_op_mapping = {
