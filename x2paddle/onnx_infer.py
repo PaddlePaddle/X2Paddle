@@ -44,11 +44,9 @@ def main():
     inputs_dict = {}
     for i, ipt in enumerate(inputs):
         inputs_dict[sess.get_inputs()[i].name] = ipt
-
     res = sess.run(None, input_feed=inputs_dict)
     for idx, value_info in enumerate(model.graph.output):
         np.save(os.path.join(save_dir, value_info.name), res[idx])
-
 
 if __name__ == "__main__":
     main()
