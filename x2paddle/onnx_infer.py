@@ -48,5 +48,6 @@ def main():
     for idx, value_info in enumerate(model.graph.output):
         np.save(os.path.join(save_dir, value_info.name), res[idx])
 
+
 if __name__ == "__main__":
     main()
