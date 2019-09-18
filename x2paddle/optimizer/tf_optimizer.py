@@ -365,7 +365,8 @@ class TFOptimizer(object):
     def optimize_sub_graph(self):
         self.merge_batch_norm()
         self.merge_prelu()
-        self.merge_scale1()
+        self.merge_scale()
+        self.merge_affine_channel()
 
     def merge_batch_norm(self):
         for i, name in enumerate(self.graph.topo_sort):
@@ -512,7 +513,7 @@ class TFOptimizer(object):
 
                 if is_batch_norm:
                     index = in_nodes1[0].outputs.index(in_nodes0[0].layer_name)
-                    in_nodes1[0].output[index] = node.layer_name
+                    in_nodes1[0].outputs[index] = node.layer_name
                     node.layer_type = "FusedBatchNorm"
                     node.inputs = [in_nodes1[0].layer_name]
                     act = node.fluid_code.layers[-1].param_attr.get("act", None)
@@ -700,7 +701,7 @@ class TFOptimizer(object):
                 del self.graph.node_map[in_nodes3[1].layer_name]
                 del self.graph.node_map[in_nodes4[1].layer_name]
 
-    def merge_scale1(self):
+    def merge_scale(self):
         for i, name in enumerate(self.graph.topo_sort):
             node = self.graph.get_node(name)
             if node is None:
@@ -777,3 +778,103 @@ class TFOptimizer(object):
                     del self.graph.node_map[in_nodes1[0].layer_name]
                     del self.graph.node_map[in_nodes1[1].layer_name]
                     del self.graph.node_map[in_nodes2[1].layer_name]
+
+    def merge_affine_channel(self):
+        for i, name in enumerate(self.graph.topo_sort):
+            node = self.graph.get_node(name)
+            if node is None:
+                continue
+            is_affine_channel = True
+            if node.layer_type == "RealDiv":
+                in_nodes0 = [
+                    self.graph.get_node(in_name) for in_name in node.inputs
+                ]
+                bias_add = True
+                if (in_nodes0[0].layer_type != "Sub" and in_nodes0[0].layer_type
+                        != "Add") or in_nodes0[1].layer_type != "Const" or len(
+                            in_nodes0[1].value.shape) != 3:
+                    is_affine_channel = False
+                    continue
+                if in_nodes0[0].layer_type == "Sub":
+                    bias_add = False
+                if exist_act(in_nodes0[0]):
+                    is_affine_channel = False
+                    continue
+                if len(in_nodes0[0].outputs) != 1 or len(
+                        in_nodes0[1].outputs) != 1:
+                    is_affine_channel = False
+                    continue
+                in_nodes1 = [
+                    self.graph.get_node(in_name)
+                    for in_name in in_nodes0[0].inputs
+                ]
+                if len(in_nodes1[0].out_shapes[0]
+                       ) != 4 or in_nodes1[1].layer_type != "Const" or len(
+                           in_nodes1[1].value.shape) != 3:
+                    is_affine_channel = False
+                    continue
+                if len(in_nodes1[1].outputs) != 1:
+                    is_affine_channel = False
+                    continue
+                channel = in_nodes1[0].out_shapes[0][-1]
+                if channel < 0 or channel != in_nodes0[
+                        1].value.size or channel != in_nodes1[1].value.size:
+                    is_affine_channel = False
+                    continue
+                if in_nodes0[1].out_shapes[0][-1] != in_nodes0[
+                        1].value.size or in_nodes1[1].out_shapes[0][
+                            -1] != in_nodes1[1].value.size:
+                    is_affine_channel = False
+                    continue
+                if is_affine_channel:
+                    in_node = in_nodes1[0]
+                    index = in_node.outputs.index(in_nodes0[0].layer_name)
+                    in_node.outputs[index] = node.layer_name
+                    node.layer_type = "AffineChannel"
+                    node.inputs = [in_node.layer_name]
+                    scale = 1.0 / in_nodes0[1].value.flatten()
+                    bias = in_nodes1[1].value.flatten(
+                    ) / in_nodes0[1].value.flatten()
+                    if not bias_add:
+                        bias *= -1.0
+                    self.op_mapper.weights[node.layer_name + "_scale"] = scale
+                    self.op_mapper.weights[node.layer_name + "_bias"] = bias
+
+                    act = None
+                    if node.fluid_code.layers[0].param_attr is not None:
+                        act = node.fluid_code.layers[0].param_attr.get(
+                            "act", None)
+                    node.fluid_code.clear()
+
+                    attr = {
+                        "dtype": string(scale.dtype),
+                        "shape": [channel],
+                        "name": string(node.layer_name + "_scale")
+                    }
+                    node.fluid_code.add_layer("create_parameter",
+                                              inputs=None,
+                                              output=node.layer_name + "_scale",
+                                              param_attr=attr)
+                    attr = {
+                        "dtype": string(scale.dtype),
+                        "shape": [channel],
+                        "name": string(node.layer_name + "_bias")
+                    }
+                    node.fluid_code.add_layer("create_parameter",
+                                              inputs=None,
+                                              output=node.layer_name + "_bias",
+                                              param_attr=attr)
+                    inputs = {
+                        "x": in_node,
+                        "scale": node.layer_name + "_scale",
+                        "bias": node.layer_name + "_bias"
+                    }
+                    attr = {"act": act}
+                    node.fluid_code.add_layer("affine_channel",
+                                              inputs=inputs,
+                                              output=node,
+                                              param_attr=attr)
+
+                    del self.graph.node_map[in_nodes0[0].layer_name]
+                    del self.graph.node_map[in_nodes0[1].layer_name]
+                    del self.graph.node_map[in_nodes1[1].layer_name]
