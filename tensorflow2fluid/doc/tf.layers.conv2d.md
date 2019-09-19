@@ -57,7 +57,7 @@ PaddlePaddle：只支持输入数据格式为`NCHW`，且**卷积核格式**与T
 
 | 输入 | 卷积核 | 输出 |
 |--------------------|-------------------|------------------|
-|NCHW | (in_channels, filters_num, kernel_h, kernel_w) | (batch, filters_num, out_h, out_w)|
+|NCHW | (filters_num, in_channels, kernel_h, kernel_w) | (batch, filters_num, out_h, out_w)|
 
 #### Padding机制
 TensorFlow: `SAME`和`VALID`两种选项。当为`SAME`时，padding的计算方式如下所示,
