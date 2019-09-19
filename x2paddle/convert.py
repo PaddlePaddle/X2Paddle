@@ -104,6 +104,7 @@ def tf2paddle(model_path,
         # neccesary optimization
         optimizer.delete_redundance_code()
         # optimizer below is experimental
+        optimizer.optimize_elementwise_op()
         optimizer.merge_activation()
         optimizer.merge_bias()
         optimizer.optimize_sub_graph()
