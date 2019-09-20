@@ -116,12 +116,14 @@ class ONNXOpMapper(OpMapper):
             return False
 
     def get_results_of_inference(self, model, value_infos, data_nodes):
-        inputs = []
+        if not os.path.exists(self.tmp_data_dir):
+            os.makedirs(self.tmp_data_dir)
+
         for data_node in data_nodes:
             value_info = value_infos[data_node]
             ipt = np.random.random(value_info['shape']).astype(
                 value_info['dtype'])
-            inputs.append(ipt)
+            np.save(os.path.join(self.tmp_data_dir, data_node), ipt)
 
         model = onnx.shape_inference.infer_shapes(model)
         outputs = []
@@ -130,11 +132,8 @@ class ONNXOpMapper(OpMapper):
 
         model.graph.ClearField('output')
         model.graph.output.MergeFrom(outputs)
-        if not os.path.exists(self.tmp_data_dir):
-            os.makedirs(self.tmp_data_dir)
         onnx.save(model, os.path.join(self.tmp_data_dir,
                                       'onnx_model_infer.onnx'))
-        np.save(os.path.join(self.tmp_data_dir, 'input_data.npy'), inputs)
         os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
         return
 
@@ -457,7 +456,6 @@ class ONNXOpMapper(OpMapper):
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
-
         if len(val_x.out_shapes[0]) == 0:
             node.fluid_code.add_layer('assign',
                                       inputs=val_x,
@@ -491,6 +489,7 @@ class ONNXOpMapper(OpMapper):
             assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
         shape = node.get_attr('shape', None)
+
         if shape is None:
             shape = val_output.out_shapes[0]
         if shape is None:
@@ -536,11 +535,16 @@ class ONNXOpMapper(OpMapper):
     def Expand(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
+
+        if len(val_shape.outputs) == 1:
+            self.omit_nodes.append(val_shape.layer_name)
+
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
         out_shape = node.out_shapes[0]
+        val_x_dtype = val_x.dtype
 
         name_ones = node.layer_name + '_ones'
-        attr_ones = {'shape': out_shape, 'dtype': string('int64')}
+        attr_ones = {'shape': out_shape, 'dtype': string(val_x_dtype)}
         node.fluid_code.add_layer('ones',
                                   inputs=None,
                                   output=name_ones,
@@ -724,8 +728,16 @@ class ONNXOpMapper(OpMapper):
         # catch dynamic graph shape
         if isinstance(val_shape, ONNXGraphNode):
             shape, _, _ = self.get_dynamic_shape(val_shape.layer_name)
-            attr['actual_shape'] = val_shape.layer_name
+            if val_shape.dtype == 'int64':
+                val_shape_cast = val_shape.layer_name + '_cast'
+                node.fluid_code.add_layer('cast',
+                                          inputs=val_shape,
+                                          output=val_shape_cast,
+                                          param_attr={'dtype': string('int32')})
 
+                attr['actual_shape'] = val_shape_cast
+            else:
+                attr['actual_shape'] = val_shape
         if shape is None:
             shape = val_reshaped.out_shapes[0]
 

@@ -44,8 +44,6 @@ class ONNXGraphNode(GraphNode):
         self.layer_type = layer.op_type
         self.fluid_code = FluidCode()
         self.attr_map = self.get_attr_map()
-        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
-        self.weight_inputs = list()
         self.out_shapes = list()
         self.dtype = None
         self.which_child = {}
@@ -206,29 +204,38 @@ class ONNXGraph(Graph):
         #generate connection between nodes for topo
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
-                for idx, in_node in enumerate(node.layer.input):
-                    if in_node not in self.node_map:
-                        flag = 0
-                        for nd in self.model.node:
-                            for idx, opt in enumerate(nd.output):
-                                if opt == in_node:
-                                    self.connect(nd.name, layer_name)
-                                    flag = 1
-                                    node.which_child[nd.name] = idx
-                                    self.node_map[nd.name].index = 0
-                                    break
-                            if flag == 1:
-                                break
-                        if flag == 0:
-                            raise Exception(
-                                'input[{}] of node[{}] does not exist in node_map'
-                                .format(in_node, layer_name))
-                    else:
-                        self.connect(in_node, layer_name)
+                self.build_connection(layer_name, node)
+
         #generate topo
         super(ONNXGraph, self).build()
 
         self.input_nodes = self.place_holder_nodes
+
+    def build_connection(self, layer_name, node):
+        """
+        find connection for nodes
+        """
+        for idx, in_node in enumerate(node.layer.input):
+            if in_node == '':
+                continue
+            if in_node not in self.node_map:
+                flag = 0
+                for nd in self.model.node:
+                    for idx, opt in enumerate(nd.output):
+                        if opt == in_node:
+                            self.connect(nd.name, layer_name)
+                            flag = 1
+                            node.which_child[nd.name] = idx
+                            self.node_map[nd.name].index = 0
+                            break
+                    if flag == 1:
+                        break
+                if flag == 0:
+                    raise Exception(
+                        'input[{}] of node[{}] does not exist in node_map'.
+                        format(in_node, layer_name))
+            else:
+                self.connect(in_node, layer_name)
 
     def get_input_node(self, node, idx=0, copy=False):
         if len(node.which_child) == 0:
@@ -450,7 +457,6 @@ class ONNXDecoder(object):
         """
         make a valid code name for ParamAttr
         """
-
         if name == '':
             raise ValueError('name should not be empty')
         for s in ' .*?\\/-:':
@@ -473,6 +479,9 @@ class ONNXDecoder(object):
             node.name = node.output[0]
             node.name = self.make_variable_name(node.name)
             for i in range(len(node.input)):
-                node.input[i] = self.make_variable_name(node.input[i])
+                if node.input[i] == '':
+                    continue
+                else:
+                    node.input[i] = self.make_variable_name(node.input[i])
             for i in range(len(node.output)):
                 node.output[i] = self.make_variable_name(node.output[i])
