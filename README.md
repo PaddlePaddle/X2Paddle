@@ -19,18 +19,6 @@ onnx ： onnx == 1.5.0  onnxruntime == 0.4.0
 
 ## 安装
 ### 安装方式一（推荐）
-使用最新的代码版本，可使用如下方式进行安装  
-```
-pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
-```
-
-### 安装方式二
-我们会定期更新pip源上的x2paddle版本
-```
-pip install x2paddle
-```
-
-### 安装方式三
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -38,6 +26,11 @@ git checkout develop
 python setup.py install
 ```
 
+### 安装方式二
+我们会定期更新pip源上的x2paddle版本
+```
+pip install x2paddle
+```
 ## 使用方法
 ### TensorFlow
 ```
