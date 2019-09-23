@@ -652,6 +652,7 @@ class CaffeOpMapper(OpMapper):
             ]).astype('float32')
             scale = 0
         else:
+
             node.data = [np.squeeze(i).astype('float32') for i in node.data]
             mean, variance, scale = node.data
         # Prescale the stats
@@ -687,8 +688,10 @@ class CaffeOpMapper(OpMapper):
                 input_c,
             ]).astype('float32')
         else:
-            self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0]).astype('float32')
-            self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1]).astype('float32')
+            self.weights[node.layer_name + '_scale'] = np.squeeze(
+                node.data[0]).astype('float32')
+            self.weights[node.layer_name + '_offset'] = np.squeeze(
+                node.data[1]).astype('float32')
         params = node.layer.scale_param
         axis = params.axis
         num_axes = params.num_axes
