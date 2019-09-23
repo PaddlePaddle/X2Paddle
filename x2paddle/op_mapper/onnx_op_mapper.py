@@ -116,12 +116,14 @@ class ONNXOpMapper(OpMapper):
             return False
 
     def get_results_of_inference(self, model, value_infos, data_nodes):
-        inputs = []
+        if not os.path.exists(self.tmp_data_dir):
+            os.makedirs(self.tmp_data_dir)
+
         for data_node in data_nodes:
             value_info = value_infos[data_node]
             ipt = np.random.random(value_info['shape']).astype(
                 value_info['dtype'])
-            inputs.append(ipt)
+            np.save(os.path.join(self.tmp_data_dir, data_node), ipt)
 
         model = onnx.shape_inference.infer_shapes(model)
         outputs = []
@@ -130,11 +132,8 @@ class ONNXOpMapper(OpMapper):
 
         model.graph.ClearField('output')
         model.graph.output.MergeFrom(outputs)
-        if not os.path.exists(self.tmp_data_dir):
-            os.makedirs(self.tmp_data_dir)
         onnx.save(model, os.path.join(self.tmp_data_dir,
                                       'onnx_model_infer.onnx'))
-        np.save(os.path.join(self.tmp_data_dir, 'input_data.npy'), inputs)
         os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
         return
 
@@ -263,21 +262,24 @@ class ONNXOpMapper(OpMapper):
     def elementwise_map(self, node):
         assert node.layer_type in self.elementwise_ops
         op_type = self.elementwise_ops[node.layer_type]
+
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-
-        if len(val_x.out_shapes[0]) < len(val_y.out_shapes[0]):
-            val_x, val_y = val_y, val_x
-
         val_y_shape = val_y.out_shapes[0]
         val_x_shape = val_x.out_shapes[0]
 
+        if len(val_x_shape) < len(val_y_shape):
+            val_x, val_y = val_y, val_x
+
+        str_y_shape = ','.join(str(e) for e in val_y_shape)
+        str_x_shape = ','.join(str(e) for e in val_x_shape)
         slice_idx = 0
-        for dim in val_y_shape:
-            if dim == 1:
-                slice_idx += 1
-            else:
-                break
+        if str_y_shape not in str_x_shape:
+            for dim in val_y_shape:
+                if dim == 1:
+                    slice_idx += 1
+                else:
+                    break
         attr = {"name": string(node.layer_name)}
         if slice_idx < len(val_y_shape) and slice_idx > 0:
             val_y_reshaped = val_y_shape[slice_idx:]
@@ -353,47 +355,52 @@ class ONNXOpMapper(OpMapper):
         val_scales = self.graph.get_input_node(node, idx=1, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
 
-        out_shape_ = val_y.out_shapes[0]
-        if out_shape_ is not None:
-            assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
-            out_shape_ = out_shape_[2:]
+        out_shape = val_y.out_shapes[0]
+        if out_shape is not None:
+            assert len(out_shape) == 4, 'only 4-D Tensor as X and Y supported'
+            out_shape = out_shape[2:]
+
         scales = _const_weight_or_none(val_scales)
+
+        if isinstance(val_scales, ONNXGraphNode):
+            scales, _, _ = self.get_dynamic_shape(val_scales.layer_name)
+
+        attr = {'name': string(node.layer_name)}
+        use_scales = True
         if scales is not None:
-            assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
-            assert scales[0] == 1 and scales[
-                1] == 1, 'only scale on (NC)HW supported'
-            assert scales[2] == scales[
-                3], 'only aspect-ratio-invariant scale supported'
+            try:
+                assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
+                assert scales[0] == 1 and scales[
+                    1] == 1, 'only scale on (NC)HW supported'
+                assert scales[2] == scales[
+                    3], 'only aspect-ratio-invariant scale supported'
+            except:
+                use_scales = False
         scale = scales[2] if scales else None
         if scale is None:
-            assert out_shape_, 'neither scales nor output shape is available'
-            out_shape = out_shape_
+            assert out_shape, 'neither scales nor output shape is available'
         else:
-            out_shape = None
-            if out_shape_ is None:
+            if out_shape is None:
                 in_shape = val_x.out_shapes[0]
                 assert in_shape is not None, 'out_shape required but not inferrable'
                 assert len(
                     in_shape) == 4, 'only 4-D Tensor as X and Y supported'
-                out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
+                out_shape = [in_shape[2] * scale, in_shape[3] * scale]
 
         mode = node.get_attr('mode', 'nearest')
 
         fluid_op = 'resize_{}'.format(mode)
         if 'linear' in mode:
             print(
-                'Warnning: paddle not support resize wiht mode: linear, we use bilinear replace linear'
+                'Warnning: paddle not support op:resize wiht mode: linear, we use bilinear replace linear'
             )
             fluid_op = 'resize_bilinear'
 
-        if isinstance(val_scales, ONNXGraphNode):
-            scale, _, _ = self.get_dynamic_shape(val_scales.layer_name)
+        if use_scales and scale is not None:
+            attr['scale'] = scale
+        else:
+            attr['out_shape'] = out_shape
 
-        attr = {
-            'scale': scale,
-            'out_shape': out_shape,
-            'name': string(node.layer_name)
-        }
         node.fluid_code.add_layer(fluid_op,
                                   inputs=val_x,
                                   output=node,
@@ -449,7 +456,6 @@ class ONNXOpMapper(OpMapper):
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
-
         if len(val_x.out_shapes[0]) == 0:
             node.fluid_code.add_layer('assign',
                                       inputs=val_x,
@@ -483,6 +489,7 @@ class ONNXOpMapper(OpMapper):
             assert dtype == output_dtype, 'tensor dtype unmatches storage dtype'
 
         shape = node.get_attr('shape', None)
+
         if shape is None:
             shape = val_output.out_shapes[0]
         if shape is None:
@@ -493,7 +500,7 @@ class ONNXOpMapper(OpMapper):
                 'using value as 1-D tensor may lead to fails',
                 val_output.layer_name, val_output.layer_name)
 
-        if len(value) == 1:  # scalar
+        if len(value) == 1:
             value = value.tolist()
             shape = [1]
             value = value[0]
@@ -520,48 +527,34 @@ class ONNXOpMapper(OpMapper):
                                       param_attr=attr)
 
     def Resize(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-        val_y = self.graph.get_node(node.layer.output[0], copy=True)
-
-        out_shape_ = val_y.out_shapes[0]
-        if out_shape_ is not None:
-            assert len(out_shape_) == 4, 'only 4-D Tensor as X and Y supported'
-            out_shape_ = out_shape_[2:]
-        scales = _const_weight_or_none(val_scales)
-        if scales is not None:
-            assert len(scales) == 4, 'only 4-D Tensor as X and Y supported'
-            assert scales[0] == 1 and scales[
-                1] == 1, 'only scale on (NC)HW supported'
-            assert scales[2] == scales[
-                3], 'only aspect-ratio-invariant scale supported'
-        scale = scales[2] if scales else None
-        if scale is None:
-            assert out_shape_, 'neither scales nor output shape is available'
-            out_shape = out_shape_
-        else:
-            out_shape = None
-            if out_shape_ is None:
-                in_shape = val_x.out_shapes[0]
-                assert in_shape is not None, 'out_shape required but not inferrable'
-                assert len(
-                    in_shape) == 4, 'only 4-D Tensor as X and Y supported'
-                out_shape_ = [in_shape[2] * scale, in_shape[3] * scale]
-
-        mode = node.get_attr('mode', 'nearest')
-        fluid_op = 'resize_{}'.format(mode)
-        attr = {
-            'scale': scale,
-            'out_shape': out_shape,
-            'name': string(node.layer_name)
-        }
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        self._interpolate(node)
 
     def Upsample(self, node):
         self._interpolate(node)
+
+    def Expand(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_shape = self.graph.get_input_node(node, idx=1, copy=True)
+
+        if len(val_shape.outputs) == 1:
+            self.omit_nodes.append(val_shape.layer_name)
+
+        val_y = self.graph.get_node(node.layer.output[0], copy=True)
+        out_shape = node.out_shapes[0]
+        val_x_dtype = val_x.dtype
+
+        name_ones = node.layer_name + '_ones'
+        attr_ones = {'shape': out_shape, 'dtype': string(val_x_dtype)}
+        node.fluid_code.add_layer('ones',
+                                  inputs=None,
+                                  output=name_ones,
+                                  param_attr=attr_ones)
+        inputs = {'x': name_ones, 'y': val_x}
+        attr = {'name': string(node.layer_name)}
+        node.fluid_code.add_layer('elementwise_mul',
+                                  inputs=inputs,
+                                  output=node.layer_name,
+                                  param_attr=attr)
 
     def Gather(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -716,7 +709,7 @@ class ONNXOpMapper(OpMapper):
             'dim': axis,
             'name': string(node.layer_name)
         }
-        # generation
+
         node.fluid_code.add_layer('split',
                                   inputs=val_x,
                                   output=val_y,
@@ -731,21 +724,23 @@ class ONNXOpMapper(OpMapper):
         if isinstance(val_shape, ONNXGraphDataNode):
             self.omit_nodes.append(val_shape.layer_name)
 
+        attr = {'name': string(node.layer_name)}
         # catch dynamic graph shape
         if isinstance(val_shape, ONNXGraphNode):
             shape, _, _ = self.get_dynamic_shape(val_shape.layer_name)
+            if val_shape.dtype == 'int64':
+                val_shape_cast = val_shape.layer_name + '_cast'
+                node.fluid_code.add_layer('cast',
+                                          inputs=val_shape,
+                                          output=val_shape_cast,
+                                          param_attr={'dtype': string('int32')})
 
+                attr['actual_shape'] = val_shape_cast
+            else:
+                attr['actual_shape'] = val_shape
         if shape is None:
             shape = val_reshaped.out_shapes[0]
 
-        shape_dtype = val_shape.dtype
-
-        if shape_dtype is None:
-            _logger.warning(
-                'in op %s(%s -> Reshape -> %s): '
-                'dtype of input "shape" not inferred, int32 assumed',
-                node.layer_name, val_x.layer_name, val_reshaped.layer_name)
-            shape_dtype = _np.dtype('int32')
         if shape is None:
             shape = [1, -1]
             _logger.warning(
@@ -753,8 +748,8 @@ class ONNXOpMapper(OpMapper):
                 'input "shape" not inferred, use [1, -1] as dummy value, '
                 'the behavior of Paddle fluid maybe undefined', node.layer_name,
                 val_x.layer_name, val_reshaped.layer_name)
-        attr = {'shape': shape, 'name': string(node.layer_name)}
 
+        attr['shape'] = shape
         node.fluid_code.add_layer('reshape',
                                   inputs=val_x,
                                   output=node,

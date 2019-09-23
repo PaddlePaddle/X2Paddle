@@ -34,16 +34,14 @@ def main():
 
     save_dir = args.save_dir
     model_dir = os.path.join(save_dir, 'onnx_model_infer.onnx')
-    data_dir = os.path.join(save_dir, 'input_data.npy')
 
     model = onnx.load(model_dir)
     sess = rt.InferenceSession(model_dir)
 
-    inputs = np.load(data_dir, allow_pickle=True)
-    data_dir
     inputs_dict = {}
-    for i, ipt in enumerate(inputs):
-        inputs_dict[sess.get_inputs()[i].name] = ipt
+    for ipt in sess.get_inputs():
+        data_dir = os.path.join(save_dir, ipt.name + '.npy')
+        inputs_dict[ipt.name] = np.load(data_dir, allow_pickle=True)
     res = sess.run(None, input_feed=inputs_dict)
     for idx, value_info in enumerate(model.graph.output):
         np.save(os.path.join(save_dir, value_info.name), res[idx])
