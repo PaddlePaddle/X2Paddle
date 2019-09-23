@@ -26,8 +26,6 @@ default_op_mapping_field_values['OUTPUT_PERM'] = None
 default_op_mapping_field_values['FILL_NAME_FIELD'] = True
 
 default_op_mapping = {
-    'Gather': ['gather', ['X'], ['Out'],
-               dict(axis='')],
     'Shape': ['shape', ['X'], ['Out']],
     'Clip': [
         'clip', ['X'], ['Out'],
@@ -79,11 +77,6 @@ default_op_mapping = {
     'Softmax': ['softmax', ['X'], ['Out'],
                 dict(), dict(axis=1)],
     'Sqrt': ['sqrt', ['X'], ['Out']],
-}
-
-activefunc_op_mapping = {
-    'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
-                  dict(), dict(alpha=.01)],
 }
 
 default_ioa_constraint = {
