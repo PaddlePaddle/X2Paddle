@@ -17,7 +17,6 @@ from x2paddle.core.fluid_code import FluidCode
 from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx.utils import polish_model
-from onnx.version_converter import convert_version
 from onnx import helper
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
@@ -26,9 +25,11 @@ from onnx.numpy_helper import to_array
 from onnx import AttributeProto, TensorProto, GraphProto
 from collections import OrderedDict as Dict
 import onnx
+from onnx.helper import ValueInfoProto
 import numpy as np
 from copy import deepcopy
 import logging as _logging
+import os
 
 default_op_domain = 'ai.onnx'
 _logger = _logging.getLogger(__name__)
@@ -43,10 +44,9 @@ class ONNXGraphNode(GraphNode):
         self.layer_type = layer.op_type
         self.fluid_code = FluidCode()
         self.attr_map = self.get_attr_map()
-        self.dtype_map = {1: "float32", 3: "int32", 9: "int64"}
-        self.weight_inputs = list()
         self.out_shapes = list()
         self.dtype = None
+        self.which_child = {}
 
     def get_attr_map(self):
         """
@@ -60,10 +60,9 @@ class ONNXGraphNode(GraphNode):
     @property
     def value(self):
         assert 'Constant' in self.layer_type, "Only Constant | ConstantOfShape node has value."
-        attr = self.layer.attribute['value']
         if 'value' not in self.attr_map:
             return None
-        return self.attr_map[name]
+        return self.attr_map['value']
 
     def get_attribute_value2(self, attr):
         """
@@ -105,29 +104,39 @@ class ONNXGraphDataNode(GraphNode):
         self.fluid_code = FluidCode()
         self.weight = None
         self.embeded_as = None
+        self.which_child = {}
 
     @property
     def out_shapes(self):
-        values = self.layer.type.tensor_type.shape.dim
-        out_shapes = list()
-        out_shapes.append([dim.dim_value for dim in values])
-        return out_shapes
+        if isinstance(self.layer, ValueInfoProto):
+            values = self.layer.type.tensor_type.shape.dim
+            out_shapes = list()
+            out_shapes.append([dim.dim_value for dim in values])
+            return out_shapes
+        else:
+            values = self.layer.dims
+            out_shapes = list()
+            out_shapes.append(values)
+            return out_shapes
 
     @property
     def dtype(self):
-        dtype = self.layer.type.tensor_type.elem_type
-        return TENSOR_TYPE_TO_NP_TYPE[dtype]
+        if isinstance(self.layer, ValueInfoProto):
+            dtype = self.layer.type.tensor_type.elem_type
+            return TENSOR_TYPE_TO_NP_TYPE[dtype]
+        else:
+            dtype = self.layer.data_type
+            return TENSOR_TYPE_TO_NP_TYPE[dtype]
 
 
 class ONNXGraph(Graph):
-    def __init__(self, graph, onnx_model):
-        super(ONNXGraph, self).__init__(graph)
+    def __init__(self, onnx_model):
+        super(ONNXGraph, self).__init__(onnx_model.graph)
         self.onnx_model = onnx_model
         self.initializer = {}
         self.place_holder_nodes = list()
         self.get_place_holder_nodes()
-
-        self.value_infos = self.inferred_model_value_info(graph)
+        self.value_infos = self.inferred_model_value_info(self.model)
         self.results_of_inference = dict()
 
     def get_inner_nodes(self):
@@ -165,22 +174,9 @@ class ONNXGraph(Graph):
         """
         build topo_sort of ONNX model
         """
-        data_node = self.place_holder_nodes[0]
-        value_info = self.value_infos[data_node]
-        input_shape = value_info['shape']
-        self.get_results_of_inference(self.onnx_model, input_shape)
         for layer in self.model.node:
             node = ONNXGraphNode(layer)
             self.node_map[layer.name] = node
-            for opt in layer.output:
-                if opt in self.value_infos:
-                    value_info = self.value_infos[opt]
-                    node.dtype = value_info['dtype']
-                    node.out_shapes.append(value_info['shape'])
-                else:
-                    _, dtype, shape = self.get_dynamic_shape(opt)
-                    node.dtype = dtype
-                    node.out_shapes.append(shape)
 
         for layer in self.model.input:
             if layer.name not in self.node_map:
@@ -191,34 +187,66 @@ class ONNXGraph(Graph):
                     is_global_input=is_place_holder)
 
         #set data node's weight
-        for name, weight in self.graph_weights(self.model):
+        for initializer in self.model.initializer:
+            name = initializer.name
+            weight = to_array(initializer)
             if name in self.node_map:
                 if isinstance(self.node_map[name], ONNXGraphDataNode):
                     self.node_map[name].weight = weight
                     self.node_map[name].embeded_as = []
+            else:
+                self.node_map[name] = ONNXGraphDataNode(initializer,
+                                                        layer_name=name,
+                                                        is_global_input=False)
+                self.node_map[name].weight = weight
+                self.node_map[name].embeded_as = []
 
         #generate connection between nodes for topo
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
-                for idx, in_node in enumerate(node.layer.input):
-                    if in_node not in self.node_map:
-                        raise Exception(
-                            'input[{}] of node[{}] does not exist in node_map'.
-                            format(in_node, layer_name))
-                    else:
-                        self.connect(in_node, layer_name)
+                self.build_connection(layer_name, node)
+
         #generate topo
         super(ONNXGraph, self).build()
 
         self.input_nodes = self.place_holder_nodes
 
-    def get_nodes(self, names, copy=False):
+    def build_connection(self, layer_name, node):
         """
-        get nodes by more than one name
+        find connection for nodes
         """
-        nodes = []
-        for name in names:
-            nodes.add(self.get_node(name, copy=copy))
+        for idx, in_node in enumerate(node.layer.input):
+            if in_node == '':
+                continue
+            if in_node not in self.node_map:
+                flag = 0
+                for nd in self.model.node:
+                    for idx, opt in enumerate(nd.output):
+                        if opt == in_node:
+                            self.connect(nd.name, layer_name)
+                            flag = 1
+                            node.which_child[nd.name] = idx
+                            self.node_map[nd.name].index = 0
+                            break
+                    if flag == 1:
+                        break
+                if flag == 0:
+                    raise Exception(
+                        'input[{}] of node[{}] does not exist in node_map'.
+                        format(in_node, layer_name))
+            else:
+                self.connect(in_node, layer_name)
+
+    def get_input_node(self, node, idx=0, copy=False):
+        if len(node.which_child) == 0:
+            ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+            return ipt_node
+
+        else:
+            ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
+            if ipt_node.layer_name in node.which_child:
+                ipt_node.index = node.which_child[ipt_node.layer_name]
+            return ipt_node
 
     def graph_weights(self, graph):
         """
@@ -270,50 +298,6 @@ class ONNXGraph(Graph):
             }
         return value_info
 
-    def get_results_of_inference(self, model, shape):
-        try:
-            import torch
-            version = torch.__version__
-            if '1.1.0' not in version:
-                print("your model have dynamic graph, torch==1.1.0 is required")
-                return
-        except:
-            print(
-                "your model have dynamic graph, we use caff2 to inference graph, please use \"pip install torch==1.1.0\"."
-            )
-            return
-        from x2paddle.decoder.onnx_backend import prepare
-
-        np_images = np.random.rand(shape[0], shape[1], shape[2],
-                                   shape[3]).astype('float32')
-
-        outputs = []
-        for node in model.graph.node:
-            value_info = helper.make_tensor_value_info(node.name,
-                                                       TensorProto.UNDEFINED,
-                                                       [])
-            outputs.append(value_info)
-
-        while len(outputs) > 0:
-            tmp_outputs = outputs[:254]
-            model.graph.ClearField('output')
-            model.graph.output.MergeFrom(tmp_outputs)
-            prepared_backend = prepare(model,
-                                       device='CPU',
-                                       no_check_UNSAFE=True)
-            res = prepared_backend.run(inputs=np_images)
-            for idx, info in enumerate(tmp_outputs):
-                self.results_of_inference[info.name] = res[idx]
-            outputs = outputs[254:]
-        return
-
-    def get_dynamic_shape(self, layer):
-        """
-        get dynamic shape from caffe2.backend
-        """
-        output = self.results_of_inference[layer]
-        return output.tolist(), output.dtype, output.shape
-
 
 class ONNXDecoder(object):
     def __init__(self, onnx_model):
@@ -334,8 +318,8 @@ class ONNXDecoder(object):
         self.standardize_variable_name(model.graph)
 
         self.model = model
-        graph_def = model.graph
-        self.onnx_graph = ONNXGraph(graph_def, model)
+        graph = model.graph
+        self.onnx_graph = ONNXGraph(model)
         self.onnx_graph.build()
 
     def build_value_refs(self, nodes):
@@ -473,10 +457,9 @@ class ONNXDecoder(object):
         """
         make a valid code name for ParamAttr
         """
-
         if name == '':
             raise ValueError('name should not be empty')
-        for s in ' .*?\\/-:':  #
+        for s in ' .*?\\/-:':
             name = name.replace(s, '_')
         return '_' + name
 
@@ -496,49 +479,9 @@ class ONNXDecoder(object):
             node.name = node.output[0]
             node.name = self.make_variable_name(node.name)
             for i in range(len(node.input)):
-                node.input[i] = self.make_variable_name(node.input[i])
+                if node.input[i] == '':
+                    continue
+                else:
+                    node.input[i] = self.make_variable_name(node.input[i])
             for i in range(len(node.output)):
                 node.output[i] = self.make_variable_name(node.output[i])
-
-    def split_model(self, model, outputs=None):
-        """
-        Takes a model and changes its outputs.
-        """
-        if outputs is None:
-            raise RuntimeError("outputs is None")
-        if outputs == model.graph.output[0].name:
-            return model
-        nodes = model.graph.node
-        keep_nodes = []
-
-        # all the nodes we need to keep.
-        for node in nodes:
-            if outputs in node.output:
-                keep_nodes.append(node)
-                break
-            keep_nodes.append(node)
-
-        infer_shapes = onnx.shape_inference.infer_shapes(model)
-
-        var_out = []
-        for value_info in infer_shapes.graph.value_info:
-            if value_info.name == outputs:
-                var_out.append(value_info)
-                break
-
-        graph = helper.make_graph(keep_nodes, model.graph.name,
-                                  model.graph.input, var_out,
-                                  model.graph.initializer)
-
-        onnx_model = helper.make_model(graph)
-        onnx_model.ir_version = model.ir_version
-        onnx_model.producer_name = model.producer_name
-        onnx_model.producer_version = model.producer_version
-        onnx_model.domain = model.domain
-        onnx_model.model_version = model.model_version
-        onnx_model.doc_string = model.doc_string
-
-        if len(onnx_model.graph.input) != len(model.graph.input):
-            raise RuntimeError("Input mismatch {} != {}".format(
-                len(onnx_model.input), len(model.input)))
-        return onnx_model

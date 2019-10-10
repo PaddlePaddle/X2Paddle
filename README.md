@@ -9,28 +9,16 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的�
 
 ## 环境依赖
 
-python >= 3.5  
+python == 2.7 | python >= 3.5  
 paddlepaddle >= 1.5.0  
 
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
 caffe ： 无  
-onnx ： onnx == 1.5.0  pytorch == 1.1.0
+onnx ： onnx == 1.5.0  onnxruntime == 0.4.0
 
 ## 安装
 ### 安装方式一（推荐）
-使用最新的代码版本，可使用如下方式进行安装  
-```
-pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
-```
-
-### 安装方式二
-我们会定期更新pip源上的x2paddle版本
-```
-pip install x2paddle
-```
-
-### 安装方式三
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -38,6 +26,11 @@ git checkout develop
 python setup.py install
 ```
 
+### 安装方式二
+我们会定期更新pip源上的x2paddle版本
+```
+pip install x2paddle
+```
 ## 使用方法
 ### TensorFlow
 ```
