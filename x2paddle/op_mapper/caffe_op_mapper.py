@@ -450,35 +450,19 @@ class CaffeOpMapper(OpMapper):
         slice_dim = params.slice_dim
         if slice_dim != 1 and axis == 1:
             axis = slice_dim
-        points = list(params.slice_point)
-
-        if len(points) == 0:
-            dims = node.input_shape[0][axis]
-            assert dims % top_len == 0, "the parameter of Slice is wrong"
-            part = dims / top_len
-            t = part
-            while t < dims:
-                points.append(int(t))
-                t += part
-        maxint32 = 2147483647
-        points = [0] + points
-        points.append(maxint32)
-        i = 0
-        node.fluid_code.add_note('{} = []'.format(node.layer_name))
-        for i in range(len(points)):
-            attr = {
-                'axes': [axis],
-                'starts': [points[i]],
-                'ends': [points[i + 1]]
-            }
-            node.fluid_code.add_layer("slice",
-                                      inputs=input,
-                                      output=node.layer_name + '_' + str(i),
-                                      param_attr=attr)
-            node.fluid_code.add_note('{}.append({})'.format(
-                node.layer_name, node.layer_name + '_' + str(i)))
-            if i == len(points) - 2:
-                break
+        output_shape = node.output_shape
+        sections_list = []
+        for s in output_shape:
+            sections_list.append(s[axis])
+        attr = {
+            'num_or_sections': sections_list,
+            'dim': axis,
+            'name': string(node.layer_name)
+        }
+        node.fluid_code.add_layer("split",
+                                  inputs=input,
+                                  output=node.layer_name,
+                                  param_attr=attr)
 
     def Concat(self, node):
         assert len(
