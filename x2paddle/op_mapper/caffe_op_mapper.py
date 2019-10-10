@@ -463,7 +463,7 @@ class CaffeOpMapper(OpMapper):
                                   inputs=input,
                                   output=node.layer_name,
                                   param_attr=attr)
-        
+
     def Concat(self, node):
         assert len(
             node.inputs
