@@ -170,7 +170,28 @@ class TFOpMapper(OpMapper):
                 x_shape = y.out_shapes[0]
                 y_shape = x.out_shapes[0]
             else:
-                raise Exception("Unexpected situation happend")
+                if len(x_shape) == 1 and len(y_shape) == 4 and x_shape[
+                        0] == y_shape[-1] and y_shape.count(-1) < 1:
+                    shape = [1, x_shape[0], 1, 1]
+                    attr = {"shape": shape}
+                    node.fluid_code.add_layer("reshape",
+                                              inputs=x_input,
+                                              output="reshape_x",
+                                              param_attr=attr)
+                    if y_shape[0] != 1:
+                        attr = {"expand_times": [y_shape[0], 1, 1, 1]}
+                        node.fluid_code.add_layer("expand",
+                                                  inputs="reshape_x",
+                                                  output="reshape_x",
+                                                  param_attr=attr)
+                    inputs = {"x": "reshape_x", "y": y_input}
+                    node.fluid_code.add_layer(op_type,
+                                              inputs=inputs,
+                                              output=node,
+                                              param_attr=None)
+                    return
+                else:
+                    raise Exception("Unexpected situation happend")
 
         if len(x_shape) == 4 and len(y_shape) == 1:
             if x_input.tf_data_format == "NHWC":
@@ -591,7 +612,7 @@ class TFOpMapper(OpMapper):
         # to change [192, -1]->[-1, 192], allways put -1 in the first dimension
         # optimization for Paddle-Lite
         in_shape = input.out_shapes[0]
-        if is_variable and in_shape.count(-1) < 1:
+        if not is_variable and in_shape.count(-1) < 1:
             total_size = 1
             for i in range(len(in_shape)):
                 total_size *= in_shape[i]
@@ -785,6 +806,9 @@ class TFOpMapper(OpMapper):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
         delta = self.graph.get_node(node.layer.input[2], copy=True)
+        self.add_omit_nodes(start.layer_name, node.layer_name)
+        self.add_omit_nodes(limit.layer_name, node.layer_name)
+        self.add_omit_nodes(delta.layer_name, node.layer_name)
         if start.layer_type == "Const":
             start = start.value
         else:
@@ -797,9 +821,6 @@ class TFOpMapper(OpMapper):
             delta = delta.value
         else:
             delta = self.decoder.infer_tensor(delta)
-        self.add_omit_nodes(start.layer_name, node.layer_name)
-        self.add_omit_nodes(limit.layer_name, node.layer_name)
-        self.add_omit_nodes(delta.layer_name, node.layer_name)
 
         inputs = {"start": start, "end": limit, "step": delta}
         attr = {"dtype": string(node.dtype)}

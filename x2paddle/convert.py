@@ -104,10 +104,14 @@ def tf2paddle(model_path,
         # neccesary optimization
         optimizer.delete_redundance_code()
         # optimizer below is experimental
+        optimizer.optimize_elementwise_op()
         optimizer.merge_activation()
         optimizer.merge_bias()
-        optimizer.merge_batch_norm()
-        optimizer.merge_prelu()
+        optimizer.optimize_sub_graph()
+
+
+#        optimizer.merge_batch_norm()
+#        optimizer.merge_prelu()
     else:
         mapper = TFOpMapperNHWC(model)
         optimizer = TFOptimizer(mapper)
@@ -154,7 +158,7 @@ def onnx2paddle(model_path, save_dir):
     model = ONNXDecoder(model_path)
 
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
-    mapper = ONNXOpMapper(model)
+    mapper = ONNXOpMapper(model, save_dir)
 
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
     optimizer = ONNXOptimizer(mapper)
