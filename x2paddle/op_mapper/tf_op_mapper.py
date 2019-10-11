@@ -168,7 +168,11 @@ class TFOpMapper(OpMapper):
                 x_input = y
                 y_input = x
                 x_shape = y.out_shapes[0]
+                if len(x_shape) == 0:
+                    x_shape = [1]
                 y_shape = x.out_shapes[0]
+                if len(y_shape) == 0:
+                    y_shape = [1]
             else:
                 if len(x_shape) == 1 and len(y_shape) == 4 and x_shape[
                         0] == y_shape[-1] and y_shape.count(-1) < 1:
