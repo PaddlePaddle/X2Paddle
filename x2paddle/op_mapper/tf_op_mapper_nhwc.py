@@ -121,10 +121,29 @@ class TFOpMapperNHWC(OpMapper):
             pd_param_name = list(param.values())[0]
             tf_param = node.get_attr(tf_param_name)
             attr[pd_param_name] = tf_param
-        node.fluid_code.add_layer(op_info[0],
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
+
+        if len(input.out_shapes[0]) == 4 and op_info[0] != 'shape':
+            attr1 = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer('transpose',
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr1)
+            input = node
+            node.fluid_code.add_layer(op_info[0],
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
+            attr2 = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer('transpose',
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr2)
+        else:
+            node.fluid_code.add_layer(op_info[0],
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
 
     def elementwise_map(self, node):
         assert node.layer_type in self.elementwise_ops
@@ -149,7 +168,11 @@ class TFOpMapperNHWC(OpMapper):
                 x_input = y
                 y_input = x
                 x_shape = y.out_shapes[0]
+                if len(x_shape) == 0:
+                    x_shape = [1]
                 y_shape = x.out_shapes[0]
+                if len(y_shape) == 0:
+                    y_shape = [1]
             else:
                 raise Exception("Unexpected situation happend")
 
@@ -193,11 +216,30 @@ class TFOpMapperNHWC(OpMapper):
                                           output="y_tmp",
                                           param_attr=attr)
                 y_input = "y_tmp"
-        inputs = {"x": x_input, "y": y_input}
-        node.fluid_code.add_layer(op_type,
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        if len(x_shape) == 4 and len(y_shape) == 4:
+            node.fluid_code.add_layer("transpose",
+                                      inputs=x_input,
+                                      output=x_input,
+                                      param_attr={'perm': [0, 3, 1, 2]})
+            node.fluid_code.add_layer("transpose",
+                                      inputs=y_input,
+                                      output=y_input,
+                                      param_attr={'perm': [0, 3, 1, 2]})
+            inputs = {"x": x_input, "y": y_input}
+            node.fluid_code.add_layer(op_type,
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=None)
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr={'perm': [0, 2, 3, 1]})
+        else:
+            inputs = {"x": x_input, "y": y_input}
+            node.fluid_code.add_layer(op_type,
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=None)
 
     def Placeholder(self, node):
         shape = node.out_shapes[0]
@@ -978,9 +1020,7 @@ class TFOpMapperNHWC(OpMapper):
 
         if pad_mode == "SAME":
             if node.tf_data_format == "NHWC":
-                print(out_shape)
                 out_shape = [out_shape[i] for i in [0, 3, 1, 2]]
-                print(out_shape)
             for i in range(4):
                 if out_shape[i] < 0:
                     out_shape[i] = 999999
