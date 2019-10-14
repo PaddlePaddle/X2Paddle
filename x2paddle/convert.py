@@ -134,7 +134,8 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto):
     if (int(ver_part[0]) == 3 and int(ver_part[1]) >= 6) \
         or (int(ver_part[0]) > 3):
         version_satisfy = True
-    assert version_satisfy, 'The version of protobuf must be larger than 3.6.0!'
+    assert version_satisfy, 'The version of protobuf must be \
+        larger than or equal to  3.6.0!'
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
