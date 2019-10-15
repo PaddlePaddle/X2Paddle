@@ -312,7 +312,11 @@ class TFDecoder(object):
 
                 right_shape_been_input = False
                 while not right_shape_been_input:
-                    shape = input("Shape of Input(e.g. None,224,224,3): ")
+                    try:
+                        shape = raw_input(
+                            "Shape of Input(e.g. None,224,224,3): ")
+                    except:
+                        shape = input("Shape of Input(e.g. None,224,224,3): ")
                     if shape.count("None") > 1:
                         print("Only 1 dimension can be None, type again:)")
                     else:
