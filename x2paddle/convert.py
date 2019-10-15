@@ -189,14 +189,14 @@ def main():
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
-    #    try:
-    #        import paddle
-    #        v0, v1, v2 = paddle.__version__.split('.')
-    #        if int(v0) != 1 or int(v1) < 5:
-    #            print("paddlepaddle>=1.5.0 is required")
-    #            return
-    #    except:
-    #        print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
+    try:
+        import paddle
+        v0, v1, v2 = paddle.__version__.split('.')
+        if int(v0) != 1 or int(v1) < 5:
+            print("paddlepaddle>=1.5.0 is required")
+            return
+    except:
+        print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
