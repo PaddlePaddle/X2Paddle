@@ -1007,7 +1007,7 @@ class TFOpMapperNHWC(OpMapper):
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
-            "num_filters": k_size[3],
+            "num_filters": k_size[2],
             "filter_size": k_size[0:2],
             "stride": strides[2:4],
             "dilation": dilations[2:4],
