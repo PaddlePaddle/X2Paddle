@@ -517,7 +517,7 @@ class TFOptimizer(object):
                             l.op = 'transpose'
                             l.inputs = true_node.fluid_code.layers[3].output
                             l.param_attr = {'perm': [0, 3, 1, 2]}
-                            if type(l.inputs) == str:
+                            if isinstance(l.inputs, six.string_types):
                                 l.output = l.inputs
                             else:
                                 l.output = l.inputs.layer_name
@@ -550,7 +550,7 @@ class TFOptimizer(object):
             node = self.graph.get_node(name)
             if len(node.out_shapes[0]) == 4 and node.tf_data_format == "NHWC":
                 shape = node.fluid_code.layers[0].param_attr["shape"]
-                shape = [shape[i] for i in [0, 3, 1, 2]]
+                shape = [shape[j] for j in [0, 3, 1, 2]]
                 node.fluid_code.layers[0].param_attr["shape"] = shape
                 node.fluid_code.layers[0].output = "nhwc_" + name
                 attr = {"perm": [0, 2, 3, 1]}
