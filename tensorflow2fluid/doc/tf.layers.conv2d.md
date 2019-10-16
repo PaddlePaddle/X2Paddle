@@ -50,8 +50,8 @@ TensorFlow: 默认输入数据格式为`NHWC`，表示`(batch，height, width, i
 
 | 输入 | 卷积核 | 输出 |
 |--------------------|-------------------|------------------|
-|NHWC | (kernel_h, kernel_w, filters_num, in_channels)| (batch, out_h, out_w, filters_num)|
-|NCHW | (kernel_h, kernel_w, filters_num, in_channels) | (batch, filters_num, out_h, out_w)|
+|NHWC | (kernel_h, kernel_w, in_channels, filters_num)| (batch, out_h, out_w, filters_num)|
+|NCHW | (kernel_h, kernel_w, in_channels, filters_num) | (batch, filters_num, out_h, out_w)|
 
 PaddlePaddle：只支持输入数据格式为`NCHW`，且**卷积核格式**与TensorFlow不同，其中输入、输出、卷积核对应关系如下表所示，
 
