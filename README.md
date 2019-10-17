@@ -38,7 +38,7 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 ```
 ### Caffe
 ```
-x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
+x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
 ```
 ### ONNX
 ```
