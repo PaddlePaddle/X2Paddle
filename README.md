@@ -7,6 +7,10 @@ X2Paddle is a toolkit for converting trained model to PaddlePaddle from other de
 ## 转换模型库
 X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的转换，可以在[X2Paddle-Model-Zoo](x2paddle_model_zoo.md)查看我们的模型测试列表。如果你在新的模型上进行了测试转换，也欢迎继续补充该列表；如若无法转换，可通过ISSUE反馈给我们，我们会尽快跟进。
 
+# Notice!
+X2Paddle在之前的开发过程中，对比了PaddlePaddle与主流框架上的使用差别。为了提升PaddlePaddle的易用性，X2Paddle汇总了OP开发建议，如部分OP支持tensor参数，NHWC格式的支持, elemenwise类OP的broadcast机制等，这些功能已更新在PaddlePaddle发布的1.6版本中。  
+新版本的Paddle让用户可以更容易将原框架的使用经验迁移至PaddlePaddle，同时也使用X2Paddle可以更好地支持模型转换。
+
 ## 环境依赖
 
 python == 2.7 | python >= 3.5  
