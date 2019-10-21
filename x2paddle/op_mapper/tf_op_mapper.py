@@ -1123,40 +1123,6 @@ class TFOpMapper(OpMapper):
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {"align_corners": align_corners, "out_shape": resize_shape}
-        node.fluid_code.add_layer("resize_nearest",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeBilinear(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {
-            "align_corners": align_corners,
-            "out_shape": resize_shape,
-            "align_mode": 1
-        }
-        node.fluid_code.add_layer("resize_bilinear",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeNearestNeighbor(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
             resize_shape = self.decoder.infer_shape_tensor(
                 resize_shape, node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
@@ -1185,37 +1151,6 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
-
-    def GreaterEqual(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer("greater_equal",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
-
-    def RandomUniform(self, node):
-        shape = self.graph.get_node(node.layer.input[0], copy=True)
-        self.add_omit_nodes(shape.layer_name, node.layer_name)
-        if shape.layer_type == "Const":
-            shape = shape.value.tolist()
-        else:
-            shape = self.decoder.infer_shape_tensor(shape)
-        if node.tf_data_format == "NHWC" and len(shape) == 4:
-            shape = [shape[i] for i in [0, 3, 1, 2]]
-        attr = {"shape": shape, "min": 0.0, "max": 0.9999}
-        if shape[0] < 0:
-            input = self.batch_node
-            node.fluid_code.add_layer("uniform_random_batch_size_like",
-                                      inputs=input,
-                                      output=node,
-                                      param_attr=attr)
-        else:
-            node.fluid_code.add_layer("uniform_random",
-                                      inputs=None,
-                                      output=node,
-                                      param_attr=attr)
 
     def GreaterEqual(self, node):
         x = self.graph.get_node(node.layer.input[0], copy=True)
