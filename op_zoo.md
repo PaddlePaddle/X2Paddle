@@ -17,7 +17,7 @@
 | 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
 |------|------|------|------|------|------|------|------|
 | 1 | Relu | 2 | Relu6 | 3 | Shape | 4 | Abs | 
-|5 | Sigmoid | 6 | Exp || 7 | Rsqrt | 8 |swish_f32 |
+|5 | Sigmoid | 6 | Exp | 7 | Rsqrt | 8 |swish_f32 |
 |9 | Tanh | 10 | LeakyRelu | 11 | Add | 12 | RealDiv |
 | 13 | Sub | 14 | Maximum | 15 | Mul | 16 | FloorDiv |
 |17 | Placeholder | 18 | Const | 19 | Transpose | 20 |FusedBatchNorm|
