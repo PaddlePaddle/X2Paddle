@@ -5,7 +5,7 @@
 
 ## TensorFlow
 
-| 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
+| 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
 | 1  | Relu        | 2  | Relu6     | 3  | Shape     | 4  | Abs                   |
 | 5  | Sigmoid     | 6  | Exp       | 7  | Rsqrt     | 8  | swish_f32             |
@@ -18,11 +18,11 @@
 | 33 | Mean        | 34 | MatMul    | 35 | ArgMax    | 36 | StridedSlice          |
 | 37 | Slice       | 38 | Sum       | 39 | Max       | 40 | Conv2DBackpropInput   |
 | 41 | Cast        | 42 | Split     | 43 | Squeeze   | 44 | ResizeNearestNeighbor |
-| 45 | Softmax     | 46 | Range     | 47 | ConcatV2  | 
+| 45 | Softmax     | 46 | Range     | 47 | ConcatV2  |
 
 ## Caffe
 
-| 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
+| 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
 | 1  | Input     | 2  | Convolution  | 3  | Deconvolution  | 4  | Pooling              |
 | 5  | LRN       | 6  | InnerProduct | 7  | Softmax        | 8  | Slice                |
@@ -32,9 +32,9 @@
 | 21 | Axpy      | 22 | ROIPolling   | 23 | Permute        | 24 | DetectionOutput      |
 | 25 | Normalize | 26 | Select       | 27 | ShuffleChannel | 28 | ConvolutionDepthwise |
 | 29 | ReLU      | 30 | AbsVal       | 31 | Sigmoid        | 32 | TanH                 |
- 
+
 ## ONNX
 
-| 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
+| 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
 | 1 | * | 2 | *| 3 |* | 4 | * |
