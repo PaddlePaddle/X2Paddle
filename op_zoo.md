@@ -7,7 +7,7 @@
 
 | 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
 |------|------|------|------|------|------|------|------|
-| 1 | Relu | 2 | Relu6 | 3 | Shape | 4 | Abs | 
+| 1 | Relu | 2 | Relu6 | 3 | Shape | 4 | Abs |
 |5 | Sigmoid | 6 | Exp | 7 | Rsqrt | 8 |swish_f32 |
 |9 | Tanh | 10 | LeakyRelu | 11 | Add | 12 | RealDiv |
 | 13 | Sub | 14 | Maximum | 15 | Mul | 16 | FloorDiv |
@@ -19,3 +19,15 @@
 | 37 | Slice | 38 | Sum | 39 | Max | 40 |  Conv2DBackpropInput|
 |41 | Cast | 42 | Split | 43| Squeeze | 44 |  ResizeNearestNeighbor|
 |45 | Softmax | 46 | Range | 47 | ConcatV2 | 48 | * |
+
+## Caffe
+
+| 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
+|------|------|------|------|------|------|------|------|
+| 1 | * | 2 | *| 3 |* | 4 | * |
+
+## ONNX
+
+| 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
+|------|------|------|------|------|------|------|------|
+| 1 | * | 2 | *| 3 |* | 4 | * |
