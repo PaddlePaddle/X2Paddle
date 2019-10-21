@@ -1123,40 +1123,6 @@ class TFOpMapper(OpMapper):
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {"align_corners": align_corners, "out_shape": resize_shape}
-        node.fluid_code.add_layer("resize_nearest",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeBilinear(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape)
-        align_corners = node.get_attr("align_corners")
-        attr = {
-            "align_corners": align_corners,
-            "out_shape": resize_shape,
-            "align_mode": 1
-        }
-        node.fluid_code.add_layer("resize_bilinear",
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
-
-    def ResizeNearestNeighbor(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
             resize_shape = self.decoder.infer_shape_tensor(
                 resize_shape, node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
