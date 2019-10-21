@@ -24,8 +24,15 @@
 
 | 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
 |------|------|------|------|------|------|------|------|
-| 1 | * | 2 | *| 3 |* | 4 | * |
-
+| 1 | Input | 2 | Convolution| 3 |Deconvolution | 4 | Pooling |
+|5  |LRN    |6  |InnerProduct|  7 | Softmax    |    8  |   Slice    |
+|9  |Concat    |10  |PReLU|  11 |    Accuracy   |    12 |   Eltwise    |
+|13  |BatchNorm    |14  |Scale|  15 |Reshape|    16  |ArgMax|
+|17  |  Crop  |18 |  Flatten |  19 |    Power   |  20  |   Reduction    |
+|21  |  Axpy  |22  | ROIPolling |  23 |    Permute   |   24 |    DetectionOutput   |
+|25  |Normalize|26  |  Select|  27 |   ShuffleChannel    |   28 |    ConvolutionDepthwise   |
+|29  |ReLU|30  |AbsVal|  31 |   Sigmoid    |   32 |    TanH   |
+ 
 ## ONNX
 
 | 序号 | OP | 序号 | OP |序号 | OP |序号 | OP |
