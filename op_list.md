@@ -37,4 +37,16 @@
 
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
-| 1 | * | 2 | *| 3 |* | 4 | * |
+| 1  | Relu     | 2  | LeakyRelu | 3  | Elu       | 4  | ThresholdedRelu    |
+| 5  | Prelu    | 6  | Tanh      | 7  | Shrink    | 8  | Sigmoid            |
+| 9  | Pow      | 10 | Softplus  | 11 | Softsign  | 12 | HardSigmoid        |
+| 13 | Exp      | 14 | Add       | 15 | Div       | 16 | Sub                |
+| 17 | Mul      | 18 | Shape     | 19 | Clip      | 20 | AveragePool        |
+| 21 | Sqrt     | 22 | ReduceSum | 23 | ReduceMin | 24 | ReduceMean         |
+| 25 | Constant | 26 | Pad       | 27 | Unsqueeze | 28 | Resize             |
+| 29 | Upsample | 30 | Expand    | 31 | Gather    | 32 | Slice              |
+| 33 | Cast     | 34 | Split     | 35 | Reshape   | 36 | ConstantOfShape    |
+| 37 | Ceil     | 38 | Concat    | 39 | Flatten   | 40 | ConvTranspose      |
+| 41 | MatMul   | 42 | Sum       | 43 | Transpose | 44 | BatchNormalization |
+| 45 | Squeeze  | 46 | Equal     | 47 | Identity  | 48 | GlobalAveragePool  |
+| 49 | MaxPool  | 50 | Conv      | 51 | Gemm      |
