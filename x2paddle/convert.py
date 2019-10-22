@@ -98,29 +98,12 @@ def tf2paddle(model_path,
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
-
-
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
         mapper = TFOpMapperNHWC(model)
         optimizer = TFOptimizer(mapper)
         optimizer.delete_redundance_code()
         optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
+#        optimizer.merge_activation()
+#        optimizer.merge_bias()
     mapper.save_inference_model(save_dir)
 
 
@@ -189,14 +172,6 @@ def main():
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
-    try:
-        import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 5:
-            print("paddlepaddle>=1.5.0 is required")
-            return
-    except:
-        print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
