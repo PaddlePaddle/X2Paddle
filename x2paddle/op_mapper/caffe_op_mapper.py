@@ -124,9 +124,6 @@ class CaffeOpMapper(OpMapper):
 
             data[idx] = np.squeeze(d, axis=sq_axis)
             shape_new = data[idx].shape
-            if len(shape_old) != shape_new:
-                print('squeeze idx:%d, with kind:%s,name:%s' % \
-                        (idx, node.layer_type, node.layer.name))
         return data
 
     def get_kernel_parameters(self, kind, params):
@@ -366,7 +363,7 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
             'n': params.local_size,
-            'k': 1.0,
+            'k': params.k,
             'alpha': alpha,
             'beta': params.beta,
             'name': string(node.layer_name)
@@ -453,35 +450,19 @@ class CaffeOpMapper(OpMapper):
         slice_dim = params.slice_dim
         if slice_dim != 1 and axis == 1:
             axis = slice_dim
-        points = list(params.slice_point)
-
-        if len(points) == 0:
-            dims = node.input_shape[0][axis]
-            assert dims % top_len == 0, "the parameter of Slice is wrong"
-            part = dims / top_len
-            t = part
-            while t < dims:
-                points.append(int(t))
-                t += part
-        maxint32 = 2147483647
-        points = [0] + points
-        points.append(maxint32)
-        i = 0
-        node.fluid_code.add_note('{} = []'.format(node.layer_name))
-        for i in range(len(points)):
-            attr = {
-                'axes': [axis],
-                'starts': [points[i]],
-                'ends': [points[i + 1]]
-            }
-            node.fluid_code.add_layer("slice",
-                                      inputs=input,
-                                      output=node.layer_name + '_' + str(i),
-                                      param_attr=attr)
-            node.fluid_code.add_note('{}.append({})'.format(
-                node.layer_name, node.layer_name + '_' + str(i)))
-            if i == len(points) - 2:
-                break
+        output_shape = node.output_shape
+        sections_list = []
+        for s in output_shape:
+            sections_list.append(s[axis])
+        attr = {
+            'num_or_sections': sections_list,
+            'dim': axis,
+            'name': string(node.layer_name)
+        }
+        node.fluid_code.add_layer("split",
+                                  inputs=input,
+                                  output=node.layer_name,
+                                  param_attr=attr)
 
     def Concat(self, node):
         assert len(
@@ -652,7 +633,8 @@ class CaffeOpMapper(OpMapper):
             ]).astype('float32')
             scale = 0
         else:
-            node.data = [np.squeeze(i) for i in node.data]
+
+            node.data = [np.squeeze(i).astype('float32') for i in node.data]
             mean, variance, scale = node.data
         # Prescale the stats
         scaling_factor = 1.0 / scale if scale != 0 else 0
@@ -687,8 +669,10 @@ class CaffeOpMapper(OpMapper):
                 input_c,
             ]).astype('float32')
         else:
-            self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[0])
-            self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[1])
+            self.weights[node.layer_name + '_scale'] = np.squeeze(
+                node.data[0]).astype('float32')
+            self.weights[node.layer_name + '_offset'] = np.squeeze(
+                node.data[1]).astype('float32')
         params = node.layer.scale_param
         axis = params.axis
         num_axes = params.num_axes
@@ -956,7 +940,6 @@ class CaffeOpMapper(OpMapper):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
             if i == 1 and op == 'DetectionOutput':
                 input = self.graph.get_bottom_node(node, idx=i, copy=True)
-                print(input.layer_type)
                 while input is not None and input.layer_type != 'Softmax':
                     input = self.graph.get_bottom_node(input, idx=0, copy=True)
                 assert input is not None, 'This kind of DetectionOutput is not supported!'

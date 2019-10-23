@@ -5,7 +5,7 @@ X2Paddle支持将其余深度学习框架训练得到的模型，转换至Paddle
 X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.
 
 ## 转换模型库
-X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的转换，可以在[X2Paddle-Model-Zoo](x2paddle_model_zoo.md)查看我们的模型测试列表。如果你在新的模型上进行了测试转换，也欢迎继续补充该列表；如若无法转换，可通过ISSUE反馈给我们，我们会尽快跟进。
+X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的转换，可以在[X2Paddle-Model-Zoo](x2paddle_model_zoo.md)查看我们的模型测试列表，可以在[OP-LIST](op_list.md)中查看目前X2Paddle支持的OP列表。如果你在新的模型上进行了测试转换，也欢迎继续补充该列表；如若无法转换，可通过ISSUE反馈给我们，我们会尽快跟进。
 
 ## 环境依赖
 
@@ -19,18 +19,6 @@ onnx ： onnx == 1.5.0  onnxruntime == 0.4.0
 
 ## 安装
 ### 安装方式一（推荐）
-使用最新的代码版本，可使用如下方式进行安装  
-```
-pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
-```
-
-### 安装方式二
-我们会定期更新pip源上的x2paddle版本
-```
-pip install x2paddle
-```
-
-### 安装方式三
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -38,6 +26,11 @@ git checkout develop
 python setup.py install
 ```
 
+### 安装方式二
+我们会定期更新pip源上的x2paddle版本
+```
+pip install x2paddle --index https://pypi.Python.org/simple/
+```
 ## 使用方法
 ### TensorFlow
 ```
@@ -45,7 +38,7 @@ x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
 ```
 ### Caffe
 ```
-x2paddle --framework=caffe --prototxt=deploy.proto --weight=deploy.caffemodel --save_dir=pd_model
+x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
 ```
 ### ONNX
 ```

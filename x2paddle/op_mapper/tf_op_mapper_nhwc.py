@@ -41,6 +41,7 @@ class TFOpMapperNHWC(OpMapper):
         'Exp': ['exp'],
         'Rsqrt': ['rsqrt'],
         'swish_f32': ['swish'],
+        'Tanh': ['tanh'],
         'LeakyRelu': ['leaky_relu', {
             'alpha': 'alpha'
         }]
@@ -120,10 +121,29 @@ class TFOpMapperNHWC(OpMapper):
             pd_param_name = list(param.values())[0]
             tf_param = node.get_attr(tf_param_name)
             attr[pd_param_name] = tf_param
-        node.fluid_code.add_layer(op_info[0],
-                                  inputs=input,
-                                  output=node,
-                                  param_attr=attr)
+
+        if len(input.out_shapes[0]) == 4 and op_info[0] != 'shape':
+            attr1 = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer('transpose',
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr1)
+            input = node
+            node.fluid_code.add_layer(op_info[0],
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
+            attr2 = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer('transpose',
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr2)
+        else:
+            node.fluid_code.add_layer(op_info[0],
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
 
     def elementwise_map(self, node):
         assert node.layer_type in self.elementwise_ops
@@ -148,7 +168,11 @@ class TFOpMapperNHWC(OpMapper):
                 x_input = y
                 y_input = x
                 x_shape = y.out_shapes[0]
+                if len(x_shape) == 0:
+                    x_shape = [1]
                 y_shape = x.out_shapes[0]
+                if len(y_shape) == 0:
+                    y_shape = [1]
             else:
                 raise Exception("Unexpected situation happend")
 
@@ -192,11 +216,30 @@ class TFOpMapperNHWC(OpMapper):
                                           output="y_tmp",
                                           param_attr=attr)
                 y_input = "y_tmp"
-        inputs = {"x": x_input, "y": y_input}
-        node.fluid_code.add_layer(op_type,
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=None)
+        if len(x_shape) == 4 and len(y_shape) == 4:
+            node.fluid_code.add_layer("transpose",
+                                      inputs=x_input,
+                                      output=x_input,
+                                      param_attr={'perm': [0, 3, 1, 2]})
+            node.fluid_code.add_layer("transpose",
+                                      inputs=y_input,
+                                      output=y_input,
+                                      param_attr={'perm': [0, 3, 1, 2]})
+            inputs = {"x": x_input, "y": y_input}
+            node.fluid_code.add_layer(op_type,
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=None)
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr={'perm': [0, 2, 3, 1]})
+        else:
+            inputs = {"x": x_input, "y": y_input}
+            node.fluid_code.add_layer(op_type,
+                                      inputs=inputs,
+                                      output=node,
+                                      param_attr=None)
 
     def Placeholder(self, node):
         shape = node.out_shapes[0]
@@ -913,6 +956,12 @@ class TFOpMapperNHWC(OpMapper):
         self.add_omit_nodes(kernel.layer_name, node.layer_name)
         self.add_omit_nodes(out_shape.layer_name, node.layer_name)
 
+        if out_shape.layer_type == "Const":
+            out_shape = out_shape.value.tolist()
+        else:
+            out_shape = self.decoder.infer_shape_tensor(out_shape,
+                                                        node.out_shapes[0])
+
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
             in_shape = self.decoder.infer_tensor(input).shape
@@ -920,7 +969,7 @@ class TFOpMapperNHWC(OpMapper):
         if k_size.count(-1) > 2:
             k_size = self.decoder.infer_tensor(kernel).shape
 
-        pad_mode = node.get_attr("padding")
+        pad_mode = node.get_attr("padding").decode()
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
@@ -958,7 +1007,7 @@ class TFOpMapperNHWC(OpMapper):
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
-            "num_filters": k_size[3],
+            "num_filters": k_size[2],
             "filter_size": k_size[0:2],
             "stride": strides[2:4],
             "dilation": dilations[2:4],
@@ -968,6 +1017,22 @@ class TFOpMapperNHWC(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+
+        if pad_mode == "SAME":
+            if node.tf_data_format == "NHWC":
+                out_shape = [out_shape[i] for i in [0, 3, 1, 2]]
+            for i in range(4):
+                if out_shape[i] < 0:
+                    out_shape[i] = 999999
+            attr = {
+                "axes": [0, 1, 2, 3],
+                "starts": [0, 0, 0, 0],
+                "ends": out_shape
+            }
+            node.fluid_code.add_layer("slice",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
         if not channel_first:
             attr = {"perm": [0, 2, 3, 1]}
@@ -1127,3 +1192,17 @@ class TFOpMapperNHWC(OpMapper):
                                       inputs=None,
                                       output=node,
                                       param_attr=attr)
+
+    def SquaredDifference(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {"x": x, "y": y}
+        node.fluid_code.add_layer("elementwise_sub",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
+        inputs = {"x": node, "y": node}
+        node.fluid_code.add_layer("elementwise_mul",
+                                  inputs=inputs,
+                                  output=node,
+                                  param_attr=None)
