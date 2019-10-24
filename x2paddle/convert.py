@@ -98,29 +98,12 @@ def tf2paddle(model_path,
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
-
-
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
-        mapper = TFOpMapperNHWC(model)
-        optimizer = TFOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
+    mapper = TFOpMapperNHWC(model)
+    optimizer = TFOptimizer(mapper)
+    optimizer.delete_redundance_code()
+    optimizer.strip_graph()
+    #        optimizer.merge_activation()
+    #        optimizer.merge_bias()
     mapper.save_inference_model(save_dir)
 
 
@@ -182,21 +165,29 @@ def main():
 
     if args.version:
         import x2paddle
-        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.5.0\n".format(
+        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.1\n".format(
             x2paddle.__version__))
         return
-
-    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
-    assert args.save_dir is not None, "--save_dir is not defined"
 
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 5:
-            print("paddlepaddle>=1.5.0 is required")
+        if int(v0) == 0 and int(v1) == 0 and int(v2) == 0:
+            print(
+                "You have installed paddlepaddle-dev? We're not sure it's working for x2paddle!"
+            )
+            print(
+                "==================paddlepaddle>=1.6.1 is strongly recommended================="
+            )
+        elif int(v0) != 1 or int(v1) < 6:
+            print("paddlepaddle>=1.6.1 is required")
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
+        return
+
+    assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
+    assert args.save_dir is not None, "--save_dir is not defined"
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"

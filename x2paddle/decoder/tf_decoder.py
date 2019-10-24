@@ -389,26 +389,10 @@ class TFDecoder(object):
         compare01 = (results[0] == results[1])
         compare12 = (results[1] == results[2])
 
-        if compare01.all() and compare12.all():
-            return results[0].tolist()
-
-        if (compare01 == compare12).all():
-            index = numpy.argwhere(compare01 == False).flatten()
-            if index.shape[0] != 1:
-                raise Exception("There's not only one unstable dimension")
-            results[0][index[0]] = -1
-
-            index = numpy.argwhere(results[0] < 0).flatten()
-            if index.shape[0] > 2:
-                print("Warning: More than two dimension less than zero")
-            if index.shape[0] == 2 and out_shape is not None:
-                if out_shape[index[1]] > 0:
-                    results[0][index[1]] = out_shape[index[1]]
-                else:
-                    results[0][index[0]] = out_shape[index[0]]
-            return results[0].tolist()
-        else:
-            raise Exception("Couldn't infer a stable shape shape tensor value")
+        compare = compare01 & compare12
+        index = numpy.argwhere(compare==False).flatten()
+        results[0][index] = -1
+        return results[0].tolist()
 
     def infer_tensor_shape(self, graph_node):
         if hasattr(graph_node, "index"):
@@ -436,11 +420,7 @@ class TFDecoder(object):
         if compare01.all() and compare12.all():
             return shape[0].tolist()
 
-        if (compare01 == compare12).all():
-            index = numpy.argwhere(compare01 == False).flatten()
-            if index.shape[0] != 1:
-                raise Exception("There's not only one unstable dimension")
-            if index[0] != 0:
-                raise Exception("Batch size not in the first dimension")
-            shapes[0][0] = -1
-            return shapes[0].tolist()
+        compare = compare01 & compare12
+        index = numpy.argwhere(compare==False).flatten()
+        shapes[0][index] = -1
+        return shapes[0].tolist()
