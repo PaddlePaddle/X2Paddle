@@ -80,6 +80,11 @@ class Layer(object):
 
         param_attr = collections.OrderedDict(self.param_attr)
         for key, value in param_attr.items():
+            if isinstance(value, GraphNode):
+                value_name = value.layer_name
+                if hasattr(value, "index"):
+                    value_name += "[{}]".format(value.index)
+                value = value_name
             if '\n' in str(value):
                 value = string(str(value).replace('\n', ','))
             layer_code = layer_code + key + "={}, ".format(value)
