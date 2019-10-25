@@ -13,12 +13,12 @@ X2Paddle在之前的开发过程中，对比了PaddlePaddle与主流框架上的
 
 ## 环境依赖
 
-python == 2.7 | python >= 3.5
-paddlepaddle >= 1.5.0
+python == 2.7 | python >= 3.5  
+paddlepaddle >= 1.5.0  
 
-**按需安装以下依赖**
-tensorflow ： tensorflow == 1.14.0
-caffe ： 无
+**按需安装以下依赖**  
+tensorflow ： tensorflow == 1.14.0  
+caffe ： 无  
 onnx ： onnx == 1.5.0  onnxruntime == 0.4.0
 
 
