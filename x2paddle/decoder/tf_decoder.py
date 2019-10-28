@@ -390,7 +390,7 @@ class TFDecoder(object):
         compare12 = (results[1] == results[2])
 
         compare = compare01 & compare12
-        index = numpy.argwhere(compare==False).flatten()
+        index = numpy.argwhere(compare == False).flatten()
         results[0][index] = -1
         return results[0].tolist()
 
@@ -421,6 +421,6 @@ class TFDecoder(object):
             return shape[0].tolist()
 
         compare = compare01 & compare12
-        index = numpy.argwhere(compare==False).flatten()
+        index = numpy.argwhere(compare == False).flatten()
         shapes[0][index] = -1
         return shapes[0].tolist()
