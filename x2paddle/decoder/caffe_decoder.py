@@ -243,7 +243,12 @@ class CaffeDecoder(object):
         for blob in layer.blobs:
             if len(blob.shape.dim):
                 dims = blob.shape.dim
-                c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) + list(dims))
+                if layer.type == 'PReLU':
+                    c_o, c_i, h, w = map(int, [1] + \
+                        list(dims) + [1]* (3 - len(dims)))
+                else:
+                    c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) \
+                        + list(dims))
             else:
                 c_o = blob.num
                 c_i = blob.channels
