@@ -110,7 +110,7 @@ class OpMapper(object):
         self.add_codes("import paddle.fluid as fluid")
         self.add_codes("")
 
-    def save_inference_model(self, save_dir, param_merge):
+    def save_inference_model(self, save_dir, params_merge):
         self.save_python_model(save_dir)
 
         import sys
@@ -138,7 +138,7 @@ class OpMapper(object):
                                py_code_dir,
                                fluid.default_main_program(),
                                predicate=if_exist)
-            if param_merge:
+            if params_merge:
                 fluid.io.save_inference_model(dirname=os.path.join(
                     save_dir, "inference_model"),
                                               feeded_var_names=input_names,
