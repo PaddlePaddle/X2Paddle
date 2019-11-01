@@ -1109,6 +1109,7 @@ class TFOpMapperNHWC(OpMapper):
         else:
             shape = self.decoder.infer_shape_tensor(shape)
         attr = {"shape": shape, "min": 0.0, "max": 0.9999}
+
         if shape[0] < 0:
             input = self.batch_node
             node.fluid_code.add_layer("uniform_random_batch_size_like",

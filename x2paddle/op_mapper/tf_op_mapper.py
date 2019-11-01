@@ -278,6 +278,7 @@ class TFOpMapper(OpMapper):
             'name': string(node.layer_name),
             'append_batch_size': False
         }
+
         if shape[0] < 0:
             self.batch_node = node
 
