@@ -22,14 +22,14 @@ onnx ： onnx == 1.5.0  onnxruntime == 0.4.0
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
-git checkout develop
+git checkout release-0.5
 python setup.py install
 ```
 
 ### 安装方式二
 我们会定期更新pip源上的x2paddle版本
 ```
-pip install x2paddle --index https://pypi.Python.org/simple/
+pip install x2paddle==0.5.2 --index https://pypi.Python.org/simple/
 ```
 ## 使用方法
 ### TensorFlow
