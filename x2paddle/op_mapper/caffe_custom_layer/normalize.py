@@ -17,11 +17,11 @@ def normalize_layer(inputs,
     l2_norm = fluid.layers.l2_normalize(input, axis=1, name=name + '_l2')
     scale_param = fluid.layers.create_parameter(
         shape=[1]
-        if channel_shared else [input_shape[0][0], 1, 1, input_shape[0][1]],
+        if channel_shared else [input_shape[0][1]],
         dtype=input.dtype,
         attr=name + '_scale')
     scale_param = fluid.layers.reshape(x=scale_param, \
-                  shape=[1] if channel_shared else [input_shape[0][0], 1, 1, input_shape[0][1]])
+                  shape=[1] if channel_shared else [input_shape[0][1]])
     out = fluid.layers.elementwise_mul(x=l2_norm,
                                        y=scale_param,
                                        axis=-1 if channel_shared else 1)
