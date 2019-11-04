@@ -278,6 +278,7 @@ class TFOpMapper(OpMapper):
             'name': string(node.layer_name),
             'append_batch_size': False
         }
+
         if shape[0] < 0:
             self.batch_node = node
 
@@ -382,7 +383,6 @@ class TFOpMapper(OpMapper):
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
-        padding = 0
 
         if not channel_first:
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
@@ -391,22 +391,10 @@ class TFOpMapper(OpMapper):
         else:
             self.graph.data_format_propagation(node)
 
-        if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
-            pad_h = pad_h[0] + pad_h[1]
-            pad_w = pad_w[0] + pad_w[1]
-            if pad_h != 0 or pad_w != 0:
-                attr = {"paddings": [0, pad_h, 0, pad_w], "pad_value": -10000.0}
-                node.fluid_code.add_layer("pad2d",
-                                          inputs=input,
-                                          output=node,
-                                          param_attr=attr)
-                input = node
         attr = {
             "pool_size": k_size[2:4],
             "pool_type": string("max"),
-            "pool_padding": padding,
+            "pool_padding": string(pad_mode),
             "pool_stride": strides[2:4]
         }
         node.fluid_code.add_layer("pool2d",
@@ -432,7 +420,6 @@ class TFOpMapper(OpMapper):
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
-        padding = 0
 
         self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
             kernel.value, (3, 2, 0, 1))
@@ -444,18 +431,6 @@ class TFOpMapper(OpMapper):
         else:
             self.graph.data_format_propagation(node)
 
-        if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
-            if pad_h[0] == pad_h[1] and pad_w[0] == pad_w[1]:
-                padding = [pad_h[0], pad_w[0]]
-            else:
-                attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
-                node.fluid_code.add_layer("pad2d",
-                                          inputs=input,
-                                          output=node,
-                                          param_attr=attr)
-                input = node
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
@@ -463,7 +438,7 @@ class TFOpMapper(OpMapper):
             "filter_size": k_size[0:2],
             "stride": strides[2:4],
             "dilation": dilations[2:4],
-            "padding": padding
+            "padding": string(pad_mode)
         }
         node.fluid_code.add_layer("conv2d",
                                   inputs=input,
@@ -535,7 +510,6 @@ class TFOpMapper(OpMapper):
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
-        padding = 0
 
         self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
             kernel.value, (2, 3, 0, 1))
@@ -547,19 +521,6 @@ class TFOpMapper(OpMapper):
         else:
             self.data_format_propagation(node)
 
-        if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
-            if pad_h[0] == pad_h[1] and pad_w[0] == pad_w[1]:
-                padding = [pad_h[0], pad_w[0]]
-            else:
-                attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
-                node.fluid_code.add_layer("pad2d",
-                                          inputs=input,
-                                          output=node,
-                                          param_attr=attr)
-                input = node
-
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
@@ -569,7 +530,7 @@ class TFOpMapper(OpMapper):
             "dilation": dilations[2:4],
             "groups": k_size[3] * in_shape[1],
             "use_cudnn": False,
-            "padding": padding
+            "padding": string(pad_mode)
         }
         node.fluid_code.add_layer("conv2d",
                                   inputs=input,
@@ -691,14 +652,9 @@ class TFOpMapper(OpMapper):
         attr = {
             "pool_size": k_size[2:4],
             "pool_type": string("avg"),
-            "pool_stride": strides[2:4]
+            "pool_stride": strides[2:4],
+            "pool_padding": string(pad_mode)
         }
-        if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[2], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[3], strides[3])
-            assert pad_h[0] == pad_h[1] and pad_w[0] == pad_w[
-                1], "Cannot map AvgPool"
-            attr["pool_padding"] = [pad_h[0], pad_w[0]]
         node.fluid_code.add_layer("pool2d",
                                   inputs=input,
                                   output=node,
@@ -993,20 +949,6 @@ class TFOpMapper(OpMapper):
         else:
             self.data_format_propagation(node)
 
-        padding = 0
-        if pad_mode == "SAME":
-            pad_h = get_same_padding(in_shape[2], k_size[0], strides[2])
-            pad_w = get_same_padding(in_shape[3], k_size[1], strides[3])
-            if pad_h[0] == pad_h[1] and pad_w[0] == pad_w[1]:
-                padding = [pad_h[0], pad_w[0]]
-            else:
-                attr = {"paddings": pad_h + pad_w, "pad_value": 0.0}
-                node.fluid_code.add_layer("pad2d",
-                                          inputs=input,
-                                          output=node,
-                                          param_attr=attr)
-                input = node
-
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
@@ -1014,28 +956,13 @@ class TFOpMapper(OpMapper):
             "filter_size": k_size[0:2],
             "stride": strides[2:4],
             "dilation": dilations[2:4],
-            "padding": padding
+            "padding": string(pad_mode),
+            "output_size": out_shape[1:3]
         }
         node.fluid_code.add_layer("conv2d_transpose",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
-
-        if pad_mode == "SAME":
-            if node.tf_data_format == "NHWC":
-                out_shape = [out_shape[i] for i in [0, 3, 1, 2]]
-            for i in range(4):
-                if out_shape[i] < 0:
-                    out_shape[i] = 999999
-            attr = {
-                "axes": [0, 1, 2, 3],
-                "starts": [0, 0, 0, 0],
-                "ends": out_shape
-            }
-            node.fluid_code.add_layer("slice",
-                                      inputs=node,
-                                      output=node,
-                                      param_attr=attr)
 
     def Max(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)

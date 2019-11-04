@@ -188,7 +188,7 @@ def main():
 
     if args.version:
         import x2paddle
-        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.5.0\n".format(
+        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".format(
             x2paddle.__version__))
         return
 
@@ -198,8 +198,8 @@ def main():
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 5:
-            print("paddlepaddle>=1.5.0 is required")
+        if int(v0) != 1 or int(v1) < 6:
+            print("paddlepaddle>=1.6.0 is required")
             return
     except:
         print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
