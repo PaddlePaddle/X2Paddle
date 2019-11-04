@@ -253,6 +253,7 @@ class CaffeDecoder(object):
                 else:
                     c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) \
                         + list(dims))
+
             else:
                 c_o = blob.num
                 c_i = blob.channels
