@@ -246,9 +246,14 @@ class CaffeDecoder(object):
                 if layer.type == 'PReLU':
                     c_o, c_i, h, w = map(int, [1] + \
                         list(dims) + [1]* (3 - len(dims)))
+                elif layer.type == 'Normalize':
+                    data = np.asarray(list(blob.data), dtype=np.float32)
+                    transformed.append(data)
+                    continue
                 else:
                     c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) \
                         + list(dims))
+
             else:
                 c_o = blob.num
                 c_i = blob.channels
