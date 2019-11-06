@@ -18,7 +18,7 @@
 | 33 | Mean        | 34 | MatMul    | 35 | ArgMax    | 36 | StridedSlice          |
 | 37 | Slice       | 38 | Sum       | 39 | Max       | 40 | Conv2DBackpropInput   |
 | 41 | Cast        | 42 | Split     | 43 | Squeeze   | 44 | ResizeNearestNeighbor |
-| 45 | Softmax     | 46 | Range     | 47 | ConcatV2  | 45 | MirrorPad |
+| 45 | Softmax     | 46 | Range     | 47 | ConcatV2  | 48 | MirrorPad             |
 
 ## Caffe
 

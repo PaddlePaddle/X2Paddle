@@ -784,7 +784,6 @@ class TFOpMapper(OpMapper):
                                   output=node,
                                   param_attr=attr)
 
-
     def Range(self, node):
         start = self.graph.get_node(node.layer.input[0], copy=True)
         limit = self.graph.get_node(node.layer.input[1], copy=True)
