@@ -78,6 +78,7 @@ default_op_mapping = {
                 dict(), dict(axis=1)],
     'Sqrt': ['sqrt', ['X'], ['Out']],
     'Floor': ['floor', ['X'], ['Out']],
+    'Abs': ['abs', ['X'], ['Out']],
 }
 
 default_ioa_constraint = {
