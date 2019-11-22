@@ -50,3 +50,4 @@
 | 41 | MatMul   | 42 | Sum       | 43 | Transpose | 44 | BatchNormalization |
 | 45 | Squeeze  | 46 | Equal     | 47 | Identity  | 48 | GlobalAveragePool  |
 | 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
+| 53 | Abs      | 54 | Floor     |
