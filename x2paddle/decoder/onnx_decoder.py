@@ -162,6 +162,17 @@ class ONNXGraph(Graph):
             if ipt_data not in inner_nodes:
                 self.place_holder_nodes.append(ipt_data)
 
+    def get_output_nodes(self):
+        """
+        generate output_nodes node of ONNX model
+        """
+        inner_nodes = self.get_inner_nodes()
+        output_nodes = [value.name for value in self.model.output]
+        for opt_data in output_nodes:
+            if opt_data not in inner_nodes:
+                self.output_nodes.append(opt_data)
+                print(opt_data)
+
     def is_place_holder_nodes(self, layer):
         """
         return layer is or not place_holder node
