@@ -141,7 +141,12 @@ class ONNXOpMapper(OpMapper):
         onnx.save(model, os.path.join(self.tmp_data_dir,
                                       'onnx_model_infer.onnx'))
 
-        os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
+        is_success = os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
+        if is_success != 0:
+            raise Exception("onnxruntime inference onnx model failed, Please \
+                             confirm the correctness of onnx model by onnxruntime, \
+                             if onnx model is valid, you can submit issue in github."
+                            )
         return
 
     def get_dynamic_shape(self, layer):
