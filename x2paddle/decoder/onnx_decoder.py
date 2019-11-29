@@ -171,7 +171,6 @@ class ONNXGraph(Graph):
         for opt_data in output_nodes:
             if opt_data not in inner_nodes:
                 self.output_nodes.append(opt_data)
-                print(opt_data)
 
     def is_place_holder_nodes(self, layer):
         """
