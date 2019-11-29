@@ -140,6 +140,7 @@ class ONNXOpMapper(OpMapper):
         model.graph.output.MergeFrom(outputs)
         onnx.save(model, os.path.join(self.tmp_data_dir,
                                       'onnx_model_infer.onnx'))
+
         os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
         return
 
@@ -336,7 +337,8 @@ class ONNXOpMapper(OpMapper):
             node = parameter
         dtype = node.dtype
         shape = node.out_shapes[0]
-
+        if len(node.weight.shape) == 0:
+            shape = [1]
         self.weights[node.layer_name] = node.weight
         attr = {
             'dtype': string(dtype),
