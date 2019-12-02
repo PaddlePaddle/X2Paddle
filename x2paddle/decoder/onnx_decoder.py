@@ -316,12 +316,14 @@ class ONNXDecoder(object):
             model.ir_version, model.opset_import[0].version))
         if model.opset_import[0].version < 9:
             _logger.warning(
-                'Now, onnx2paddle main support convert onnx model opset_verison == 9,'
+                'Now, onnx2paddle support convert onnx model opset_verison == 9,'
                 'opset_verison of your onnx model is %d < 9,'
-                'some operator may cannot convert.',
+                'some operator maybe unsuccessful in convertion.',
                 model.opset_import[0].version)
 
         check_model(model)
+        self.check_model_running_state(onnx_model)
+
         model = onnx.shape_inference.infer_shapes(model)
         model = self.optimize_model_skip_op_for_inference(model)
         model = self.optimize_model_strip_initializer(model)
@@ -471,7 +473,46 @@ class ONNXDecoder(object):
             raise ValueError('name should not be empty')
         for s in ' .*?\\/-:':
             name = name.replace(s, '_')
-        return '_' + name
+        return 'x2paddle_' + name
+
+    def check_model_running_state(self, model_path):
+        try:
+            import onnxruntime as rt
+            version = rt.__version__
+            if version != '1.0.0':
+                print("onnxruntime==1.0.0 is required")
+                return
+        except:
+            raise Exception(
+                "onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
+            )
+
+        model = onnx.load(model_path)
+        model = onnx.shape_inference.infer_shapes(model)
+        if len(model.graph.value_info) < len(model.graph.node) - 1:
+            _logger.warning(
+                'shape inference for some operators failed, '
+                'those operators will be assignd node.out_shape==None, '
+                'refer to https://github.com/onnx/onnx/blob/master/docs/ShapeInference.md'
+            )
+        try:
+            datatype_map = {
+                'tensor(int64)': 'int',
+                'tensor(float)': 'float32',
+                'tensor(int32)': 'int32'
+            }
+            input_dict = {}
+            sess = rt.InferenceSession(model_path)
+            for ipt in sess.get_inputs():
+                datatype = datatype_map[ipt.type]
+                input_dict[ipt.name] = np.random.random(
+                    ipt.shape).astype(datatype)
+
+            res = sess.run(None, input_feed=input_dict)
+        except:
+            raise Exception(
+                "onnxruntime inference onnx model failed, Please confirm the correctness of onnx model by onnxruntime, if onnx model is correct, please submit issue in github."
+            )
 
     def standardize_variable_name(self, graph):
         """

@@ -155,21 +155,20 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     try:
         import onnx
         version = onnx.version.version
-        if version != '1.5.0':
-            print("onnx==1.5.0 is required")
+        if version != '1.6.0':
+            print("onnx==1.6.0 is required")
             return
     except:
-        print("onnx is not installed, use \"pip install onnx==1.5.0\".")
+        print("onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.decoder.onnx_decoder import ONNXDecoder
-    model = ONNXDecoder(model_path)
-
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
-    mapper = ONNXOpMapper(model, save_dir)
-
+    from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
+    import onnxruntime
+    model = ONNXDecoder(model_path)
+    mapper = ONNXOpMapper(model, save_dir)
     optimizer = ONNXOptimizer(mapper)
 
     optimizer.delete_redundance_code()
