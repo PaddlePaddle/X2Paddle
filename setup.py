@@ -26,6 +26,6 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'x2paddle=x2paddle.convert:main',
-            'onnx_infer=x2paddle.onnx_infer:main'
+            #            'onnx_infer=x2paddle.onnx_infer:main'
         ]
     })

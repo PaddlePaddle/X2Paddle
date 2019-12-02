@@ -32,7 +32,7 @@ import math
 import os
 import shutil
 from functools import reduce
-
+import onnxruntime as rt
 _logger = _logging.getLogger(__name__)
 
 
@@ -71,6 +71,7 @@ class ONNXOpMapper(OpMapper):
         self.used_custom_layers = dict()
         self.is_inference = False
         self.tmp_data_dir = os.path.join(save_dir, 'tmp_data')
+        self.tmp_outputs_dict = {}
         self.get_output_shapes()
 
         if not self.op_checker():
@@ -119,7 +120,7 @@ class ONNXOpMapper(OpMapper):
     def get_results_of_inference(self, model, value_infos, data_nodes):
         if not os.path.exists(self.tmp_data_dir):
             os.makedirs(self.tmp_data_dir)
-
+        inputs_dict = {}
         for data_node in data_nodes:
             value_info = value_infos[data_node]
             shape = value_info['shape']
@@ -129,34 +130,32 @@ class ONNXOpMapper(OpMapper):
                 if dim_shape == 0 and i != 0:
                     assert 'shape of input is not assigned'
             ipt = np.random.random(shape).astype(value_info['dtype'])
-            np.save(os.path.join(self.tmp_data_dir, data_node), ipt)
+            inputs_dict[data_node] = ipt
 
         model = onnx.shape_inference.infer_shapes(model)
         outputs = []
+
         for value_info in model.graph.value_info:
-            outputs.append(value_info)
+            outputs.append(value_info.name)
 
         model.graph.ClearField('output')
-        model.graph.output.MergeFrom(outputs)
+        model.graph.output.MergeFrom(model.graph.value_info)
         onnx.save(model, os.path.join(self.tmp_data_dir,
                                       'onnx_model_infer.onnx'))
+        sess = rt.InferenceSession(
+            os.path.join(self.tmp_data_dir, 'onnx_model_infer.onnx'))
+        res = sess.run(None, input_feed=inputs_dict)
+        self.tmp_outputs_dict = dict(zip(outputs, res))
 
-        is_success = os.system('onnx_infer --save_dir=' + self.tmp_data_dir)
-        if is_success != 0:
-            raise Exception("onnxruntime inference onnx model failed, Please \
-                             confirm the correctness of onnx model by onnxruntime, \
-                             if onnx model is valid, you can submit issue in github."
-                            )
         return
 
     def get_dynamic_shape(self, layer):
         """
         get dynamic shape from infer_result
         """
-        path = os.path.join(self.tmp_data_dir, layer + '.npy')
-        if not os.path.exists(path):
+        if layer not in self.tmp_outputs_dict:
             return [None, None, None]
-        output = np.load(path)
+        output = self.tmp_outputs_dict[layer]
         return output.tolist(), output.dtype, output.shape
 
     def get_output_shapes(self):
