@@ -940,8 +940,8 @@ class CaffeOpMapper(OpMapper):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
             if i == 1 and op == 'DetectionOutput':
                 input = self.graph.get_bottom_node(node, idx=i, copy=True)
-                while input is not None 
-                      and input.layer_type != 'Softmax'
+                while input is not None \
+                      and input.layer_type != 'Softmax' \
                       and input.layer_type != 'Sigmoid':
                     input = self.graph.get_bottom_node(input, idx=0, copy=True)
                 assert input is not None, 'This kind of DetectionOutput is not supported!'
