@@ -15,7 +15,7 @@ paddlepaddle >= 1.6.0
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
 caffe ： 无  
-onnx ： onnx == 1.6.0  onnxruntime == 1.1.0
+onnx ： onnx == 1.6.0  onnxruntime == 1.0.0
 
 ## 安装
 ### 安装方式一（推荐）
