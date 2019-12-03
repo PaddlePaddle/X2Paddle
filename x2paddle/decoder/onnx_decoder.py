@@ -491,8 +491,7 @@ class ONNXDecoder(object):
         model = onnx.shape_inference.infer_shapes(model)
         if len(model.graph.value_info) < len(model.graph.node) - 1:
             _logger.warning(
-                'shape inference for some operators failed, '
-                'those operators will be assignd node.out_shape==None, '
+                'During conversion of your  model, some operators will be assignd node.out_shape==None, '
                 'refer to https://github.com/onnx/onnx/blob/master/docs/ShapeInference.md'
             )
         try:
