@@ -25,20 +25,26 @@ import sys
 class TFGraphNode(GraphNode):
     def __init__(self, layer, layer_name=None, data_format="NHWC"):
         if layer_name is None:
-            super(TFGraphNode,
-                  self).__init__(layer,
-                                 layer.name.replace('/', '_').replace('-', '_'))
+            super(TFGraphNode, self).__init__(
+                layer,
+                layer.name.replace('/', '_').replace('-', '_').replace('^', ''))
         else:
-            super(TFGraphNode,
-                  self).__init__(layer,
-                                 layer_name.replace('/', '_').replace('-', '_'))
+            super(TFGraphNode, self).__init__(
+                layer,
+                layer_name.replace('/', '_').replace('-', '_').replace('^', ''))
 
         self.layer_type = layer.op
         self.tf_data_format = data_format
         self.pd_data_format = "NCHW"
         self.fluid_code = FluidCode()
 
-        self.dtype_map = {1: "float32", 3: "int32", 4: "uint8", 9: "int64"}
+        self.dtype_map = {
+            1: "float32",
+            3: "int32",
+            4: "uint8",
+            9: "int64",
+            10: "bool"
+        }
 
     @property
     def out_shapes(self):
@@ -113,7 +119,9 @@ class TFGraph(Graph):
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
-                in_node = in_node.replace('/', '_').replace('-', '_')
+                in_node = in_node.replace('/',
+                                          '_').replace('-',
+                                                       '_').replace('^', '')
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
@@ -140,6 +148,9 @@ class TFGraph(Graph):
         node = super(TFGraph, self).get_node(new_node_name, copy)
         if node is None:
             return None
+        if node.layer_type == "Switch":
+            if hasattr(node, 'index'):
+                del node.index
         if len(items) == 1 and node.layer_type in self.multi_out_ops:
             node.index = 0
         return node
@@ -184,9 +195,13 @@ class TFGraph(Graph):
             del self.topo_sort[idx]
 
     def _remove_identity_node(self):
+        identity_ops = [
+            'Identity', 'StopGradient', 'Switch', 'Merge',
+            'PlaceholderWithDefault'
+        ]
         identity_node = list()
         for node_name, node in self.node_map.items():
-            if node.layer_type == "Identity" or node.layer_type == "StopGradient":
+            if node.layer_type in identity_ops:
                 identity_node.append(node_name)
 
         for node_name in identity_node:
