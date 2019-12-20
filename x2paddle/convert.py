@@ -193,7 +193,17 @@ def main():
 
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
-
+    
+    if args.framework == "onnx":
+        try:
+            import onnxruntime as rt
+            version = rt.__version__
+            if version != '1.0.0':
+                print("onnxruntime==1.0.0 is required")
+                return
+        except:
+                print("onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\".")
+    
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')

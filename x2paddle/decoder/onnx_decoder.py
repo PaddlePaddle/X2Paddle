@@ -476,17 +476,7 @@ class ONNXDecoder(object):
         return 'x2paddle_' + name
 
     def check_model_running_state(self, model_path):
-        try:
-            import onnxruntime as rt
-            version = rt.__version__
-            if version != '1.0.0':
-                print("onnxruntime==1.0.0 is required")
-                return
-        except:
-            raise Exception(
-                "onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
-            )
-
+        import onnxruntime as rt
         model = onnx.load(model_path)
         model = onnx.shape_inference.infer_shapes(model)
         if len(model.graph.value_info) < len(model.graph.node) - 1:
