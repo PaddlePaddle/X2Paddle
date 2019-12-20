@@ -25,7 +25,8 @@ def export_paddle_param(param, param_name, dir):
         "int64": [framework_pb2.VarType.INT64, 'q'],
         "float16": [framework_pb2.VarType.FP16, 'e'],
         "float32": [framework_pb2.VarType.FP32, 'f'],
-        "float64": [framework_pb2.VarType.FP64, 'd']
+        "float64": [framework_pb2.VarType.FP64, 'd'],
+        "bool": [framework_pb2.VarType.BOOL, None]
     }
     shape = param.shape
     if len(shape) == 0:

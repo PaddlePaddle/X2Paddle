@@ -125,9 +125,9 @@ class TFOpMapper(OpMapper):
         in_node = self.graph.get_node(in_node_name)
         out_node = self.graph.get_node(out_node_name)
         index = in_node.outputs.index(out_node_name)
-        del in_node.outputs[index]
+        #        del in_node.outputs[index]
         index = out_node.inputs.index(in_node_name)
-        del out_node.inputs[index]
+        #        del out_node.inputs[index]
         self.omit_nodes.append(in_node.layer_name)
 
     def directly_map(self, node):
@@ -624,6 +624,9 @@ class TFOpMapper(OpMapper):
                                           output=node,
                                           param_attr=perm)
                 return
+        if len(attr["shape"]) == 5:
+            attr["shape"] = [attr["shape"][i] for i in [0, 1, 4, 2, 3]]
+
         node.fluid_code.add_layer("reshape",
                                   inputs=input,
                                   output=node,
@@ -893,10 +896,23 @@ class TFOpMapper(OpMapper):
             "starts": begin,
             "ends": end
         }
+
+        shrink_axis_mask = node.get_attr('shrink_axis_mask')
+        squeeze_dims = list()
+        for i in range(len(begin)):
+            x = shrink_axis_mask >> i & 1
+            if x == 1:
+                squeeze_dims.append(i)
         node.fluid_code.add_layer("slice",
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+        if shrink_axis_mask > 0 and len(input.out_shapes[0]) == 5:
+            attr = {"axes": squeeze_dims}
+            node.fluid_code.add_layer("squeeze",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def Slice(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)

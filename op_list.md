@@ -19,6 +19,8 @@
 | 37 | Slice       | 38 | Sum       | 39 | Max       | 40 | Conv2DBackpropInput   |
 | 41 | Cast        | 42 | Split     | 43 | Squeeze   | 44 | ResizeNearestNeighbor |
 | 45 | Softmax     | 46 | Range     | 47 | ConcatV2  | 48 | MirrorPad             |
+| 49 | Identity    | 50 | GreaterEqual  | 51 | StopGradient | 52 | Minimum |
+| 53 | RadnomUniform | | | | | | |
 
 ## Caffe
 

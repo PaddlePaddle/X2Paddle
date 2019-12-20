@@ -293,15 +293,12 @@ def shape_reshape(layer, input_shape):
             explicit_count *= count(l)
         for i in range(len(copy_axes)):
             explicit_count *= outshape[start_axis + copy_axes[i]]
-        assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
-                "must be divisible by product of the specified dimensions[%d] "\
-                % (input_count, explicit_count)
-        outshape[start_axis + inferred_axis] = int(input_count / explicit_count)
+        outshape[start_axis + inferred_axis] = -1
+        outshape[0] = 0
+    else:
+        outshape[0] = -1
 
     output_count = count(outshape)
-    assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
-        output_count, input_count)
-    outshape[0] = -1
     return [outshape]
 
 
@@ -345,9 +342,10 @@ def shape_flatten(layer, input_shape):
     output_shape = inshape[0:start_axis]
     if len(inshape[start_axis:end_axis]) != 0:
         flat_sz = reduce(lambda a, b: a * b, inshape[start_axis:end_axis])
+        flat_sz = -1
+        output_shape[0] = 0
         output_shape += [flat_sz]
     output_shape += inshape[end_axis:len(inshape)]
-    output_shape[0] = -1
     return [output_shape]
 
 
