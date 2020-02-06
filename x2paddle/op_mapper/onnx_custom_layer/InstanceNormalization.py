@@ -30,16 +30,13 @@ def InstanceNormalization_layer(inputs, name=None):
     if name is not None:
         scale_name = name + "_scale"
         offset_name = name + "_offset"
-    scale_param = fluid.ParamAttr(name=scale_name,
-                                  initializer=fluid.initializer.Constant(1.0),
-                                  trainable=True)
-    offset_param = fluid.ParamAttr(name=offset_name,
-                                   initializer=fluid.initializer.Constant(0.0),
-                                   trainable=True)
-    scale = fluid.layers.create_parameter(attr=scale_param,
+
+    scale_param = inputs[1]
+    offset_param = inputs[2]
+    scale = fluid.layers.create_parameter(name=scale_param.name,
                                           shape=input_.shape[1:2],
                                           dtype="float32")
-    offset = fluid.layers.create_parameter(attr=offset_param,
+    offset = fluid.layers.create_parameter(name=offset_param.name,
                                            shape=input_.shape[1:2],
                                            dtype="float32")
 
