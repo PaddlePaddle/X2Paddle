@@ -136,6 +136,7 @@ class TFGraph(Graph):
 
         # tensorflow graph optimize
         self._remove_isolated_node()
+        self._optimize_dialiation_conv()
         self._remove_identity_node()
         self._remove_cast_node()
 
@@ -174,6 +175,34 @@ class TFGraph(Graph):
 
         idx = self.topo_sort.index(node_name)
         del self.topo_sort[idx]
+
+    def _optimize_dialiation_conv(self):
+        for name in list(self.node_map.keys()):
+            node = self.node_map[name]
+            if node.layer_type == "SpaceToBatchND":
+                is_dilation = True
+                out_node0 = self.node_map[node.outputs[0]]
+                if out_node0.layer_type != 'ExpandDims':
+                    is_dilation = False
+                    continue
+                out_node1 = self.node_map[out_node0.outputs[0]]
+                if out_node1.layer_type != 'Conv2D':
+                    is_dilation = False
+                    continue
+                out_node2 = self.node_map[out_node1.outputs[0]]
+                if out_node2.layer_type != 'Squeeze':
+                    is_dilation = False
+                    continue
+                out_node3 = self.node_map[out_node2.outputs[0]]
+                if out_node3.layer_type != 'BatchToSpaceND':
+                    is_dilation = False
+                    continue
+
+                if is_dilation:
+                    node.skip = True
+                    out_node3.skip = True
+                    block_shape = self.node_map[node.inputs[1]]
+                    out_node1.dilation = block_shape.value.tolist()
 
     def _remove_isolated_node(self):
         # delete isolated nodes

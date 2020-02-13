@@ -90,11 +90,13 @@ def tf2paddle(model_path,
         version = tf.__version__
         if version >= '2.0.0' or version < '1.0.0':
             print(
-                "1.0.0<=tensorflow<2.0.0 is required, and v1.14.0 is recommended"
+                "[ERROR] 1.0.0<=tensorflow<2.0.0 is required, and v1.14.0 is recommended"
             )
             return
     except:
-        print("Tensorflow is not installed, use \"pip install tensorflow\".")
+        print(
+            "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
+        )
         return
 
     from x2paddle.decoder.tf_decoder import TFDecoder
@@ -140,7 +142,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):
     if (int(ver_part[0]) == 3 and int(ver_part[1]) >= 6) \
         or (int(ver_part[0]) > 3):
         version_satisfy = True
-    assert version_satisfy, 'google.protobuf >= 3.6.0 is required'
+    assert version_satisfy, '[ERROR] google.protobuf >= 3.6.0 is required'
     print("Now translating model from caffe to paddle.")
     model = CaffeDecoder(proto, weight, caffe_proto)
     mapper = CaffeOpMapper(model)
@@ -156,10 +158,10 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         import onnx
         version = onnx.version.version
         if version != '1.6.0':
-            print("onnx==1.6.0 is required")
+            print("[ERROR] onnx==1.6.0 is required")
             return
     except:
-        print("onnx is not installed, use \"pip install onnx==1.6.0\".")
+        print("[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
     print("Now translating model from onnx to paddle.")
 
@@ -199,21 +201,23 @@ def main():
             import onnxruntime as rt
             version = rt.__version__
             if version != '1.0.0':
-                print("onnxruntime==1.0.0 is required")
+                print("[ERROR] onnxruntime==1.0.0 is required")
                 return
         except:
             print(
-                "onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
+                "[ERROR] onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
             )
 
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
         if int(v0) != 1 or int(v1) < 6:
-            print("paddlepaddle>=1.6.0 is required")
+            print("[ERROR] paddlepaddle>=1.6.0 is required")
             return
     except:
-        print("paddlepaddle not installed, use \"pip install paddlepaddle\"")
+        print(
+            "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
+        )
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"

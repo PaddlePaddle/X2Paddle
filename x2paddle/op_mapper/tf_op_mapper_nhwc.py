@@ -40,6 +40,7 @@ class TFOpMapperNHWC(OpMapper):
         'Sigmoid': ['sigmoid'],
         'Exp': ['exp'],
         'Rsqrt': ['rsqrt'],
+        'Sqrt': ['sqrt'],
         'swish_f32': ['swish'],
         'Tanh': ['tanh'],
         'LeakyRelu': ['leaky_relu', {
@@ -48,6 +49,7 @@ class TFOpMapperNHWC(OpMapper):
     }
     elementwise_ops = {
         'Add': 'elementwise_add',
+        'AddV2': 'elementwise_add',
         'RealDiv': 'elementwise_div',
         'Sub': 'elementwise_sub',
         'Maximum': 'elementwise_max',
@@ -90,10 +92,12 @@ class TFOpMapperNHWC(OpMapper):
                 if len(unsupported_ops) > 0:
                     continue
                 func = getattr(self, op)
-                func(node)
+                try:
+                    func(node)
+                except:
+                    unsupported_ops.add(op)
             else:
                 unsupported_ops.add(op)
-                continue
         if len(unsupported_ops) > 0:
             print("========= {} OPs are not supported yet ===========".format(
                 len(unsupported_ops)))
@@ -342,7 +346,6 @@ class TFOpMapperNHWC(OpMapper):
     def Conv2D(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
-        assert kernel.layer_type == "Const", "Kernel of Conv2D should be Const"
         self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         in_shape = input.out_shapes[0]
@@ -358,8 +361,12 @@ class TFOpMapperNHWC(OpMapper):
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
 
+        if kernel.layer_type == 'Const':
+            kernel_value = kernel.value
+        else:
+            kernel_value = self.decoder.infer_tensor(kernel)
         self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
-            kernel.value, (3, 2, 0, 1))
+            kernel_value, (3, 2, 0, 1))
 
         if not channel_first:
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
@@ -381,6 +388,11 @@ class TFOpMapperNHWC(OpMapper):
             "dilation": dilations[2:4],
             "padding": string(pad_mode)
         }
+
+        if hasattr(node, 'dilation') and attr['dilation'] == [1, 1]:
+            if len(node.dilation) == 1:
+                attr['dilation'] = [1, node.dilation[0]]
+
         node.fluid_code.add_layer("conv2d",
                                   inputs=input,
                                   output=node,
@@ -1135,3 +1147,39 @@ class TFOpMapperNHWC(OpMapper):
                                   inputs=inputs,
                                   output=node,
                                   param_attr=None)
+
+    def ExpandDims(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        if y.layer_type == 'Const':
+            dim = y.value.tolist()
+        else:
+            dim = self.decoder.infer_tensor(y)
+        self.add_omit_nodes(y.layer_name, node.layer_name)
+        attr = {'axes': [dim]}
+        node.fluid_code.add_layer("unsqueeze",
+                                  inputs=x,
+                                  output=node,
+                                  param_attr=attr)
+
+    def BatchToSpaceND(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        if hasattr(node, 'skip') and node.skip:
+            node.fluid_code.add_layer("=",
+                                      inputs=x,
+                                      output=node,
+                                      param_attr=None)
+        else:
+            raise Exception("BatchToSpaceND is not supported")
+
+    def SpaceToBatchND(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        if hasattr(node, 'skip') and node.skip:
+            node.fluid_code.add_layer("=",
+                                      inputs=x,
+                                      output=node,
+                                      param_attr=None)
+        else:
+            raise Exception("SpaceToBatchND is not supported")
