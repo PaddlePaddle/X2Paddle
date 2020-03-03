@@ -245,18 +245,22 @@ class CaffeDecoder(object):
         for layer in layers:
             setattr(layer, 'name', layer.name.replace('/', '_').replace('-', '_'))
         pair = lambda layer: (layer.name, self.normalize_pb_data(layer))
-        import time
-        start = time.time()
         self.params = [pair(layer) for layer in layers if layer.blobs]
-        end = time.time()
-        print('cost:', str(end - start))
 
     def normalize_pb_data(self, layer):
         transformed = []
         for blob in layer.blobs:
             if len(blob.shape.dim):
                 dims = blob.shape.dim
-                c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) + list(dims))
+                if layer.type == 'PReLU':
+                    c_o, c_i, h, w = map(int, [1] + \
+                        list(dims) + [1]* (3 - len(dims)))
+                elif layer.type == 'Normalize' and len(dims) == 4:
+                    data = np.asarray(list(blob.data), dtype=np.float32)
+                    transformed.append(data)
+                    continue
+                else:
+                    c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) + list(dims))
             else:
                 c_o = blob.num
                 c_i = blob.channels

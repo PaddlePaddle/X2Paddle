@@ -31,7 +31,6 @@ def register(kind, shape, layer, weights):
             k) is str, 'invalid param "kind" for register, not a list of str'
         assert k not in g_custom_layers, 'this type[%s] has already been registered' % (
             k)
-        print('register layer[%s]' % (k))
         g_custom_layers[k] = {
             'shape': shape,
             'layer': layer,
