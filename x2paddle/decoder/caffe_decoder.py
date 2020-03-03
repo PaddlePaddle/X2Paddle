@@ -171,6 +171,14 @@ class CaffeGraph(Graph):
         self.input2layers(input_layers)
         self.transform_input_layers(layers, input_layers)
         layers = input_layers + layers
+        for layer in layers:
+            if hasattr(layer, 'name'):
+                name = getattr(layer, 'name')
+                setattr(layer, 'name', name.replace('/', '_').replace('-', '_'))
+            for i, name in enumerate(layer.bottom):
+                layer.bottom[i] = name.replace('/', '_').replace('-', '_')
+            for i, name in enumerate(layer.top):
+                layer.top[i] = name.replace('/', '_').replace('-', '_')
 
         top_layer = {}
         for layer in layers:
@@ -232,28 +240,23 @@ class CaffeDecoder(object):
 
     def load_using_pb(self):
         data = self.resolver.NetParameter()
-
         data.MergeFromString(open(self.model_path, 'rb').read())
-        pair = lambda layer: (layer.name, self.normalize_pb_data(layer))
         layers = data.layers or data.layer
+        for layer in layers:
+            setattr(layer, 'name', layer.name.replace('/', '_').replace('-', '_'))
+        pair = lambda layer: (layer.name, self.normalize_pb_data(layer))
+        import time
+        start = time.time()
         self.params = [pair(layer) for layer in layers if layer.blobs]
+        end = time.time()
+        print('cost:', str(end - start))
 
     def normalize_pb_data(self, layer):
         transformed = []
         for blob in layer.blobs:
             if len(blob.shape.dim):
                 dims = blob.shape.dim
-                if layer.type == 'PReLU':
-                    c_o, c_i, h, w = map(int, [1] + \
-                        list(dims) + [1]* (3 - len(dims)))
-                elif layer.type == 'Normalize':
-                    data = np.asarray(list(blob.data), dtype=np.float32)
-                    transformed.append(data)
-                    continue
-                else:
-                    c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) \
-                        + list(dims))
-
+                c_o, c_i, h, w = map(int, [1] * (4 - len(dims)) + list(dims))
             else:
                 c_o = blob.num
                 c_i = blob.channels

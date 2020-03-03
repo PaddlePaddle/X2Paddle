@@ -43,8 +43,7 @@ def get_kernel_parameters(params):
         [p_h, p_w] = [params.pad] * 2
     elif len(params.pad) > 0:
         p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
-        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) -
-                                                               1]
+        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(params.pad) - 1]
     elif params.pad_h > 0 or params.pad_w > 0:
         p_h = params.pad_h
         p_w = params.pad_w
@@ -293,12 +292,15 @@ def shape_reshape(layer, input_shape):
             explicit_count *= count(l)
         for i in range(len(copy_axes)):
             explicit_count *= outshape[start_axis + copy_axes[i]]
-        outshape[start_axis + inferred_axis] = -1
-        outshape[0] = 0
-    else:
-        outshape[0] = -1
+        assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
+                "must be divisible by product of the specified dimensions[%d] "\
+                % (input_count, explicit_count)
+        outshape[start_axis + inferred_axis] = int(input_count / explicit_count)
 
     output_count = count(outshape)
+    assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
+        output_count, input_count)
+    outshape[0] = -1
     return [outshape]
 
 
@@ -342,10 +344,9 @@ def shape_flatten(layer, input_shape):
     output_shape = inshape[0:start_axis]
     if len(inshape[start_axis:end_axis]) != 0:
         flat_sz = reduce(lambda a, b: a * b, inshape[start_axis:end_axis])
-        flat_sz = -1
-        output_shape[0] = 0
         output_shape += [flat_sz]
     output_shape += inshape[end_axis:len(inshape)]
+    output_shape[0] = -1
     return [output_shape]
 
 
