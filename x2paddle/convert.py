@@ -211,9 +211,9 @@ def main():
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-#         if int(v0) != 1 or int(v1) < 6:
-#             print("[ERROR] paddlepaddle>=1.6.0 is required")
-#             return
+        if int(v0) != 1 or int(v1) < 6:
+            print("[ERROR] paddlepaddle>=1.6.0 is required")
+            return
     except:
         print(
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
