@@ -85,7 +85,7 @@ class TFOpMapper(OpMapper):
 
         not_placeholder = list()
         for name in self.graph.input_nodes:
-            if self.graph.get_node(name).layer_type != "Placeholder":
+            if self.graph.get_node(name).layer_type != "Placeholder" and self.graph.get_node(name).layer_type != "OneShotIterator":
                 not_placeholder.append(name)
         for name in not_placeholder:
             idx = self.graph.input_nodes.index(name)
@@ -286,6 +286,9 @@ class TFOpMapper(OpMapper):
                                   inputs=None,
                                   output=node,
                                   param_attr=attr)
+
+    def OneShotIterator(self, node):
+        return self.Placeholder(node)
 
     def Const(self, node):
         shape = node.out_shapes[0]
@@ -491,6 +494,9 @@ class TFOpMapper(OpMapper):
                                   inputs=input,
                                   output=node,
                                   param_attr=attr)
+
+    def FusedBatchNormV3(self, node):
+        return self.FusedBatchNorm(node)
 
     def DepthwiseConv2dNative(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
