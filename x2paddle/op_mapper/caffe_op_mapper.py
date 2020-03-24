@@ -797,21 +797,21 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         example = self.graph.get_bottom_node(node, idx=1, copy=True)
         params = node.layer.crop_param
-        axis = parmas.axis
+        axis = params.axis
         input_shape = node.input_shape[0]
         if axis < 0:
             axis += len(input_shape)
         offset_real = [0] * len(input_shape)
-        if hasattr(params, offset):
+        if hasattr(params, "offset") and len(params.offset) > 0:
             offset = list(params.offset)
             assert (len(input_shape) - axis) == len(
                 offset), "invalid offset[%s] in crop layer" % (str(offset))
             offset_real = [0] * axis + offset
-        attr = {'offsets': offset_real, 'name': string(node.layer_name)}
+        attr = {'offsets': list(offset_real), 'name': string(node.layer_name)}
         node.fluid_code.add_layer("crop",
                                   inputs={
                                       'x': input,
-                                      'y': example
+                                      'shape': node.input_shape[1]
                                   },
                                   output=node,
                                   param_attr=attr)
