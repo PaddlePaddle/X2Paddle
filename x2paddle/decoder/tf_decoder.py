@@ -341,9 +341,12 @@ class TFDecoder(object):
                     need_define_shape = 2
 
             if need_define_shape == 1:
-                shape = graph_node.out_shapes[0]
-                if len(shape) > 0 and shape.count(-1) < 2:
-                    need_define_shape = 0
+                try:
+                    shape = graph_node.out_shapes[0]
+                    if len(shape) > 0 and shape.count(-1) < 2:
+                        need_define_shape = 0
+                except:
+                    pass
 
             if need_define_shape > 0:
                 shape = None
