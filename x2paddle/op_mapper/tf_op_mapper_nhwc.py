@@ -744,13 +744,12 @@ class TFOpMapperNHWC(OpMapper):
             "start": start,
             "end": limit,
             "step": delta,
-            "dtype": string(dtype)
         }
         attr = {"dtype": string(node.dtype)}
         node.fluid_code.add_layer("range",
                                   inputs=inputs,
                                   output=node,
-                                  param_attr=None)
+                                  param_attr=attr)
 
     def Mean(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
