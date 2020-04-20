@@ -818,7 +818,7 @@ class TFOpMapper(OpMapper):
         node.fluid_code.add_layer("range",
                                   inputs=inputs,
                                   output=node,
-                                  param_attr=None)
+                                  param_attr=attr)
 
     def Mean(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
