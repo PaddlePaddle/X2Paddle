@@ -373,7 +373,6 @@ class ONNXOpMapper(OpMapper):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_scales = self.graph.get_input_node(node, idx=1, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
-
         out_shape = val_y.out_shapes[0]
         if out_shape is not None:
             assert len(out_shape) == 4, 'only 4-D Tensor as X and Y supported'
@@ -383,7 +382,6 @@ class ONNXOpMapper(OpMapper):
 
         if isinstance(val_scales, ONNXGraphNode):
             scales, _, _ = self.get_dynamic_shape(val_scales.layer_name)
-
         attr = {'name': string(node.layer_name)}
         use_scales = True
         if scales is not None:
@@ -708,8 +706,8 @@ class ONNXOpMapper(OpMapper):
 
             self.omit_nodes.append(starts.layer_name)
             self.omit_nodes.append(ends.layer_name)
-            starts = _const_weight_or_none(starts)
-            ends = _const_weight_or_none(ends)
+            starts = _const_weight_or_none(starts).copy()
+            ends = _const_weight_or_none(ends).copy()
         else:
             starts = node.get_attr('starts')
             ends = node.get_attr('ends')

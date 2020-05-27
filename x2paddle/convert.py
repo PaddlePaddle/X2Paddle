@@ -211,7 +211,10 @@ def main():
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 6:
+        print("paddle.__version__ = {}".format(paddle.__version__))
+        if v0 == '0' and v1 == '0' and v2 == '0':
+            print("[WARNING] You are use develop version of paddlepaddle")
+        elif int(v0) != 1 or int(v1) < 6:
             print("[ERROR] paddlepaddle>=1.6.0 is required")
             return
     except:
