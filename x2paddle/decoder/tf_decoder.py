@@ -48,7 +48,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def out_shapes(self):
-        if self.layer_type == "OneShotIterator":
+        if self.layer_type == "OneShotIterator" or self.layer_type == "IteratorV2":
             values = self.layer.attr["output_shapes"].list.shape
         else:
             values = self.layer.attr["_output_shapes"].list.shape
@@ -115,7 +115,7 @@ class TFGraph(Graph):
     def __init__(self, model, data_format="NHWC"):
         super(TFGraph, self).__init__(model)
         self.identity_map = dict()
-        self.multi_out_ops = ['Split', 'SplitV']
+        self.multi_out_ops = ['Split', 'SplitV', 'IteratorV2']
         self.tf_data_format = data_format
 
     def build(self):
@@ -335,7 +335,7 @@ class TFDecoder(object):
         graph_def = cp.deepcopy(graph_def)
         input_map = dict()
         for layer in graph_def.node:
-            if layer.op != "Placeholder" and layer.op != "OneShotIterator":
+            if layer.op != "Placeholder" and layer.op != "OneShotIterator" and layer.op != "IteratorV2":
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
