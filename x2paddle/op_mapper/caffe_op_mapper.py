@@ -467,7 +467,7 @@ class CaffeOpMapper(OpMapper):
     def Concat(self, node):
         assert len(
             node.inputs
-        ) > 1, 'The count of Concat node\'s input is not more than 1.'
+        ) >= 1, 'The count of Concat node\'s input is not more than 1.'
         inputs = []
         for i in range(len(node.inputs)):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
