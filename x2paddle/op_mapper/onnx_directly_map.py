@@ -32,11 +32,12 @@ default_op_mapping = {
         dict(),
         dict(
             min=(_np.asarray([255, 255, 127, 255],
-                             dtype=_np.uint8).view(_np.float32)),
+                             dtype=_np.uint8).view(_np.float32)[0]),
             max=(_np.asarray([255, 255, 127, 127],
-                             dtype=_np.uint8).view(_np.float32)),
+                             dtype=_np.uint8).view(_np.float32)[0]),
         )
     ],
+    'Erf': ['erf', ['X'], ['Out']],
     'Ceil': ['ceil', ['X'], ['Out']],
     'ReduceMean': [
         'reduce_mean', ['X'], ['Out'],

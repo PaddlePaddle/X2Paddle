@@ -48,7 +48,10 @@ class TFGraphNode(GraphNode):
 
     @property
     def out_shapes(self):
-        values = self.layer.attr["_output_shapes"].list.shape
+        if self.layer_type == "OneShotIterator":
+            values = self.layer.attr["output_shapes"].list.shape
+        else:
+            values = self.layer.attr["_output_shapes"].list.shape
         out_shapes = list()
         for value in values:
             shape = [dim.size for dim in value.dim]
@@ -62,6 +65,8 @@ class TFGraphNode(GraphNode):
             dtype = self.layer.attr[k].type
             if dtype > 0:
                 break
+        if dtype == 0:
+            dtype = self.layer.attr['output_types'].list.type[0]
         if dtype not in self.dtype_map:
             raise Exception("Dtype[{}] not in dtype_map".format(dtype))
         return self.dtype_map[dtype]
@@ -136,6 +141,7 @@ class TFGraph(Graph):
 
         # tensorflow graph optimize
         self._remove_isolated_node()
+        self._optimize_dialiation_conv()
         self._remove_identity_node()
         self._remove_cast_node()
 
@@ -175,6 +181,34 @@ class TFGraph(Graph):
         idx = self.topo_sort.index(node_name)
         del self.topo_sort[idx]
 
+    def _optimize_dialiation_conv(self):
+        for name in list(self.node_map.keys()):
+            node = self.node_map[name]
+            if node.layer_type == "SpaceToBatchND":
+                is_dilation = True
+                out_node0 = self.node_map[node.outputs[0]]
+                if out_node0.layer_type != 'ExpandDims':
+                    is_dilation = False
+                    continue
+                out_node1 = self.node_map[out_node0.outputs[0]]
+                if out_node1.layer_type != 'Conv2D':
+                    is_dilation = False
+                    continue
+                out_node2 = self.node_map[out_node1.outputs[0]]
+                if out_node2.layer_type != 'Squeeze':
+                    is_dilation = False
+                    continue
+                out_node3 = self.node_map[out_node2.outputs[0]]
+                if out_node3.layer_type != 'BatchToSpaceND':
+                    is_dilation = False
+                    continue
+
+                if is_dilation:
+                    node.skip = True
+                    out_node3.skip = True
+                    block_shape = self.node_map[node.inputs[1]]
+                    out_node1.dilation = block_shape.value.tolist()
+
     def _remove_isolated_node(self):
         # delete isolated nodes
         isolated_nodes = list()
@@ -197,7 +231,7 @@ class TFGraph(Graph):
     def _remove_identity_node(self):
         identity_ops = [
             'Identity', 'StopGradient', 'Switch', 'Merge',
-            'PlaceholderWithDefault'
+            'PlaceholderWithDefault', 'IteratorGetNext'
         ]
         identity_node = list()
         for node_name, node in self.node_map.items():
@@ -288,7 +322,7 @@ class TFDecoder(object):
         graph_def = cp.deepcopy(graph_def)
         input_map = dict()
         for layer in graph_def.node:
-            if layer.op != "Placeholder":
+            if layer.op != "Placeholder" and layer.op != "OneShotIterator":
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
@@ -305,6 +339,14 @@ class TFDecoder(object):
                 shape = [dim.size for dim in value.dim]
                 if shape.count(-1) > 1:
                     need_define_shape = 2
+
+            if need_define_shape == 1:
+                try:
+                    shape = graph_node.out_shapes[0]
+                    if len(shape) > 0 and shape.count(-1) < 2:
+                        need_define_shape = 0
+                except:
+                    pass
 
             if need_define_shape > 0:
                 shape = None

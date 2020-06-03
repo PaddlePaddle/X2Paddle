@@ -36,6 +36,8 @@ class Layer(object):
 
         if self.is_custom_layer:
             layer_code = layer_code + self.op + "("
+        elif self.op == "=":
+            layer_code = layer_code
         else:
             layer_code = layer_code + "fluid.layers." + self.op + "("
 
@@ -70,11 +72,15 @@ class Layer(object):
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
                 layer_code += (self.inputs.layer_name +
-                               "[{}]".format(self.inputs.index) + ", ")
+                               "[{}]".format(self.inputs.index))
             else:
-                layer_code += (self.inputs.layer_name + ", ")
+                layer_code += (self.inputs.layer_name)
+            if self.op != "=":
+                layer_code += ", "
         elif isinstance(self.inputs, six.string_types):
-            layer_code += (self.inputs + ", ")
+            layer_code += (self.inputs)
+            if self.op != "=":
+                layer_code += ", "
         else:
             raise Exception("Unknown type of inputs.")
 
@@ -85,7 +91,9 @@ class Layer(object):
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
-        return layer_code + ")"
+        if self.op != "=":
+            layer_code += ")"
+        return layer_code
 
 
 class FluidCode(object):
