@@ -85,8 +85,9 @@ class TFOpMapper(OpMapper):
 
         not_placeholder = list()
         for name in self.graph.input_nodes:
-            if self.graph.get_node(name).layer_type != "Placeholder" 
-               and self.graph.get_node(name).layer_type != "OneShotIterator":
+            if self.graph.get_node(
+                    name).layer_type != "Placeholder" and self.graph.get_node(
+                        name).layer_type != "OneShotIterator":
                 not_placeholder.append(name)
         for name in not_placeholder:
             idx = self.graph.input_nodes.index(name)
