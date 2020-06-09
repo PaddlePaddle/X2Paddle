@@ -88,6 +88,8 @@ class Layer(object):
         for key, value in param_attr.items():
             if '\n' in str(value):
                 value = string(str(value).replace('\n', ','))
+            if str(key) == 'attr':
+                value = 'ParamAttr(' + str(value) + ')'
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
