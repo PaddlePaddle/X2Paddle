@@ -19,32 +19,38 @@ import sys
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model",
-                        "-m",
-                        type=_text_type,
-                        default=None,
-                        help="define model file path for tensorflow or onnx")
-    parser.add_argument("--prototxt",
-                        "-p",
-                        type=_text_type,
-                        default=None,
-                        help="prototxt file of caffe model")
-    parser.add_argument("--weight",
-                        "-w",
-                        type=_text_type,
-                        default=None,
-                        help="weight file of caffe model")
-    parser.add_argument("--save_dir",
-                        "-s",
-                        type=_text_type,
-                        default=None,
-                        help="path to save translated model")
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=_text_type,
+        default=None,
+        help="define model file path for tensorflow or onnx")
+    parser.add_argument(
+        "--prototxt",
+        "-p",
+        type=_text_type,
+        default=None,
+        help="prototxt file of caffe model")
+    parser.add_argument(
+        "--weight",
+        "-w",
+        type=_text_type,
+        default=None,
+        help="weight file of caffe model")
+    parser.add_argument(
+        "--save_dir",
+        "-s",
+        type=_text_type,
+        default=None,
+        help="path to save translated model")
     parser.add_argument(
         "--framework",
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx)")
+        help=
+        "define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+    )
     parser.add_argument(
         "--caffe_proto",
         "-c",
@@ -52,27 +58,30 @@ def arg_parser():
         default=None,
         help="optional: the .py file compiled by caffe proto file of caffe model"
     )
-    parser.add_argument("--version",
-                        "-v",
-                        action="store_true",
-                        default=False,
-                        help="get version of x2paddle")
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        default=False,
+        help="get version of x2paddle")
     parser.add_argument(
         "--without_data_format_optimization",
         "-wo",
         action="store_true",
         default=False,
         help="tf model conversion without data format optimization")
-    parser.add_argument("--define_input_shape",
-                        "-d",
-                        action="store_true",
-                        default=False,
-                        help="define input shape for tf model")
-    parser.add_argument("--params_merge",
-                        "-pm",
-                        action="store_true",
-                        default=False,
-                        help="define whether merge the params")
+    parser.add_argument(
+        "--define_input_shape",
+        "-d",
+        action="store_true",
+        default=False,
+        help="define input shape for tf model")
+    parser.add_argument(
+        "--params_merge",
+        "-pm",
+        action="store_true",
+        default=False,
+        help="define whether merge the params")
 
     return parser
 
@@ -177,6 +186,14 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     mapper.save_inference_model(save_dir, params_merge)
 
 
+def paddle2onnx(model_path, save_dir):
+    from x2paddle.decoder.paddle_decoder import PaddleDecoder
+    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    model = PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = PaddleOpMapper()
+    mapper.convert(model.program, save_dir)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
@@ -249,8 +266,14 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
+
+    elif args.framework == "paddle2onnx":
+        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
+        paddle2onnx(args.model, args.save_dir)
+
     else:
-        raise Exception("--framework only support tensorflow/caffe/onnx now")
+        raise Exception(
+            "--framework only support tensorflow/caffe/onnx/paddle2onnx now")
 
 
 if __name__ == "__main__":
