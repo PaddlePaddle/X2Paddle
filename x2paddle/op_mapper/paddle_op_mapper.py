@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import sys
 import x2paddle
 import os
 import numpy as np
@@ -261,21 +262,22 @@ class PaddleOpMapper(object):
                 inputs=op.input('X'),
                 outputs=op.output('Out'),
                 axis=op.attr('axis'))
+        return node
 
     def slice(self, op, block):
         axes = op.attr('axes')
         starts = op.attr('starts')
         ends = op.attr('ends')
-        axes_name = get_name(op.type, 'axes')
-        starts_name = get_name(op.type, 'starts')
-        ends_name = get_name(op.type, 'ends')
+        axes_name = self.get_name(op.type, 'axes')
+        starts_name = self.get_name(op.type, 'starts')
+        ends_name = self.get_name(op.type, 'ends')
 
-        axes_node = make_constant_node(axes_name, onnx_pb.TensorProto.INT64,
-                                       axes)
-        starts_node = make_constant_node(starts_name, onnx_pb.TensorProto.INT64,
-                                         starts)
-        ends_node = make_constant_node(ends_name, onnx_pb.TensorProto.INT64,
-                                       ends)
+        axes_node = self.make_constant_node(axes_name,
+                                            onnx_pb.TensorProto.INT64, axes)
+        starts_node = self.make_constant_node(starts_name,
+                                              onnx_pb.TensorProto.INT64, starts)
+        ends_node = self.make_constant_node(ends_name,
+                                            onnx_pb.TensorProto.INT64, ends)
         node = helper.make_node(
             "Slice",
             inputs=[op.input('Input')[0], starts_name, ends_name, axes_name],
@@ -288,12 +290,14 @@ class PaddleOpMapper(object):
         dtype = op.attr('dtype')
         shape = op.attr('shape')
         value = np.ones(shape) * value
+        if dtype == 2:
+            value = value.astype('int32')
         node = helper.make_node(
             'Constant',
             inputs=[],
-            outputs=op.attr('Out'),
+            outputs=op.output('Out'),
             value=helper.make_tensor(
-                name=op.attr('Out'),
+                name=op.output('Out')[0],
                 data_type=self.paddle_onnx_dtype_map[dtype],
                 dims=shape,
                 vals=value.tolist()))
@@ -304,28 +308,45 @@ class PaddleOpMapper(object):
             'Transpose',
             inputs=op.input('X'),
             outputs=op.output('Out'),
-            perm=op.attr('perm'))
+            perm=op.attr('axis'))
         return node
 
     def reshape2(self, op, block):
         input_names = op.input_names
-        if 'Shape' in input_names and len(op.input('Shape')) > 0:
+        if len(op.input('ShapeTensor')) > 1:
+            cast_shape_nodes = list()
+            cast_shape_names = list()
+            for i in range(len(op.input('ShapeTensor'))):
+                dim = op.input('ShapeTensor')[i]
+                temp_name = self.get_name(op.type, 'shape.cast')
+                node = helper.make_node(
+                    'Cast',
+                    inputs=[dim],
+                    outputs=[temp_name],
+                    to=onnx_pb.TensorProto.INT64)
+                cast_shape_nodes.append(node)
+                cast_shape_names.append(temp_name)
+
+            temp_name = self.get_name(op.type, 'shape.concat')
+            shape_node = helper.make_node(
+                'Concat', inputs=cast_shape_names, outputs=[temp_name], axis=-1)
             node = helper.make_node(
                 'Reshape',
-                inputs=[op.input('X')[0],
-                        op.input('Shape')[0]],
+                inputs=[op.input('X')[0], temp_name],
                 outputs=op.output('Out'))
+            return cast_shape_nodes + [shape_node, node]
         else:
-            shape = op.attr('shape')
-            shape_name = get_name(op.type, 'shape')
-            shape_node = make_constant_node(shape_name,
-                                            onnxpb.TensorProto.INT64, shape)
+            temp_name = self.get_name(op.type, 'shape.cast')
+            cast_shape_node = helper.make_node(
+                'Cast',
+                inputs=op.input('ShapeTensor'),
+                outputs=[temp_name],
+                to=onnx_pb.TensorProto.INT64)
             node = helper.make_node(
                 'Reshape',
-                inputs=[op.input('X')[0], shape_name],
+                inputs=[op.input('X')[0], temp_name],
                 outputs=op.output('Out'))
-            return [shape_node, node]
-        return node
+            return [cast_shape_node, node]
 
     def dropout(self, op, block):
         dropout_mode = op.attr('dropout_implementation')
@@ -351,24 +372,31 @@ class PaddleOpMapper(object):
             'ReduceMean',
             inputs=op.input('X'),
             outputs=op.output('Out'),
-            axes=op.attr('axes'),
+            axes=op.attr('dim'),
             keepdims=op.attr('keep_dim'))
         return node
 
     def nearest_interp(self, op, block):
         input_names = op.input_names
+        coordinate_transformation_mode = 'half_pixel'
+        if op.attr('align_corners'):
+            coordinate_transformation_mode = 'align_corners'
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
                 'Resize',
                 inputs=[op.input('X')[0], '',
                         op.input('OutSize')[0]],
-                outputs=op.output('Out'))
+                outputs=op.output('Out'),
+                mode='nearest',
+                coordinate_transformation_mode=coordinate_transformation_mode)
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
                 inputs=[op.input('X')[0],
                         op.input('Scale')[0]],
-                outputs=op.output('Out'))
+                outputs=op.output('Out'),
+                mode='nearest',
+                coordinate_transformation_mode=coordinate_transformation_mode)
         else:
             out_shape = [op.attr('out_h'), op.attr('out_w')]
             scale = op.attr('scale')
@@ -384,7 +412,9 @@ class PaddleOpMapper(object):
                     'Resize',
                     inputs=[op.input('X')[0], roi_name, scale_name],
                     outputs=op.output('Out'),
-                    mode='nearest')
+                    mode='nearest',
+                    coordinate_transformation_mode=coordinate_transformation_mode
+                )
                 return [scale_node, roi_node, node]
             else:
                 raise Exception("Unexpected situation happend")
@@ -477,9 +507,12 @@ class PaddleOpMapper(object):
 
         unsupported_ops = set()
 
+        print("Translating PaddlePaddle to ONNX...\n")
         for block in program.blocks:
-            for op in block.ops:
-                print('Translating op: {}'.format(op.type))
+            for i, op in enumerate(block.ops):
+                sys.stdout.write(
+                    "\rTotal:{}, Current:{} : {}                   ".format(
+                        len(block.ops), i + 1, op.type))
                 if not hasattr(self, op.type):
                     unsupported_ops.add(op.type)
                     continue
@@ -497,7 +530,7 @@ class PaddleOpMapper(object):
                         op_nodes.append(node)
 
         if len(unsupported_ops) > 0:
-            print("There's {} ops are not supported yet".format(
+            print("\nThere's {} ops are not supported yet".format(
                 len(unsupported_ops)))
             for op in unsupported_ops:
                 print("=========== {} ===========".format(op))
@@ -516,5 +549,5 @@ class PaddleOpMapper(object):
             os.makedirs(save_dir)
         with open(os.path.join(save_dir, 'x2paddle_model.onnx'), 'wb') as f:
             f.write(model.SerializeToString())
-        print("Translated model saved in {}".format(
+        print("\nTranslated model saved in {}".format(
             os.path.join(save_dir, 'x2paddle_model.onnx')))
