@@ -78,6 +78,11 @@ class PaddleOpMapper(object):
             'Relu', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def sigmoid(self, op, block):
+        node = helper.make_node(
+            'Sigmoid', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
     def elementwise_add(self, op, block):
         axis = op.attr('axis')
         x_shape = block.var(op.input('X')[0]).shape
@@ -129,12 +134,40 @@ class PaddleOpMapper(object):
         return node
 
     def softmax(self, op, block):
-        node = helper.make_node(
-            'Softmax',
-            inputs=op.input('X'),
-            outputs=op.output('Out'),
-            axis=op.attr('axis'))
-        return node
+        axis = op.attr('axis')
+        shape = block.var(op.output('Out')[0]).shape
+        if axis < 0:
+            axis += len(shape)
+        if axis == len(shape) - 1:
+            node = helper.make_node(
+                'Softmax',
+                inputs=op.input('X'),
+                outputs=op.output('Out'),
+                axis=op.attr('axis'))
+            return node
+        else:
+            perm = [i for i in range(len(shape))]
+            perm[-1] = axis
+            perm[axis] = len(shape) - 1
+            transpose_name0 = self.get_name(op.type, 'transpose')
+            transpose_node0 = helper.make_node(
+                'Transpose',
+                inputs=op.input('X'),
+                outputs=[transpose_name0],
+                perm=perm)
+            softmax_name = self.get_name(op.type, 'softmax')
+            softmax_node = helper.make_node(
+                'Softmax',
+                inputs=[transpose_name0],
+                outputs=[softmax_name],
+                axis=-1)
+            transpose_name1 = self.get_name(op.type, 'transpose')
+            transpose_node1 = helper.make_node(
+                'Transpose',
+                inputs=[softmax_name],
+                outputs=op.output('Out'),
+                perm=perm)
+            return [transpose_node0, softmax_node, transpose_node1]
 
     def scale(self, op, block):
         scale = op.attr('scale')
@@ -376,6 +409,94 @@ class PaddleOpMapper(object):
             keepdims=op.attr('keep_dim'))
         return node
 
+    def bilinear_interp(self, op, block):
+        input_names = op.input_names
+        coordinate_transformation_mode = 'half_pixel'
+        shape_dtype = block.var(op.input('OutSize')[0]).dtype
+        if op.attr('align_corners'):
+            coordinate_transformation_mode = 'align_corners'
+        if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
+            roi_node = self.make_constant_node(
+                self.get_name(op.type, 'roi'), onnx_pb.TensorProto.FLOAT,
+                [1, 1, 1, 1, 1, 1, 1, 1])
+            roi_name = self.get_name(op.type, 'roi')
+            roi_node = self.make_constant_node(
+                roi_name, onnx_pb.TensorProto.FLOAT, [1, 1, 1, 1, 1, 1, 1, 1])
+            empty_name = self.get_name(op.type, 'empty')
+            empty_tensor = helper.make_tensor(
+                empty_name,
+                onnx_pb.TensorProto.FLOAT, (0, ),
+                np.array([]).astype('float32'),
+                raw=False)
+            empty_node = helper.make_node(
+                'Constant', [], outputs=[empty_name], value=empty_tensor)
+            shape_name0 = self.get_name(op.type, 'shape')
+            shape_node0 = helper.make_node(
+                'Shape', inputs=op.input('X'), outputs=[shape_name0])
+            starts_name = self.get_name(op.type, 'slice.starts')
+            starts_node = self.make_constant_node(
+                starts_name, onnx_pb.TensorProto.INT64, [0])
+            ends_name = self.get_name(op.type, 'slice.ends')
+            ends_node = self.make_constant_node(ends_name,
+                                                onnx_pb.TensorProto.INT64, [2])
+            shape_name1 = self.get_name(op.type, 'shape')
+            shape_node1 = helper.make_node(
+                'Slice',
+                inputs=[shape_name0, starts_name, ends_name],
+                outputs=[shape_name1])
+            shape_name2 = self.get_name(op.type, "shape.cast")
+            shape_node2 = helper.make_node(
+                'Cast',
+                inputs=op.input('OutSize'),
+                outputs=[shape_name2],
+                to=onnx_pb.TensorProto.INT64)
+            shape_name3 = self.get_name(op.type, "shape.concat")
+            shape_node3 = helper.make_node(
+                'Concat',
+                inputs=[shape_name1, shape_name2],
+                outputs=[shape_name3],
+                axis=0)
+            result_node = helper.make_node(
+                'Resize',
+                inputs=[op.input('X')[0], roi_name, empty_name, shape_name3],
+                outputs=op.output('Out'),
+                mode='linear',
+                coordinate_transformation_mode=coordinate_transformation_mode)
+            return [
+                roi_node, empty_node, shape_node0, starts_node, ends_node,
+                shape_node1, shape_node2, shape_node3, result_node
+            ]
+        elif 'Scale' in input_names and len(op.input('Scale')) > 0:
+            node = helper.make_node(
+                'Resize',
+                inputs=[op.input('X')[0],
+                        op.input('Scale')[0]],
+                outputs=op.output('Out'),
+                mode='linear',
+                coordinate_transformation_mode=coordinate_transformation_mode)
+        else:
+            out_shape = [op.attr('out_h'), op.attr('out_w')]
+            scale = op.attr('scale')
+            if out_shape.count(-1) > 0:
+                scale_name = self.get_name(op.type, 'scale')
+                scale_node = self.make_constant_node(
+                    scale_name, onnx_pb.TensorProto.FLOAT, [1, 1, scale, scale])
+                roi_name = self.get_name(op.type, 'roi')
+                roi_node = self.make_constant_node(roi_name,
+                                                   onnx_pb.TensorProto.FLOAT,
+                                                   [1, 1, 1, 1, 1, 1, 1, 1])
+                node = helper.make_node(
+                    'Resize',
+                    inputs=[op.input('X')[0], roi_name, scale_name],
+                    outputs=op.output('Out'),
+                    mode='nearest',
+                    coordinate_transformation_mode=coordinate_transformation_mode
+                )
+                return [scale_node, roi_node, node]
+            else:
+                raise Exception("Unexpected situation happend")
+        return node
+
     def nearest_interp(self, op, block):
         input_names = op.input_names
         coordinate_transformation_mode = 'half_pixel'
@@ -478,6 +599,23 @@ class PaddleOpMapper(object):
             shape=var.shape,
             elem_type=self.paddle_onnx_dtype_map[var.dtype])
         return tensor_info
+
+    def unsqueeze2(self, op, block):
+        node = helper.make_node(
+            'Unsqueeze',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            axes=op.attr('axes'))
+        return node
+
+    def arg_max(self, op, block):
+        node = helper.make_node(
+            'ArgMax',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            axis=op.attr('axis'),
+            keepdims=0)
+        return node
 
     def convert_weights(self, program):
         var_names = program.global_block().vars
