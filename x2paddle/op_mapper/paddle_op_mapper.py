@@ -21,6 +21,8 @@ import paddle.fluid.core as core
 import paddle.fluid as fluid
 import onnx
 from onnx import helper, onnx_pb
+from .paddle_custom_layer.yolo_box import yolo_box
+from .paddle_custom_layer.multiclass_nms import multiclass_nms
 
 
 class PaddleOpMapper(object):
@@ -73,6 +75,19 @@ class PaddleOpMapper(object):
             pads=op.attr('paddings') + op.attr('paddings'))
         return node
 
+    def conv2d_transpose(self, op, block):
+        kernel_shape = block.var(op.input('Filter')[0]).shape
+        node = helper.make_node(
+            'ConvTranspose',
+            inputs=op.input('Input') + op.input('Filter'),
+            outputs=op.output('Output'),
+            dilations=op.attr('dilations'),
+            kernel_shape=kernel_shape[-2:],
+            strides=op.attr('strides'),
+            group=1,
+            pads=op.attr('paddings') + op.attr('paddings'))
+        return node
+
     def relu(self, op, block):
         node = helper.make_node(
             'Relu', inputs=op.input('X'), outputs=op.output('Out'))
@@ -81,6 +96,19 @@ class PaddleOpMapper(object):
     def sigmoid(self, op, block):
         node = helper.make_node(
             'Sigmoid', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
+    def exp(self, op, block):
+        node = helper.make_node(
+            'Exp', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
+    def leaky_relu(self, op, block):
+        node = helper.make_node(
+            'LeakyRelu',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            alpha=op.attr('alpha'))
         return node
 
     def elementwise_add(self, op, block):
@@ -111,6 +139,35 @@ class PaddleOpMapper(object):
             return node
         else:
             raise Excpetion("Unexpected situation happend in elementwise_add")
+
+    def elementwise_sub(self, op, block):
+        axis = op.attr('axis')
+        x_shape = block.var(op.input('X')[0]).shape
+        y_shape = block.var(op.input('Y')[0]).shape
+        if len(y_shape) == 1 and axis == 1:
+            shape_name = self.get_name(op.type, 'shape')
+            shape_value = [1] * len(x_shape)
+            shape_value[axis] = y_shape[0]
+            shape_node = self.make_constant_node(
+                shape_name, onnx_pb.TensorProto.INT64, shape_value)
+            temp_value = self.get_name(op.type, 'temp')
+            y_node = helper.make_node(
+                'Reshape',
+                inputs=[op.input('Y')[0], shape_name],
+                outputs=[temp_value])
+            node = helper.make_node(
+                'Sub',
+                inputs=[op.input('X')[0], temp_value],
+                outputs=op.output('Out'))
+            return [shape_node, y_node, node]
+        elif len(x_shape) == len(y_shape):
+            node = helper.make_node(
+                'Sub',
+                inputs=[op.input('X')[0], op.input('Y')[0]],
+                outputs=op.output('Out'))
+            return node
+        else:
+            raise Excpetion("Unexpected situation happend in elementwise_sub")
 
     def pool2d(self, op, block):
         pool_type = {
@@ -412,10 +469,12 @@ class PaddleOpMapper(object):
     def bilinear_interp(self, op, block):
         input_names = op.input_names
         coordinate_transformation_mode = 'half_pixel'
-        shape_dtype = block.var(op.input('OutSize')[0]).dtype
         if op.attr('align_corners'):
             coordinate_transformation_mode = 'align_corners'
-        if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
+        if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
+                'SizeTensor' in input_names
+                and len(op.input('SizeTensor')) > 0):
+            node_list = list()
             roi_node = self.make_constant_node(
                 self.get_name(op.type, 'roi'), onnx_pb.TensorProto.FLOAT,
                 [1, 1, 1, 1, 1, 1, 1, 1])
@@ -444,16 +503,42 @@ class PaddleOpMapper(object):
                 'Slice',
                 inputs=[shape_name0, starts_name, ends_name],
                 outputs=[shape_name1])
-            shape_name2 = self.get_name(op.type, "shape.cast")
-            shape_node2 = helper.make_node(
-                'Cast',
-                inputs=op.input('OutSize'),
-                outputs=[shape_name2],
-                to=onnx_pb.TensorProto.INT64)
+            node_list.extend([
+                roi_node, empty_node, shape_node0, starts_node, ends_node,
+                shape_node1
+            ])
+            #            shape_name2 = self.get_name(op.type, "shape.cast")
+            #            shape_node2 = helper.make_node(
+            #                'Cast',
+            #                inputs=op.input('OutSize'),
+            #                outputs=[shape_name2],
+            #                to=onnx_pb.TensorProto.INT64)
+            if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=op.input('OutSize'),
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.append(cast_shape_node)
+            else:
+                concat_shape_name = self.get_name(op.type, "shape.concat")
+                concat_shape_node = helper.make_node(
+                    "Concat",
+                    inputs=op.input('SizeTensor'),
+                    outputs=[concat_shape_name],
+                    axis=0)
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=[concat_shape_name],
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.extend([concat_shape_node, cast_shape_node])
             shape_name3 = self.get_name(op.type, "shape.concat")
             shape_node3 = helper.make_node(
                 'Concat',
-                inputs=[shape_name1, shape_name2],
+                inputs=[shape_name1, cast_shape_name],
                 outputs=[shape_name3],
                 axis=0)
             result_node = helper.make_node(
@@ -462,10 +547,8 @@ class PaddleOpMapper(object):
                 outputs=op.output('Out'),
                 mode='linear',
                 coordinate_transformation_mode=coordinate_transformation_mode)
-            return [
-                roi_node, empty_node, shape_node0, starts_node, ends_node,
-                shape_node1, shape_node2, shape_node3, result_node
-            ]
+            node_list.extend([shape_node3, result_node])
+            return node_list
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
@@ -552,6 +635,41 @@ class PaddleOpMapper(object):
             beta=offset)
         return node
 
+    def hard_swish(self, op, block):
+        min_name = self.get_name(op.type, 'min')
+        max_name = self.get_name(op.type, 'max')
+        scale_name = self.get_name(op.type, 'scale')
+        offset_name = self.get_name(op.type, 'offset')
+        min_node = self.make_constant_node(min_name, onnx_pb.TensorProto.FLOAT,
+                                           0)
+        max_node = self.make_constant_node(max_name, onnx_pb.TensorProto.FLOAT,
+                                           op.attr('threshold'))
+        scale_node = self.make_constant_node(scale_name,
+                                             onnx_pb.TensorProto.FLOAT,
+                                             op.attr('scale'))
+        offset_node = self.make_constant_node(offset_name,
+                                              onnx_pb.TensorProto.FLOAT,
+                                              op.attr('offset'))
+
+        name0 = self.get_name(op.type, 'add')
+        node0 = helper.make_node(
+            'Add', inputs=[op.input('X')[0], offset_name], outputs=[name0])
+        name1 = self.get_name(op.type, 'relu')
+        node1 = helper.make_node(
+            'Clip',
+            inputs=[name0, min_name, max_name],
+            outputs=[name1],
+        )
+        name2 = self.get_name(op.type, 'mul')
+        node2 = helper.make_node(
+            'Mul', inputs=[op.input('X')[0], name1], outputs=[name2])
+        node3 = helper.make_node(
+            'Div', inputs=[name2, scale_name], outputs=op.output('Out'))
+        return [
+            min_node, max_node, scale_node, offset_node, node0, node1, node2,
+            node3
+        ]
+
     def elementwise_mul(self, op, block):
         axis = op.attr('axis')
         x_shape = block.var(op.input('X')[0]).shape
@@ -617,6 +735,18 @@ class PaddleOpMapper(object):
             keepdims=0)
         return node
 
+    def yolo_box(self, op, block):
+        return yolo_box(op, block)
+
+    def multiclass_nms(self, op, block):
+        return multiclass_nms(op, block)
+
+    def reciprocal(self, op, block):
+        inputs = op.input(op.input_names[0])
+        outputs = op.output(op.output_names[0])
+        node = helper.make_node('Reciprocal', inputs=inputs, outputs=outputs)
+        return node
+
     def convert_weights(self, program):
         var_names = program.global_block().vars
         nodes = list()
@@ -651,6 +781,7 @@ class PaddleOpMapper(object):
                 sys.stdout.write(
                     "\rTotal:{}, Current:{} : {}                   ".format(
                         len(block.ops), i + 1, op.type))
+                sys.stdout.flush()
                 if not hasattr(self, op.type):
                     unsupported_ops.add(op.type)
                     continue
