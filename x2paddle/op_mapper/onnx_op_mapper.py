@@ -246,10 +246,8 @@ class ONNXOpMapper(OpMapper):
         assert len(val_inps) == 1, 'directly_map error with multi inputs'
         if fluid_op not in ['shape']:
             attr['name'] = string(node.layer_name)
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_inps[0],
-                                  output=val_outs[0],
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_inps[0], output=val_outs[0], param_attr=attr)
 
     def deal_custom_layer(self, node):
         op = node.layer_type
@@ -258,11 +256,12 @@ class ONNXOpMapper(OpMapper):
         params = get_params(node.layer, node.layer_type)
         arg_names, kwargs = set_args(func, params)
         kwargs['name'] = string(node.layer_name)
-        node.fluid_code.add_layer(func.__code__.co_name,
-                                  inputs=node.inputs,
-                                  output=node,
-                                  param_attr=kwargs,
-                                  is_custom_layer=True)
+        node.fluid_code.add_layer(
+            func.__code__.co_name,
+            inputs=node.inputs,
+            output=node,
+            param_attr=kwargs,
+            is_custom_layer=True)
         if op not in self.used_custom_layers:
             self.used_custom_layers[op] = custom_code
             if op + '_child_func' not in self.used_custom_layers:
@@ -299,21 +298,18 @@ class ONNXOpMapper(OpMapper):
                 'shape': val_y_reshaped,
                 'name': string(var_y_reshaped)
             }
-            node.fluid_code.add_layer('reshape',
-                                      inputs=val_y,
-                                      output=var_y_reshaped,
-                                      param_attr=attr_reshaped)
+            node.fluid_code.add_layer(
+                'reshape',
+                inputs=val_y,
+                output=var_y_reshaped,
+                param_attr=attr_reshaped)
             inputs = {'x': val_x, 'y': var_y_reshaped}
-            node.fluid_code.add_layer(op_type,
-                                      inputs=inputs,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                op_type, inputs=inputs, output=node, param_attr=attr)
         else:
             inputs = {'x': val_x, 'y': val_y}
-            node.fluid_code.add_layer(op_type,
-                                      inputs=inputs,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                op_type, inputs=inputs, output=node, param_attr=attr)
 
     def place_holder(self, node):
         self.input_shapes.append(node.out_shapes[0])
@@ -331,10 +327,8 @@ class ONNXOpMapper(OpMapper):
             "append_batch_size": 'False'
         }
 
-        node.fluid_code.add_layer("data",
-                                  inputs=None,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "data", inputs=None, output=node, param_attr=attr)
 
     def create_parameter(self, node, parameter=None):
         if parameter is not None:
@@ -351,10 +345,8 @@ class ONNXOpMapper(OpMapper):
             'attr': string(node.layer_name),
             'default_initializer': 'Constant(0.0)'
         }
-        node.fluid_code.add_layer("create_parameter",
-                                  inputs=None,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "create_parameter", inputs=None, output=node, param_attr=attr)
 
     def _pad_if_asymmetric(self, node, pads, val_name):  # pads: SSEE
         assert len(pads) & 1 == 0
@@ -418,10 +410,8 @@ class ONNXOpMapper(OpMapper):
         else:
             attr['out_shape'] = out_shape
 
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def RoiAlign(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -437,13 +427,14 @@ class ONNXOpMapper(OpMapper):
             'spatial_scale': spatial_scale,
             'sampling_ratio': sampling_ratio,
         }
-        node.fluid_code.add_layer('roi_align',
-                                  inputs={
-                                      'input': val_x,
-                                      'rois': val_rois
-                                  },
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'roi_align',
+            inputs={
+                'input': val_x,
+                'rois': val_rois
+            },
+            output=node,
+            param_attr=attr)
 
     def MaxRoiPool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -456,13 +447,14 @@ class ONNXOpMapper(OpMapper):
             'pooled_width': pooled_width,
             'spatial_scale': spatial_scale,
         }
-        node.fluid_code.add_layer('roi_pool',
-                                  inputs={
-                                      'input': val_x,
-                                      'rois': val_rois
-                                  },
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'roi_pool',
+            inputs={
+                'input': val_x,
+                'rois': val_rois
+            },
+            output=node,
+            param_attr=attr)
 
     def Pad(self, node, op_independent=True):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -499,32 +491,27 @@ class ONNXOpMapper(OpMapper):
         attr['paddings'] = paddings
         if op_independent:
             attr['name'] = string(node.layer_name)
-            node.fluid_code.add_layer(fluid_op,
-                                      inputs=val_x,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                fluid_op, inputs=val_x, output=node, param_attr=attr)
         else:
             attr['name'] = string(node.layer_name + '_paded')
-            node.fluid_code.add_layer(fluid_op,
-                                      inputs=val_x,
-                                      output=node.layer_name + '_paded',
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                fluid_op,
+                inputs=val_x,
+                output=node.layer_name + '_paded',
+                param_attr=attr)
             return node.layer_name + '_paded'
 
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
         if len(val_x.out_shapes[0]) == 0:
-            node.fluid_code.add_layer('assign',
-                                      inputs=val_x,
-                                      output=node,
-                                      param_attr=None)
+            node.fluid_code.add_layer(
+                'assign', inputs=val_x, output=node, param_attr=None)
         else:
             attr = {'axes': axes, 'name': string(node.layer_name)}
-            node.fluid_code.add_layer('unsqueeze',
-                                      inputs=val_x,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                'unsqueeze', inputs=val_x, output=node, param_attr=attr)
 
     def Shrink(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -532,10 +519,20 @@ class ONNXOpMapper(OpMapper):
         lambd = node.get_attr('lambd')
         assert bias == 0.0, 'not support bias!=0'
         attr = {'threshold': lambd, 'name': node.layer_name}
-        node.fluid_code.add_layer('hard_shrink',
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'hard_shrink', inputs=val_x, output=node, param_attr=attr)
+
+    def Greater(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        node.fluid_code.add_layer(
+            'greater_than',
+            inputs={
+                'x': val_x,
+                'y': val_y
+            },
+            output=node,
+            param_attr=None)
 
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
@@ -565,10 +562,8 @@ class ONNXOpMapper(OpMapper):
             if dtype.name == 'int64':
                 dtype = 'int32'
             attr = {'shape': shape, 'dtype': string(dtype), 'value': value}
-            node.fluid_code.add_layer('fill_constant',
-                                      inputs=None,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                'fill_constant', inputs=None, output=node, param_attr=attr)
         else:
             value = np.reshape(value, shape)
             self.weights[node.layer_name] = value
@@ -579,10 +574,8 @@ class ONNXOpMapper(OpMapper):
                 'attr': string(node.layer_name),
                 'default_initializer': 'Constant(0.0)'
             }
-            node.fluid_code.add_layer("create_parameter",
-                                      inputs=None,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                "create_parameter", inputs=None, output=node, param_attr=attr)
 
     def Resize(self, node):
         self._interpolate(node)
@@ -603,16 +596,15 @@ class ONNXOpMapper(OpMapper):
 
         name_ones = node.layer_name + '_ones'
         attr_ones = {'shape': out_shape, 'dtype': string(val_x_dtype)}
-        node.fluid_code.add_layer('ones',
-                                  inputs=None,
-                                  output=name_ones,
-                                  param_attr=attr_ones)
+        node.fluid_code.add_layer(
+            'ones', inputs=None, output=name_ones, param_attr=attr_ones)
         inputs = {'x': name_ones, 'y': val_x}
         attr = {'name': string(node.layer_name)}
-        node.fluid_code.add_layer('elementwise_mul',
-                                  inputs=inputs,
-                                  output=node.layer_name,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'elementwise_mul',
+            inputs=inputs,
+            output=node.layer_name,
+            param_attr=attr)
 
     def Gather(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -622,72 +614,75 @@ class ONNXOpMapper(OpMapper):
         assert len(
             indices_shape) <= 2, "Gather op don't support dim of indice >2 "
         if axis == 0 and len(indices_shape) <= 1:
-            node.fluid_code.add_layer('gather',
-                                      inputs={
-                                          'input': val_x,
-                                          'index': indices
-                                      },
-                                      output=node,
-                                      param_attr=None)
+            node.fluid_code.add_layer(
+                'gather',
+                inputs={
+                    'input': val_x,
+                    'index': indices
+                },
+                output=node,
+                param_attr=None)
         elif axis > 0 and len(indices_shape) <= 1:
             perm = list(range(len(val_x.out_shapes[0])))
             perm = [axis] + perm[:axis] + perm[axis + 1:]
             attr_trans = {'perm': perm}
             name_trans = val_x.layer_name + '_trans'
-            node.fluid_code.add_layer('transpose',
-                                      inputs=val_x,
-                                      output=name_trans,
-                                      param_attr=attr_trans)
-            node.fluid_code.add_layer('gather',
-                                      inputs={
-                                          'input': name_trans,
-                                          'index': indices
-                                      },
-                                      output=node,
-                                      param_attr=None)
-            node.fluid_code.add_layer('transpose',
-                                      inputs=node,
-                                      output=node,
-                                      param_attr=attr_trans)
+            node.fluid_code.add_layer(
+                'transpose',
+                inputs=val_x,
+                output=name_trans,
+                param_attr=attr_trans)
+            node.fluid_code.add_layer(
+                'gather',
+                inputs={
+                    'input': name_trans,
+                    'index': indices
+                },
+                output=node,
+                param_attr=None)
+            node.fluid_code.add_layer(
+                'transpose', inputs=node, output=node, param_attr=attr_trans)
         elif len(indices_shape) > 1:
             from functools import reduce
             reshape_shape = reduce(lambda x, y: x * y, indices_shape)
-            node.fluid_code.add_layer('reshape',
-                                      inputs=indices,
-                                      output=indices,
-                                      param_attr={'shape': [
-                                          reshape_shape,
-                                      ]})
+            node.fluid_code.add_layer(
+                'reshape',
+                inputs=indices,
+                output=indices,
+                param_attr={'shape': [
+                    reshape_shape,
+                ]})
 
             perm = list(range(len(val_x.out_shapes[0])))
             perm = [axis] + perm[:axis] + perm[axis + 1:]
             attr_trans = {'perm': perm}
             name_trans = val_x.layer_name + '_trans'
-            node.fluid_code.add_layer('transpose',
-                                      inputs=val_x,
-                                      output=name_trans,
-                                      param_attr=attr_trans)
-            node.fluid_code.add_layer('gather',
-                                      inputs={
-                                          'input': name_trans,
-                                          'index': indices
-                                      },
-                                      output=node,
-                                      param_attr=None)
-            node.fluid_code.add_layer('transpose',
-                                      inputs=node,
-                                      output=node,
-                                      param_attr=attr_trans)
+            node.fluid_code.add_layer(
+                'transpose',
+                inputs=val_x,
+                output=name_trans,
+                param_attr=attr_trans)
+            node.fluid_code.add_layer(
+                'gather',
+                inputs={
+                    'input': name_trans,
+                    'index': indices
+                },
+                output=node,
+                param_attr=None)
+            node.fluid_code.add_layer(
+                'transpose', inputs=node, output=node, param_attr=attr_trans)
             val_x_shape = val_x.out_shapes[0]
             reshaped_shape = []
             for i in perm:
                 reshaped_shape.append(indices_shape[i])
             for i in val_x_shape[:axis] + val_x_shape[axis + 1:]:
                 reshaped_shape.append(i)
-            node.fluid_code.add_layer('reshape',
-                                      inputs=node,
-                                      output=node,
-                                      param_attr={'shape': reshaped_shape})
+            node.fluid_code.add_layer(
+                'reshape',
+                inputs=node,
+                output=node,
+                param_attr={'shape': reshaped_shape})
 
     def Slice(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -725,10 +720,8 @@ class ONNXOpMapper(OpMapper):
                 if value > shape[axes[idx]]:
                     ends[idx] = shape[axes[idx]]
         attr = {"axes": axes, "starts": starts, "ends": ends}
-        node.fluid_code.add_layer('slice',
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'slice', inputs=val_x, output=node, param_attr=attr)
 
     def ConstantOfShape(self, node):
         val_shape = self.graph.get_input_node(node, idx=0, copy=True)
@@ -751,10 +744,8 @@ class ONNXOpMapper(OpMapper):
             if dtype.name == 'int64':
                 dtype = 'int32'
             attr = {'shape': shape, 'dtype': string(dtype), 'value': value}
-            node.fluid_code.add_layer('fill_constant',
-                                      inputs=None,
-                                      output=node,
-                                      param_attr=attr)
+            node.fluid_code.add_layer(
+                'fill_constant', inputs=None, output=node, param_attr=attr)
 
     def Split(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -769,10 +760,8 @@ class ONNXOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
 
-        node.fluid_code.add_layer('split',
-                                  inputs=val_x,
-                                  output=val_y,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'split', inputs=val_x, output=val_y, param_attr=attr)
 
     def Reshape(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -789,10 +778,11 @@ class ONNXOpMapper(OpMapper):
             shape, _, _ = self.get_dynamic_shape(val_shape.layer_name)
             if val_shape.dtype == 'int64':
                 val_shape_cast = val_shape.layer_name + '_cast'
-                node.fluid_code.add_layer('cast',
-                                          inputs=val_shape,
-                                          output=val_shape_cast,
-                                          param_attr={'dtype': string('int32')})
+                node.fluid_code.add_layer(
+                    'cast',
+                    inputs=val_shape,
+                    output=val_shape_cast,
+                    param_attr={'dtype': string('int32')})
 
                 attr['actual_shape'] = val_shape_cast
             else:
@@ -810,10 +800,8 @@ class ONNXOpMapper(OpMapper):
                 val_x.layer_name, val_reshaped.layer_name)
 
         attr['shape'] = shape
-        node.fluid_code.add_layer('reshape',
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'reshape', inputs=val_x, output=node, param_attr=attr)
 
     def Cast(self, node):
         val_input = self.graph.get_input_node(node, idx=0, copy=True)
@@ -827,10 +815,8 @@ class ONNXOpMapper(OpMapper):
         if output_dtype:
             assert dtype == output_dtype, 'dtype of to unmatches output'
         attr = {'dtype': string(dtype)}
-        node.fluid_code.add_layer('cast',
-                                  inputs=val_input,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'cast', inputs=val_input, output=node, param_attr=attr)
 
     def AveragePool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -865,10 +851,8 @@ class ONNXOpMapper(OpMapper):
             "name": string(node.layer_name)
         }
 
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def Concat(self, node):
         inputs = []
@@ -880,19 +864,15 @@ class ONNXOpMapper(OpMapper):
                 inputs.append(ipt.layer_name)
         axis = node.get_attr('axis')
         attr = {'axis': axis}
-        node.fluid_code.add_layer('concat',
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'concat', inputs=inputs, output=node, param_attr=attr)
 
     def Flatten(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axis = node.get_attr('axis', 1)
         attr = {"axis": str(axis), "name": string(node.layer_name)}
-        node.fluid_code.add_layer('flatten',
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'flatten', inputs=val_x, output=node, param_attr=attr)
 
     def Gemm(self, node):
         val_a = self.graph.get_input_node(node, idx=0, copy=True)
@@ -911,33 +891,37 @@ class ONNXOpMapper(OpMapper):
             "alpha": alpha,
             "name": string(val_mm)
         }
-        node.fluid_code.add_layer('matmul',
-                                  inputs=matmul_inputs,
-                                  output=val_mm,
-                                  param_attr=attr_matmul)
+        node.fluid_code.add_layer(
+            'matmul',
+            inputs=matmul_inputs,
+            output=val_mm,
+            param_attr=attr_matmul)
 
         if beta != 0:
             if beta == 1.:
                 add_inputs = {"x": val_mm, "y": val_c}
                 attr = {"name": string(node.layer_name)}
-                node.fluid_code.add_layer("elementwise_add",
-                                          inputs=add_inputs,
-                                          output=node,
-                                          param_attr=attr)
+                node.fluid_code.add_layer(
+                    "elementwise_add",
+                    inputs=add_inputs,
+                    output=node,
+                    param_attr=attr)
             else:
                 var_beta = node.layer_name + '_beta'
                 matmul_beta_inputs = {"x": val_c, "y": var_beta}
-                node.fluid_code.add_layer("Constant",
-                                          inputs=matmul_beta_inputs,
-                                          output=var_beta,
-                                          param_attr={'value': beta})
+                node.fluid_code.add_layer(
+                    "Constant",
+                    inputs=matmul_beta_inputs,
+                    output=var_beta,
+                    param_attr={'value': beta})
 
                 add_inputs = {"x": val_mm, "y": var_beta}
                 attr = {"name": string(node.layer_name)}
-                node.fluid_code.add_layer("elementwise_add",
-                                          inputs=add_inputs,
-                                          output=node,
-                                          param_attr=attr)
+                node.fluid_code.add_layer(
+                    "elementwise_add",
+                    inputs=add_inputs,
+                    output=node,
+                    param_attr=attr)
 
     def Sum(self, node):
         val_inps = node.layer.input
@@ -953,19 +937,16 @@ class ONNXOpMapper(OpMapper):
                 "x": node.layer_name,
                 "y": y,
             }
-            node.fluid_code.add_layer("elementwise_add",
-                                      inputs=inputs,
-                                      output=node)
+            node.fluid_code.add_layer(
+                "elementwise_add", inputs=inputs, output=node)
 
     def MatMul(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
         inputs = {"x": val_x, "y": val_y}
         attr = {"name": string(node.layer_name)}
-        node.fluid_code.add_layer("matmul",
-                                  inputs=inputs,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "matmul", inputs=inputs, output=node, param_attr=attr)
 
     def BatchNormalization(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -996,27 +977,21 @@ class ONNXOpMapper(OpMapper):
             "use_global_stats": spatial,
             "name": string(node.layer_name)
         }
-        node.fluid_code.add_layer("batch_norm",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "batch_norm", inputs=val_x, output=node, param_attr=attr)
 
     def Transpose(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         perm = node.get_attr('perm')
         attr = {'perm': perm, "name": string(node.layer_name)}
-        node.fluid_code.add_layer("transpose",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "transpose", inputs=val_x, output=node, param_attr=attr)
 
     def Relu(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         attr = {"name": string(node.layer_name)}
-        node.fluid_code.add_layer("relu",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "relu", inputs=val_x, output=node, param_attr=attr)
 
     def PRelu(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1032,30 +1007,27 @@ class ONNXOpMapper(OpMapper):
             "param_attr": string(val_slope.layer_name),
             'mode': string(mode)
         }
-        node.fluid_code.add_layer("prelu",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "prelu", inputs=val_x, output=node, param_attr=attr)
 
     def Squeeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
         attr = {'axes': axes, "name": string(node.layer_name)}
-        node.fluid_code.add_layer("squeeze",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "squeeze", inputs=val_x, output=node, param_attr=attr)
 
     def Equal(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        node.fluid_code.add_layer("equal",
-                                  inputs={
-                                      'x': val_x,
-                                      'y': val_y
-                                  },
-                                  output=node,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            "equal",
+            inputs={
+                'x': val_x,
+                'y': val_y
+            },
+            output=node,
+            param_attr=None)
 
     def Where(self, node):
         condition = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1063,52 +1035,57 @@ class ONNXOpMapper(OpMapper):
         val_y = self.graph.get_input_node(node, idx=2, copy=True)
 
         not_condition = condition.layer_name + '_not'
-        node.fluid_code.add_layer("logical_not",
-                                  inputs=condition,
-                                  output=not_condition,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            "logical_not",
+            inputs=condition,
+            output=not_condition,
+            param_attr=None)
         cast_not_condition = not_condition + '_cast'
-        node.fluid_code.add_layer("cast",
-                                  inputs=not_condition,
-                                  output=cast_not_condition,
-                                  param_attr={'dtype': string(val_x.dtype)})
+        node.fluid_code.add_layer(
+            "cast",
+            inputs=not_condition,
+            output=cast_not_condition,
+            param_attr={'dtype': string(val_x.dtype)})
         cast_condition = condition.layer_name + '_cast'
-        node.fluid_code.add_layer("cast",
-                                  inputs=condition,
-                                  output=cast_condition,
-                                  param_attr={'dtype': string(val_x.dtype)})
+        node.fluid_code.add_layer(
+            "cast",
+            inputs=condition,
+            output=cast_condition,
+            param_attr={'dtype': string(val_x.dtype)})
         mul_val_x = val_x.layer_name + '_mul'
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs={
-                                      'x': val_x,
-                                      'y': cast_condition
-                                  },
-                                  output=mul_val_x,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            "elementwise_mul",
+            inputs={
+                'x': val_x,
+                'y': cast_condition
+            },
+            output=mul_val_x,
+            param_attr=None)
 
         mul_val_y = val_y.layer_name + '_mul'
-        node.fluid_code.add_layer("elementwise_mul",
-                                  inputs={
-                                      'x': val_y,
-                                      'y': cast_not_condition
-                                  },
-                                  output=mul_val_y,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            "elementwise_mul",
+            inputs={
+                'x': val_y,
+                'y': cast_not_condition
+            },
+            output=mul_val_y,
+            param_attr=None)
 
-        node.fluid_code.add_layer("elementwise_add",
-                                  inputs={
-                                      'x': mul_val_x,
-                                      'y': mul_val_y
-                                  },
-                                  output=node,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            "elementwise_add",
+            inputs={
+                'x': mul_val_x,
+                'y': mul_val_y
+            },
+            output=node,
+            param_attr=None)
 
     def NonZero(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         where_name = node.layer_name + '_where'
-        node.fluid_code.add_layer("where",
-                                  inputs=val_x.layer_name + '!=0',
-                                  output=where_name)
+        node.fluid_code.add_layer(
+            "where", inputs=val_x.layer_name + '!=0', output=where_name)
         dims = len(val_x.out_shapes[0])
         elements_count_val_x = reduce(lambda x, y: x * y, val_x.out_shapes[0])
         flatten_names = []
@@ -1121,18 +1098,15 @@ class ONNXOpMapper(OpMapper):
                 'starts': [0, dim],
                 'ends': [elements_count_val_x, dim + 1]
             }
-            node.fluid_code.add_layer("slice",
-                                      inputs=where_name,
-                                      output=slice_name,
-                                      param_attr=attr)
-            node.fluid_code.add_layer("flatten",
-                                      inputs=slice_name,
-                                      output=flatten_name,
-                                      param_attr={'axis': 0})
-        node.fluid_code.add_layer("concat",
-                                  inputs=flatten_names,
-                                  output=node,
-                                  param_attr={'axis': 0})
+            node.fluid_code.add_layer(
+                "slice", inputs=where_name, output=slice_name, param_attr=attr)
+            node.fluid_code.add_layer(
+                "flatten",
+                inputs=slice_name,
+                output=flatten_name,
+                param_attr={'axis': 0})
+        node.fluid_code.add_layer(
+            "concat", inputs=flatten_names, output=node, param_attr={'axis': 0})
 
     def Identity(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1151,10 +1125,8 @@ class ONNXOpMapper(OpMapper):
             'expand_times': repeats,
             "name": string(node.layer_name),
         }
-        node.fluid_code.add_layer("expand",
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            "expand", inputs=val_x, output=node, param_attr=attr)
 
     def MaxPool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1191,10 +1163,8 @@ class ONNXOpMapper(OpMapper):
             "name": string(node.layer_name),
             "exclusive": False
         }
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def _global_pool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1220,10 +1190,8 @@ class ONNXOpMapper(OpMapper):
             "global_pooling": True,
             "name": string(node.layer_name)
         }
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def GlobalMaxPool(self, node):
         self._global_pool(node)
@@ -1279,10 +1247,8 @@ class ONNXOpMapper(OpMapper):
             attr["bias_attr"] = string(val_b.layer_name)
         else:
             attr["bias_attr"] = False
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def ConvTranspose(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1332,10 +1298,8 @@ class ONNXOpMapper(OpMapper):
             'bias_attr': None if val_b is None else string(val_b.layer_name),
             'name': string(node.layer_name),
         }
-        node.fluid_code.add_layer(fluid_op,
-                                  inputs=val_x,
-                                  output=node,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            fluid_op, inputs=val_x, output=node, param_attr=attr)
 
     def GRU(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1352,15 +1316,13 @@ class ONNXOpMapper(OpMapper):
         else:
             miss_arg_num += 1
         if num_ipt > 4 and node.layer.input[4] != '':
-            val_len = self.graph.get_input_node(node,
-                                                idx=4 - miss_arg_num,
-                                                copy=True)
+            val_len = self.graph.get_input_node(
+                node, idx=4 - miss_arg_num, copy=True)
         else:
             miss_arg_num += 1
         if num_ipt > 5 and node.layer.input[5] != '':
-            val_xh = self.graph.get_input_node(node,
-                                               idx=5 - miss_arg_num,
-                                               copy=True)
+            val_xh = self.graph.get_input_node(
+                node, idx=5 - miss_arg_num, copy=True)
 
         data, dtype, shape = self.get_dynamic_shape(val_x.layer_name)
 
@@ -1401,97 +1363,101 @@ class ONNXOpMapper(OpMapper):
         is_reverse = direction == 'reverse'
 
         var_x0 = node.layer_name + '_x0'
-        node.fluid_code.add_layer('squeeze',
-                                  inputs=val_x,
-                                  output=var_x0,
-                                  param_attr={
-                                      'axes': [1],
-                                      'name': string(var_x0)
-                                  })
+        node.fluid_code.add_layer(
+            'squeeze',
+            inputs=val_x,
+            output=var_x0,
+            param_attr={
+                'axes': [1],
+                'name': string(var_x0)
+            })
 
         var_w0 = node.layer_name + '_w0'
-        node.fluid_code.add_layer('squeeze',
-                                  inputs=val_w,
-                                  output=var_w0,
-                                  param_attr={
-                                      'axes': [0],
-                                      'name': string(var_w0)
-                                  })
+        node.fluid_code.add_layer(
+            'squeeze',
+            inputs=val_w,
+            output=var_w0,
+            param_attr={
+                'axes': [0],
+                'name': string(var_w0)
+            })
 
         var_fc = node.layer_name + '_fc'
         var_mm = (node.layer_name + '_mm') if val_b else var_fc
-        node.fluid_code.add_layer('matmul',
-                                  inputs={
-                                      'x': var_x0,
-                                      'y': var_w0
-                                  },
-                                  output=var_mm,
-                                  param_attr={
-                                      'transpose_x': 0,
-                                      'transpose_y': 1,
-                                      'name': string(var_mm)
-                                  })
+        node.fluid_code.add_layer(
+            'matmul',
+            inputs={
+                'x': var_x0,
+                'y': var_w0
+            },
+            output=var_mm,
+            param_attr={
+                'transpose_x': 0,
+                'transpose_y': 1,
+                'name': string(var_mm)
+            })
 
         var_r0 = node.layer_name + '_r0'
-        node.fluid_code.add_layer('squeeze',
-                                  inputs=val_r,
-                                  output=var_r0,
-                                  param_attr={
-                                      'axes': [0],
-                                      'name': string(var_r0)
-                                  })
+        node.fluid_code.add_layer(
+            'squeeze',
+            inputs=val_r,
+            output=var_r0,
+            param_attr={
+                'axes': [0],
+                'name': string(var_r0)
+            })
 
         var_r0t = node.layer_name + '_r0t'
 
-        node.fluid_code.add_layer('transpose',
-                                  inputs=var_r0,
-                                  output=var_r0t,
-                                  param_attr={
-                                      'perm': [1, 0],
-                                      'name': string(var_r0t)
-                                  })
+        node.fluid_code.add_layer(
+            'transpose',
+            inputs=var_r0,
+            output=var_r0t,
+            param_attr={
+                'perm': [1, 0],
+                'name': string(var_r0t)
+            })
         if val_b:
             var_bi = node.layer_name + '_bi'
             var_bh = node.layer_name + '_bh'
-            node.fluid_code.add_layer('split',
-                                      inputs=val_b,
-                                      output=var_bi + ',' + var_bh,
-                                      param_attr={
-                                          'axis':
-                                          1,
-                                          'split':
-                                          [hidden_size * 3, hidden_size * 3],
-                                          'name':
-                                          string(node.layer_name + '.b/split')
-                                      })
+            node.fluid_code.add_layer(
+                'split',
+                inputs=val_b,
+                output=var_bi + ',' + var_bh,
+                param_attr={
+                    'axis': 1,
+                    'split': [hidden_size * 3, hidden_size * 3],
+                    'name': string(node.layer_name + '.b/split')
+                })
             var_bi0 = node.layer_name + '_bi0'
-            node.fluid_code.add_layer('squeeze',
-                                      inputs=var_bi,
-                                      output=var_bi0,
-                                      param_attr={
-                                          'axes': [0],
-                                          'name': string(var_bi0)
-                                      })
+            node.fluid_code.add_layer(
+                'squeeze',
+                inputs=var_bi,
+                output=var_bi0,
+                param_attr={
+                    'axes': [0],
+                    'name': string(var_bi0)
+                })
 
-            node.fluid_code.add_layer('elmentwise_add',
-                                      inputs=[var_mm, var_bi0],
-                                      output=var_fc,
-                                      param_attr={
-                                          'axes':
-                                          1,
-                                          'name':
-                                          string(node.layer_name + '.i/bias')
-                                      })
+            node.fluid_code.add_layer(
+                'elmentwise_add',
+                inputs=[var_mm, var_bi0],
+                output=var_fc,
+                param_attr={
+                    'axes': 1,
+                    'name': string(node.layer_name + '.i/bias')
+                })
 
         if val_xh:
             var_xh0 = node.layer_name + '_xh0'
-            node.fluid_code.add_layer('squeeze',
-                                      inputs=val_xh,
-                                      output=var_xh0,
-                                      param_attr={
-                                          'axes': [1],
-                                          'name': string(var_xh0)
-                                      })
+            node.fluid_code.add_layer(
+                'squeeze',
+                inputs=val_xh,
+                output=var_xh0,
+                param_attr={
+                    'axes': [1],
+                    'name': string(var_xh0)
+                })
         var_y00 = node.layer_name + '_y00'
 
         attr = {
@@ -1503,26 +1469,29 @@ class ONNXOpMapper(OpMapper):
             'param_attr': string(var_r0t),
             'bias_attr': string(var_bh) if val_b else False,
         }
-        node.fluid_code.add_layer('dynamic_gru',
-                                  inputs=var_fc + ',' + str(hidden_size),
-                                  output=var_y00,
-                                  param_attr=attr)
+        node.fluid_code.add_layer(
+            'dynamic_gru',
+            inputs=var_fc + ',' + str(hidden_size),
+            output=var_y00,
+            param_attr=attr)
 
         num_opt = len(node.layer.output)
 
         if num_opt > 0 and node.layer.output[0] != '':
-            node.fluid_code.add_layer('unsqueeze',
-                                      inputs=var_y00,
-                                      output=node.layer.output[0],
-                                      param_attr={
-                                          'axes': [1, 1],
-                                          'name': string(node.layer.output[0])
-                                      })
+            node.fluid_code.add_layer(
+                'unsqueeze',
+                inputs=var_y00,
+                output=node.layer.output[0],
+                param_attr={
+                    'axes': [1, 1],
+                    'name': string(node.layer.output[0])
+                })
         if num_opt > 1 and node.layer.output[1] != '':
-            node.fluid_code.add_layer('unsqueeze',
-                                      inputs=var_y00,
-                                      output=node.layer.output[1],
-                                      param_attr={
-                                          'axes': [1, 1],
-                                          'name': string(node.layer.output[1])
-                                      })
+            node.fluid_code.add_layer(
+                'unsqueeze',
+                inputs=var_y00,
+                output=node.layer.output[1],
+                param_attr={
+                    'axes': [1, 1],
+                    'name': string(node.layer.output[1])
+                })

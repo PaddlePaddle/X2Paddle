@@ -54,6 +54,11 @@ default_op_mapping = {
         dict(axes='dim', keepdims='keep_dim'),
         dict(keep_dim=1)
     ],
+    'ReduceMax': [
+        'reduce_max', ['X'], ['Out'],
+        dict(axes='dim', keepdims='keep_dim'),
+        dict(keep_dim=1)
+    ],
     #active function
     'Relu': ['relu', ['X'], ['Out']],
     'LeakyRelu': ['leaky_relu', ['X'], ['Out'],
@@ -83,6 +88,6 @@ default_op_mapping = {
 }
 
 default_ioa_constraint = {
-    'Gather':
-    [(lambda i, o, a: a.get('axis', 0) == 0, 'only axis = 0 is supported')],
+    'Gather': [(lambda i, o, a: a.get('axis', 0) == 0,
+                'only axis = 0 is supported')],
 }
