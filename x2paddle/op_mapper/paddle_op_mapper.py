@@ -21,8 +21,6 @@ import paddle.fluid.core as core
 import paddle.fluid as fluid
 import onnx
 from onnx import helper, onnx_pb
-from .paddle_custom_layer.yolo_box import yolo_box
-from .paddle_custom_layer.multiclass_nms import multiclass_nms
 
 
 class PaddleOpMapper(object):
@@ -39,6 +37,60 @@ class PaddleOpMapper(object):
 
         self.name_counter = dict()
 
+    def convert(self, program, save_dir):
+        weight_nodes = self.convert_weights(program)
+        op_nodes = list()
+        input_nodes = list()
+        output_nodes = list()
+
+        unsupported_ops = set()
+
+        print("Translating PaddlePaddle to ONNX...\n")
+        for block in program.blocks:
+            for i, op in enumerate(block.ops):
+                sys.stdout.write(
+                    "\rTotal:{}, Current:{} : {}                   ".format(
+                        len(block.ops), i + 1, op.type))
+                sys.stdout.flush()
+                if not hasattr(self, op.type):
+                    unsupported_ops.add(op.type)
+                    continue
+                if len(unsupported_ops) > 0:
+                    continue
+                node = getattr(self, op.type)(op, block)
+                if op.type == 'feed':
+                    input_nodes.append(node)
+                elif op.type == 'fetch':
+                    output_nodes.append(node)
+                else:
+                    if isinstance(node, list):
+                        op_nodes = op_nodes + node
+                    else:
+                        op_nodes.append(node)
+
+        if len(unsupported_ops) > 0:
+            print("\nThere's {} ops are not supported yet".format(
+                len(unsupported_ops)))
+            for op in unsupported_ops:
+                print("=========== {} ===========".format(op))
+            return
+
+        graph = helper.make_graph(
+            nodes=weight_nodes + op_nodes,
+            name='onnx_model_from_paddle',
+            initializer=[],
+            inputs=input_nodes,
+            outputs=output_nodes)
+        model = helper.make_model(graph, producer_name='X2Paddle')
+        onnx.checker.check_model(model)
+
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        with open(os.path.join(save_dir, 'x2paddle_model.onnx'), 'wb') as f:
+            f.write(model.SerializeToString())
+        print("\nTranslated model saved in {}".format(
+            os.path.join(save_dir, 'x2paddle_model.onnx')))
+
     def get_name(self, op_name, var_name):
         name = 'p2o.{}.{}'.format(op_name, var_name)
         if name not in self.name_counter:
@@ -46,6 +98,26 @@ class PaddleOpMapper(object):
         else:
             self.name_counter[name] += 1
         return name + '.{}'.format(self.name_counter[name])
+
+    def convert_weights(self, program):
+        var_names = program.global_block().vars
+        nodes = list()
+        for name in var_names:
+            var = program.global_block().var(name)
+            if name.endswith('feed') or name.endswith('fetch'):
+                continue
+            if not var.persistable:
+                continue
+            weight = np.array(fluid.global_scope().find_var(name).get_tensor())
+            tensor = helper.make_tensor(
+                name=name,
+                dims=var.shape,
+                data_type=self.paddle_onnx_dtype_map[var.dtype],
+                vals=weight.flatten().tolist())
+            node = helper.make_node(
+                'Constant', inputs=[], outputs=[name], value=tensor)
+            nodes.append(node)
+        return nodes
 
     def make_constant_node(self, name, dtype, value=None):
         if isinstance(value, list):
@@ -181,11 +253,18 @@ class PaddleOpMapper(object):
                 outputs=op.output('Out'),
             )
         else:
+            input_shape = block.var(op.input('X')[0]).shape
+            k_size = op.attr('ksize')
+            paddings = op.attr('paddings')
+            if input_shape[2] > 0 and input_shape[2] + paddings[0] < k_size[0]:
+                k_size[0] = input_shape[2] + paddings[0]
+            if input_shape[3] > 0 and input_shape[3] + paddings[1] < k_size[1]:
+                k_size[1] = input_shape[3] + paddings[1]
             node = helper.make_node(
                 pool_type[op.attr('pooling_type')][0],
                 inputs=op.input('X'),
                 outputs=op.output('Out'),
-                kernel_shape=op.attr('ksize'),
+                kernel_shape=k_size,
                 strides=op.attr('strides'),
                 pads=op.attr('paddings') + op.attr('paddings'))
         return node
@@ -736,9 +815,11 @@ class PaddleOpMapper(object):
         return node
 
     def yolo_box(self, op, block):
+        from .paddle_custom_layer.yolo_box import yolo_box
         return yolo_box(op, block)
 
     def multiclass_nms(self, op, block):
+        from .paddle_custom_layer.multiclass_nms import multiclass_nms
         return multiclass_nms(op, block)
 
     def reciprocal(self, op, block):
@@ -747,76 +828,6 @@ class PaddleOpMapper(object):
         node = helper.make_node('Reciprocal', inputs=inputs, outputs=outputs)
         return node
 
-    def convert_weights(self, program):
-        var_names = program.global_block().vars
-        nodes = list()
-        for name in var_names:
-            var = program.global_block().var(name)
-            if name.endswith('feed') or name.endswith('fetch'):
-                continue
-            if not var.persistable:
-                continue
-            weight = np.array(fluid.global_scope().find_var(name).get_tensor())
-            tensor = helper.make_tensor(
-                name=name,
-                dims=var.shape,
-                data_type=self.paddle_onnx_dtype_map[var.dtype],
-                vals=weight.flatten().tolist())
-            node = helper.make_node(
-                'Constant', inputs=[], outputs=[name], value=tensor)
-            nodes.append(node)
-        return nodes
-
-    def convert(self, program, save_dir):
-        weight_nodes = self.convert_weights(program)
-        op_nodes = list()
-        input_nodes = list()
-        output_nodes = list()
-
-        unsupported_ops = set()
-
-        print("Translating PaddlePaddle to ONNX...\n")
-        for block in program.blocks:
-            for i, op in enumerate(block.ops):
-                sys.stdout.write(
-                    "\rTotal:{}, Current:{} : {}                   ".format(
-                        len(block.ops), i + 1, op.type))
-                sys.stdout.flush()
-                if not hasattr(self, op.type):
-                    unsupported_ops.add(op.type)
-                    continue
-                if len(unsupported_ops) > 0:
-                    continue
-                node = getattr(self, op.type)(op, block)
-                if op.type == 'feed':
-                    input_nodes.append(node)
-                elif op.type == 'fetch':
-                    output_nodes.append(node)
-                else:
-                    if isinstance(node, list):
-                        op_nodes = op_nodes + node
-                    else:
-                        op_nodes.append(node)
-
-        if len(unsupported_ops) > 0:
-            print("\nThere's {} ops are not supported yet".format(
-                len(unsupported_ops)))
-            for op in unsupported_ops:
-                print("=========== {} ===========".format(op))
-            return
-
-        graph = helper.make_graph(
-            nodes=weight_nodes + op_nodes,
-            name='onnx_model_from_paddle',
-            initializer=[],
-            inputs=input_nodes,
-            outputs=output_nodes)
-        model = helper.make_model(graph, producer_name='X2Paddle')
-        onnx.checker.check_model(model)
-
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
-        with open(os.path.join(save_dir, 'x2paddle_model.onnx'), 'wb') as f:
-            f.write(model.SerializeToString())
-        print("\nTranslated model saved in {}".format(
-            os.path.join(save_dir, 'x2paddle_model.onnx')))
+    def im2sequence(self, op, block):
+        from .paddle_custom_layer.im2sequence import im2sequence
+        return im2sequence(op, block)
