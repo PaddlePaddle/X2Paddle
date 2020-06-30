@@ -21,11 +21,12 @@ def roipooling_layer(inputs,
     input = inputs[0]
     roi = inputs[1]
     roi = fluid.layers.slice(roi, axes=[1], starts=[1], ends=[5])
-    out = fluid.layers.roi_pool(input,
-                                roi,
-                                pooled_height=pooled_h,
-                                pooled_width=pooled_w,
-                                spatial_scale=spatial_scale)
+    out = fluid.layers.roi_pool(
+        input,
+        roi,
+        pooled_height=pooled_h,
+        pooled_width=pooled_w,
+        spatial_scale=spatial_scale)
     return out
 
 
@@ -34,7 +35,8 @@ def roipooling_weights(name, data=None):
     return weights_name
 
 
-register(kind='ROIPooling',
-         shape=roipooling_shape,
-         layer=roipooling_layer,
-         weights=roipooling_weights)
+register(
+    kind='ROIPooling',
+    shape=roipooling_shape,
+    layer=roipooling_layer,
+    weights=roipooling_weights)

@@ -120,13 +120,13 @@ class TFGraph(Graph):
     def build(self):
         for layer in self.model.node:
             self.node_map[layer.name.replace('/', '_').replace(
-                '-', '_')] = TFGraphNode(layer, data_format=self.tf_data_format)
+                '-', '_')] = TFGraphNode(
+                    layer, data_format=self.tf_data_format)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
-                in_node = in_node.replace('/',
-                                          '_').replace('-',
-                                                       '_').replace('^', '')
+                in_node = in_node.replace('/', '_').replace('-', '_').replace(
+                    '^', '')
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
@@ -390,10 +390,10 @@ class TFDecoder(object):
                         shape=shape,
                         name="x2paddle_{}".format(layer.name))
                 except:
-                    x2paddle_input = tf.placeholder(dtype=dtype,
-                                                    shape=shape,
-                                                    name="x2paddle_{}".format(
-                                                        layer.name))
+                    x2paddle_input = tf.placeholder(
+                        dtype=dtype,
+                        shape=shape,
+                        name="x2paddle_{}".format(layer.name))
 
                 input_map["{}:0".format(layer.name)] = x2paddle_input
                 if shape.count(None) > 0:

@@ -554,10 +554,11 @@ class TFOptimizer(object):
                 node.fluid_code.layers[0].param_attr["shape"] = shape
                 node.fluid_code.layers[0].output = "nhwc_" + name
                 attr = {"perm": [0, 2, 3, 1]}
-                node.fluid_code.add_layer("transpose",
-                                          inputs="nhwc_" + name,
-                                          output=node,
-                                          param_attr=attr)
+                node.fluid_code.add_layer(
+                    "transpose",
+                    inputs="nhwc_" + name,
+                    output=node,
+                    param_attr=attr)
                 self.graph.input_nodes[i] = "nhwc_" + name
         for i, name in enumerate(self.graph.output_nodes):
             node = self.graph.get_node(name)
@@ -972,10 +973,8 @@ class TFOptimizer(object):
                         "bias_after_scale": True,
                         "act": act
                     }
-                    node.fluid_code.add_layer("scale",
-                                              inputs=in_node,
-                                              output=node,
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "scale", inputs=in_node, output=node, param_attr=attr)
 
                     del self.graph.node_map[in_nodes0[0].layer_name]
                     del self.graph.node_map[in_nodes0[1].layer_name]
@@ -1055,29 +1054,32 @@ class TFOptimizer(object):
                         "shape": [channel],
                         "name": string(node.layer_name + "_scale")
                     }
-                    node.fluid_code.add_layer("create_parameter",
-                                              inputs=None,
-                                              output=node.layer_name + "_scale",
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "create_parameter",
+                        inputs=None,
+                        output=node.layer_name + "_scale",
+                        param_attr=attr)
                     attr = {
                         "dtype": string(scale.dtype),
                         "shape": [channel],
                         "name": string(node.layer_name + "_bias")
                     }
-                    node.fluid_code.add_layer("create_parameter",
-                                              inputs=None,
-                                              output=node.layer_name + "_bias",
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "create_parameter",
+                        inputs=None,
+                        output=node.layer_name + "_bias",
+                        param_attr=attr)
                     inputs = {
                         "x": in_node,
                         "scale": node.layer_name + "_scale",
                         "bias": node.layer_name + "_bias"
                     }
                     attr = {"act": act}
-                    node.fluid_code.add_layer("affine_channel",
-                                              inputs=inputs,
-                                              output=node,
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "affine_channel",
+                        inputs=inputs,
+                        output=node,
+                        param_attr=attr)
 
                     del self.graph.node_map[in_nodes0[0].layer_name]
                     del self.graph.node_map[in_nodes0[1].layer_name]

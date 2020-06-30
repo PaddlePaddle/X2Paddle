@@ -67,10 +67,10 @@ def get_strided_kernel_output_shape(params, input_shape, round_func):
     i_w = input_shape[3]
     dila_h, dila_w, pad_h, pad_w, kernel_h, kernel_w, stride_h, stride_w = get_kernel_parameters(
         params)
-    o_h = (i_h + 2 * pad_h - (dila_h *
-                              (kernel_h - 1) + 1)) / float(stride_h) + 1
-    o_w = (i_w + 2 * pad_w - (dila_w *
-                              (kernel_w - 1) + 1)) / float(stride_w) + 1
+    o_h = (i_h + 2 * pad_h -
+           (dila_h * (kernel_h - 1) + 1)) / float(stride_h) + 1
+    o_w = (i_w + 2 * pad_w -
+           (dila_w * (kernel_w - 1) + 1)) / float(stride_w) + 1
     o_h = int(round_func(o_h))
     o_w = int(round_func(o_w))
     has_c_o = hasattr(params, 'num_output')

@@ -120,18 +120,19 @@ def convolutiondepthwise_layer(inputs,
             dila_len)
     c_in = input_shape[0][1]
     c_out = num_output if num_output is not None else input_shape[0][1]
-    group = int(c_in / (c_in / c_out)) if c_in > c_out else int(c_in /
-                                                                (c_out / c_in))
-    out = fluid.layers.conv2d(input,
-                              dilation=[dila_h, dila_w],
-                              filter_size=[k_h, k_w],
-                              stride=[s_h, s_w],
-                              padding=[p_h, p_w],
-                              groups=group,
-                              num_filters=c_out,
-                              param_attr=name + '_weights',
-                              bias_attr=name + '_bias',
-                              name=name)
+    group = int(c_in / (c_in / c_out)) if c_in > c_out else int(
+        c_in / (c_out / c_in))
+    out = fluid.layers.conv2d(
+        input,
+        dilation=[dila_h, dila_w],
+        filter_size=[k_h, k_w],
+        stride=[s_h, s_w],
+        padding=[p_h, p_w],
+        groups=group,
+        num_filters=c_out,
+        param_attr=name + '_weights',
+        bias_attr=name + '_bias',
+        name=name)
     return out
 
 
@@ -142,7 +143,8 @@ def convolutiondepthwise_weights(name, data=None):
     return weights_name
 
 
-register(kind='ConvolutionDepthwise',
-         shape=convolutiondepthwise_shape,
-         layer=convolutiondepthwise_layer,
-         weights=convolutiondepthwise_weights)
+register(
+    kind='ConvolutionDepthwise',
+    shape=convolutiondepthwise_shape,
+    layer=convolutiondepthwise_layer,
+    weights=convolutiondepthwise_weights)

@@ -71,9 +71,8 @@ class ONNXGraphNode(GraphNode):
         if attr.type == onnx.AttributeProto.TENSOR:
             dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
             data = attr.t.raw_data
-            value = np.frombuffer(data,
-                                  dtype=dtype,
-                                  count=(len(data) // dtype.itemsize))
+            value = np.frombuffer(
+                data, dtype=dtype, count=(len(data) // dtype.itemsize))
         elif attr.type == onnx.AttributeProto.STRING:
             value = attr.s
             value = value.decode() if isinstance(value, bytes) else value
@@ -205,9 +204,8 @@ class ONNXGraph(Graph):
                     self.node_map[name].weight = weight
                     self.node_map[name].embeded_as = []
             else:
-                self.node_map[name] = ONNXGraphDataNode(initializer,
-                                                        layer_name=name,
-                                                        is_global_input=False)
+                self.node_map[name] = ONNXGraphDataNode(
+                    initializer, layer_name=name, is_global_input=False)
                 self.node_map[name].weight = weight
                 self.node_map[name].embeded_as = []
 
