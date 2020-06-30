@@ -64,10 +64,8 @@ def run_net(param_dir="./"):
         b = os.path.exists(os.path.join(param_dir, var.name))
         return b
 
-    fluid.io.load_vars(exe,
-                       param_dir,
-                       fluid.default_main_program(),
-                       predicate=if_exist)
+    fluid.io.load_vars(
+        exe, param_dir, fluid.default_main_program(), predicate=if_exist)
 
 
 class OpMapper(object):
@@ -98,8 +96,8 @@ class OpMapper(object):
     def add_codes(self, codes, indent=0):
         if isinstance(codes, list):
             for code in codes:
-                self.paddle_codes += (self.tab * indent + code.strip('\n') +
-                                      '\n')
+                self.paddle_codes += (
+                    self.tab * indent + code.strip('\n') + '\n')
         elif isinstance(codes, str):
             self.paddle_codes += (self.tab * indent + codes.strip('\n') + '\n')
         else:
@@ -135,24 +133,25 @@ class OpMapper(object):
                     os.path.join(os.path.join(py_code_dir, var.name)))
                 return b
 
-            fluid.io.load_vars(exe,
-                               py_code_dir,
-                               fluid.default_main_program(),
-                               predicate=if_exist)
+            fluid.io.load_vars(
+                exe,
+                py_code_dir,
+                fluid.default_main_program(),
+                predicate=if_exist)
             if params_merge:
-                fluid.io.save_inference_model(dirname=os.path.join(
-                    save_dir, "inference_model"),
-                                              feeded_var_names=input_names,
-                                              target_vars=outputs,
-                                              executor=exe,
-                                              params_filename="__params__")
+                fluid.io.save_inference_model(
+                    dirname=os.path.join(save_dir, "inference_model"),
+                    feeded_var_names=input_names,
+                    target_vars=outputs,
+                    executor=exe,
+                    params_filename="__params__")
             else:
-                fluid.io.save_inference_model(dirname=os.path.join(
-                    save_dir, "inference_model"),
-                                              feeded_var_names=input_names,
-                                              target_vars=outputs,
-                                              executor=exe,
-                                              params_filename=None)
+                fluid.io.save_inference_model(
+                    dirname=os.path.join(save_dir, "inference_model"),
+                    feeded_var_names=input_names,
+                    target_vars=outputs,
+                    executor=exe,
+                    params_filename=None)
         except:
             raise Exception(
                 "Paddle code was saved in {}/model.py, but seems there's wrong exist, please check model.py manually."

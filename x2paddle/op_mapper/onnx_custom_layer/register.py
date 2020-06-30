@@ -36,8 +36,7 @@ def register(kind, shape, layer, child_func, weights):
         kind = [kind]
     else:
         assert type(
-            kind
-        ) is list, 'invalid param "kind" for register, not a list or str'
+            kind) is list, 'invalid param "kind" for register, not a list or str'
 
     for k in kind:
         assert type(

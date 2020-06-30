@@ -486,8 +486,8 @@ class TFOpMapperNHWC(OpMapper):
                 attr = {"shape": shape}
                 self.add_omit_nodes(param.layer_name, node.layer_name)
             else:
-                assert len(param.out_shapes[0]
-                           ) == 1, "Unexpected situation of shape parameter"
+                assert len(param.out_shapes[
+                    0]) == 1, "Unexpected situation of shape parameter"
                 attr = {"shape": [-1]}
                 node.fluid_code.add_layer(
                     "reshape",
@@ -577,8 +577,8 @@ class TFOpMapperNHWC(OpMapper):
 
     def ConcatV2(self, node):
         inputs = [
-            self.graph.get_node(name, copy=True)
-            for name in node.layer.input[:-1]
+            self.graph.get_node(
+                name, copy=True) for name in node.layer.input[:-1]
         ]
         axis = self.graph.get_node(node.layer.input[-1], copy=True)
         assert axis.layer_type == "Const"
@@ -608,7 +608,8 @@ class TFOpMapperNHWC(OpMapper):
 
     def Pack(self, node):
         inputs = [
-            self.graph.get_node(name, copy=True) for name in node.layer.input
+            self.graph.get_node(
+                name, copy=True) for name in node.layer.input
         ]
         axis = node.get_attr("axis")
         attr = {"axis": axis}
@@ -949,8 +950,8 @@ class TFOpMapperNHWC(OpMapper):
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
-            resize_shape = self.decoder.infer_shape_tensor(
-                resize_shape, node.out_shapes[0])
+            resize_shape = self.decoder.infer_shape_tensor(resize_shape,
+                                                           node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
         attr = {"perm": [0, 3, 1, 2]}
         node.fluid_code.add_layer(
@@ -969,8 +970,8 @@ class TFOpMapperNHWC(OpMapper):
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
         else:
-            resize_shape = self.decoder.infer_shape_tensor(
-                resize_shape, node.out_shapes[0])
+            resize_shape = self.decoder.infer_shape_tensor(resize_shape,
+                                                           node.out_shapes[0])
         align_corners = node.get_attr("align_corners")
         attr = {"perm": [0, 3, 1, 2]}
         node.fluid_code.add_layer(

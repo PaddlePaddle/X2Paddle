@@ -20,9 +20,8 @@ def normalize_layer(inputs,
         attr=name + '_scale')
     scale_param = fluid.layers.reshape(x=scale_param, \
                   shape=[1] if channel_shared else [input_shape[0][1]])
-    out = fluid.layers.elementwise_mul(x=l2_norm,
-                                       y=scale_param,
-                                       axis=-1 if channel_shared else 1)
+    out = fluid.layers.elementwise_mul(
+        x=l2_norm, y=scale_param, axis=-1 if channel_shared else 1)
     return out
 
 
@@ -31,7 +30,8 @@ def normalize_weights(name, data=None):
     return weights_name
 
 
-register(kind='Normalize',
-         shape=normalize_shape,
-         layer=normalize_layer,
-         weights=normalize_weights)
+register(
+    kind='Normalize',
+    shape=normalize_shape,
+    layer=normalize_layer,
+    weights=normalize_weights)

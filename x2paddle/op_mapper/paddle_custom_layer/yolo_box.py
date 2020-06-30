@@ -4,8 +4,6 @@ from onnx import onnx_pb, helper
 
 
 def get_old_name(arg, name_prefix=''):
-    """Get the old rame for a possible renamed argument
-    """
     prefix_index = arg.find(name_prefix)
 
     if prefix_index != -1:
@@ -40,8 +38,8 @@ def yolo_box(op, block):
     downsample_ratio = attrs['downsample_ratio']
     input_size = input_height * downsample_ratio
     conf_thresh = attrs['conf_thresh']
-    conf_thresh_mat = np.ones([num_anchors * input_height * input_width
-                               ]) * conf_thresh
+    conf_thresh_mat = np.ones([num_anchors * input_height *
+                               input_width]) * conf_thresh
 
     node_list = []
     im_outputs = []
