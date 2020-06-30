@@ -334,24 +334,6 @@ class ONNXGraph(Graph):
                 'external': False
             }
 
-    # for item in self.graph.input:
-    #     self.value_infos[item.name] = {
-    #         'dtype':
-    #         TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
-    #         'shape':
-    #         [dim.dim_value for dim in item.type.tensor_type.shape.dim],
-    #         'external': True
-    #     }
-    # for item in self.graph.output:
-    #     #assert item.name not in value_info
-    #     self.value_infos[item.name] = {
-    #         'dtype':
-    #         TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
-    #         'shape':
-    #         [dim.dim_value for dim in item.type.tensor_type.shape.dim],
-    #         'external': True
-    #     }
-
     def allocate_shapes(self):
         """
         run shape inference

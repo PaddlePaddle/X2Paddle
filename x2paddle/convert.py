@@ -203,6 +203,14 @@ def paddle2onnx(model_path, save_dir):
     mapper.convert(model.program, save_dir)
 
 
+def paddle2onnx(model_path, save_dir):
+    from x2paddle.decoder.paddle_decoder import PaddleDecoder
+    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    model = PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = PaddleOpMapper()
+    mapper.convert(model.program, save_dir)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
