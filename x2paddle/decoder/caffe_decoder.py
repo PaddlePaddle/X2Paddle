@@ -49,13 +49,11 @@ class CaffeResolver(object):
 class CaffeGraphNode(GraphNode):
     def __init__(self, layer, type_str, layer_name=None):
         if layer_name is None:
-            super(CaffeGraphNode,
-                  self).__init__(layer,
-                                 layer.name.replace('/', '_').replace('-', '_'))
+            super(CaffeGraphNode, self).__init__(
+                layer, layer.name.replace('/', '_').replace('-', '_'))
         else:
-            super(CaffeGraphNode,
-                  self).__init__(layer,
-                                 layer_name.replace('/', '_').replace('-', '_'))
+            super(CaffeGraphNode, self).__init__(
+                layer, layer_name.replace('/', '_').replace('-', '_'))
         self.layer_type = type_str
         self.fluid_code = FluidCode()
         self.data = None
@@ -268,8 +266,8 @@ class CaffeDecoder(object):
                 c_i = blob.channels
                 h = blob.height
                 w = blob.width
-            data = np.asarray(list(blob.data),
-                              dtype=np.float32).reshape(c_o, c_i, h, w)
+            data = np.asarray(
+                list(blob.data), dtype=np.float32).reshape(c_o, c_i, h, w)
 
             transformed.append(data)
         return transformed

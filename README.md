@@ -44,10 +44,15 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 ```
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 ```
+### Paddle2ONNX
+```
+# 注意：paddle_infer_model_dir下需包含__model__和__params__两个文件
+x2paddle --framework=paddle2onnx --model=paddle_infer_model_dir --save_dir=onnx_model
+```
 ### 参数选项
 | 参数 | |
 |----------|--------------|
-|--framework | 源模型类型 (tensorflow、caffe、onnx) |
+|--framework | 源模型类型 (tensorflow、caffe、onnx、paddle2onnx) |
 |--prototxt | 当framework为caffe时，该参数指定caffe模型的proto文件路径 |
 |--weight | 当framework为caffe时，该参数指定caffe模型的参数文件路径 |
 |--save_dir | 指定转换后的模型保存目录路径 |

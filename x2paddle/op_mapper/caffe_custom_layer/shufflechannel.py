@@ -17,7 +17,8 @@ def shufflechannel_weights(name, data=None):
     return weights_name
 
 
-register(kind='ShuffleChannel',
-         shape=shufflechannel_shape,
-         layer=shufflechannel_layer,
-         weights=shufflechannel_weights)
+register(
+    kind='ShuffleChannel',
+    shape=shufflechannel_shape,
+    layer=shufflechannel_layer,
+    weights=shufflechannel_weights)

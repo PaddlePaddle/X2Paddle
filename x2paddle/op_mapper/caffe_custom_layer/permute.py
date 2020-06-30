@@ -23,7 +23,8 @@ def permute_weights(name, data=None):
     return weights_name
 
 
-register(kind='Permute',
-         shape=permute_shape,
-         layer=permute_layer,
-         weights=permute_weights)
+register(
+    kind='Permute',
+    shape=permute_shape,
+    layer=permute_layer,
+    weights=permute_weights)

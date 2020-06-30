@@ -30,11 +30,12 @@ def select_layer(inputs,
     out = []
     for i in range(len(slice_point)):
         out.append(
-            fluid.layers.slice(input,
-                               axes=[axis],
-                               starts=[slice_point[i]],
-                               ends=[slice_point[i + 1]],
-                               name=name + '_' + str(i)))
+            fluid.layers.slice(
+                input,
+                axes=[axis],
+                starts=[slice_point[i]],
+                ends=[slice_point[i + 1]],
+                name=name + '_' + str(i)))
         if i == len(slice_point) - 2:
             break
     return out
@@ -45,7 +46,8 @@ def select_weights(name, data=None):
     return weights_name
 
 
-register(kind='Select',
-         shape=select_shape,
-         layer=select_layer,
-         weights=select_weights)
+register(
+    kind='Select',
+    shape=select_shape,
+    layer=select_layer,
+    weights=select_weights)

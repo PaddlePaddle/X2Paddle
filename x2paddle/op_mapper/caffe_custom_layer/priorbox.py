@@ -30,18 +30,19 @@ def priorbox_layer(inputs,
     steps = tuple(step) if type(step) is list or type(step) is tuple else (step,
                                                                            step)
 
-    box, variance_ = fluid.layers.prior_box(input,
-                                            image,
-                                            min_sizes=min_size,
-                                            max_sizes=max_size,
-                                            aspect_ratios=aspect_ratio,
-                                            variance=variance,
-                                            flip=flip,
-                                            clip=clip,
-                                            steps=steps,
-                                            offset=offset,
-                                            name=name,
-                                            min_max_aspect_ratios_order=True)
+    box, variance_ = fluid.layers.prior_box(
+        input,
+        image,
+        min_sizes=min_size,
+        max_sizes=max_size,
+        aspect_ratios=aspect_ratio,
+        variance=variance,
+        flip=flip,
+        clip=clip,
+        steps=steps,
+        offset=offset,
+        name=name,
+        min_max_aspect_ratios_order=True)
     box = fluid.layers.reshape(box, [1, 1, -1])
     variance_ = fluid.layers.reshape(variance_, [1, 1, -1])
     out = fluid.layers.concat([box, variance_], axis=1)
@@ -53,7 +54,8 @@ def priorbox_weights(name, data=None):
     return weights_name
 
 
-register(kind='PriorBox',
-         shape=priorbox_shape,
-         layer=priorbox_layer,
-         weights=priorbox_weights)
+register(
+    kind='PriorBox',
+    shape=priorbox_shape,
+    layer=priorbox_layer,
+    weights=priorbox_weights)
