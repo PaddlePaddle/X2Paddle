@@ -1,4 +1,4 @@
-#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -19,32 +19,37 @@ import sys
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model",
-                        "-m",
-                        type=_text_type,
-                        default=None,
-                        help="define model file path for tensorflow or onnx")
-    parser.add_argument("--prototxt",
-                        "-p",
-                        type=_text_type,
-                        default=None,
-                        help="prototxt file of caffe model")
-    parser.add_argument("--weight",
-                        "-w",
-                        type=_text_type,
-                        default=None,
-                        help="weight file of caffe model")
-    parser.add_argument("--save_dir",
-                        "-s",
-                        type=_text_type,
-                        default=None,
-                        help="path to save translated model")
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=_text_type,
+        default=None,
+        help="define model file path for tensorflow or onnx")
+    parser.add_argument(
+        "--prototxt",
+        "-p",
+        type=_text_type,
+        default=None,
+        help="prototxt file of caffe model")
+    parser.add_argument(
+        "--weight",
+        "-w",
+        type=_text_type,
+        default=None,
+        help="weight file of caffe model")
+    parser.add_argument(
+        "--save_dir",
+        "-s",
+        type=_text_type,
+        default=None,
+        help="path to save translated model")
     parser.add_argument(
         "--framework",
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx)")
+        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+    )
     parser.add_argument(
         "--caffe_proto",
         "-c",
@@ -52,27 +57,30 @@ def arg_parser():
         default=None,
         help="optional: the .py file compiled by caffe proto file of caffe model"
     )
-    parser.add_argument("--version",
-                        "-v",
-                        action="store_true",
-                        default=False,
-                        help="get version of x2paddle")
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        default=False,
+        help="get version of x2paddle")
     parser.add_argument(
         "--without_data_format_optimization",
         "-wo",
         action="store_true",
         default=False,
         help="tf model conversion without data format optimization")
-    parser.add_argument("--define_input_shape",
-                        "-d",
-                        action="store_true",
-                        default=False,
-                        help="define input shape for tf model")
-    parser.add_argument("--params_merge",
-                        "-pm",
-                        action="store_true",
-                        default=False,
-                        help="define whether merge the params")
+    parser.add_argument(
+        "--define_input_shape",
+        "-d",
+        action="store_true",
+        default=False,
+        help="define input shape for tf model")
+    parser.add_argument(
+        "--params_merge",
+        "-pm",
+        action="store_true",
+        default=False,
+        help="define whether merge the params")
 
     return parser
 
@@ -116,7 +124,6 @@ def tf2paddle(model_path,
         optimizer.merge_activation()
         optimizer.merge_bias()
         optimizer.optimize_sub_graph()
-
 
 #        optimizer.merge_batch_norm()
 #        optimizer.merge_prelu()
@@ -165,16 +172,35 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
+    from x2paddle.op_mapper.onnx.onnx_helper import ONNXOpMapperFactory
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
-    import onnxruntime
     model = ONNXDecoder(model_path)
-    mapper = ONNXOpMapper(model, save_dir)
+    factory = ONNXOpMapperFactory()
+    mapper = factory.create_onnx_op_mapper(model)
+    print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
+    print("Model optimized.")
 
-    optimizer.delete_redundance_code()
+    print("Paddle model and code generating ...")
     mapper.save_inference_model(save_dir, params_merge)
+    print("Paddle model and code generated.")
+
+
+def paddle2onnx(model_path, save_dir):
+    from x2paddle.decoder.paddle_decoder import PaddleDecoder
+    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    model = PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = PaddleOpMapper()
+    mapper.convert(model.program, save_dir)
+
+
+def paddle2onnx(model_path, save_dir):
+    from x2paddle.decoder.paddle_decoder import PaddleDecoder
+    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    model = PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = PaddleOpMapper()
+    mapper.convert(model.program, save_dir)
 
 
 def main():
@@ -196,22 +222,13 @@ def main():
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
 
-    if args.framework == "onnx":
-        try:
-            import onnxruntime as rt
-            version = rt.__version__
-            if version != '1.0.0':
-                print("[ERROR] onnxruntime==1.0.0 is required")
-                return
-        except:
-            print(
-                "[ERROR] onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
-            )
-
     try:
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-        if int(v0) != 1 or int(v1) < 6:
+        print("paddle.__version__ = {}".format(paddle.__version__))
+        if v0 == '0' and v1 == '0' and v2 == '0':
+            print("[WARNING] You are use develop version of paddlepaddle")
+        elif int(v0) != 1 or int(v1) < 6:
             print("[ERROR] paddlepaddle>=1.6.0 is required")
             return
     except:
@@ -243,11 +260,18 @@ def main():
     elif args.framework == "onnx":
         assert args.model is not None, "--model should be defined while translating onnx model"
         params_merge = False
+
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
+
+    elif args.framework == "paddle2onnx":
+        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
+        paddle2onnx(args.model, args.save_dir)
+
     else:
-        raise Exception("--framework only support tensorflow/caffe/onnx now")
+        raise Exception(
+            "--framework only support tensorflow/caffe/onnx/paddle2onnx now")
 
 
 if __name__ == "__main__":

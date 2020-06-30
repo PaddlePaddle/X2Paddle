@@ -12,7 +12,6 @@ def detectionoutput_layer(inputs,
                           share_location=True,
                           keep_top_k=100,
                           confidence_threshold=0.1,
-                          num_classes=2,
                           input_shape=None,
                           name=None):
     nms_param_str = nms_param
@@ -37,9 +36,9 @@ def detectionoutput_layer(inputs,
     pb = fluid.layers.reshape(x=pb, shape=[-1, 4])
     pbv = fluid.layers.reshape(x=pbv, shape=[-1, 4])
     mbox_loc = inputs[0]
-    mbox_loc = fluid.layers.reshape(x=mbox_loc, shape=[0, -1, 4])
-    mbox_conf_flatten = fluid.layers.reshape(x=mbox_conf_flatten,
-                                             shape=[0, -1, num_classes])
+    mbox_loc = fluid.layers.reshape(x=mbox_loc, shape=[-1, pb.shape[0], 4])
+    mbox_conf_flatten = fluid.layers.reshape(
+        x=mbox_conf_flatten, shape=[0, pb.shape[0], -1])
 
     default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
     fields = ['eta', 'top_k', 'nms_threshold']
@@ -65,7 +64,8 @@ def detectionoutput_weights(name, data=None):
     return weights_name
 
 
-register(kind='DetectionOutput',
-         shape=detectionoutput_shape,
-         layer=detectionoutput_layer,
-         weights=detectionoutput_weights)
+register(
+    kind='DetectionOutput',
+    shape=detectionoutput_shape,
+    layer=detectionoutput_layer,
+    weights=detectionoutput_weights)

@@ -10,12 +10,12 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的�
 ## 环境依赖
 
 python == 2.7 | python >= 3.5  
-paddlepaddle >= 1.6.0  
+paddlepaddle >= 1.8.0  
 
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
 caffe ： 无  
-onnx ： onnx == 1.6.0  onnxruntime == 1.0.0
+onnx ： onnx == 1.6.0
 
 ## 安装
 ### 安装方式一（推荐）
@@ -44,10 +44,15 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 ```
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 ```
+### Paddle2ONNX
+```
+# 注意：paddle_infer_model_dir下需包含__model__和__params__两个文件
+x2paddle --framework=paddle2onnx --model=paddle_infer_model_dir --save_dir=onnx_model
+```
 ### 参数选项
 | 参数 | |
 |----------|--------------|
-|--framework | 源模型类型 (tensorflow、caffe、onnx) |
+|--framework | 源模型类型 (tensorflow、caffe、onnx、paddle2onnx) |
 |--prototxt | 当framework为caffe时，该参数指定caffe模型的proto文件路径 |
 |--weight | 当framework为caffe时，该参数指定caffe模型的参数文件路径 |
 |--save_dir | 指定转换后的模型保存目录路径 |
@@ -56,6 +61,7 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 |--without_data_format_optimization | **[可选]** For TensorFlow, 当指定该参数时，关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
 |--define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](FAQ.md) |
 |--params_merge | **[可选]** 当指定该参数时，转换完成后，inference_model中的所有模型参数将合并保存为一个文件__params__ |
+
 
 
 ## 使用转换后的模型

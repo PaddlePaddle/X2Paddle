@@ -48,7 +48,10 @@ class TFGraphNode(GraphNode):
 
     @property
     def out_shapes(self):
-        values = self.layer.attr["_output_shapes"].list.shape
+        if self.layer_type == "OneShotIterator":
+            values = self.layer.attr["output_shapes"].list.shape
+        else:
+            values = self.layer.attr["_output_shapes"].list.shape
         out_shapes = list()
         for value in values:
             shape = [dim.size for dim in value.dim]
@@ -62,6 +65,8 @@ class TFGraphNode(GraphNode):
             dtype = self.layer.attr[k].type
             if dtype > 0:
                 break
+        if dtype == 0:
+            dtype = self.layer.attr['output_types'].list.type[0]
         if dtype not in self.dtype_map:
             raise Exception("Dtype[{}] not in dtype_map".format(dtype))
         return self.dtype_map[dtype]
@@ -115,13 +120,13 @@ class TFGraph(Graph):
     def build(self):
         for layer in self.model.node:
             self.node_map[layer.name.replace('/', '_').replace(
-                '-', '_')] = TFGraphNode(layer, data_format=self.tf_data_format)
+                '-', '_')] = TFGraphNode(
+                    layer, data_format=self.tf_data_format)
 
         for layer_name, node in self.node_map.items():
             for in_node in node.layer.input:
-                in_node = in_node.replace('/',
-                                          '_').replace('-',
-                                                       '_').replace('^', '')
+                in_node = in_node.replace('/', '_').replace('-', '_').replace(
+                    '^', '')
                 if in_node not in self.node_map:
                     if in_node.strip().split(':')[0] in self.node_map:
                         self.connect(in_node.strip().split(':')[0], layer_name)
@@ -226,7 +231,7 @@ class TFGraph(Graph):
     def _remove_identity_node(self):
         identity_ops = [
             'Identity', 'StopGradient', 'Switch', 'Merge',
-            'PlaceholderWithDefault'
+            'PlaceholderWithDefault', 'IteratorGetNext'
         ]
         identity_node = list()
         for node_name, node in self.node_map.items():
@@ -317,7 +322,7 @@ class TFDecoder(object):
         graph_def = cp.deepcopy(graph_def)
         input_map = dict()
         for layer in graph_def.node:
-            if layer.op != "Placeholder":
+            if layer.op != "Placeholder" and layer.op != "OneShotIterator":
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
@@ -334,6 +339,14 @@ class TFDecoder(object):
                 shape = [dim.size for dim in value.dim]
                 if shape.count(-1) > 1:
                     need_define_shape = 2
+
+            if need_define_shape == 1:
+                try:
+                    shape = graph_node.out_shapes[0]
+                    if len(shape) > 0 and shape.count(-1) < 2:
+                        need_define_shape = 0
+                except:
+                    pass
 
             if need_define_shape > 0:
                 shape = None
@@ -377,10 +390,10 @@ class TFDecoder(object):
                         shape=shape,
                         name="x2paddle_{}".format(layer.name))
                 except:
-                    x2paddle_input = tf.placeholder(dtype=dtype,
-                                                    shape=shape,
-                                                    name="x2paddle_{}".format(
-                                                        layer.name))
+                    x2paddle_input = tf.placeholder(
+                        dtype=dtype,
+                        shape=shape,
+                        name="x2paddle_{}".format(layer.name))
 
                 input_map["{}:0".format(layer.name)] = x2paddle_input
                 if shape.count(None) > 0:

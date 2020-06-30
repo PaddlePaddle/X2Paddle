@@ -554,10 +554,11 @@ class TFOptimizer(object):
                 node.fluid_code.layers[0].param_attr["shape"] = shape
                 node.fluid_code.layers[0].output = "nhwc_" + name
                 attr = {"perm": [0, 2, 3, 1]}
-                node.fluid_code.add_layer("transpose",
-                                          inputs="nhwc_" + name,
-                                          output=node,
-                                          param_attr=attr)
+                node.fluid_code.add_layer(
+                    "transpose",
+                    inputs="nhwc_" + name,
+                    output=node,
+                    param_attr=attr)
                 self.graph.input_nodes[i] = "nhwc_" + name
         for i, name in enumerate(self.graph.output_nodes):
             node = self.graph.get_node(name)
@@ -767,8 +768,8 @@ class TFOptimizer(object):
                     is_prelu = False
                     continue
 
-                if len(in_nodes0[0].outputs) != 1 or len(
-                        in_nodes0[1].outputs) != 1:
+                if len(in_nodes0[0].outputs) != 1 or len(in_nodes0[1]
+                                                         .outputs) != 1:
                     is_prelu = False
                     continue
 
@@ -777,8 +778,8 @@ class TFOptimizer(object):
                     self.graph.get_node(in_name)
                     for in_name in in_nodes0[1].inputs
                 ]
-                if in_nodes2[1].layer_type != "Const" or numpy.fabs(
-                        in_nodes2[1].value - 0.5) > 1e-06:
+                if in_nodes2[1].layer_type != "Const" or numpy.fabs(in_nodes2[
+                        1].value - 0.5) > 1e-06:
                     is_prelu = False
                     continue
                 if in_nodes2[0].layer_type != "Mul":
@@ -787,8 +788,8 @@ class TFOptimizer(object):
                 if exist_act(in_nodes2[0]):
                     is_prelu = False
                     continue
-                if len(in_nodes2[1].outputs) != 1 or len(
-                        in_nodes2[0].outputs) != 1:
+                if len(in_nodes2[1].outputs) != 1 or len(in_nodes2[0]
+                                                         .outputs) != 1:
                     is_prelu = False
                     continue
 
@@ -803,8 +804,8 @@ class TFOptimizer(object):
                 if exist_act(in_nodes3[1]):
                     is_prelu = False
                     continue
-                if len(in_nodes3[0].outputs) != 1 or len(
-                        in_nodes3[1].outputs) != 1:
+                if len(in_nodes3[0].outputs) != 1 or len(in_nodes3[1]
+                                                         .outputs) != 1:
                     is_prelu = False
                     continue
 
@@ -856,12 +857,12 @@ class TFOptimizer(object):
                     mode = "element"
                 elif len(in_nodes3[0].value.shape) == 0:
                     mode = "all"
-                elif len(in_nodes3[0].value.shape
-                         ) == 1 and in_nodes3[0].value.shape[0] == 1:
+                elif len(in_nodes3[0].value.shape) == 1 and in_nodes3[
+                        0].value.shape[0] == 1:
                     mode = "all"
-                elif len(in_shape) == 4 and len(
-                        in_nodes3[0].value.shape
-                ) == 1 and in_nodes3[0].value.shape[0] == in_shape[-1]:
+                elif len(in_shape) == 4 and len(in_nodes3[
+                        0].value.shape) == 1 and in_nodes3[0].value.shape[
+                            0] == in_shape[-1]:
                     mode = "channel"
                     weight = self.op_mapper.weights[in_nodes3[0].layer_name]
                     weight = numpy.expand_dims(weight, 0)
@@ -916,14 +917,15 @@ class TFOptimizer(object):
                     self.graph.get_node(in_name) for in_name in node.inputs
                 ]
                 if in_nodes0[0].layer_type != "Mul" or in_nodes0[
-                        1].layer_type != "Const" or in_nodes0[1].value.size != 1:
+                        1].layer_type != "Const" or in_nodes0[
+                            1].value.size != 1:
                     is_scale = False
                     continue
                 if exist_act(in_nodes0[0]):
                     is_scale = False
                     continue
-                if len(in_nodes0[0].outputs) != 1 or len(
-                        in_nodes0[1].outputs) != 1:
+                if len(in_nodes0[0].outputs) != 1 or len(in_nodes0[1]
+                                                         .outputs) != 1:
                     is_scale = False
                     continue
 
@@ -939,8 +941,8 @@ class TFOptimizer(object):
                 if exist_act(in_nodes1[1]):
                     is_scale = False
                     continue
-                if len(in_nodes1[0].outputs) != 1 or len(
-                        in_nodes1[1].outputs) != 1:
+                if len(in_nodes1[0].outputs) != 1 or len(in_nodes1[1]
+                                                         .outputs) != 1:
                     is_scale = False
                     continue
 
@@ -962,8 +964,8 @@ class TFOptimizer(object):
                     scale = 1.0 / in_nodes2[1].value * in_nodes1[0].value
                     act = None
                     if node.fluid_code.layers[0].param_attr is not None:
-                        act = node.fluid_code.layers[0].param_attr.get(
-                            "act", None)
+                        act = node.fluid_code.layers[0].param_attr.get("act",
+                                                                       None)
                     node.fluid_code.clear()
 
                     attr = {
@@ -972,10 +974,8 @@ class TFOptimizer(object):
                         "bias_after_scale": True,
                         "act": act
                     }
-                    node.fluid_code.add_layer("scale",
-                                              inputs=in_node,
-                                              output=node,
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "scale", inputs=in_node, output=node, param_attr=attr)
 
                     del self.graph.node_map[in_nodes0[0].layer_name]
                     del self.graph.node_map[in_nodes0[1].layer_name]
@@ -1004,17 +1004,17 @@ class TFOptimizer(object):
                 if exist_act(in_nodes0[0]):
                     is_affine_channel = False
                     continue
-                if len(in_nodes0[0].outputs) != 1 or len(
-                        in_nodes0[1].outputs) != 1:
+                if len(in_nodes0[0].outputs) != 1 or len(in_nodes0[1]
+                                                         .outputs) != 1:
                     is_affine_channel = False
                     continue
                 in_nodes1 = [
                     self.graph.get_node(in_name)
                     for in_name in in_nodes0[0].inputs
                 ]
-                if len(in_nodes1[0].out_shapes[0]
-                       ) != 4 or in_nodes1[1].layer_type != "Const" or len(
-                           in_nodes1[1].value.shape) != 3:
+                if len(in_nodes1[0].out_shapes[0]) != 4 or in_nodes1[
+                        1].layer_type != "Const" or len(in_nodes1[1]
+                                                        .value.shape) != 3:
                     is_affine_channel = False
                     continue
                 if len(in_nodes1[1].outputs) != 1:
@@ -1037,8 +1037,8 @@ class TFOptimizer(object):
                     node.layer_type = "AffineChannel"
                     node.inputs = [in_node.layer_name]
                     scale = 1.0 / in_nodes0[1].value.flatten()
-                    bias = in_nodes1[1].value.flatten(
-                    ) / in_nodes0[1].value.flatten()
+                    bias = in_nodes1[1].value.flatten() / in_nodes0[
+                        1].value.flatten()
                     if not bias_add:
                         bias *= -1.0
                     self.op_mapper.weights[node.layer_name + "_scale"] = scale
@@ -1046,8 +1046,8 @@ class TFOptimizer(object):
 
                     act = None
                     if node.fluid_code.layers[0].param_attr is not None:
-                        act = node.fluid_code.layers[0].param_attr.get(
-                            "act", None)
+                        act = node.fluid_code.layers[0].param_attr.get("act",
+                                                                       None)
                     node.fluid_code.clear()
 
                     attr = {
@@ -1055,29 +1055,32 @@ class TFOptimizer(object):
                         "shape": [channel],
                         "name": string(node.layer_name + "_scale")
                     }
-                    node.fluid_code.add_layer("create_parameter",
-                                              inputs=None,
-                                              output=node.layer_name + "_scale",
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "create_parameter",
+                        inputs=None,
+                        output=node.layer_name + "_scale",
+                        param_attr=attr)
                     attr = {
                         "dtype": string(scale.dtype),
                         "shape": [channel],
                         "name": string(node.layer_name + "_bias")
                     }
-                    node.fluid_code.add_layer("create_parameter",
-                                              inputs=None,
-                                              output=node.layer_name + "_bias",
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "create_parameter",
+                        inputs=None,
+                        output=node.layer_name + "_bias",
+                        param_attr=attr)
                     inputs = {
                         "x": in_node,
                         "scale": node.layer_name + "_scale",
                         "bias": node.layer_name + "_bias"
                     }
                     attr = {"act": act}
-                    node.fluid_code.add_layer("affine_channel",
-                                              inputs=inputs,
-                                              output=node,
-                                              param_attr=attr)
+                    node.fluid_code.add_layer(
+                        "affine_channel",
+                        inputs=inputs,
+                        output=node,
+                        param_attr=attr)
 
                     del self.graph.node_map[in_nodes0[0].layer_name]
                     del self.graph.node_map[in_nodes0[1].layer_name]

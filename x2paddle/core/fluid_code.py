@@ -46,8 +46,9 @@ class Layer(object):
             for input in self.inputs:
                 if isinstance(input, GraphNode):
                     if hasattr(input, "index"):
-                        in_list += (input.layer_name +
-                                    "[{}]".format(input.index) + ", ")
+                        in_list += (
+                            input.layer_name + "[{}]".format(input.index) + ", "
+                        )
                     else:
                         in_list += (input.layer_name + ", ")
                 elif isinstance(input, six.string_types):
@@ -71,8 +72,8 @@ class Layer(object):
                     layer_code = layer_code + key + "={}, ".format(input)
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
-                layer_code += (self.inputs.layer_name +
-                               "[{}]".format(self.inputs.index))
+                layer_code += (
+                    self.inputs.layer_name + "[{}]".format(self.inputs.index))
             else:
                 layer_code += (self.inputs.layer_name)
             if self.op != "=":
@@ -88,6 +89,8 @@ class Layer(object):
         for key, value in param_attr.items():
             if '\n' in str(value):
                 value = string(str(value).replace('\n', ','))
+            if str(key) == 'attr':
+                value = 'ParamAttr(' + str(value) + ')'
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 

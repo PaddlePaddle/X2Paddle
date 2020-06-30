@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO useless node remove
+import paddle.fluid as fluid
 
 
-class ONNXOptimizer(object):
-    def __init__(self, op_mapper):
-        self.op_mapper = op_mapper
-        self.graph = op_mapper.graph
-
-    def delete_redundance_code(self):
-        for node_name in self.graph.topo_sort:
-            if node_name in self.op_mapper.omit_nodes:
-                node = self.graph.get_node(node_name)
-                omit_freq = self.op_mapper.omit_nodes.count(node_name)
-                if len(node.outputs) <= omit_freq:
-                    node.fluid_code.clear()
+class PaddleDecoder(object):
+    def __init__(self,
+                 model_dir,
+                 model_filename='__model__',
+                 params_filename=None):
+        exe = fluid.Executor(fluid.CPUPlace())
+        [self.program, feed, fetchs] = fluid.io.load_inference_model(
+            model_dir,
+            exe,
+            model_filename=model_filename,
+            params_filename=params_filename)
