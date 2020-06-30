@@ -814,14 +814,6 @@ class PaddleOpMapper(object):
             keepdims=0)
         return node
 
-    def yolo_box(self, op, block):
-        from .paddle_custom_layer.yolo_box import yolo_box
-        return yolo_box(op, block)
-
-    def multiclass_nms(self, op, block):
-        from .paddle_custom_layer.multiclass_nms import multiclass_nms
-        return multiclass_nms(op, block)
-
     def reciprocal(self, op, block):
         inputs = op.input(op.input_names[0])
         outputs = op.output(op.output_names[0])

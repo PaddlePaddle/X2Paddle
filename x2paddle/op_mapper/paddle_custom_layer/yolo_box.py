@@ -4,8 +4,6 @@ from onnx import onnx_pb, helper
 
 
 def get_old_name(arg, name_prefix=''):
-    """Get the old rame for a possible renamed argument
-    """
     prefix_index = arg.find(name_prefix)
 
     if prefix_index != -1:
