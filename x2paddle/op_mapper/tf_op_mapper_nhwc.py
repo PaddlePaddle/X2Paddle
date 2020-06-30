@@ -94,8 +94,9 @@ class TFOpMapperNHWC(OpMapper):
                 func = getattr(self, op)
                 try:
                     func(node)
-                except:
+                except Exception as e:
                     unsupported_ops.add(op)
+                    print(e)
             else:
                 unsupported_ops.add(op)
         if len(unsupported_ops) > 0:
@@ -279,17 +280,6 @@ class TFOpMapperNHWC(OpMapper):
                                       output=node,
                                       param_attr=attr)
             input = node
-            attr = {"shape": [0, k_size[2], 0, 0]}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=input,
-                                      output=input,
-                                      param_attr=attr)
-        else:
-            attr = {"shape": [0, 0, 0, k_size[2]]}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=input,
-                                      output=input,
-                                      param_attr=attr)
 
         attr = {
             "bias_attr": False,
@@ -398,17 +388,7 @@ class TFOpMapperNHWC(OpMapper):
                                       output=node,
                                       param_attr=attr)
             input = node
-            attr = {"shape": [0, k_size[2], 0, 0]}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=input,
-                                      output=input,
-                                      param_attr=attr)
-        else:
-            attr = {"shape": [0, 0, 0, k_size[2]]}
-            node.fluid_code.add_layer("reshape",
-                                      inputs=input,
-                                      output=input,
-                                      param_attr=attr)
+
         attr = {
             "bias_attr": False,
             "param_attr": string(kernel.layer_name),
@@ -445,6 +425,15 @@ class TFOpMapperNHWC(OpMapper):
                                   inputs=inputs,
                                   output=node,
                                   param_attr=None)
+        if param.layer_type != "Const":
+            out_shape = numpy.array(node.out_shapes[0])
+            if (out_shape > 0).any():
+                out_shape[out_shape < 0] = 0
+                attr = {'shape': out_shape.tolist()}
+                node.fluid_code.add_layer("reshape",
+                                          inputs=node,
+                                          output=node,
+                                          param_attr=attr)
 
     def AvgPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -791,6 +780,69 @@ class TFOpMapperNHWC(OpMapper):
                                   inputs=inputs,
                                   output=node,
                                   param_attr=None)
+
+    def Conv2DBackpropInput(self, node):
+        out_shape = self.graph.get_node(node.layer.input[0], copy=True)
+        kernel = self.graph.get_node(node.layer.input[1], copy=True)
+        input = self.graph.get_node(node.layer.input[2], copy=True)
+
+        assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
+        assert out_shape.layer_type == "Const", "Out_shape of Conv2DBackpropInput should be Const"
+
+        self.add_omit_nodes(kernel.layer_name, node.layer_name)
+
+        out_shape = out_shape.value.tolist()
+        self.add_omit_nodes(out_shape.layer_name, node.layer_name)
+
+        in_shape = input.out_shapes[0]
+        if in_shape.count(-1) > 2:
+            in_shape = self.decoder.infer_tensor(input).shape
+        k_size = kernel.out_shapes[0]
+        if k_size.count(-1) > 2:
+            k_size = self.decoder.infer_tensor(kernel).shape
+
+        pad_mode = node.get_attr("padding").decode()
+        strides = node.get_attr("strides")
+        dilations = node.get_attr("dilations")
+        data_format = node.get_attr("data_format").decode()
+        channel_first = data_format == "NCHW"
+
+        self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
+            kernel.value, (3, 2, 0, 1))
+        if not channel_first:
+            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+            strides = [strides[i] for i in [0, 3, 1, 2]]
+            dilations = [dilations[i] for i in [0, 3, 1, 2]]
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=input,
+                                      output=node,
+                                      param_attr=attr)
+            input = node
+        else:
+            self.data_format_propagation(node)
+
+        attr = {
+            "bias_attr": False,
+            "param_attr": string(kernel.layer_name),
+            "num_filters": k_size[2],
+            "filter_size": k_size[0:2],
+            "stride": strides[2:4],
+            "dilation": dilations[2:4],
+            "padding": string(pad_mode),
+            "output_size": out_shape[1:3]
+        }
+        node.fluid_code.add_layer("conv2d_transpose",
+                                  inputs=input,
+                                  output=node,
+                                  param_attr=attr)
+
+        if not channel_first:
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer("transpose",
+                                      inputs=node,
+                                      output=node,
+                                      param_attr=attr)
 
     def Max(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
