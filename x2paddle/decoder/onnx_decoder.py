@@ -492,8 +492,8 @@ class ONNXDecoder(object):
             sess = rt.InferenceSession(model_path)
             for ipt in sess.get_inputs():
                 datatype = datatype_map[ipt.type]
-                input_dict[ipt.name] = np.random.random(
-                    ipt.shape).astype(datatype)
+                input_dict[ipt.name] = np.random.random(ipt.shape).astype(
+                    datatype)
 
             res = sess.run(None, input_feed=input_dict)
         except:

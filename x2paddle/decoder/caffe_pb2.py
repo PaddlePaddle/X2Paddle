@@ -36,8 +36,7 @@ _PHASE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=21908,
-    serialized_end=21936,
-)
+    serialized_end=21936, )
 _sym_db.RegisterEnumDescriptor(_PHASE)
 
 Phase = enum_type_wrapper.EnumTypeWrapper(_PHASE)
@@ -66,8 +65,7 @@ _EMITCONSTRAINT_EMITTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=1146,
-    serialized_end=1185,
-)
+    serialized_end=1185, )
 _sym_db.RegisterEnumDescriptor(_EMITCONSTRAINT_EMITTYPE)
 
 _ANNOTATEDDATUM_ANNOTATIONTYPE = _descriptor.EnumDescriptor(
@@ -82,8 +80,7 @@ _ANNOTATEDDATUM_ANNOTATIONTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=1629,
-    serialized_end=1655,
-)
+    serialized_end=1655, )
 _sym_db.RegisterEnumDescriptor(_ANNOTATEDDATUM_ANNOTATIONTYPE)
 
 _FILLERPARAMETER_VARIANCENORM = _descriptor.EnumDescriptor(
@@ -114,8 +111,7 @@ _FILLERPARAMETER_VARIANCENORM = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=1872,
-    serialized_end=1924,
-)
+    serialized_end=1924, )
 _sym_db.RegisterEnumDescriptor(_FILLERPARAMETER_VARIANCENORM)
 
 _SOLVERPARAMETER_SNAPSHOTFORMAT = _descriptor.EnumDescriptor(
@@ -136,8 +132,7 @@ _SOLVERPARAMETER_SNAPSHOTFORMAT = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=3480,
-    serialized_end=3523,
-)
+    serialized_end=3523, )
 _sym_db.RegisterEnumDescriptor(_SOLVERPARAMETER_SNAPSHOTFORMAT)
 
 _SOLVERPARAMETER_SOLVERMODE = _descriptor.EnumDescriptor(
@@ -154,8 +149,7 @@ _SOLVERPARAMETER_SOLVERMODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=3525,
-    serialized_end=3555,
-)
+    serialized_end=3555, )
 _sym_db.RegisterEnumDescriptor(_SOLVERPARAMETER_SOLVERMODE)
 
 _SOLVERPARAMETER_SOLVERTYPE = _descriptor.EnumDescriptor(
@@ -196,8 +190,7 @@ _SOLVERPARAMETER_SOLVERTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=3557,
-    serialized_end=3642,
-)
+    serialized_end=3642, )
 _sym_db.RegisterEnumDescriptor(_SOLVERPARAMETER_SOLVERTYPE)
 
 _PARAMSPEC_DIMCHECKMODE = _descriptor.EnumDescriptor(
@@ -222,8 +215,7 @@ _PARAMSPEC_DIMCHECKMODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=4131,
-    serialized_end=4173,
-)
+    serialized_end=4173, )
 _sym_db.RegisterEnumDescriptor(_PARAMSPEC_DIMCHECKMODE)
 
 _RESIZEPARAMETER_RESIZE_MODE = _descriptor.EnumDescriptor(
@@ -250,8 +242,7 @@ _RESIZEPARAMETER_RESIZE_MODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=8049,
-    serialized_end=8120,
-)
+    serialized_end=8120, )
 _sym_db.RegisterEnumDescriptor(_RESIZEPARAMETER_RESIZE_MODE)
 
 _RESIZEPARAMETER_PAD_MODE = _descriptor.EnumDescriptor(
@@ -282,8 +273,7 @@ _RESIZEPARAMETER_PAD_MODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=8122,
-    serialized_end=8180,
-)
+    serialized_end=8180, )
 _sym_db.RegisterEnumDescriptor(_RESIZEPARAMETER_PAD_MODE)
 
 _RESIZEPARAMETER_INTERP_MODE = _descriptor.EnumDescriptor(
@@ -319,8 +309,7 @@ _RESIZEPARAMETER_INTERP_MODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=8182,
-    serialized_end=8255,
-)
+    serialized_end=8255, )
 _sym_db.RegisterEnumDescriptor(_RESIZEPARAMETER_INTERP_MODE)
 
 _LOSSPARAMETER_NORMALIZATIONMODE = _descriptor.EnumDescriptor(
@@ -346,8 +335,7 @@ _LOSSPARAMETER_NORMALIZATIONMODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=9202,
-    serialized_end=9268,
-)
+    serialized_end=9268, )
 _sym_db.RegisterEnumDescriptor(_LOSSPARAMETER_NORMALIZATIONMODE)
 
 _CONVOLUTIONPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -372,8 +360,7 @@ _CONVOLUTIONPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_CONVOLUTIONPARAMETER_ENGINE)
 
 _DATAPARAMETER_DB = _descriptor.EnumDescriptor(
@@ -394,8 +381,7 @@ _DATAPARAMETER_DB = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10746,
-    serialized_end=10773,
-)
+    serialized_end=10773, )
 _sym_db.RegisterEnumDescriptor(_DATAPARAMETER_DB)
 
 _ELTWISEPARAMETER_ELTWISEOP = _descriptor.EnumDescriptor(
@@ -414,8 +400,7 @@ _ELTWISEPARAMETER_ELTWISEOP = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=12106,
-    serialized_end=12145,
-)
+    serialized_end=12145, )
 _sym_db.RegisterEnumDescriptor(_ELTWISEPARAMETER_ELTWISEOP)
 
 _HINGELOSSPARAMETER_NORM = _descriptor.EnumDescriptor(
@@ -432,8 +417,7 @@ _HINGELOSSPARAMETER_NORM = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=12680,
-    serialized_end=12702,
-)
+    serialized_end=12702, )
 _sym_db.RegisterEnumDescriptor(_HINGELOSSPARAMETER_NORM)
 
 _LRNPARAMETER_NORMREGION = _descriptor.EnumDescriptor(
@@ -458,8 +442,7 @@ _LRNPARAMETER_NORMREGION = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=13569,
-    serialized_end=13622,
-)
+    serialized_end=13622, )
 _sym_db.RegisterEnumDescriptor(_LRNPARAMETER_NORMREGION)
 
 _LRNPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -484,8 +467,7 @@ _LRNPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_LRNPARAMETER_ENGINE)
 
 _MULTIBOXLOSSPARAMETER_LOCLOSSTYPE = _descriptor.EnumDescriptor(
@@ -506,8 +488,7 @@ _MULTIBOXLOSSPARAMETER_LOCLOSSTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=14703,
-    serialized_end=14739,
-)
+    serialized_end=14739, )
 _sym_db.RegisterEnumDescriptor(_MULTIBOXLOSSPARAMETER_LOCLOSSTYPE)
 
 _MULTIBOXLOSSPARAMETER_CONFLOSSTYPE = _descriptor.EnumDescriptor(
@@ -532,8 +513,7 @@ _MULTIBOXLOSSPARAMETER_CONFLOSSTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=14741,
-    serialized_end=14782,
-)
+    serialized_end=14782, )
 _sym_db.RegisterEnumDescriptor(_MULTIBOXLOSSPARAMETER_CONFLOSSTYPE)
 
 _MULTIBOXLOSSPARAMETER_MATCHTYPE = _descriptor.EnumDescriptor(
@@ -558,8 +538,7 @@ _MULTIBOXLOSSPARAMETER_MATCHTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=14784,
-    serialized_end=14830,
-)
+    serialized_end=14830, )
 _sym_db.RegisterEnumDescriptor(_MULTIBOXLOSSPARAMETER_MATCHTYPE)
 
 _MULTIBOXLOSSPARAMETER_MININGTYPE = _descriptor.EnumDescriptor(
@@ -586,8 +565,7 @@ _MULTIBOXLOSSPARAMETER_MININGTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=14832,
-    serialized_end=14890,
-)
+    serialized_end=14890, )
 _sym_db.RegisterEnumDescriptor(_MULTIBOXLOSSPARAMETER_MININGTYPE)
 
 _POOLINGPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
@@ -610,8 +588,7 @@ _POOLINGPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=15561,
-    serialized_end=15607,
-)
+    serialized_end=15607, )
 _sym_db.RegisterEnumDescriptor(_POOLINGPARAMETER_POOLMETHOD)
 
 _POOLINGPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -636,8 +613,7 @@ _POOLINGPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_POOLINGPARAMETER_ENGINE)
 
 _PRIORBOXPARAMETER_CODETYPE = _descriptor.EnumDescriptor(
@@ -668,8 +644,7 @@ _PRIORBOXPARAMETER_CODETYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=15980,
-    serialized_end=16036,
-)
+    serialized_end=16036, )
 _sym_db.RegisterEnumDescriptor(_PRIORBOXPARAMETER_CODETYPE)
 
 _REDUCTIONPARAMETER_REDUCTIONOP = _descriptor.EnumDescriptor(
@@ -691,8 +666,7 @@ _REDUCTIONPARAMETER_REDUCTIONOP = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=16459,
-    serialized_end=16512,
-)
+    serialized_end=16512, )
 _sym_db.RegisterEnumDescriptor(_REDUCTIONPARAMETER_REDUCTIONOP)
 
 _RELUPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -717,8 +691,7 @@ _RELUPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_RELUPARAMETER_ENGINE)
 
 _SIGMOIDPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -743,8 +716,7 @@ _SIGMOIDPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_SIGMOIDPARAMETER_ENGINE)
 
 _SOFTMAXPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -769,8 +741,7 @@ _SOFTMAXPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_SOFTMAXPARAMETER_ENGINE)
 
 _TANHPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -795,8 +766,7 @@ _TANHPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_TANHPARAMETER_ENGINE)
 
 _VIDEODATAPARAMETER_VIDEOTYPE = _descriptor.EnumDescriptor(
@@ -818,8 +788,7 @@ _VIDEODATAPARAMETER_VIDEOTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=17621,
-    serialized_end=17655,
-)
+    serialized_end=17655, )
 _sym_db.RegisterEnumDescriptor(_VIDEODATAPARAMETER_VIDEOTYPE)
 
 _SPPPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
@@ -842,8 +811,7 @@ _SPPPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=15561,
-    serialized_end=15607,
-)
+    serialized_end=15607, )
 _sym_db.RegisterEnumDescriptor(_SPPPARAMETER_POOLMETHOD)
 
 _SPPPARAMETER_ENGINE = _descriptor.EnumDescriptor(
@@ -868,8 +836,7 @@ _SPPPARAMETER_ENGINE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=10385,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 _sym_db.RegisterEnumDescriptor(_SPPPARAMETER_ENGINE)
 
 _V1LAYERPARAMETER_LAYERTYPE = _descriptor.EnumDescriptor(
@@ -1101,8 +1068,7 @@ _V1LAYERPARAMETER_LAYERTYPE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=20104,
-    serialized_end=20704,
-)
+    serialized_end=20704, )
 _sym_db.RegisterEnumDescriptor(_V1LAYERPARAMETER_LAYERTYPE)
 
 _V1LAYERPARAMETER_DIMCHECKMODE = _descriptor.EnumDescriptor(
@@ -1127,8 +1093,7 @@ _V1LAYERPARAMETER_DIMCHECKMODE = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=4131,
-    serialized_end=4173,
-)
+    serialized_end=4173, )
 _sym_db.RegisterEnumDescriptor(_V1LAYERPARAMETER_DIMCHECKMODE)
 
 _V0LAYERPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
@@ -1151,8 +1116,7 @@ _V0LAYERPARAMETER_POOLMETHOD = _descriptor.EnumDescriptor(
     containing_type=None,
     serialized_options=None,
     serialized_start=15561,
-    serialized_end=15607,
-)
+    serialized_end=15607, )
 _sym_db.RegisterEnumDescriptor(_V0LAYERPARAMETER_POOLMETHOD)
 
 _BLOBSHAPE = _descriptor.Descriptor(
@@ -1189,8 +1153,7 @@ _BLOBSHAPE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=22,
-    serialized_end=50,
-)
+    serialized_end=50, )
 
 _BLOBPROTO = _descriptor.Descriptor(
     name='BlobProto',
@@ -1362,8 +1325,7 @@ _BLOBPROTO = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=53,
-    serialized_end=257,
-)
+    serialized_end=257, )
 
 _BLOBPROTOVECTOR = _descriptor.Descriptor(
     name='BlobProtoVector',
@@ -1399,8 +1361,7 @@ _BLOBPROTOVECTOR = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=259,
-    serialized_end=309,
-)
+    serialized_end=309, )
 
 _DATUM = _descriptor.Descriptor(
     name='Datum',
@@ -1538,8 +1499,7 @@ _DATUM = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=312,
-    serialized_end=441,
-)
+    serialized_end=441, )
 
 _LABELMAPITEM = _descriptor.Descriptor(
     name='LabelMapItem',
@@ -1609,8 +1569,7 @@ _LABELMAPITEM = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=443,
-    serialized_end=508,
-)
+    serialized_end=508, )
 
 _LABELMAP = _descriptor.Descriptor(
     name='LabelMap',
@@ -1646,8 +1605,7 @@ _LABELMAP = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=510,
-    serialized_end=555,
-)
+    serialized_end=555, )
 
 _SAMPLER = _descriptor.Descriptor(
     name='Sampler',
@@ -1734,8 +1692,7 @@ _SAMPLER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=557,
-    serialized_end=668,
-)
+    serialized_end=668, )
 
 _SAMPLECONSTRAINT = _descriptor.Descriptor(
     name='SampleConstraint',
@@ -1856,8 +1813,7 @@ _SAMPLECONSTRAINT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=671,
-    serialized_end=863,
-)
+    serialized_end=863, )
 
 _BATCHSAMPLER = _descriptor.Descriptor(
     name='BatchSampler',
@@ -1961,8 +1917,7 @@ _BATCHSAMPLER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=866,
-    serialized_end=1044,
-)
+    serialized_end=1044, )
 
 _EMITCONSTRAINT = _descriptor.Descriptor(
     name='EmitConstraint',
@@ -2008,17 +1963,14 @@ _EMITCONSTRAINT = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _EMITCONSTRAINT_EMITTYPE,
-    ],
+    enum_types=[_EMITCONSTRAINT_EMITTYPE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=1047,
-    serialized_end=1185,
-)
+    serialized_end=1185, )
 
 _NORMALIZEDBBOX = _descriptor.Descriptor(
     name='NormalizedBBox',
@@ -2173,8 +2125,7 @@ _NORMALIZEDBBOX = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=1188,
-    serialized_end=1323,
-)
+    serialized_end=1323, )
 
 _ANNOTATION = _descriptor.Descriptor(
     name='Annotation',
@@ -2227,8 +2178,7 @@ _ANNOTATION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=1325,
-    serialized_end=1398,
-)
+    serialized_end=1398, )
 
 _ANNOTATIONGROUP = _descriptor.Descriptor(
     name='AnnotationGroup',
@@ -2281,8 +2231,7 @@ _ANNOTATIONGROUP = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=1400,
-    serialized_end=1477,
-)
+    serialized_end=1477, )
 
 _ANNOTATEDDATUM = _descriptor.Descriptor(
     name='AnnotatedDatum',
@@ -2345,17 +2294,14 @@ _ANNOTATEDDATUM = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _ANNOTATEDDATUM_ANNOTATIONTYPE,
-    ],
+    enum_types=[_ANNOTATEDDATUM_ANNOTATIONTYPE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=1480,
-    serialized_end=1655,
-)
+    serialized_end=1655, )
 
 _FILLERPARAMETER = _descriptor.Descriptor(
     name='FillerParameter',
@@ -2503,17 +2449,14 @@ _FILLERPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _FILLERPARAMETER_VARIANCENORM,
-    ],
+    enum_types=[_FILLERPARAMETER_VARIANCENORM, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=1658,
-    serialized_end=1924,
-)
+    serialized_end=1924, )
 
 _NETPARAMETER = _descriptor.Descriptor(
     name='NetParameter',
@@ -2685,8 +2628,7 @@ _NETPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=1927,
-    serialized_end=2197,
-)
+    serialized_end=2197, )
 
 _SOLVERPARAMETER = _descriptor.Descriptor(
     name='SolverParameter',
@@ -3457,8 +3399,7 @@ _SOLVERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=2200,
-    serialized_end=3642,
-)
+    serialized_end=3642, )
 
 _SOLVERSTATE = _descriptor.Descriptor(
     name='SolverState',
@@ -3579,8 +3520,7 @@ _SOLVERSTATE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=3645,
-    serialized_end=3810,
-)
+    serialized_end=3810, )
 
 _NETSTATE = _descriptor.Descriptor(
     name='NetState',
@@ -3650,8 +3590,7 @@ _NETSTATE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=3812,
-    serialized_end=3890,
-)
+    serialized_end=3890, )
 
 _NETSTATERULE = _descriptor.Descriptor(
     name='NetStateRule',
@@ -3755,8 +3694,7 @@ _NETSTATERULE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=3892,
-    serialized_end=4007,
-)
+    serialized_end=4007, )
 
 _PARAMSPEC = _descriptor.Descriptor(
     name='ParamSpec',
@@ -3836,17 +3774,14 @@ _PARAMSPEC = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _PARAMSPEC_DIMCHECKMODE,
-    ],
+    enum_types=[_PARAMSPEC_DIMCHECKMODE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=4010,
-    serialized_end=4173,
-)
+    serialized_end=4173, )
 
 _LAYERPARAMETER = _descriptor.Descriptor(
     name='LayerParameter',
@@ -5004,8 +4939,7 @@ _LAYERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=4176,
-    serialized_end=7263,
-)
+    serialized_end=7263, )
 
 _TRANSFORMATIONPARAMETER = _descriptor.Descriptor(
     name='TransformationParameter',
@@ -5262,8 +5196,7 @@ _TRANSFORMATIONPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=7266,
-    serialized_end=7724,
-)
+    serialized_end=7724, )
 
 _RESIZEPARAMETER = _descriptor.Descriptor(
     name='ResizeParameter',
@@ -5439,8 +5372,7 @@ _RESIZEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=7727,
-    serialized_end=8255,
-)
+    serialized_end=8255, )
 
 _SALTPEPPERPARAMETER = _descriptor.Descriptor(
     name='SaltPepperParameter',
@@ -5493,8 +5425,7 @@ _SALTPEPPERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=8257,
-    serialized_end=8314,
-)
+    serialized_end=8314, )
 
 _NOISEPARAMETER = _descriptor.Descriptor(
     name='NoiseParameter',
@@ -5734,8 +5665,7 @@ _NOISEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=8317,
-    serialized_end=8683,
-)
+    serialized_end=8683, )
 
 _DISTORTIONPARAMETER = _descriptor.Descriptor(
     name='DistortionParameter',
@@ -5941,8 +5871,7 @@ _DISTORTIONPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=8686,
-    serialized_end=9003,
-)
+    serialized_end=9003, )
 
 _EXPANSIONPARAMETER = _descriptor.Descriptor(
     name='ExpansionParameter',
@@ -5995,8 +5924,7 @@ _EXPANSIONPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9005,
-    serialized_end=9071,
-)
+    serialized_end=9071, )
 
 _LOSSPARAMETER = _descriptor.Descriptor(
     name='LossParameter',
@@ -6059,17 +5987,14 @@ _LOSSPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _LOSSPARAMETER_NORMALIZATIONMODE,
-    ],
+    enum_types=[_LOSSPARAMETER_NORMALIZATIONMODE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=9074,
-    serialized_end=9268,
-)
+    serialized_end=9268, )
 
 _ACCURACYPARAMETER = _descriptor.Descriptor(
     name='AccuracyParameter',
@@ -6139,8 +6064,7 @@ _ACCURACYPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9270,
-    serialized_end=9346,
-)
+    serialized_end=9346, )
 
 _ANNOTATEDDATAPARAMETER = _descriptor.Descriptor(
     name='AnnotatedDataParameter',
@@ -6210,8 +6134,7 @@ _ANNOTATEDDATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9349,
-    serialized_end=9498,
-)
+    serialized_end=9498, )
 
 _ARGMAXPARAMETER = _descriptor.Descriptor(
     name='ArgMaxParameter',
@@ -6281,8 +6204,7 @@ _ARGMAXPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9500,
-    serialized_end=9577,
-)
+    serialized_end=9577, )
 
 _CONCATPARAMETER = _descriptor.Descriptor(
     name='ConcatParameter',
@@ -6335,8 +6257,7 @@ _CONCATPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9579,
-    serialized_end=9636,
-)
+    serialized_end=9636, )
 
 _BATCHNORMPARAMETER = _descriptor.Descriptor(
     name='BatchNormParameter',
@@ -6406,8 +6327,7 @@ _BATCHNORMPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9638,
-    serialized_end=9744,
-)
+    serialized_end=9744, )
 
 _BIASPARAMETER = _descriptor.Descriptor(
     name='BiasParameter',
@@ -6477,8 +6397,7 @@ _BIASPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9746,
-    serialized_end=9839,
-)
+    serialized_end=9839, )
 
 _CONTRASTIVELOSSPARAMETER = _descriptor.Descriptor(
     name='ContrastiveLossParameter',
@@ -6531,8 +6450,7 @@ _CONTRASTIVELOSSPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=9841,
-    serialized_end=9917,
-)
+    serialized_end=9917, )
 
 _CONVOLUTIONPARAMETER = _descriptor.Descriptor(
     name='ConvolutionParameter',
@@ -6850,17 +6768,14 @@ _CONVOLUTIONPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _CONVOLUTIONPARAMETER_ENGINE,
-    ],
+    enum_types=[_CONVOLUTIONPARAMETER_ENGINE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=9920,
-    serialized_end=10428,
-)
+    serialized_end=10428, )
 
 _CROPPARAMETER = _descriptor.Descriptor(
     name='CropParameter',
@@ -6913,8 +6828,7 @@ _CROPPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=10430,
-    serialized_end=10478,
-)
+    serialized_end=10478, )
 
 _DATAPARAMETER = _descriptor.Descriptor(
     name='DataParameter',
@@ -7096,17 +7010,14 @@ _DATAPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _DATAPARAMETER_DB,
-    ],
+    enum_types=[_DATAPARAMETER_DB, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=10481,
-    serialized_end=10773,
-)
+    serialized_end=10773, )
 
 _DETECTIONEVALUATEPARAMETER = _descriptor.Descriptor(
     name='DetectionEvaluateParameter',
@@ -7227,8 +7138,7 @@ _DETECTIONEVALUATEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=10776,
-    serialized_end=10996,
-)
+    serialized_end=10996, )
 
 _NONMAXIMUMSUPPRESSIONPARAMETER = _descriptor.Descriptor(
     name='NonMaximumSuppressionParameter',
@@ -7298,8 +7208,7 @@ _NONMAXIMUMSUPPRESSIONPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=10998,
-    serialized_end=11089,
-)
+    serialized_end=11089, )
 
 _SAVEOUTPUTPARAMETER = _descriptor.Descriptor(
     name='SaveOutputParameter',
@@ -7437,8 +7346,7 @@ _SAVEOUTPUTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=11092,
-    serialized_end=11308,
-)
+    serialized_end=11308, )
 
 _DETECTIONOUTPUTPARAMETER = _descriptor.Descriptor(
     name='DetectionOutputParameter',
@@ -7551,8 +7459,7 @@ _DETECTIONOUTPUTPARAMETER = _descriptor.Descriptor(
             file=DESCRIPTOR),
         _descriptor.FieldDescriptor(
             name='variance_encoded_in_target',
-            full_name=
-            'caffe.DetectionOutputParameter.variance_encoded_in_target',
+            full_name='caffe.DetectionOutputParameter.variance_encoded_in_target',
             index=6,
             number=8,
             type=8,
@@ -7662,8 +7569,7 @@ _DETECTIONOUTPUTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=11311,
-    serialized_end=11766,
-)
+    serialized_end=11766, )
 
 _DROPOUTPARAMETER = _descriptor.Descriptor(
     name='DropoutParameter',
@@ -7699,8 +7605,7 @@ _DROPOUTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=11768,
-    serialized_end=11814,
-)
+    serialized_end=11814, )
 
 _DUMMYDATAPARAMETER = _descriptor.Descriptor(
     name='DummyDataParameter',
@@ -7821,8 +7726,7 @@ _DUMMYDATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=11817,
-    serialized_end=11977,
-)
+    serialized_end=11977, )
 
 _ELTWISEPARAMETER = _descriptor.Descriptor(
     name='EltwiseParameter',
@@ -7885,17 +7789,14 @@ _ELTWISEPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _ELTWISEPARAMETER_ELTWISEOP,
-    ],
+    enum_types=[_ELTWISEPARAMETER_ELTWISEOP, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=11980,
-    serialized_end=12145,
-)
+    serialized_end=12145, )
 
 _ELUPARAMETER = _descriptor.Descriptor(
     name='ELUParameter',
@@ -7931,8 +7832,7 @@ _ELUPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12147,
-    serialized_end=12179,
-)
+    serialized_end=12179, )
 
 _EMBEDPARAMETER = _descriptor.Descriptor(
     name='EmbedParameter',
@@ -8036,8 +7936,7 @@ _EMBEDPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12182,
-    serialized_end=12354,
-)
+    serialized_end=12354, )
 
 _EXPPARAMETER = _descriptor.Descriptor(
     name='ExpParameter',
@@ -8107,8 +8006,7 @@ _EXPPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12356,
-    serialized_end=12424,
-)
+    serialized_end=12424, )
 
 _FLATTENPARAMETER = _descriptor.Descriptor(
     name='FlattenParameter',
@@ -8161,8 +8059,7 @@ _FLATTENPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12426,
-    serialized_end=12483,
-)
+    serialized_end=12483, )
 
 _HDF5DATAPARAMETER = _descriptor.Descriptor(
     name='HDF5DataParameter',
@@ -8232,8 +8129,7 @@ _HDF5DATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12485,
-    serialized_end=12564,
-)
+    serialized_end=12564, )
 
 _HDF5OUTPUTPARAMETER = _descriptor.Descriptor(
     name='HDF5OutputParameter',
@@ -8269,8 +8165,7 @@ _HDF5OUTPUTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12566,
-    serialized_end=12606,
-)
+    serialized_end=12606, )
 
 _HINGELOSSPARAMETER = _descriptor.Descriptor(
     name='HingeLossParameter',
@@ -8299,17 +8194,14 @@ _HINGELOSSPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _HINGELOSSPARAMETER_NORM,
-    ],
+    enum_types=[_HINGELOSSPARAMETER_NORM, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=12608,
-    serialized_end=12702,
-)
+    serialized_end=12702, )
 
 _IMAGEDATAPARAMETER = _descriptor.Descriptor(
     name='ImageDataParameter',
@@ -8532,8 +8424,7 @@ _IMAGEDATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12705,
-    serialized_end=12984,
-)
+    serialized_end=12984, )
 
 _INFOGAINLOSSPARAMETER = _descriptor.Descriptor(
     name='InfogainLossParameter',
@@ -8569,8 +8460,7 @@ _INFOGAINLOSSPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=12986,
-    serialized_end=13025,
-)
+    serialized_end=13025, )
 
 _INNERPRODUCTPARAMETER = _descriptor.Descriptor(
     name='InnerProductParameter',
@@ -8691,8 +8581,7 @@ _INNERPRODUCTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13028,
-    serialized_end=13231,
-)
+    serialized_end=13231, )
 
 _INPUTPARAMETER = _descriptor.Descriptor(
     name='InputParameter',
@@ -8728,8 +8617,7 @@ _INPUTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13233,
-    serialized_end=13282,
-)
+    serialized_end=13282, )
 
 _LOGPARAMETER = _descriptor.Descriptor(
     name='LogParameter',
@@ -8799,8 +8687,7 @@ _LOGPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13284,
-    serialized_end=13352,
-)
+    serialized_end=13352, )
 
 _LRNPARAMETER = _descriptor.Descriptor(
     name='LRNParameter',
@@ -8924,8 +8811,7 @@ _LRNPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13355,
-    serialized_end=13667,
-)
+    serialized_end=13667, )
 
 _MEMORYDATAPARAMETER = _descriptor.Descriptor(
     name='MemoryDataParameter',
@@ -9012,8 +8898,7 @@ _MEMORYDATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13669,
-    serialized_end=13759,
-)
+    serialized_end=13759, )
 
 _MULTIBOXLOSSPARAMETER = _descriptor.Descriptor(
     name='MultiBoxLossParameter',
@@ -9411,8 +9296,7 @@ _MULTIBOXLOSSPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=13762,
-    serialized_end=14890,
-)
+    serialized_end=14890, )
 
 _MVNPARAMETER = _descriptor.Descriptor(
     name='MVNParameter',
@@ -9482,8 +9366,7 @@ _MVNPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=14892,
-    serialized_end=14992,
-)
+    serialized_end=14992, )
 
 _NORMALIZEPARAMETER = _descriptor.Descriptor(
     name='NormalizeParameter',
@@ -9570,8 +9453,7 @@ _NORMALIZEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=14995,
-    serialized_end=15141,
-)
+    serialized_end=15141, )
 
 _PARAMETERPARAMETER = _descriptor.Descriptor(
     name='ParameterParameter',
@@ -9607,8 +9489,7 @@ _PARAMETERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=15143,
-    serialized_end=15196,
-)
+    serialized_end=15196, )
 
 _PERMUTEPARAMETER = _descriptor.Descriptor(
     name='PermuteParameter',
@@ -9644,8 +9525,7 @@ _PERMUTEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=15198,
-    serialized_end=15231,
-)
+    serialized_end=15231, )
 
 _POOLINGPARAMETER = _descriptor.Descriptor(
     name='PoolingParameter',
@@ -9871,8 +9751,7 @@ _POOLINGPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=15234,
-    serialized_end=15652,
-)
+    serialized_end=15652, )
 
 _POWERPARAMETER = _descriptor.Descriptor(
     name='PowerParameter',
@@ -9942,8 +9821,7 @@ _POWERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=15654,
-    serialized_end=15724,
-)
+    serialized_end=15724, )
 
 _PRIORBOXPARAMETER = _descriptor.Descriptor(
     name='PriorBoxParameter',
@@ -10176,17 +10054,14 @@ _PRIORBOXPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _PRIORBOXPARAMETER_CODETYPE,
-    ],
+    enum_types=[_PRIORBOXPARAMETER_CODETYPE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=15727,
-    serialized_end=16036,
-)
+    serialized_end=16036, )
 
 _PYTHONPARAMETER = _descriptor.Descriptor(
     name='PythonParameter',
@@ -10273,8 +10148,7 @@ _PYTHONPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=16038,
-    serialized_end=16141,
-)
+    serialized_end=16141, )
 
 _RECURRENTPARAMETER = _descriptor.Descriptor(
     name='RecurrentParameter',
@@ -10378,8 +10252,7 @@ _RECURRENTPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=16144,
-    serialized_end=16336,
-)
+    serialized_end=16336, )
 
 _REDUCTIONPARAMETER = _descriptor.Descriptor(
     name='ReductionParameter',
@@ -10442,17 +10315,14 @@ _REDUCTIONPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _REDUCTIONPARAMETER_REDUCTIONOP,
-    ],
+    enum_types=[_REDUCTIONPARAMETER_REDUCTIONOP, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=16339,
-    serialized_end=16512,
-)
+    serialized_end=16512, )
 
 _RELUPARAMETER = _descriptor.Descriptor(
     name='ReLUParameter',
@@ -10498,17 +10368,14 @@ _RELUPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _RELUPARAMETER_ENGINE,
-    ],
+    enum_types=[_RELUPARAMETER_ENGINE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=16515,
-    serialized_end=16656,
-)
+    serialized_end=16656, )
 
 _RESHAPEPARAMETER = _descriptor.Descriptor(
     name='ReshapeParameter',
@@ -10578,8 +10445,7 @@ _RESHAPEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=16658,
-    serialized_end=16748,
-)
+    serialized_end=16748, )
 
 _SCALEPARAMETER = _descriptor.Descriptor(
     name='ScaleParameter',
@@ -10683,8 +10549,7 @@ _SCALEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=16751,
-    serialized_end=16916,
-)
+    serialized_end=16916, )
 
 _SIGMOIDPARAMETER = _descriptor.Descriptor(
     name='SigmoidParameter',
@@ -10713,17 +10578,14 @@ _SIGMOIDPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _SIGMOIDPARAMETER_ENGINE,
-    ],
+    enum_types=[_SIGMOIDPARAMETER_ENGINE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=16918,
-    serialized_end=17038,
-)
+    serialized_end=17038, )
 
 _SLICEPARAMETER = _descriptor.Descriptor(
     name='SliceParameter',
@@ -10793,8 +10655,7 @@ _SLICEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=17040,
-    serialized_end=17116,
-)
+    serialized_end=17116, )
 
 _SOFTMAXPARAMETER = _descriptor.Descriptor(
     name='SoftmaxParameter',
@@ -10840,17 +10701,14 @@ _SOFTMAXPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _SOFTMAXPARAMETER_ENGINE,
-    ],
+    enum_types=[_SOFTMAXPARAMETER_ENGINE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=17119,
-    serialized_end=17256,
-)
+    serialized_end=17256, )
 
 _TANHPARAMETER = _descriptor.Descriptor(
     name='TanHParameter',
@@ -10879,17 +10737,14 @@ _TANHPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _TANHPARAMETER_ENGINE,
-    ],
+    enum_types=[_TANHPARAMETER_ENGINE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=17258,
-    serialized_end=17372,
-)
+    serialized_end=17372, )
 
 _TILEPARAMETER = _descriptor.Descriptor(
     name='TileParameter',
@@ -10942,8 +10797,7 @@ _TILEPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=17374,
-    serialized_end=17421,
-)
+    serialized_end=17421, )
 
 _THRESHOLDPARAMETER = _descriptor.Descriptor(
     name='ThresholdParameter',
@@ -10979,8 +10833,7 @@ _THRESHOLDPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=17423,
-    serialized_end=17465,
-)
+    serialized_end=17465, )
 
 _VIDEODATAPARAMETER = _descriptor.Descriptor(
     name='VideoDataParameter',
@@ -11060,17 +10913,14 @@ _VIDEODATAPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _VIDEODATAPARAMETER_VIDEOTYPE,
-    ],
+    enum_types=[_VIDEODATAPARAMETER_VIDEOTYPE, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=17468,
-    serialized_end=17655,
-)
+    serialized_end=17655, )
 
 _WINDOWDATAPARAMETER = _descriptor.Descriptor(
     name='WindowDataParameter',
@@ -11310,8 +11160,7 @@ _WINDOWDATAPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=17658,
-    serialized_end=17979,
-)
+    serialized_end=17979, )
 
 _SPPPARAMETER = _descriptor.Descriptor(
     name='SPPParameter',
@@ -11384,8 +11233,7 @@ _SPPPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=17982,
-    serialized_end=18217,
-)
+    serialized_end=18217, )
 
 _V1LAYERPARAMETER = _descriptor.Descriptor(
     name='V1LayerParameter',
@@ -12138,8 +11986,7 @@ _V1LAYERPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=18220,
-    serialized_end=20748,
-)
+    serialized_end=20748, )
 
 _V0LAYERPARAMETER = _descriptor.Descriptor(
     name='V0LayerParameter',
@@ -12797,17 +12644,14 @@ _V0LAYERPARAMETER = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _V0LAYERPARAMETER_POOLMETHOD,
-    ],
+    enum_types=[_V0LAYERPARAMETER_POOLMETHOD, ],
     serialized_options=None,
     is_extendable=False,
     syntax='proto2',
     extension_ranges=[],
     oneofs=[],
     serialized_start=20751,
-    serialized_end=21772,
-)
+    serialized_end=21772, )
 
 _PRELUPARAMETER = _descriptor.Descriptor(
     name='PReLUParameter',
@@ -12860,8 +12704,7 @@ _PRELUPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=21774,
-    serialized_end=21861,
-)
+    serialized_end=21861, )
 
 _SHUFFLECHANNELPARAMETER = _descriptor.Descriptor(
     name='ShuffleChannelParameter',
@@ -12897,8 +12740,7 @@ _SHUFFLECHANNELPARAMETER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=21863,
-    serialized_end=21906,
-)
+    serialized_end=21906, )
 
 _BLOBPROTO.fields_by_name['shape'].message_type = _BLOBSHAPE
 _BLOBPROTOVECTOR.fields_by_name['blobs'].message_type = _BLOBPROTO

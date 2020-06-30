@@ -34,8 +34,8 @@ class CaffeResolver(object):
             if not os.path.isfile(self.caffe_proto):
                 raise Exception(
                     "The .py file compiled by caffe.proto is not exist.")
-            (filepath, tempfilename) = os.path.split(
-                os.path.abspath(self.caffe_proto))
+            (filepath,
+             tempfilename) = os.path.split(os.path.abspath(self.caffe_proto))
             (filename, extension) = os.path.splitext(tempfilename)
             sys.path.append(filepath)
             out = __import__(filename)
@@ -50,12 +50,10 @@ class CaffeGraphNode(GraphNode):
     def __init__(self, layer, type_str, layer_name=None):
         if layer_name is None:
             super(CaffeGraphNode, self).__init__(
-                layer,
-                layer.name.replace('/', '_').replace('-', '_'))
+                layer, layer.name.replace('/', '_').replace('-', '_'))
         else:
             super(CaffeGraphNode, self).__init__(
-                layer,
-                layer_name.replace('/', '_').replace('-', '_'))
+                layer, layer_name.replace('/', '_').replace('-', '_'))
         self.layer_type = type_str
         self.fluid_code = FluidCode()
         self.data = None

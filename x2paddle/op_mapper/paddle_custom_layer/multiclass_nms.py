@@ -44,8 +44,7 @@ def multiclass_nms(op, block):
     if normalized == False:
         warnings.warn(
             'The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX. \
-                         Please set normalized=True in multiclass_nms of Paddle'
-        )
+                         Please set normalized=True in multiclass_nms of Paddle')
 
     #convert the paddle attribute to onnx tensor
     name_score_threshold = [outputs['Out'][0] + "@score_threshold"]
@@ -353,7 +352,8 @@ def multiclass_nms(op, block):
     outputs_gather_topk_class = [result_name + "@gather_topk_class"]
     node_gather_topk_class = onnx.helper.make_node(
         'Gather',
-        inputs=outputs_gather_1_nonzero + [outputs_topk_select_topk_indices[1]],
+        inputs=outputs_gather_1_nonzero +
+        [outputs_topk_select_topk_indices[1]],
         outputs=outputs_gather_topk_class,
         axis=1)
     node_list.append(node_gather_topk_class)
@@ -362,7 +362,8 @@ def multiclass_nms(op, block):
     outputs_gather_topk_boxes_id = [result_name + "@gather_topk_boxes_id"]
     node_gather_topk_boxes_id = onnx.helper.make_node(
         'Gather',
-        inputs=outputs_gather_2_nonzero + [outputs_topk_select_topk_indices[1]],
+        inputs=outputs_gather_2_nonzero +
+        [outputs_topk_select_topk_indices[1]],
         outputs=outputs_gather_topk_boxes_id,
         axis=1)
     node_list.append(node_gather_topk_boxes_id)

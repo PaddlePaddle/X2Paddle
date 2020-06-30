@@ -120,8 +120,8 @@ def convolutiondepthwise_layer(inputs,
             dila_len)
     c_in = input_shape[0][1]
     c_out = num_output if num_output is not None else input_shape[0][1]
-    group = int(c_in / (c_in / c_out)) if c_in > c_out else int(
-        c_in / (c_out / c_in))
+    group = int(c_in / (c_in / c_out)) if c_in > c_out else int(c_in /
+                                                                (c_out / c_in))
     out = fluid.layers.conv2d(
         input,
         dilation=[dila_h, dila_w],

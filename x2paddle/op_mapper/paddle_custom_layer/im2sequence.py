@@ -30,8 +30,8 @@ def im2sequence(op, block):
     slice_blocks = list()
     for i in range(out_h):
         for j in range(out_w):
-            starts_name = "im2sequence.starts.{}.{}.{}".format(
-                im2seq_counter, i, j)
+            starts_name = "im2sequence.starts.{}.{}.{}".format(im2seq_counter,
+                                                               i, j)
             starts_tensor = helper.make_tensor(
                 name=starts_name,
                 data_type=onnx_pb.TensorProto.INT64,

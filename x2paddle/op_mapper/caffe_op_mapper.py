@@ -144,8 +144,8 @@ class CaffeOpMapper(OpMapper):
             [s_h, s_w] = [params.stride] * 2
         elif len(params.stride) > 0:
             s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
-            s_w = params.stride_w if params.stride_w > 0 else params.stride[
-                len(params.stride) - 1]
+            s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
+                params.stride) - 1]
         elif params.stride_h > 0 or params.stride_w > 0:
             s_h = params.stride_h
             s_w = params.stride_w
@@ -154,8 +154,8 @@ class CaffeOpMapper(OpMapper):
             [p_h, p_w] = [params.pad] * 2
         elif len(params.pad) > 0:
             p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
-            p_w = params.pad_w if params.pad_w > 0 else params.pad[
-                len(params.pad) - 1]
+            p_w = params.pad_w if params.pad_w > 0 else params.pad[len(
+                params.pad) - 1]
         elif params.pad_h > 0 or params.pad_w > 0:
             p_h = params.pad_h
             p_w = params.pad_w
@@ -225,11 +225,9 @@ class CaffeOpMapper(OpMapper):
             input_c = node.input_shape[0][1]
             output_c = channel
             data.append(
-                np.zeros([output_c, input_c, kernel[0],
-                          kernel[1]]).astype('float32'))
-            data.append(np.zeros([
-                output_c,
-            ])).astype('float32')
+                np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([output_c, ])).astype('float32')
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -240,24 +238,16 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
 
         attr = {
-            'filter_size':
-            kernel,
-            'num_filters':
-            channel,
-            'stride':
-            stride,
-            'padding':
-            pad,
-            'dilation':
-            dilation,
-            'groups':
-            group,
-            'name':
-            string(node.layer_name),
-            'param_attr':
-            string(node.layer_name + '_weights'),
-            'bias_attr':
-            False if len(data) == 1 else string(node.layer_name + '_bias'),
+            'filter_size': kernel,
+            'num_filters': channel,
+            'stride': stride,
+            'padding': pad,
+            'dilation': dilation,
+            'groups': group,
+            'name': string(node.layer_name),
+            'param_attr': string(node.layer_name + '_weights'),
+            'bias_attr': False
+            if len(data) == 1 else string(node.layer_name + '_bias'),
         }
         node.fluid_code.add_layer(
             "conv2d", inputs=input, output=node, param_attr=attr)
@@ -275,11 +265,9 @@ class CaffeOpMapper(OpMapper):
             input_c = node.input_shape[0][1]
             output_c = channel
             data.append(
-                np.zeros([output_c, input_c, kernel[0],
-                          kernel[1]]).astype('float32'))
-            data.append(np.zeros([
-                output_c,
-            ]).astype('float32'))
+                np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([output_c, ]).astype('float32'))
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
@@ -289,26 +277,17 @@ class CaffeOpMapper(OpMapper):
                    ) == 1, 'The count of Deconvolution node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
-            'output_size':
-            None,
-            'filter_size':
-            kernel,
-            'num_filters':
-            channel,
-            'stride':
-            stride,
-            'padding':
-            pad,
-            'dilation':
-            dilation,
-            'groups':
-            group,
-            'name':
-            string(node.layer_name),
-            'param_attr':
-            string(node.layer_name + '_weights'),
-            'bias_attr':
-            False if len(data) == 1 else string(node.layer_name + '_bias')
+            'output_size': None,
+            'filter_size': kernel,
+            'num_filters': channel,
+            'stride': stride,
+            'padding': pad,
+            'dilation': dilation,
+            'groups': group,
+            'name': string(node.layer_name),
+            'param_attr': string(node.layer_name + '_weights'),
+            'bias_attr': False
+            if len(data) == 1 else string(node.layer_name + '_bias')
         }
         node.fluid_code.add_layer(
             "conv2d_transpose", inputs=input, output=node, param_attr=attr)
@@ -372,8 +351,8 @@ class CaffeOpMapper(OpMapper):
             output_c = params.num_output
             data = []
             data.append(
-                np.zeros([input_c,
-                          output_c]).astype('float32').astype('float32'))
+                np.zeros([input_c, output_c]).astype('float32').astype(
+                    'float32'))
             data.append(
                 np.zeros([output_c]).astype('float32').astype('float32'))
         else:
@@ -397,16 +376,12 @@ class CaffeOpMapper(OpMapper):
         assert params.bias_term == True
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         attr = {
-            'size':
-            params.num_output,
-            'name':
-            string(node.layer_name),
-            'act':
-            None,
-            'param_attr':
-            string(node.layer_name + '_weights'),
-            'bias_attr':
-            False if len(data) == 1 else string(node.layer_name + '_bias')
+            'size': params.num_output,
+            'name': string(node.layer_name),
+            'act': None,
+            'param_attr': string(node.layer_name + '_weights'),
+            'bias_attr': False
+            if len(data) == 1 else string(node.layer_name + '_bias')
         }
         node.fluid_code.add_layer(
             "fc", inputs=input, output=node, param_attr=attr)
@@ -607,12 +582,8 @@ class CaffeOpMapper(OpMapper):
                 'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
                 .format(node.layer_name, node.layer_type))
             input_c = node.input_shape[0][1]
-            mean = np.zeros([
-                input_c,
-            ]).astype('float32')
-            variance = np.zeros([
-                input_c,
-            ]).astype('float32')
+            mean = np.zeros([input_c, ]).astype('float32')
+            variance = np.zeros([input_c, ]).astype('float32')
             scale = 0
         else:
 
@@ -649,10 +620,10 @@ class CaffeOpMapper(OpMapper):
                 input_c,
             ]).astype('float32')
         else:
-            self.weights[node.layer_name + '_scale'] = np.squeeze(
-                node.data[0]).astype('float32')
-            self.weights[node.layer_name + '_offset'] = np.squeeze(
-                node.data[1]).astype('float32')
+            self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[
+                0]).astype('float32')
+            self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[
+                1]).astype('float32')
         params = node.layer.scale_param
         axis = params.axis
         num_axes = params.num_axes
@@ -750,8 +721,8 @@ class CaffeOpMapper(OpMapper):
             node.fluid_code.add_layer(
                 "topk",
                 inputs=input,
-                output='{}_topk_var, {}_index_var'.format(
-                    node.layer_name, node.layer_name),
+                output='{}_topk_var, {}_index_var'.format(node.layer_name,
+                                                          node.layer_name),
                 param_attr=attr)
             attr = {'dtype': '{}_topk_var.dtype'.format(node.layer_name)}
             node.fluid_code.add_layer(
@@ -762,8 +733,8 @@ class CaffeOpMapper(OpMapper):
             attr = {'axis': axis, 'name': string(node.layer_name)}
             node.fluid_code.add_layer(
                 "concat",
-                inputs='{}_topk_var, {}_index_var'.format(
-                    node.layer_name, node.layer_name),
+                inputs='{}_topk_var, {}_index_var'.format(node.layer_name,
+                                                          node.layer_name),
                 output=node,
                 param_attr=attr)
         else:
@@ -787,23 +758,22 @@ class CaffeOpMapper(OpMapper):
         offset_real = [0] * len(input_shape)
         if hasattr(params, "offset") and len(params.offset) > 0:
             offset = list(params.offset)
-            assert (len(input_shape) - axis) == len(
-                offset), "invalid offset[%s] in crop layer" % (str(offset))
+            assert (len(input_shape) - axis
+                    ) == len(offset), "invalid offset[%s] in crop layer" % (
+                        str(offset))
             offset_real = [0] * axis + offset
         attr = {'offsets': list(offset_real), 'name': string(node.layer_name)}
         node.fluid_code.add_layer(
             "crop",
-            inputs={
-                'x': input,
-                'shape': node.input_shape[1]
-            },
+            inputs={'x': input,
+                    'shape': node.input_shape[1]},
             output=node,
             param_attr=attr)
 
     def Flatten(self, node):
         assert len(
-            node.inputs
-        ) == 1, 'The count of DetectionOutput node\'s input is not 1.'
+            node.
+            inputs) == 1, 'The count of DetectionOutput node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         shape = node.output_shape[0]
         attr = {'shape': shape, 'name': string(node.layer_name)}

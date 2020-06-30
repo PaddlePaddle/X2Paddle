@@ -48,8 +48,7 @@ def arg_parser():
         "-f",
         type=_text_type,
         default=None,
-        help=
-        "define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -125,7 +124,6 @@ def tf2paddle(model_path,
         optimizer.merge_activation()
         optimizer.merge_bias()
         optimizer.optimize_sub_graph()
-
 
 #        optimizer.merge_batch_norm()
 #        optimizer.merge_prelu()

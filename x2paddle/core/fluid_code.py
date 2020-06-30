@@ -46,8 +46,9 @@ class Layer(object):
             for input in self.inputs:
                 if isinstance(input, GraphNode):
                     if hasattr(input, "index"):
-                        in_list += (input.layer_name + "[{}]".format(
-                            input.index) + ", ")
+                        in_list += (
+                            input.layer_name + "[{}]".format(input.index) + ", "
+                        )
                     else:
                         in_list += (input.layer_name + ", ")
                 elif isinstance(input, six.string_types):

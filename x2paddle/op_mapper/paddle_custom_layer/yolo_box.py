@@ -38,8 +38,8 @@ def yolo_box(op, block):
     downsample_ratio = attrs['downsample_ratio']
     input_size = input_height * downsample_ratio
     conf_thresh = attrs['conf_thresh']
-    conf_thresh_mat = np.ones([num_anchors * input_height * input_width
-                               ]) * conf_thresh
+    conf_thresh_mat = np.ones([num_anchors * input_height *
+                               input_width]) * conf_thresh
 
     node_list = []
     im_outputs = []

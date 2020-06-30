@@ -250,8 +250,7 @@ class PaddleOpMapper(object):
             node = helper.make_node(
                 pool_type[op.attr('pooling_type')][1],
                 inputs=op.input('X'),
-                outputs=op.output('Out'),
-            )
+                outputs=op.output('Out'), )
         else:
             input_shape = block.var(op.input('X')[0]).shape
             k_size = op.attr('ksize')
@@ -407,8 +406,7 @@ class PaddleOpMapper(object):
         node = helper.make_node(
             'Clip',
             inputs=[op.input('X')[0], min_name, max_name],
-            outputs=op.output('Out'),
-        )
+            outputs=op.output('Out'), )
         return [min_node, max_node, node]
 
     def shape(self, op, block):
@@ -450,8 +448,7 @@ class PaddleOpMapper(object):
         node = helper.make_node(
             "Slice",
             inputs=[op.input('Input')[0], starts_name, ends_name, axes_name],
-            outputs=op.output('Out'),
-        )
+            outputs=op.output('Out'), )
         return [starts_node, ends_node, axes_node, node]
 
     def fill_constant(self, op, block):
@@ -551,8 +548,8 @@ class PaddleOpMapper(object):
         if op.attr('align_corners'):
             coordinate_transformation_mode = 'align_corners'
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
-                'SizeTensor' in input_names
-                and len(op.input('SizeTensor')) > 0):
+                'SizeTensor' in input_names and
+                len(op.input('SizeTensor')) > 0):
             node_list = list()
             roi_node = self.make_constant_node(
                 self.get_name(op.type, 'roi'), onnx_pb.TensorProto.FLOAT,
@@ -631,8 +628,7 @@ class PaddleOpMapper(object):
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0],
-                        op.input('Scale')[0]],
+                inputs=[op.input('X')[0], op.input('Scale')[0]],
                 outputs=op.output('Out'),
                 mode='linear',
                 coordinate_transformation_mode=coordinate_transformation_mode)
@@ -641,8 +637,9 @@ class PaddleOpMapper(object):
             scale = op.attr('scale')
             if out_shape.count(-1) > 0:
                 scale_name = self.get_name(op.type, 'scale')
-                scale_node = self.make_constant_node(
-                    scale_name, onnx_pb.TensorProto.FLOAT, [1, 1, scale, scale])
+                scale_node = self.make_constant_node(scale_name,
+                                                     onnx_pb.TensorProto.FLOAT,
+                                                     [1, 1, scale, scale])
                 roi_name = self.get_name(op.type, 'roi')
                 roi_node = self.make_constant_node(roi_name,
                                                    onnx_pb.TensorProto.FLOAT,
@@ -667,16 +664,14 @@ class PaddleOpMapper(object):
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], '',
-                        op.input('OutSize')[0]],
+                inputs=[op.input('X')[0], '', op.input('OutSize')[0]],
                 outputs=op.output('Out'),
                 mode='nearest',
                 coordinate_transformation_mode=coordinate_transformation_mode)
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0],
-                        op.input('Scale')[0]],
+                inputs=[op.input('X')[0], op.input('Scale')[0]],
                 outputs=op.output('Out'),
                 mode='nearest',
                 coordinate_transformation_mode=coordinate_transformation_mode)
@@ -685,8 +680,9 @@ class PaddleOpMapper(object):
             scale = op.attr('scale')
             if out_shape.count(-1) > 0:
                 scale_name = self.get_name(op.type, 'scale')
-                scale_node = self.make_constant_node(
-                    scale_name, onnx_pb.TensorProto.FLOAT, [1, 1, scale, scale])
+                scale_node = self.make_constant_node(scale_name,
+                                                     onnx_pb.TensorProto.FLOAT,
+                                                     [1, 1, scale, scale])
                 roi_name = self.get_name(op.type, 'roi')
                 roi_node = self.make_constant_node(roi_name,
                                                    onnx_pb.TensorProto.FLOAT,
@@ -737,8 +733,7 @@ class PaddleOpMapper(object):
         node1 = helper.make_node(
             'Clip',
             inputs=[name0, min_name, max_name],
-            outputs=[name1],
-        )
+            outputs=[name1], )
         name2 = self.get_name(op.type, 'mul')
         node2 = helper.make_node(
             'Mul', inputs=[op.input('X')[0], name1], outputs=[name2])
