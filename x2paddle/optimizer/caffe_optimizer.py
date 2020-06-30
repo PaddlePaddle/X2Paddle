@@ -41,10 +41,11 @@ class CaffeOptimizer(object):
                     if is_delete_node:
                         parent_node.fluid_code.clear()
                     node.fluid_code.clear()
-                    node.fluid_code.add_layer("batch_norm",
-                                              inputs=input,
-                                              output=node,
-                                              param_attr=parent_param_attr)
+                    node.fluid_code.add_layer(
+                        "batch_norm",
+                        inputs=input,
+                        output=node,
+                        param_attr=parent_param_attr)
 
     def merge_op_activation(self):
         for node_name in self.graph.topo_sort:
@@ -62,7 +63,8 @@ class CaffeOptimizer(object):
                     if is_delete_node:
                         parent_node.fluid_code.clear()
                     node.fluid_code.clear()
-                    node.fluid_code.add_layer(op,
-                                              inputs=input,
-                                              output=node,
-                                              param_attr=parent_param_attr)
+                    node.fluid_code.add_layer(
+                        op,
+                        inputs=input,
+                        output=node,
+                        param_attr=parent_param_attr)

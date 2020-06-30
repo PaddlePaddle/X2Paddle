@@ -66,12 +66,10 @@ def run_net(param_dir="./"):
         b = os.path.exists(os.path.join(param_dir, var.name))
         return b
 
-    fluid.io.load_vars(exe,
-                       param_dir,
-                       fluid.default_main_program(),
-                       predicate=if_exist)
-    
-    
+    fluid.io.load_vars(
+        exe, param_dir, fluid.default_main_program(), predicate=if_exist)
+
+
 def run_net_dygraph(param_dir="./", *args):
     place = fluid.CPUPlace()
     with fluid.dygraph.guard(place):
@@ -114,29 +112,30 @@ class OpMapper(object):
     def add_codes(self, codes, indent=0):
         if isinstance(codes, list):
             for code in codes:
-                self.paddle_codes += (self.tab * indent + code.strip('\n') +
-                                      '\n')
+                self.paddle_codes += (
+                    self.tab * indent + code.strip('\n') + '\n')
         elif isinstance(codes, str):
             self.paddle_codes += (self.tab * indent + codes.strip('\n') + '\n')
         else:
             raise Exception("Unknown type of codes")
-            
+
     def add_codes_dygraph(self, codes, indent=0):
         if isinstance(codes, list):
             for code in codes:
-                if code.startswith('self.') or 'init' in code or 'super' in code:
-                    self.paddle_codes_init += (self.tab * indent + code.strip('\n') +
-                                  '\n')
+                if code.startswith(
+                        'self.') or 'init' in code or 'super' in code:
+                    self.paddle_codes_init += (
+                        self.tab * indent + code.strip('\n') + '\n')
                 else:
-                    self.paddle_codes_forward += (self.tab * indent + code.strip('\n') +
-                                  '\n')
+                    self.paddle_codes_forward += (
+                        self.tab * indent + code.strip('\n') + '\n')
         elif isinstance(codes, str):
             if 'init' in codes or 'super' in codes:
-                self.paddle_codes_init += (self.tab * indent + codes.strip('\n') +
-                              '\n')
+                self.paddle_codes_init += (
+                    self.tab * indent + codes.strip('\n') + '\n')
             else:
-                self.paddle_codes_forward += (self.tab * indent + codes.strip('\n') +
-                                  '\n')
+                self.paddle_codes_forward += (
+                    self.tab * indent + codes.strip('\n') + '\n')
         else:
             raise Exception("Unknown type of codes")
 
@@ -173,41 +172,42 @@ class OpMapper(object):
                     os.path.join(os.path.join(py_code_dir, var.name)))
                 return b
 
-            fluid.io.load_vars(exe,
-                               py_code_dir,
-                               fluid.default_main_program(),
-                               predicate=if_exist)
+            fluid.io.load_vars(
+                exe,
+                py_code_dir,
+                fluid.default_main_program(),
+                predicate=if_exist)
             if params_merge:
-                fluid.io.save_inference_model(dirname=os.path.join(
-                    save_dir, "inference_model"),
-                                              feeded_var_names=input_names,
-                                              target_vars=outputs,
-                                              executor=exe,
-                                              params_filename="__params__")
+                fluid.io.save_inference_model(
+                    dirname=os.path.join(save_dir, "inference_model"),
+                    feeded_var_names=input_names,
+                    target_vars=outputs,
+                    executor=exe,
+                    params_filename="__params__")
             else:
-                fluid.io.save_inference_model(dirname=os.path.join(
-                    save_dir, "inference_model"),
-                                              feeded_var_names=input_names,
-                                              target_vars=outputs,
-                                              executor=exe,
-                                              params_filename=None)
+                fluid.io.save_inference_model(
+                    dirname=os.path.join(save_dir, "inference_model"),
+                    feeded_var_names=input_names,
+                    target_vars=outputs,
+                    executor=exe,
+                    params_filename=None)
         except:
             raise Exception(
                 "Paddle code was saved in {}/model.py, but seems there's wrong exist, please check model.py manually."
                 .format(py_code_dir))
 
     def save_python_model(self, save_dir):
-        
-        
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         py_code_dir = os.path.join(save_dir, "model_with_code")
         if not os.path.exists(py_code_dir):
             os.makedirs(py_code_dir)
-            
+
         if self.is_dygraph:
-            params_output = open(os.path.join(py_code_dir, 'model.pdparams'), 'wb')
+            params_output = open(
+                os.path.join(py_code_dir, 'model.pdparams'), 'wb')
             pickle.dump(self.weights, params_output)
         else:
             for name, param in self.weights.items():
@@ -219,12 +219,12 @@ class OpMapper(object):
                 self.add_codes(layer_code, 0)
                 self.add_codes("", 0)
 
-        
         if self.is_dygraph:
             self.add_codes("class X2PaddleNet(fluid.dygraph.Layer):", 0)
             self.add_codes_dygraph("\ndef __init__(self):", 1)
             self.add_codes_dygraph("\nsuper(X2PaddleNet, self).__init__()", 2)
-            self.add_codes_dygraph("\ndef forward(self, {}):".format(','.join(self.datas_name)), 1)
+            self.add_codes_dygraph(
+                "\ndef forward(self, {}):".format(','.join(self.datas_name)), 1)
             net_indent = 2
         else:
             self.add_codes("\ndef x2paddle_net():", 0)
@@ -243,7 +243,6 @@ class OpMapper(object):
         self.add_codes(self.paddle_codes_init)
         self.add_codes("", 0)
         self.add_codes(self.paddle_codes_forward)
-        
 
         input_str = "["
         for name in self.graph.input_nodes:
@@ -254,8 +253,11 @@ class OpMapper(object):
             output_str += (name + ", ")
         output_str = output_str.strip(", ") + "]"
 
-        return_code = "return {}, {}".format(input_str.replace('/', '_').replace('-', '_').replace('.', '_').replace('%', 'x_'), 
-                                             output_str.replace('/', '_').replace('-', '_').replace('.', '_').replace('%', 'x_'))
+        return_code = "return {}, {}".format(
+            input_str.replace('/', '_').replace('-', '_').replace(
+                '.', '_').replace('%', 'x_'),
+            output_str.replace('/', '_').replace('-', '_').replace(
+                '.', '_').replace('%', 'x_'))
 
         self.add_codes(return_code, net_indent)
         self.add_codes("", 0)
@@ -266,4 +268,3 @@ class OpMapper(object):
         fp = open(os.path.join(py_code_dir, "model.py"), 'w')
         fp.write(self.paddle_codes)
         fp.close()
-        

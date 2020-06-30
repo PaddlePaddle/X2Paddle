@@ -33,8 +33,8 @@ def get_kernel_parameters(params):
         [s_h, s_w] = [params.stride] * 2
     elif len(params.stride) > 0:
         s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
-        s_w = params.stride_w if params.stride_w > 0 else params.stride[
-            len(params.stride) - 1]
+        s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
+            params.stride) - 1]
     elif params.stride_h > 0 or params.stride_w > 0:
         s_h = params.stride_h
         s_w = params.stride_w

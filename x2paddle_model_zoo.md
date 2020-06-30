@@ -13,6 +13,7 @@
 | ShuffleNet | [code](https://github.com/TropComplique/shufflenet-v2-tensorflow) |-|
 | mNASNet | [code](https://github.com/tensorflow/tpu/tree/master/models/official/mnasnet) |-|
 | EfficientNet | [code](https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet) |-|
+| Inception_V3 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v3.py) |-|
 | Inception_V4 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_v4.py) |-|
 | Inception_ResNet_V2 | [code](https://github.com/tensorflow/models/blob/master/research/slim/nets/inception_resnet_v2.py) |-|
 | VGG16 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |-|

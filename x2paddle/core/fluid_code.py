@@ -47,8 +47,9 @@ class Layer(object):
             for input in self.inputs:
                 if isinstance(input, GraphNode):
                     if hasattr(input, "index"):
-                        in_list += (input.layer_name +
-                                    "[{}]".format(input.index) + ", ")
+                        in_list += (
+                            input.layer_name + "[{}]".format(input.index) + ", "
+                        )
                     else:
                         in_list += (input.layer_name + ", ")
                 elif isinstance(input, six.string_types):
@@ -72,8 +73,8 @@ class Layer(object):
                     layer_code = layer_code + key + "={}, ".format(input)
         elif isinstance(self.inputs, GraphNode):
             if hasattr(self.inputs, "index"):
-                layer_code += (self.inputs.layer_name +
-                               "[{}]".format(self.inputs.index))
+                layer_code += (
+                    self.inputs.layer_name + "[{}]".format(self.inputs.index))
             else:
                 layer_code += (self.inputs.layer_name)
             if self.op != "=":
@@ -89,17 +90,21 @@ class Layer(object):
         for key, value in param_attr.items():
             if '\n' in str(value):
                 value = string(str(value).replace('\n', ','))
+            if str(key) == 'attr':
+                value = 'ParamAttr(' + str(value) + ')'
             layer_code = layer_code + key + "={}, ".format(value)
         layer_code = layer_code.strip(", ")
 
         if self.op != "=":
             layer_code += ")"
         return layer_code
-    
+
     def get_code_dygraph(self):
         layer_code = ""
         if self.output is not None:
-            assert isinstance(self.output, six.string_types), 'The output of dygraph node must be string.'
+            assert isinstance(
+                self.output,
+                six.string_types), 'The output of dygraph node must be string.'
             layer_code = "self." + self.output + " = "
         layer_code = layer_code + "fluid.dygraph." + self.op + "("
         param_attr = collections.OrderedDict(self.param_attr)
@@ -110,7 +115,6 @@ class Layer(object):
         layer_code = layer_code.strip(", ")
         layer_code += ")"
         return layer_code
-    
 
 
 class FluidCode(object):
@@ -136,13 +140,8 @@ class FluidCode(object):
     def add_note(self, note):
         # note should be string
         self.layers.append(note)
-        
-    def add_dygraph(self,
-                    op,
-                    name,
-                    inputs,
-                    output,
-                    param_attr=None):
+
+    def add_dygraph(self, op, name, inputs, output, param_attr=None):
         layer = Layer()
         layer.op = op
         layer.is_dygraph = True
@@ -153,14 +152,16 @@ class FluidCode(object):
         input_node_names = []
         for input_node in inputs:
             if hasattr(input_node, 'index'):
-                input_node_name = input_node.layer_name + "[{}]".format(input_node.index)
+                input_node_name = input_node.layer_name + "[{}]".format(
+                    input_node.index)
             else:
                 input_node_name = input_node.layer_name
             input_node_names.append(input_node_name)
         input_info = ','.join(input_node_names)
         if op == 'Dropout':
             self.add_note("self.{}.eval()".format(name))
-        self.add_note("{} = {}({})".format(output.layer_name, "self." + name, input_info))
+        self.add_note("{} = {}({})".format(output.layer_name, "self." + name,
+                                           input_info))
 
     def clear(self):
         self.layers = list()
