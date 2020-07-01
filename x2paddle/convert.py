@@ -48,7 +48,7 @@ def arg_parser():
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/pytorch)"
+        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx/pytorch)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -284,12 +284,15 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
+    elif args.framework == "paddle2onnx":
+        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
+        paddle2onnx(args.model, args.save_dir)
     elif args.framework == "pytorch":
         assert args.model is not None, "--model should be defined while translating pytorch model"
         pytorch2paddle(args.model, args.save_dir)
     else:
         raise Exception(
-            "--framework only support tensorflow/caffe/onnx/pytorch now")
+            "--framework only support tensorflow/caffe/onnx/paddle2onnx/pytorch now")
 
 
 if __name__ == "__main__":
