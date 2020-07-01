@@ -25,6 +25,7 @@ class Layer(object):
         self.inputs = dict()
         self.output = None
         self.is_custom_layer = False
+        self.is_dygraph = False
 
     def get_code(self):
         layer_code = ""
@@ -98,6 +99,23 @@ class Layer(object):
             layer_code += ")"
         return layer_code
 
+    def get_code_dygraph(self):
+        layer_code = ""
+        if self.output is not None:
+            assert isinstance(
+                self.output,
+                six.string_types), 'The output of dygraph node must be string.'
+            layer_code = "self." + self.output + " = "
+        layer_code = layer_code + "fluid.dygraph." + self.op + "("
+        param_attr = collections.OrderedDict(self.param_attr)
+        for key, value in param_attr.items():
+            if '\n' in str(value):
+                value = string(str(value).replace('\n', ','))
+            layer_code = layer_code + key + "={}, ".format(value)
+        layer_code = layer_code.strip(", ")
+        layer_code += ")"
+        return layer_code
+
 
 class FluidCode(object):
     def __init__(self):
@@ -123,6 +141,28 @@ class FluidCode(object):
         # note should be string
         self.layers.append(note)
 
+    def add_dygraph(self, op, name, inputs, output, param_attr=None):
+        layer = Layer()
+        layer.op = op
+        layer.is_dygraph = True
+        layer.output = name
+        if param_attr is not None:
+            layer.param_attr = param_attr
+        self.layers.append(layer)
+        input_node_names = []
+        for input_node in inputs:
+            if hasattr(input_node, 'index'):
+                input_node_name = input_node.layer_name + "[{}]".format(
+                    input_node.index)
+            else:
+                input_node_name = input_node.layer_name
+            input_node_names.append(input_node_name)
+        input_info = ','.join(input_node_names)
+        if op == 'Dropout':
+            self.add_note("self.{}.eval()".format(name))
+        self.add_note("{} = {}({})".format(output.layer_name, "self." + name,
+                                           input_info))
+
     def clear(self):
         self.layers = list()
 
@@ -130,7 +170,10 @@ class FluidCode(object):
         codes = list()
         for layer in self.layers:
             if isinstance(layer, Layer):
-                codes.append(layer.get_code())
+                if layer.is_dygraph:
+                    codes.append(layer.get_code_dygraph())
+                else:
+                    codes.append(layer.get_code())
             elif isinstance(layer, six.string_types):
                 codes.append(layer)
         return codes

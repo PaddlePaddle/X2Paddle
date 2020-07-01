@@ -16,6 +16,8 @@ from paddle.fluid.proto import framework_pb2
 from x2paddle.core.util import *
 import inspect
 import os
+import os.path as osp
+import pickle
 
 
 def export_paddle_param(param, param_name, dir):
@@ -68,6 +70,15 @@ def run_net(param_dir="./"):
         exe, param_dir, fluid.default_main_program(), predicate=if_exist)
 
 
+def run_net_dygraph(param_dir="./", *args):
+    place = fluid.CPUPlace()
+    with fluid.dygraph.guard(place):
+        restore, _ = fluid.load_dygraph(oa.path.join(param_dir, 'model'))
+        model = X2PaddleNet()
+        model.set_dict(restore)
+        out = model(*args)
+
+
 class OpMapper(object):
     def __init__(self):
         self.paddle_codes = ""
@@ -76,6 +87,11 @@ class OpMapper(object):
         self.weights = dict()
         self.inputs = list()
         self.outputs = list()
+        from x2paddle.op_mapper.pytorch_op_mapper import PyTorchOpMapper
+        self.is_dygraph = True if isinstance(self, PyTorchOpMapper) else False
+        if self.is_dygraph:
+            self.paddle_codes_init = ""
+            self.paddle_codes_forward = ""
 
     def op_checker(self):
         unsupported_ops = set()
@@ -103,10 +119,33 @@ class OpMapper(object):
         else:
             raise Exception("Unknown type of codes")
 
+    def add_codes_dygraph(self, codes, indent=0):
+        if isinstance(codes, list):
+            for code in codes:
+                if code.startswith(
+                        'self.') or 'init' in code or 'super' in code:
+                    self.paddle_codes_init += (
+                        self.tab * indent + code.strip('\n') + '\n')
+                else:
+                    self.paddle_codes_forward += (
+                        self.tab * indent + code.strip('\n') + '\n')
+        elif isinstance(codes, str):
+            if 'init' in codes or 'super' in codes:
+                self.paddle_codes_init += (
+                    self.tab * indent + codes.strip('\n') + '\n')
+            else:
+                self.paddle_codes_forward += (
+                    self.tab * indent + codes.strip('\n') + '\n')
+        else:
+            raise Exception("Unknown type of codes")
+
     def add_heads(self):
         self.add_codes("from paddle.fluid.initializer import Constant")
         self.add_codes("from paddle.fluid.param_attr import ParamAttr")
         self.add_codes("import paddle.fluid as fluid")
+        if self.is_dygraph:
+            self.add_codes("import math")
+            self.add_codes("import functools")
         self.add_codes("")
 
     def save_inference_model(self, save_dir, params_merge):
@@ -158,6 +197,7 @@ class OpMapper(object):
                 .format(py_code_dir))
 
     def save_python_model(self, save_dir):
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -165,8 +205,13 @@ class OpMapper(object):
         if not os.path.exists(py_code_dir):
             os.makedirs(py_code_dir)
 
-        for name, param in self.weights.items():
-            export_paddle_param(param, name, py_code_dir)
+        if self.is_dygraph:
+            params_output = open(
+                os.path.join(py_code_dir, 'model.pdparams'), 'wb')
+            pickle.dump(self.weights, params_output)
+        else:
+            for name, param in self.weights.items():
+                export_paddle_param(param, name, py_code_dir)
         self.add_heads()
 
         if hasattr(self, "used_custom_layers"):
@@ -174,7 +219,16 @@ class OpMapper(object):
                 self.add_codes(layer_code, 0)
                 self.add_codes("", 0)
 
-        self.add_codes("\ndef x2paddle_net():", 0)
+        if self.is_dygraph:
+            self.add_codes("class X2PaddleNet(fluid.dygraph.Layer):", 0)
+            self.add_codes_dygraph("\ndef __init__(self):", 1)
+            self.add_codes_dygraph("\nsuper(X2PaddleNet, self).__init__()", 2)
+            self.add_codes_dygraph(
+                "\ndef forward(self, {}):".format(','.join(self.datas_name)), 1)
+            net_indent = 2
+        else:
+            self.add_codes("\ndef x2paddle_net():", 0)
+            net_indent = 1
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
@@ -182,9 +236,13 @@ class OpMapper(object):
                 continue
             if len(node.fluid_code.layers) == 0:
                 continue
-            self.add_codes(node.fluid_code.gen_codes(), 1)
-
+            if self.is_dygraph:
+                self.add_codes_dygraph(node.fluid_code.gen_codes(), net_indent)
+            else:
+                self.add_codes(node.fluid_code.gen_codes(), net_indent)
+        self.add_codes(self.paddle_codes_init)
         self.add_codes("", 0)
+        self.add_codes(self.paddle_codes_forward)
 
         input_str = "["
         for name in self.graph.input_nodes:
@@ -195,12 +253,18 @@ class OpMapper(object):
             output_str += (name + ", ")
         output_str = output_str.strip(", ") + "]"
 
-        return_code = "return {}, {}".format(input_str, output_str)
+        return_code = "return {}, {}".format(
+            input_str.replace('/', '_').replace('-', '_').replace(
+                '.', '_').replace('%', 'x_'),
+            output_str.replace('/', '_').replace('-', '_').replace(
+                '.', '_').replace('%', 'x_'))
 
-        self.add_codes(return_code, 1)
+        self.add_codes(return_code, net_indent)
         self.add_codes("", 0)
-
-        self.add_codes(inspect.getsourcelines(run_net)[0])
+        if self.is_dygraph:
+            self.add_codes(inspect.getsourcelines(run_net_dygraph)[0])
+        else:
+            self.add_codes(inspect.getsourcelines(run_net)[0])
         fp = open(os.path.join(py_code_dir, "model.py"), 'w')
         fp.write(self.paddle_codes)
         fp.close()

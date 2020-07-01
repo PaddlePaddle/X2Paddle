@@ -48,7 +48,7 @@ def arg_parser():
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        help="define which deeplearning framework(tensorflow/caffe/onnx/pytorch)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -184,6 +184,26 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     mapper.save_inference_model(save_dir, params_merge)
 
 
+def pytorch2paddle(model_path, save_dir):
+    try:
+        import torch
+        version = torch.__version__
+        if version != '1.5.0':
+            print("[ERROR] torch==1.5.0 is required")
+            return
+    except:
+        print(
+            "[ERROR] torch is not installed, use \"pip install torch==1.5.0\".")
+        return
+    print("Now translating model from pytorch to paddle.")
+
+    from x2paddle.op_mapper.pytorch_op_mapper import PyTorchOpMapper
+    from x2paddle.decoder.pytorch_decoder import PyTorchDecoder
+    model = PyTorchDecoder(model_path)
+    mapper = PyTorchOpMapper(model)
+    mapper.save_python_model(save_dir)
+
+
 def paddle2onnx(model_path, save_dir):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
@@ -264,14 +284,12 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
-
-    elif args.framework == "paddle2onnx":
-        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir)
-
+    elif args.framework == "pytorch":
+        assert args.model is not None, "--model should be defined while translating pytorch model"
+        pytorch2paddle(args.model, args.save_dir)
     else:
         raise Exception(
-            "--framework only support tensorflow/caffe/onnx/paddle2onnx now")
+            "--framework only support tensorflow/caffe/onnx/pytorch now")
 
 
 if __name__ == "__main__":
