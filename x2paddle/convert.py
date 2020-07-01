@@ -172,12 +172,11 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.op_mapper.onnx.onnx_helper import ONNXOpMapperFactory
+    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
     model = ONNXDecoder(model_path)
-    factory = ONNXOpMapperFactory()
-    mapper = factory.create_onnx_op_mapper(model)
+    mapper = ONNXOpMapper(model)
     print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
     print("Model optimized.")

@@ -99,6 +99,18 @@ class PaddleOpMapper(object):
             self.name_counter[name] += 1
         return name + '.{}'.format(self.name_counter[name])
 
+    def im2sequence(self, op, block):
+        from .paddle_custom_layer.im2sequence import im2sequence
+        return im2sequence(op, block)
+
+    def yolo_box(self, op, block):
+        from .paddle_custom_layer.yolo_box import yolo_box
+        return yolo_box(op, block)
+
+    def multiclass_nms(self, op, block):
+        from .paddle_custom_layer.multiclass_nms import multiclass_nms
+        return multiclass_nms(op, block)
+
     def convert_weights(self, program):
         var_names = program.global_block().vars
         nodes = list()

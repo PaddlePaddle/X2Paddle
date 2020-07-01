@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
 from x2paddle.core.graph import GraphNode
-from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
-from x2paddle.op_mapper.onnx.custom_layer import *
 from x2paddle.core.util import string
+from functools import reduce
 import numpy as np
 import onnx
 import onnx.numpy_helper as numpy_helper
@@ -28,7 +27,6 @@ from collections import OrderedDict
 import math
 import os
 import shutil
-from functools import reduce
 
 _logger = _logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ def print_mapping_info(func):
     return run_mapping
 
 
-class ONNXOpMapperOpSet9(OpMapper):
+class OpSet9():
     elementwise_ops = {
         'Add': 'elementwise_add',
         'Div': 'elementwise_div',
@@ -139,56 +137,12 @@ class ONNXOpMapperOpSet9(OpMapper):
     }
 
     def __init__(self, decoder):
-        super(ONNXOpMapperOpSet9, self).__init__()
+        super(OpSet9, self).__init__()
         self.graph = decoder.graph
         self.input_shapes = []
         self.weights = dict()
         self.omit_nodes = list()
         self.used_custom_layers = dict()
-
-        if not self.op_checker():
-            raise Exception("Model are not supported yet.")
-
-        #mapping op
-        print("Total nodes: {}".format(
-            sum([
-                isinstance(node, ONNXGraphNode)
-                for name, node in self.graph.node_map.items()
-            ])))
-
-        print("Nodes converting ...")
-        for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
-            op = node.layer_type
-            if hasattr(self, op):
-                func = getattr(self, op)
-                func(node)
-            elif op in self.default_op_mapping:
-                self.directly_map(node)
-            elif op in custom_layers:
-                self.deal_custom_layer(node)
-            elif op in self.elementwise_ops:
-                self.elementwise_map(node)
-        print("Nodes converted.")
-
-    def op_checker(self):
-        unsupported_ops = set()
-        for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
-            op = node.layer_type
-            if not hasattr(self, op) and \
-                op not in self.default_op_mapping and \
-                op not in custom_layers and \
-                op not in self.elementwise_ops:
-                unsupported_ops.add(op)
-        if len(unsupported_ops) == 0:
-            return True
-        else:
-            print("There are {} ops not supported yet, list as below".format(
-                len(unsupported_ops)))
-            for op in unsupported_ops:
-                print(op)
-            return False
 
     @print_mapping_info
     def directly_map(self, node, name='', *args, **kwargs):
