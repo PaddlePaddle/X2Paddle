@@ -44,7 +44,7 @@ class ONNXOpMapper(OpMapper):
             elif op in self.opset.default_op_mapping:
                 self.opset.directly_map(node)
             elif op in custom_layers:
-                self.opser.deal_custom_layer(node)
+                self.opset.deal_custom_layer(node)
             elif op in self.opset.elementwise_ops:
                 self.opset.elementwise_map(node)
         print("Nodes converted.")
