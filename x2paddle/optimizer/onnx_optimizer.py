@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # TODO useless node remove
-from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
 
 
 class ONNXOptimizer(object):

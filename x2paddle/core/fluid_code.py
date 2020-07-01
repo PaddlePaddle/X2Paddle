@@ -25,6 +25,7 @@ class Layer(object):
         self.inputs = dict()
         self.output = None
         self.is_custom_layer = False
+        self.use_fluid = False
 
     def get_code(self):
         layer_code = ""
@@ -38,6 +39,8 @@ class Layer(object):
             layer_code = layer_code + self.op + "("
         elif self.op == "=":
             layer_code = layer_code
+        elif self.use_fluid:
+            layer_code = layer_code + "fluid." + self.op + "("
         else:
             layer_code = layer_code + "fluid.layers." + self.op + "("
 
@@ -108,9 +111,11 @@ class FluidCode(object):
                   inputs,
                   output,
                   param_attr=None,
+                  use_fluid=False,
                   is_custom_layer=False):
         layer = Layer()
         layer.op = op
+        layer.use_fluid = use_fluid
         layer.is_custom_layer = is_custom_layer
         if inputs is not None:
             layer.inputs = inputs
