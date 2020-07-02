@@ -544,6 +544,11 @@ class PaddleOpMapper(object):
 
     def bilinear_interp(self, op, block):
         input_names = op.input_names
+        input_shape = block.vars[op.input('X')[0]].shape
+        batch_size = input_shape[0]
+        channels = input_shape[1]
+        height = input_shape[2]
+        width = input_shape[3]
         coordinate_transformation_mode = 'half_pixel'
         if op.attr('align_corners'):
             coordinate_transformation_mode = 'align_corners'
@@ -598,7 +603,7 @@ class PaddleOpMapper(object):
                     to=onnx_pb.TensorProto.INT64)
                 node_list.append(cast_shape_node)
             else:
-                concat_shape_name = self.get_name(op.type, "shape.concat")
+                concat_shape_name = op.output('Out')[0] + "@shape.concat1"
                 concat_shape_node = helper.make_node(
                     "Concat",
                     inputs=op.input('SizeTensor'),
@@ -611,19 +616,37 @@ class PaddleOpMapper(object):
                     outputs=[cast_shape_name],
                     to=onnx_pb.TensorProto.INT64)
                 node_list.extend([concat_shape_node, cast_shape_node])
-            shape_name3 = self.get_name(op.type, "shape.concat")
+            shape_name3 = op.output('Out')[0] + "@shape.concat44"
             shape_node3 = helper.make_node(
                 'Concat',
                 inputs=[shape_name1, cast_shape_name],
                 outputs=[shape_name3],
                 axis=0)
+            node_list.append(shape_node3)
+            name_h_w = op.output('Out')[0] + "@h_w"
+            node_h_w = helper.make_node(
+                'Constant',
+                inputs=[],
+                outputs=[name_h_w],
+                value=helper.make_tensor(
+                    name=name_h_w,
+                    data_type=onnx_pb.TensorProto.FLOAT,
+                    dims=[2],
+                    vals=[height, width],
+                    raw=False))
+            node_list.append(node_h_w)
+            outputs_h_w_scales = op.output('Out')[0] + "@out_hw_scales"
+            node_h_w_scales = helper.make_node(
+                'Div',
+                inputs=[shape_name3, name_h_w],
+                outputs=[outputs_h_w_scales])
+            node_list.append(node_h_w_scales)
             result_node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], roi_name, empty_name, shape_name3],
+                inputs=[op.input('X')[0], outputs_h_w_scales],
                 outputs=op.output('Out'),
-                mode='linear',
-                coordinate_transformation_mode=coordinate_transformation_mode)
-            node_list.extend([shape_node3, result_node])
+                mode='linear', )
+            node_list.extend([result_node])
             return node_list
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
@@ -818,3 +841,11 @@ class PaddleOpMapper(object):
     def im2sequence(self, op, block):
         from .paddle_custom_layer.im2sequence import im2sequence
         return im2sequence(op, block)
+
+    def yolo_box(self, op, block):
+        from .paddle_custom_layer.yolo_box import yolo_box
+        return yolo_box(op, block)
+
+    def multiclass_nms(self, op, block):
+        from .paddle_custom_layer.multiclass_nms import multiclass_nms
+        return multiclass_nms(op, block)
