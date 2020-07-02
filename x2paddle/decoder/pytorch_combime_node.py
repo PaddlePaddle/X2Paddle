@@ -242,11 +242,8 @@ def get_combined_graph(graph, ipt_opts):
             if current_line == '':
                 return
             if current_line in no_match_lines:
-                return
-            if m is None:
-                infos_before_len = len(line_combine_infos)
                 if 'aten' in current_line:
-                    continue
+                    return
                 else:
                     used_graph_stack.append(current_line + '\n')
                     sub_graph_str = sub_graph_str.replace(current_line + '\n', '')
@@ -257,8 +254,25 @@ def get_combined_graph(graph, ipt_opts):
                     sub_graph_str = out_str + sub_graph_str
                     if len(out_str.split('\n')) > 2 or 'aten' in out_str:
                         line_combine_info.pop()
-                infos_after_len = len(line_combine_infos)
-                if op_name == list(regular_expressions.keys())[-1] and infos_before_len == infos_after_len:
+                    return
+            if m is None:
+                if 'aten' in current_line:
+                    continue
+                else:
+                    used_graph_stack.append(current_line + '\n')
+                    sub_graph_str = sub_graph_str.replace(current_line + '\n', '')
+                    is_return = False
+                    if sub_graph_str == '':
+                        is_return = True
+                        line_combine_infos.append(copy.deepcopy(line_combine_info))
+                    dfs(sub_graph_str, used_graph_stack)
+                    out_str = used_graph_stack.pop()
+                    sub_graph_str = out_str + sub_graph_str
+                    if len(out_str.split('\n')) > 2 or 'aten' in out_str:
+                        line_combine_info.pop()
+                    if is_return:
+                        return
+                if op_name == list(regular_expressions.keys())[-1]:
                     no_match_lines.append(current_line)
             else:
                 match_str = m.group()
@@ -272,10 +286,6 @@ def get_combined_graph(graph, ipt_opts):
                 if sub_graph_str == '':
                     # 命中
                     line_combine_infos.append(copy.deepcopy(line_combine_info))
-                    line_combine_info.pop()
-                    out_str = used_graph_stack.pop()
-                    sub_graph_str = out_str + sub_graph_str
-                    continue
                 dfs(sub_graph_str, used_graph_stack)
                 out_str = used_graph_stack.pop()
                 sub_graph_str = out_str + sub_graph_str
