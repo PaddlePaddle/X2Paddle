@@ -675,17 +675,15 @@ class PaddleOpMapper(object):
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], '', op.input('OutSize')[0]],
+                inputs=[op.input('X')[0], op.input('OutSize')[0]],
                 outputs=op.output('Out'),
-                mode='nearest',
-                coordinate_transformation_mode=coordinate_transformation_mode)
+                mode='nearest')
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
                 inputs=[op.input('X')[0], op.input('Scale')[0]],
                 outputs=op.output('Out'),
-                mode='nearest',
-                coordinate_transformation_mode=coordinate_transformation_mode)
+                mode='nearest')
         else:
             out_shape = [op.attr('out_h'), op.attr('out_w')]
             scale = op.attr('scale')
@@ -698,9 +696,7 @@ class PaddleOpMapper(object):
                     'Resize',
                     inputs=[op.input('X')[0], scale_name],
                     outputs=op.output('Out'),
-                    mode='nearest',
-                    coordinate_transformation_mode=coordinate_transformation_mode
-                )
+                    mode='nearest')
                 return [scale_node, node]
             else:
                 raise Exception("Unexpected situation happend")
