@@ -616,7 +616,7 @@ class PaddleOpMapper(object):
                     outputs=[cast_shape_name],
                     to=onnx_pb.TensorProto.INT64)
                 node_list.extend([concat_shape_node, cast_shape_node])
-            shape_name3 = op.output('Out')[0] + "@shape.concat44"
+            shape_name3 = op.output('Out')[0] + "@shape.concat3"
             shape_node3 = helper.make_node(
                 'Concat',
                 inputs=[shape_name1, cast_shape_name],
@@ -641,9 +641,16 @@ class PaddleOpMapper(object):
                 inputs=[shape_name3, name_h_w],
                 outputs=[outputs_h_w_scales])
             node_list.append(node_h_w_scales)
+            shape_name4 = op.output('Out')[0] + "@shape.concat4"
+            shape_node4 = helper.make_node(
+                'Concat',
+                inputs=[shape_name1, outputs_h_w_scales],
+                outputs=[shape_name4],
+                axis=0)
+            node_list.append(shape_node4)
             result_node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], outputs_h_w_scales],
+                inputs=[op.input('X')[0], shape_name4],
                 outputs=op.output('Out'),
                 mode='linear', )
             node_list.extend([result_node])
