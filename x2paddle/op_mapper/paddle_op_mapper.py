@@ -37,12 +37,11 @@ class PaddleOpMapper(object):
 
         self.name_counter = dict()
 
-    def convert(self, program, save_dir):
+    def convert(self, program, save_dir, opset=10):
         weight_nodes = self.convert_weights(program)
         op_nodes = list()
         input_nodes = list()
         output_nodes = list()
-
         unsupported_ops = set()
 
         print("Translating PaddlePaddle to ONNX...\n")
@@ -81,7 +80,9 @@ class PaddleOpMapper(object):
             initializer=[],
             inputs=input_nodes,
             outputs=output_nodes)
-        model = helper.make_model(graph, producer_name='X2Paddle')
+        opset_imports = [helper.make_opsetid("", opset)]
+        model = helper.make_model(
+            graph, producer_name='X2Paddle', opset_imports=opset_imports)
         onnx.checker.check_model(model)
 
         if not os.path.isdir(save_dir):
