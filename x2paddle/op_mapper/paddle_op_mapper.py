@@ -308,8 +308,16 @@ class PaddleOpMapper(object):
         scale = op.attr('scale')
         bias = op.attr('bias')
         if math.fabs(scale - 1.0) < 1e-06 and math.fabs(bias - 0.0) < 1e-06:
+            name = op.output('Out')[0]
+            var = block.var(name)
+            dtype = self.paddle_onnx_dtype_map[var.dtype]
             node = helper.make_node(
-                'Identity', inputs=op.input('X'), outputs=op.output('Out'))
+                'Cast',
+                inputs=op.input('X'),
+                outputs=op.output('Out'),
+                to=dtype)
+            #node = helper.make_node(
+            #   'Identity', inputs=op.input('X'), outputs=op.output('Out'))
             return node
         else:
             scale_name = self.get_name(op.type, 'scale')
