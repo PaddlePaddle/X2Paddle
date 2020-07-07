@@ -183,7 +183,6 @@ class PyTorchOpMapper(OpMapper):
         attrs['param_attr'] = string(weight_name)
         attrs['bias_attr'] = string(bias_name)
         op_name = 'linear_' + node.layer_name
-        print(op_name)
         self.weights[op_name +
                      '.weight'] = node.params[weight_name].numpy().transpose(
                          (1, 0))

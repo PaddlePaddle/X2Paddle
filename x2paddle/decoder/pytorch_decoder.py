@@ -56,7 +56,7 @@ class PyTorchGraphControlNode(GraphNode):
         self.layer_type = layer_type
         self.fluid_code = FluidCode()
         self.block_nodes_name = []
-        self.input_names = []
+        self.input_ids = []
         self.node_ids = []
         
         
@@ -202,7 +202,9 @@ class PyTorchGraph(Graph):
                 else:
                     input_node_name, _ = self._get_node_info(input_node)
                 self.connect(input_node_name, control_node_name)
-                self.node_map[control_node_name].input_names.append(input_node_name) 
+                p = re.compile(r"prim::If[(]%(.*)[)]")
+                m = p.search(node_str) 
+                self.node_map[control_node_name].input_ids.append('%' + m.groups()[0]) 
                 self.node_map[control_node_name].node_ids.append(control_node_name)
                 for i, block in enumerate(node.blocks()):
                     if i == 1: # else的block
@@ -229,9 +231,11 @@ class PyTorchGraph(Graph):
                             self.connect(control_node_name, block_node_name + '__0')
                             self.node_map[control_node_name].block_nodes_name.append(node_name)
                             self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
-                            for ipt in block.outputs():
-                                ipt_name, _ = self._get_node_info(ipt.node())
-                                self.node_map[block_node_name + '__0'].input_names.append(ipt_name) 
+                            return_str = block.returnNode().__str__()
+                            p = re.compile(r"prim::Return[(](.*)[)]")
+                            m = p.search(return_str)        
+                            for nid in m.groups()[0].split(','):
+                                self.node_map[block_node_name + '__0'].input_ids.append(nid)
                             self.node_map[block_node_name + '__0'].node_ids.append(block_node_name + '__0')
                             last_node_name = node_name
                         elif i == 1 and j == len(list(block.nodes())) - 1:
@@ -243,9 +247,11 @@ class PyTorchGraph(Graph):
                             self.connect(control_node_name, block_node_name + '__1')
                             self.node_map[control_node_name].block_nodes_name.append(node_name)
                             self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
-                            for ipt in block.outputs():
-                                ipt_name, _ = self._get_node_info(ipt.node())
-                                self.node_map[block_node_name + '__1'].input_names.append(ipt_name)
+                            return_str = block.returnNode().__str__()
+                            p = re.compile(r"prim::Return[(](.*)[)]")
+                            m = p.search(return_str)        
+                            for nid in m.groups()[0].split(','):
+                                self.node_map[block_node_name + '__1'].input_ids.append(nid)
                             self.node_map[block_node_name + '__1'].node_ids.append(block_node_name + '__1')
             else:
                 print(index)
@@ -280,9 +286,9 @@ class PyTorchGraph(Graph):
             name)
         input_node = self.node_map[input_node_name]
         if isinstance(pytorch_node.layer, CombinedNode):
-            pytorch_node_input_names = pytorch_node.layer.input_names
+            pytorch_node_input_ids = pytorch_node.layer.inputs
         else:
-            pytorch_node_input_names = pytorch_node.input_names
+            pytorch_node_input_ids = pytorch_node.input_ids
         if isinstance(input_node.layer, CombinedNode):
             node_ids = input_node.layer.node_name
         else:
@@ -291,7 +297,7 @@ class PyTorchGraph(Graph):
             else:
                 _, node_ids = self._get_node_info(input_node.layer)                
         if len(node_ids) > 1:
-            need_idx = node_ids.index(pytorch_node_input_names[idx])
+            need_idx = node_ids.index(pytorch_node_input_ids[idx])
             name = input_node_name + ':' + str(need_idx)
         else:
             name = input_node_name
