@@ -42,7 +42,6 @@ class PaddleOpMapper(object):
         op_nodes = list()
         input_nodes = list()
         output_nodes = list()
-
         unsupported_ops = set()
 
         print("Translating PaddlePaddle to ONNX...\n")
@@ -184,6 +183,41 @@ class PaddleOpMapper(object):
             outputs=op.output('Out'),
             alpha=op.attr('alpha'))
         return node
+
+    def swish(self, op, block):
+        """
+        The activation swish,  y = x / (1 + exp(-beta * x))
+        """
+        beta = op.attr('beta')
+        beta_name = self.get_name(op.type, 'beta')
+        beta_node = onnx.helper.make_node(
+            'Constant',
+            name=beta_name,
+            inputs=[],
+            outputs=[beta_name],
+            value=onnx.helper.make_tensor(
+                name=beta_name,
+                data_type=onnx.TensorProto.FLOAT,
+                dims=(),
+                vals=[beta]))
+
+        beta_x_name = self.get_name(op.type, 'beta_x')
+        beta_x_node = onnx.helper.make_node(
+            'Mul',
+            name=beta_x_name,
+            inputs=[op.input('X')[0], beta_name],
+            outputs=[beta_x_name])
+        sigmoid_name = self.get_name(op.type, 'sigmoid')
+        sigmoid_node = onnx.helper.make_node(
+            'Sigmoid',
+            name=sigmoid_name,
+            inputs=[beta_x_name],
+            outputs=[sigmoid_name])
+        swish_node = onnx.helper.make_node(
+            'Mul',
+            inputs=[op.input('X')[0], sigmoid_name],
+            outputs=op.output('Out'))
+        return [beta_node, beta_x_node, sigmoid_node, swish_node]
 
     def elementwise_add(self, op, block):
         axis = op.attr('axis')
