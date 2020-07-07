@@ -1,5 +1,5 @@
 # X2Paddle支持OP列表
-> 目前X2Paddle支持40+的TensorFlow OP，30+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
+> 目前X2Paddle支持50+的TensorFlow OP，30+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
 
 **注：** 目前，部分OP暂未支持，如您在转换过程中出现OP不支持的情况，可自行添加或反馈给我们。欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
 
@@ -20,7 +20,7 @@
 | 41 | Cast        | 42 | Split     | 43 | Squeeze   | 44 | ResizeNearestNeighbor |
 | 45 | Softmax     | 46 | Range     | 47 | ConcatV2  | 48 | MirrorPad             |
 | 49 | Identity    | 50 | GreaterEqual  | 51 | StopGradient | 52 | Minimum |
-| 53 | RadnomUniform | | | | | | |
+| 53 | RadnomUniform | 54 | Fill | 55 | Floor | 56 | DepthToSpace |
 
 ## Caffe
 

@@ -46,7 +46,8 @@ class TFOpMapperNHWC(OpMapper):
         'Softplus': ['softplus'],
         'LeakyRelu': ['leaky_relu', {
             'alpha': 'alpha'
-        }]
+        }],
+        'Floor': ['floor']
     }
     elementwise_ops = {
         'Add': 'elementwise_add',
@@ -54,6 +55,7 @@ class TFOpMapperNHWC(OpMapper):
         'RealDiv': 'elementwise_div',
         'Sub': 'elementwise_sub',
         'Maximum': 'elementwise_max',
+        'Minimum': 'elementwise_min',
         'Mul': 'elementwise_mul',
         'FloorDiv': 'elementwise_floordiv'
     }
@@ -202,6 +204,52 @@ class TFOpMapperNHWC(OpMapper):
         node.fluid_code.add_layer(
             "transpose", inputs=input, output=node, param_attr=attr)
 
+    def Fill(self, node):
+        dims = self.graph.get_node(node.layer.input[0], copy=True)
+        input_value = self.graph.get_node(node.layer.input[1], copy=True)
+
+        assert input_value.layer_type == "Const", "Value of fill OP should be Const"
+
+        self.add_omit_nodes(input_value.layer_name, node.layer_name)
+        input_value = input_value.value
+        input_dtype = string(input_value.dtype)
+        attr = {'value': input_value, 'dtype': input_dtype}
+
+        node.fluid_code.add_layer(
+            "fill_constant", inputs=dims, output=node, param_attr=attr)
+
+    def DepthToSpace(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+
+        block_size = node.get_attr("block_size")
+        data_format = node.get_attr("data_format").decode()
+
+        if data_format == "NHWC":
+            attr = {"perm": [0, 3, 1, 2]}
+            node.fluid_code.add_layer(
+                "transpose", inputs=input, output=input, param_attr=attr)
+        n, h, w, c = input.out_shapes[0]
+
+        attr = {'shape': [0, block_size * block_size, -1, h, w]}
+        node.fluid_code.add_layer(
+            "reshape", inputs=input, output=input, param_attr=attr)
+
+        attr = {'perm': [0, 2, 1, 3, 4]}
+        node.fluid_code.add_layer(
+            "transpose", inputs=input, output=input, param_attr=attr)
+        attr = {'shape': [0, c, h, w]}
+        node.fluid_code.add_layer(
+            "reshape", inputs=input, output=input, param_attr=attr)
+
+        attr = {'upscale_factor': block_size}
+        node.fluid_code.add_layer(
+            "pixel_shuffle", inputs=input, output=node, param_attr=attr)
+
+        if data_format == "NHWC":
+            attr = {"perm": [0, 2, 3, 1]}
+            node.fluid_code.add_layer(
+                "transpose", inputs=node, output=node, param_attr=attr)
+
     def MaxPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
 
@@ -236,6 +284,7 @@ class TFOpMapperNHWC(OpMapper):
     def Conv2D(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
         kernel = self.graph.get_node(node.layer.input[1], copy=True)
+        self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         k_size = kernel.out_shapes[0]
         strides = node.get_attr("strides")
@@ -245,10 +294,17 @@ class TFOpMapperNHWC(OpMapper):
         channel_first = data_format == "NCHW"
 
         if kernel.layer_type == 'Const':
-            self.add_omit_nodes(kernel.layer_name, node.layer_name)
             kernel_value = kernel.value
-        self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
-            kernel_value, (3, 2, 0, 1))
+            kernel_weight_name = kernel.layer_name.replace('/', '_')
+        else:
+            kernel_value = self.decoder.infer_tensor(kernel)
+            if kernel.layer_type == 'Split':
+                kernel_weight_name = "{}_{}_kernel".format(node.layer_name,
+                                                           kernel.layer_name)
+            else:
+                kernel_weight_name = kernel.layer_name.replace('/', '_')
+        self.weights[kernel_weight_name] = numpy.transpose(kernel_value,
+                                                           (3, 2, 0, 1))
 
         if not channel_first:
             strides = [strides[i] for i in [0, 3, 1, 2]]
@@ -257,10 +313,9 @@ class TFOpMapperNHWC(OpMapper):
             node.fluid_code.add_layer(
                 "transpose", inputs=input, output=node, param_attr=attr)
             input = node
-
         attr = {
             "bias_attr": False,
-            "param_attr": string(kernel.layer_name),
+            "param_attr": string(kernel_weight_name),
             "num_filters": k_size[3],
             "filter_size": k_size[0:2],
             "stride": strides[2:4],
@@ -700,12 +755,15 @@ class TFOpMapperNHWC(OpMapper):
         input = self.graph.get_node(node.layer.input[2], copy=True)
 
         assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
-        assert out_shape.layer_type == "Const", "Out_shape of Conv2DBackpropInput should be Const"
 
         self.add_omit_nodes(kernel.layer_name, node.layer_name)
-
-        out_shape = out_shape.value.tolist()
         self.add_omit_nodes(out_shape.layer_name, node.layer_name)
+
+        if out_shape.layer_type == "Const":
+            out_shape = out_shape.value.tolist()
+        else:
+            out_shape = self.decoder.infer_shape_tensor(out_shape,
+                                                        node.out_shapes[0])
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
