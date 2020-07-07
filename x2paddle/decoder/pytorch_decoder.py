@@ -58,6 +58,7 @@ class PyTorchGraphControlNode(GraphNode):
         self.block_nodes_name = []
         self.input_ids = []
         self.node_ids = []
+        self.attrs = None
         
         
 class PyTorchGraph(Graph):
@@ -99,15 +100,7 @@ class PyTorchGraph(Graph):
             node_ids.append(m[0:-2])
         node_name = '_'.join(node_ids)
         return node_name, node_ids
-    
-    def _connect_ifelse_block(self, src_node_name, dst_node_name):
-        if isinstance(self.node_map[src_node_name], PyTorchGraphControlNode):
-            if self.node_map[src_node_name].layer_type == 'control_if':
-                if src_node_name + '__0' in self.node_map:
-                    self.connect(src_node_name + '__0', dst_node_name)
-                if src_node_name + '__1' in self.node_map:
-                    self.connect(src_node_name + '__1', dst_node_name)
-            
+  
             
     def deal_node(self, node):
         node_name, node_ids = self._get_node_info(node)
@@ -191,7 +184,7 @@ class PyTorchGraph(Graph):
                         list_info.append(self.attrs[input_node_name])
                 self.attrs[node_name] = list_info
             elif kind == 'prim::If':
-                block_node_name, _ = self._get_node_info(node)
+                block_node_name, block_ids = self._get_node_info(node)
                 if block_node_name == '':
                     block_node_name = '%ifelse' + str(self.ifelse_id)
                     self.ifelse_id += 1
@@ -211,6 +204,11 @@ class PyTorchGraph(Graph):
                 self.node_map[control_node_name].input_ids.append('%' + m.groups()[0]) 
                 self.node_map[control_node_name].node_ids.append(control_node_name)
                 for i, block in enumerate(node.blocks()):
+                    block_opts_name = {}
+                    for opt in block.outputs():
+                        opt_name, opt_ids = self._get_node_info(opt.node())
+                        for id in opt_ids:
+                            block_opts_name[id] = opt_name
                     if i == 1: # else的block
                         last_node_name = list(self.node_map.keys())[-1]
                         control_node_name = block_node_name + '__else'
@@ -223,32 +221,38 @@ class PyTorchGraph(Graph):
                             return_str = block.returnNode().__str__()
                             p = re.compile(r"prim::Return[(]%(.*)[)]")
                             m = p.search(return_str)  
-                            assert m is not None, 'This is not a model'
+                            assert m is not None, 'This is not a standard model'
                             self.node_map[block_node_name + '__0'] = PyTorchGraphControlNode(None, 
                                                                                        "assign", 
                                                                                        block_node_name + '__0')
-                            self.connect(control_node_name, block_node_name + '__0')
-                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
+                            
+                            
                             p = re.compile(r"prim::Return[(](.*)[)]")
                             m = p.search(return_str)        
                             for nid in m.groups()[0].split(','):
                                 self.node_map[block_node_name + '__0'].input_ids.append(nid)
-                            self.node_map[block_node_name + '__0'].node_ids.append(block_node_name + '__0')
+                                self.connect(block_opts_name[nid], block_node_name + '__0')
+                            self.connect(control_node_name, block_node_name + '__0')
+                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
+                            self.node_map[block_node_name + '__0'].attrs = block_ids
+                            self.node_map[block_node_name + '__0'].node_ids.append(block_node_name + '__0')                       
                             last_node_name = block_node_name + '__0'
                         if i == 1:
                             return_str = block.returnNode().__str__()
                             p = re.compile(r"prim::Return[(]%(.*)[)]")
                             m = p.search(return_str)  
-                            assert m is not None, 'This is not a model'
+                            assert m is not None, 'This is not a standard model'
                             self.node_map[block_node_name + '__1'] = PyTorchGraphControlNode(None, 
                                                                                        "assign", 
                                                                                        block_node_name + '__1')
-                            self.connect(control_node_name, block_node_name + '__1')
-                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
                             p = re.compile(r"prim::Return[(](.*)[)]")
                             m = p.search(return_str)        
                             for nid in m.groups()[0].split(','):
                                 self.node_map[block_node_name + '__1'].input_ids.append(nid)
+                                self.connect(block_opts_name[nid], block_node_name + '__1')
+                            self.connect(control_node_name, block_node_name + '__1')
+                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
+                            self.node_map[block_node_name + '__1'].attrs = block_ids
                             self.node_map[block_node_name + '__1'].node_ids.append(block_node_name + '__1')
                             last_node_name = block_node_name + '__1'
                                 
@@ -269,15 +273,15 @@ class PyTorchGraph(Graph):
                             else:
                                 self.node_map[block_node_name + '__0'] = PyTorchGraphControlNode(None, 
                                                                                            "assign", 
-                                                                                           block_node_name + '__0')
-                                self.connect(node_name, block_node_name + '__0')
-                                self._connect_ifelse_block(node_name, block_node_name + '__0')
-                                self.connect(control_node_name, block_node_name + '__0')
-                                self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
+                                                                                           block_node_name + '__0')               
                                 p = re.compile(r"prim::Return[(](.*)[)]")
                                 m = p.search(return_str)        
                                 for nid in m.groups()[0].split(','):
                                     self.node_map[block_node_name + '__0'].input_ids.append(nid)
+                                    self.connect(block_opts_name[nid], block_node_name + '__0')
+                                self.connect(control_node_name, block_node_name + '__0')
+                                self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
+                                self.node_map[block_node_name + '__0'].attrs = block_ids
                                 self.node_map[block_node_name + '__0'].node_ids.append(block_node_name + '__0')
                                 last_node_name = block_node_name + '__0'
                         elif i == 1 and j == len(list(block.nodes())) - 1:
@@ -288,14 +292,14 @@ class PyTorchGraph(Graph):
                                 self.node_map[block_node_name + '__1'] = PyTorchGraphControlNode(None, 
                                                                                            "assign", 
                                                                                            block_node_name + '__1')
-                                self.connect(node_name, block_node_name + '__1')
-                                self._connect_ifelse_block(node_name, block_node_name + '__1')
-                                self.connect(control_node_name, block_node_name + '__1')
-                                self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
                                 p = re.compile(r"prim::Return[(](.*)[)]")
                                 m = p.search(return_str)        
                                 for nid in m.groups()[0].split(','):
                                     self.node_map[block_node_name + '__1'].input_ids.append(nid)
+                                    self.connect(block_opts_name[nid], block_node_name + '__1')
+                                self.connect(control_node_name, block_node_name + '__1')
+                                self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
+                                self.node_map[block_node_name + '__1'].attrs = block_ids
                                 self.node_map[block_node_name + '__1'].node_ids.append(block_node_name + '__1')
             else:
                 print(index)

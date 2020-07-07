@@ -255,10 +255,12 @@ class PyTorchOpMapper(OpMapper):
                                  .format(node.layer_name, input_node_name, str(node_attrs[1])))
         
     def assign(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
-        input_node_name = self.get_input_name(input_node)
-        node.fluid_code.add_note("{} = {}"
-                                 .format(node.layer_name.replace('__0', '').replace('__1', ''), input_node_name))
+        for i, opt_name in enumerate(node.attrs):
+            input_node = self.graph.get_input_node(node, idx=i)
+            input_node_name = self.get_input_name(input_node)
+            node.fluid_code.add_note("{} = {}"
+                                     .format(opt_name.replace('/', '_').
+                                             replace('-', '_').replace('.', '_').replace('%', 'x_'), input_node_name))
         
         
     def control_if(self, node):
