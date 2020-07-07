@@ -183,6 +183,7 @@ class PyTorchOpMapper(OpMapper):
         attrs['param_attr'] = string(weight_name)
         attrs['bias_attr'] = string(bias_name)
         op_name = 'linear_' + node.layer_name
+        print(op_name)
         self.weights[op_name +
                      '.weight'] = node.params[weight_name].numpy().transpose(
                          (1, 0))
@@ -220,17 +221,16 @@ class PyTorchOpMapper(OpMapper):
             output_w, node.layer_name + '__stride_w'))
         node.fluid_code.add_note("{} = {}[2] - ({} - 1) * {}".format(
             node.layer_name + '__kernel_h', node.layer_name + '__shape',
-            output_w, node.layer_name + '__stride_h'))
-        op_name = 'pool2d_' + node.layer_name
+            output_h, node.layer_name + '__stride_h'))
+        input_node_name = self.get_input_name(input_node)
         node.fluid_code.add_note(
-            "{} = fluid.dygraph.Pool2D(pool_size=[{}, {}], pool_type='max', pool_stride=[{}, {}], pool_padding=0)"
-            .format(op_name, node.layer_name + '__kernel_h',
+            "{} = fluid.layers.pool2d(input={}, pool_size=[{}, {}], pool_type='max', pool_stride=[{}, {}], pool_padding=0)"
+            .format(node.layer_name, 
+                    input_node_name,
+                    node.layer_name + '__kernel_h',
                     node.layer_name + '__kernel_w',
                     node.layer_name + '__stride_h',
                     node.layer_name + '__stride_w'))
-        input_node_name = self.get_input_name(input_node)
-        node.fluid_code.add_note("{} = {}({})".format(node.layer_name, op_name,
-                                                      input_node_name))
 
     def dropout(self, node):
         input_node = self.graph.get_input_node(node, idx=0)
@@ -240,3 +240,33 @@ class PyTorchOpMapper(OpMapper):
                                     inputs=[input_node],
                                     output=node,
                                     param_attr={'p': 0.0})
+        
+    def max(self, node):
+        input_node = self.graph.get_input_node(node, idx=0)
+        node.fluid_code.add_layer('reduce_max',
+                              inputs=input_node,
+                              output=node.layer_name,
+                              param_attr=None)
+        
+    def greater_than(self, node):
+        input_node = self.graph.get_input_node(node, idx=0)
+        input_node_name = self.get_input_name(input_node)
+        node_attrs = node.attrs
+        node.fluid_code.add_note("{} = {} > {}"
+                                 .format(node.layer_name, input_node_name, str(node_attrs[1])))
+        
+    def assign(self, node):
+        input_node = self.graph.get_input_node(node, idx=0)
+        input_node_name = self.get_input_name(input_node)
+        node.fluid_code.add_note("{} = {}"
+                                 .format(node.layer_name.replace('__0', '').replace('__1', ''), input_node_name))
+        
+        
+    def control_if(self, node):
+        input_node = self.graph.get_input_node(node, idx=0)
+        input_node_name = self.get_input_name(input_node)
+        node.fluid_code.add_note("if {}:".format(input_node_name))
+        
+    def control_else(self, node):
+        node.fluid_code.add_note("else:")
+        

@@ -19,7 +19,7 @@ import torch.jit
 from torch.jit import _unique_state_dict
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.decoder.pytorch_combime_node import get_combined_graph, _get_str_line_index
+from x2paddle.decoder.pytorch_combime_node import get_combined_graph, _get_str_line_index, CombinedNode
 
 
 class PyTorchGraphNode(GraphNode):
@@ -55,6 +55,9 @@ class PyTorchGraphControlNode(GraphNode):
                                                    layer_name.replace('/', '_').replace('-', '_').replace('.', '_').replace('%', 'x_'))
         self.layer_type = layer_type
         self.fluid_code = FluidCode()
+        self.block_nodes_name = []
+        self.input_names = []
+        self.node_ids = []
         
         
 class PyTorchGraph(Graph):
@@ -95,6 +98,14 @@ class PyTorchGraph(Graph):
             node_ids.append(m[0:-2])
         node_name = '_'.join(node_ids)
         return node_name, node_ids
+    
+    def _connect_ifelse_block(self, src_node_name, dst_node_name):
+        if isinstance(self.node_map[src_node_name], PyTorchGraphControlNode):
+            if self.node_map[src_node_name].layer_type == 'control_if':
+                if src_node_name + '__0' in self.node_map:
+                    self.connect(src_node_name + '__0', dst_node_name)
+                if src_node_name + '__1' in self.node_map:
+                    self.connect(src_node_name + '__1', dst_node_name)
             
             
     def deal_node(self, node):
@@ -121,10 +132,12 @@ class PyTorchGraph(Graph):
                     cnode.input_names.append(input_node_name)
                     self.connect(input_node_name, cnode_name)
                     node_attrs.append(None)
+                    self._connect_ifelse_block(input_node_name, cnode_name)
                 elif len(match) == 1:
                     cnode.input_names.append(input_node_name)
                     self.connect(match[0], cnode_name)
                     node_attrs.append(None)
+                    self._connect_ifelse_block(match[0], cnode_name)
                 else:
                     if input_node_name is None:
                         node_attrs.append(None)
@@ -136,7 +149,7 @@ class PyTorchGraph(Graph):
             self.node_map[cnode_name].set_params(node_params)
         else:
             if index in self.delete_indexes:
-                return
+                return False
             if kind == 'prim::GetAttr':
                 match_pattern = re.compile(r'name=\"(.*)\"')
                 matches = match_pattern.findall(node.__str__())
@@ -167,7 +180,6 @@ class PyTorchGraph(Graph):
                     elif matches1[0] == 'bool':
                         self.attrs[node_name] = bool(matches2[0])
                     else:
-                        print(matches1[0])
                         raise Exception('The {} is not implement yet!'.format(matches1[0]))
             elif kind == 'prim::ListConstruct':
                 list_info = []
@@ -178,12 +190,67 @@ class PyTorchGraph(Graph):
                         list_info.append(self.attrs[input_node_name])
                 self.attrs[node_name] = list_info
             elif kind == 'prim::If':
-                # TODO(syf)
-                # 拆解block
-                self.parse_if_node(node)
+                block_node_name, _ = self._get_node_info(node)
+                control_node_name = block_node_name
+                self.node_map[control_node_name] = PyTorchGraphControlNode(node,
+                                                                           'control_if',
+                                                                           control_node_name)
+                input = list(node.inputs())[0]
+                input_node = input.node()
+                if input_node.kind() == 'prim::Param':
+                    input_node_name = '%' + input.debugName()
+                else:
+                    input_node_name, _ = self._get_node_info(input_node)
+                self.connect(input_node_name, control_node_name)
+                self.node_map[control_node_name].input_names.append(input_node_name) 
+                self.node_map[control_node_name].node_ids.append(control_node_name)
+                for i, block in enumerate(node.blocks()):
+                    if i == 1: # else的block
+                        last_node_name = list(self.node_map.keys())[-1]
+                        control_node_name = block_node_name + '__else'
+                        self.node_map[control_node_name] = PyTorchGraphControlNode(node,
+                                                                           'control_else',
+                                                                           control_node_name)
+                        self.connect(last_node_name, control_node_name)
+                    for j, node in enumerate(block.nodes()):
+                        out = self.deal_node(node)
+                        node_name = list(self.node_map.keys())[-1]
+                        if node_name == control_node_name:
+                            continue
+                        if out:
+                            self.node_map[control_node_name].block_nodes_name.append(node_name)
+                            self.connect(control_node_name, node_name)
+                        if i == 0 and j == len(list(block.nodes())) - 1:
+                            self.node_map[block_node_name + '__0'] = PyTorchGraphControlNode(None, 
+                                                                                       "assign", 
+                                                                                       block_node_name + '__0')
+                            self.connect(node_name, block_node_name + '__0')
+                            self._connect_ifelse_block(node_name, block_node_name + '__0')
+                            self.connect(control_node_name, block_node_name + '__0')
+                            self.node_map[control_node_name].block_nodes_name.append(node_name)
+                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__0')
+                            for ipt in block.outputs():
+                                ipt_name, _ = self._get_node_info(ipt.node())
+                                self.node_map[block_node_name + '__0'].input_names.append(ipt_name) 
+                            self.node_map[block_node_name + '__0'].node_ids.append(block_node_name + '__0')
+                            last_node_name = node_name
+                        elif i == 1 and j == len(list(block.nodes())) - 1:
+                            self.node_map[block_node_name + '__1'] = PyTorchGraphControlNode(None, 
+                                                                                       "assign", 
+                                                                                       block_node_name + '__1')
+                            self.connect(node_name, block_node_name + '__1')
+                            self._connect_ifelse_block(node_name, block_node_name + '__1')
+                            self.connect(control_node_name, block_node_name + '__1')
+                            self.node_map[control_node_name].block_nodes_name.append(node_name)
+                            self.node_map[control_node_name].block_nodes_name.append(block_node_name + '__1')
+                            for ipt in block.outputs():
+                                ipt_name, _ = self._get_node_info(ipt.node())
+                                self.node_map[block_node_name + '__1'].input_names.append(ipt_name)
+                            self.node_map[block_node_name + '__1'].node_ids.append(block_node_name + '__1')
             else:
                 print(index)
                 print(node_name)        
+        return True
        
         
     def build(self):
@@ -211,13 +278,18 @@ class PyTorchGraph(Graph):
         input_node_name = pytorch_node.inputs[idx]
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
-        pytorch_node_input_names = []
-        pytorch_node_input_names = pytorch_node.layer.input_names
         input_node = self.node_map[input_node_name]
-        if input_node.layer_type.startswith('torch'):
+        if isinstance(pytorch_node.layer, CombinedNode):
+            pytorch_node_input_names = pytorch_node.layer.input_names
+        else:
+            pytorch_node_input_names = pytorch_node.input_names
+        if isinstance(input_node.layer, CombinedNode):
             node_ids = input_node.layer.node_name
         else:
-            _, node_ids = self._get_node_info(input_node.layer)
+            if isinstance(input_node, PyTorchGraphControlNode):
+                node_ids = input_node.node_ids
+            else:
+                _, node_ids = self._get_node_info(input_node.layer)                
         if len(node_ids) > 1:
             need_idx = node_ids.index(pytorch_node_input_names[idx])
             name = input_node_name + ':' + str(need_idx)

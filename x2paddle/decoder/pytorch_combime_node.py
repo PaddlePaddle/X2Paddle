@@ -31,6 +31,10 @@ regular_expressions['Conv2d'] = (r"(\s*)%.*: Tensor = aten::conv2d[(]%.*, %.*, %
 
 regular_expressions['Flatten'] = (r"(\s*)%.*: Tensor = aten::flatten[(]%.*, %.*, %.*[)] # .*(\n)", 1)
 
+regular_expressions['Max'] = (r"(\s*)%.*: Tensor = aten::max[(]%.*[)] # .*(\n)", 1)
+
+regular_expressions['GreaterThan'] = (r"(\s*)%.*: Tensor = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = aten::Bool[(]%.*[)] # .*(\n)", 2)
+
 
 class CombinedNode:
     def __init__(self, node_name, kind, inputs):        
@@ -201,6 +205,41 @@ class FlattenCombinedNode(CombinedNode):
         self.inputs.append('%' + m2.groups()[2])
         
         
+class MaxCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(MaxCombinedNode, self).__init__(self.node_name,
+                                              'max',
+                                              self.inputs)
+                    
+    def get_combined_node_info(self):
+        pattern = re.compile(r"%(.*) : Tensor = aten::max[(]%(.*)[)]")
+        m = pattern.search(self.nodes_str)
+        self.node_name = ['%' + m.groups()[0]]
+        self.inputs.append('%' + m.groups()[1])
+        
+        
+class GreaterThanCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(GreaterThanCombinedNode, self).__init__(self.node_name,
+                                                      'greater_than',
+                                                      self.inputs)
+    
+    def get_combined_node_info(self):
+        pattern1 = re.compile(r"%(.*) : bool")
+        m1 = pattern1.search(self.nodes_str)
+        self.node_name = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(r"aten::gt[(]%(.*), %(.*)[)]")
+        m2 = pattern2.search(self.nodes_str)
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m2.groups()[1])
+        
+        
 def _get_str_line_index(graph_str):
     graph_str_list = graph_str.split('\n')
     line_index = {}
@@ -231,6 +270,7 @@ def get_combined_graph(graph, ipt_opts):
     line_combine_info = []
     used_graph_stack = []
     no_match_lines = []
+    match_dict = {}
     from x2paddle.decoder import pytorch_combime_node as pcn
     
     def dfs(sub_graph_str, used_graph_stack):
@@ -241,26 +281,28 @@ def get_combined_graph(graph, ipt_opts):
             current_line = sub_graph_str.split('\n')[0]
             if current_line == '':
                 return
-            if current_line in no_match_lines:
+            if current_line in no_match_lines or (current_line in match_dict and op_name not in list(match_dict.values())):
                 if 'aten' in current_line:
-                    return
-                else:
-                    used_graph_stack.append(current_line + '\n')
-                    sub_graph_str = sub_graph_str.replace(current_line + '\n', '')
-                    if sub_graph_str == '':
-                        line_combine_infos.append(copy.deepcopy(line_combine_info))
-                    dfs(sub_graph_str, used_graph_stack)
-                    out_str = used_graph_stack.pop()
-                    sub_graph_str = out_str + sub_graph_str
-                    if len(out_str.split('\n')) > 2 or 'aten' in out_str:
-                        line_combine_info.pop()
-                    return
+                    continue
+                used_graph_stack.append(current_line + '\n')
+                sub_graph_list = sub_graph_str.split('\n')
+                sub_graph_str = '\n'.join(sub_graph_list[1:])
+                if sub_graph_str == '':
+                    line_combine_infos.append(copy.deepcopy(line_combine_info))
+                dfs(sub_graph_str, used_graph_stack)
+                out_str = used_graph_stack.pop()
+                sub_graph_str = out_str + sub_graph_str
+                if len(out_str.split('\n')) > 2 or 'aten' in out_str:
+                    line_combine_info.pop()
+                return
             if m is None:
                 if 'aten' in current_line:
                     continue
                 else:
                     used_graph_stack.append(current_line + '\n')
-                    sub_graph_str = sub_graph_str.replace(current_line + '\n', '')
+                    sub_graph_list = sub_graph_str.split('\n')
+                    sub_graph_str = '\n'.join(sub_graph_list[1:])
+                    l = sub_graph_str.split('\n')[0]
                     is_return = False
                     if sub_graph_str == '':
                         is_return = True
@@ -273,26 +315,29 @@ def get_combined_graph(graph, ipt_opts):
                     if is_return:
                         return
                 if op_name == list(regular_expressions.keys())[-1]:
-                    no_match_lines.append(current_line)
+                    if current_line not in list(match_dict.keys()):
+                        no_match_lines.append(current_line)
             else:
                 match_str = m.group()
                 cnode = getattr(pcn, op_name + 'CombinedNode')(match_str)
                 if not _can_combined(cnode, ipt_opts):
                     continue
+                if match_str.split('\n')[0] in match_dict:
+                    match_dict[match_str.split('\n')[0]].append(op_name)
+                else:
+                    match_dict[match_str.split('\n')[0]] = [op_name]
                 used_graph_stack.append(match_str)
                 sub_graph_str = sub_graph_str.replace(match_str, '')
                 index = line_index[current_line]
                 line_combine_info.append({index: [line_count, cnode]})
                 if sub_graph_str == '':
-                    # 命中
                     line_combine_infos.append(copy.deepcopy(line_combine_info))
                 dfs(sub_graph_str, used_graph_stack)
                 out_str = used_graph_stack.pop()
                 sub_graph_str = out_str + sub_graph_str
                 if len(out_str.split('\n')) > 2 or 'aten' in out_str:
                     line_combine_info.pop()
-        
-            
+    
     dfs(graph_str, used_graph_stack)
     min_line_count = len(line_index) 
     origin_line_count = len(line_index) 

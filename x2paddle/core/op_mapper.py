@@ -119,23 +119,23 @@ class OpMapper(object):
         else:
             raise Exception("Unknown type of codes")
 
-    def add_codes_dygraph(self, codes, indent=0):
+    def add_codes_dygraph(self, codes, init_indent=0, forward_indent=0):
         if isinstance(codes, list):
             for code in codes:
                 if code.startswith(
                         'self.') or 'init' in code or 'super' in code:
                     self.paddle_codes_init += (
-                        self.tab * indent + code.strip('\n') + '\n')
+                        self.tab * init_indent + code.strip('\n') + '\n')
                 else:
                     self.paddle_codes_forward += (
-                        self.tab * indent + code.strip('\n') + '\n')
+                        self.tab * forward_indent + code.strip('\n') + '\n')
         elif isinstance(codes, str):
             if 'init' in codes or 'super' in codes:
                 self.paddle_codes_init += (
-                    self.tab * indent + codes.strip('\n') + '\n')
+                    self.tab * init_indent + codes.strip('\n') + '\n')
             else:
                 self.paddle_codes_forward += (
-                    self.tab * indent + codes.strip('\n') + '\n')
+                    self.tab * forward_indent + codes.strip('\n') + '\n')
         else:
             raise Exception("Unknown type of codes")
 
@@ -224,11 +224,13 @@ class OpMapper(object):
             self.add_codes_dygraph("\ndef __init__(self):", 1)
             self.add_codes_dygraph("\nsuper(X2PaddleNet, self).__init__()", 2)
             self.add_codes_dygraph(
-                "\ndef forward(self, {}):".format(','.join(self.datas_name)), 1)
+                "\ndef forward(self, {}):".format(','.join(self.datas_name)), forward_indent=1)
             net_indent = 2
+            self.node_net_indent = {}
         else:
             self.add_codes("\ndef x2paddle_net():", 0)
             net_indent = 1
+        
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)
@@ -237,7 +239,19 @@ class OpMapper(object):
             if len(node.fluid_code.layers) == 0:
                 continue
             if self.is_dygraph:
-                self.add_codes_dygraph(node.fluid_code.gen_codes(), net_indent)
+                from x2paddle.decoder.pytorch_decoder import PyTorchGraphControlNode
+                if isinstance(node, PyTorchGraphControlNode):
+                    block_indent = net_indent + 1
+                    if node.layer_name in self.node_net_indent:
+                        block_indent = self.node_net_indent[node.layer_name] + 1
+                    for node_name in node.block_nodes_name:
+                        node_name = node_name.replace('/', '_').replace('-', '_').replace('.', '_').replace('%', 'x_')
+                        self.node_net_indent[node_name] = block_indent
+                net_init_indent = net_indent
+                net_forward_indent = net_indent
+                if node.layer_name in self.node_net_indent:
+                    net_forward_indent = self.node_net_indent[node.layer_name]
+                self.add_codes_dygraph(node.fluid_code.gen_codes(), net_init_indent, net_forward_indent)
             else:
                 self.add_codes(node.fluid_code.gen_codes(), net_indent)
         self.add_codes(self.paddle_codes_init)
