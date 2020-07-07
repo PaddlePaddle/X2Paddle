@@ -37,7 +37,7 @@ class PaddleOpMapper(object):
 
         self.name_counter = dict()
 
-    def convert(self, program, save_dir):
+    def convert(self, program, save_dir, opset=10):
         weight_nodes = self.convert_weights(program)
         op_nodes = list()
         input_nodes = list()
@@ -81,7 +81,9 @@ class PaddleOpMapper(object):
             initializer=[],
             inputs=input_nodes,
             outputs=output_nodes)
-        model = helper.make_model(graph, producer_name='X2Paddle')
+        opset_imports = [helper.make_opsetid("", opset)]
+        model = helper.make_model(
+            graph, producer_name='X2Paddle', opset_imports=opset_imports)
         onnx.checker.check_model(model)
 
         if not os.path.isdir(save_dir):
@@ -553,13 +555,6 @@ class PaddleOpMapper(object):
     def bilinear_interp(self, op, block):
         input_names = op.input_names
         input_shape = block.vars[op.input('X')[0]].shape
-        batch_size = input_shape[0]
-        channels = input_shape[1]
-        height = input_shape[2]
-        width = input_shape[3]
-        coordinate_transformation_mode = 'half_pixel'
-        if op.attr('align_corners'):
-            coordinate_transformation_mode = 'align_corners'
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
                 'SizeTensor' in input_names and
                 len(op.input('SizeTensor')) > 0):
@@ -602,50 +597,31 @@ class PaddleOpMapper(object):
                     outputs=[cast_shape_name],
                     to=onnx_pb.TensorProto.INT64)
                 node_list.extend([concat_shape_node, cast_shape_node])
-            shape_name3 = self.get_name(op.type, "shape.concat")
-            shape_node3 = helper.make_node(
+            shape_name2 = self.get_name(op.type, "shape.concat")
+            shape_node2 = helper.make_node(
                 'Concat',
                 inputs=[shape_name1, cast_shape_name],
-                outputs=[shape_name3],
+                outputs=[shape_name2],
                 axis=0)
-            node_list.append(shape_node3)
-            name_h_w = op.output('Out')[0] + "@h_w"
-            node_h_w = helper.make_node(
-                'Constant',
-                inputs=[],
-                outputs=[name_h_w],
-                value=helper.make_tensor(
-                    name=name_h_w,
-                    data_type=onnx_pb.TensorProto.INT64,
-                    dims=[2],
-                    vals=[height, width],
-                    raw=False))
-            node_list.append(node_h_w)
-            shape_name4 = op.output('Out')[0] + "@shape.concat4"
-            shape_node4 = helper.make_node(
-                'Concat',
-                inputs=[shape_name1, name_h_w],
-                outputs=[shape_name4],
-                axis=0)
-            node_list.append(shape_node4)
-            cast_shape_name3 = self.get_name(op.type, "shape.cast")
-            cast_shape_node3 = helper.make_node(
+            node_list.append(shape_node2)
+            cast_shape_name2 = self.get_name(op.type, "shape.cast")
+            cast_shape_node2 = helper.make_node(
                 'Cast',
-                inputs=[shape_name3],
-                outputs=[cast_shape_name3],
+                inputs=[shape_name2],
+                outputs=[cast_shape_name2],
                 to=onnx_pb.TensorProto.FLOAT)
-            node_list.append(cast_shape_node3)
-            cast_shape_name4 = self.get_name(op.type, "shape.cast")
-            cast_shape_node4 = helper.make_node(
+            node_list.append(cast_shape_node2)
+            cast_shape_name0 = self.get_name(op.type, "shape.cast")
+            cast_shape_node0 = helper.make_node(
                 'Cast',
-                inputs=[shape_name4],
-                outputs=[cast_shape_name4],
+                inputs=[shape_name0],
+                outputs=[cast_shape_name0],
                 to=onnx_pb.TensorProto.FLOAT)
-            node_list.append(cast_shape_node4)
+            node_list.append(cast_shape_node0)
             outputs_h_w_scales = op.output('Out')[0] + "@out_hw_scales"
             node_h_w_scales = helper.make_node(
                 'Div',
-                inputs=[cast_shape_name3, cast_shape_name4],
+                inputs=[cast_shape_name2, cast_shape_name0],
                 outputs=[outputs_h_w_scales])
             node_list.append(node_h_w_scales)
             result_node = helper.make_node(
@@ -660,8 +636,7 @@ class PaddleOpMapper(object):
                 'Resize',
                 inputs=[op.input('X')[0], op.input('Scale')[0]],
                 outputs=op.output('Out'),
-                mode='linear',
-                coordinate_transformation_mode=coordinate_transformation_mode)
+                mode='linear')
         else:
             out_shape = [op.attr('out_h'), op.attr('out_w')]
             scale = op.attr('scale')
@@ -674,7 +649,7 @@ class PaddleOpMapper(object):
                     'Resize',
                     inputs=[op.input('X')[0], scale_name],
                     outputs=op.output('Out'),
-                    mode='nearest')
+                    mode='linear')
                 return [scale_node, node]
             else:
                 raise Exception("Unexpected situation happend")
@@ -682,9 +657,6 @@ class PaddleOpMapper(object):
 
     def nearest_interp(self, op, block):
         input_names = op.input_names
-        coordinate_transformation_mode = 'half_pixel'
-        if op.attr('align_corners'):
-            coordinate_transformation_mode = 'align_corners'
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
                 'Resize',
