@@ -29,11 +29,14 @@ def export_paddle_param(param, param_name, dir):
         "bool": [framework_pb2.VarType.BOOL, None]
     }
     shape = param.shape
+    if str(param.dtype) in ['uint8', 'uint_8', 'bool']:
+        param = param.astype('int64')
     if len(shape) == 0:
         assert param.size == 1, "Unexpected situation happend!"
         shape = [1]
-    assert str(param.dtype) in dtype_map, "Unknown dtype of params."
-
+    assert str(
+        param.dtype) in dtype_map, "Unknown dtype {} of params: {}.".format(
+            str(param.dtype), param_name)
     fp = open(os.path.join(dir, param_name), 'wb')
     numpy.array([0], dtype='int32').tofile(fp)
     numpy.array([0], dtype='int64').tofile(fp)

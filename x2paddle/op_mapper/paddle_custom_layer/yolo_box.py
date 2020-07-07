@@ -2,6 +2,8 @@ import onnx
 import numpy as np
 from onnx import onnx_pb, helper
 
+MAX_FLOAT = np.asarray([255, 255, 127, 127], dtype=np.uint8).view(np.float32)[0]
+
 
 def get_old_name(arg, name_prefix=''):
     prefix_index = arg.find(name_prefix)
@@ -747,36 +749,53 @@ def yolo_box(op, block):
     outputs_pred_box_x2_clip = [model_name + "@pred_box_x2_clip"]
     outputs_pred_box_y2_clip = [model_name + "@pred_box_y2_clip"]
 
+    min_const_name = model_name + "@pred_box_min_const"
+    max_const_name = model_name + "@pred_box_max_const"
+
+    min_const = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=[min_const_name],
+        value=onnx.helper.make_tensor(
+            name=min_const_name,
+            data_type=onnx.TensorProto.FLOAT,
+            dims=(),
+            vals=[0.0]))
+    node_list.append(min_const)
+
+    max_const = onnx.helper.make_node(
+        'Constant',
+        inputs=[],
+        outputs=[max_const_name],
+        value=onnx.helper.make_tensor(
+            name=max_const_name,
+            data_type=onnx.TensorProto.FLOAT,
+            dims=(),
+            vals=[MAX_FLOAT]))
+    node_list.append(max_const)
+
     node_pred_box_x1_clip = onnx.helper.make_node(
         'Clip',
-        inputs=outputs_pred_box_x1_decode,
-        outputs=outputs_pred_box_x1_clip,
-        min=0.0,
-        max=float(np.inf))
+        inputs=outputs_pred_box_x1_decode + [min_const_name, max_const_name],
+        outputs=outputs_pred_box_x1_clip)
     node_list.append(node_pred_box_x1_clip)
 
     node_pred_box_y1_clip = onnx.helper.make_node(
         'Clip',
-        inputs=outputs_pred_box_y1_decode,
-        outputs=outputs_pred_box_y1_clip,
-        min=0.0,
-        max=float(np.inf))
+        inputs=outputs_pred_box_y1_decode + [min_const_name, max_const_name],
+        outputs=outputs_pred_box_y1_clip)
     node_list.append(node_pred_box_y1_clip)
 
     node_pred_box_x2_clip = onnx.helper.make_node(
         'Clip',
-        inputs=outputs_pred_box_x2_sub_w,
-        outputs=outputs_pred_box_x2_clip,
-        min=0.0,
-        max=float(np.inf))
+        inputs=outputs_pred_box_x2_sub_w + [min_const_name, max_const_name],
+        outputs=outputs_pred_box_x2_clip)
     node_list.append(node_pred_box_x2_clip)
 
     node_pred_box_y2_clip = onnx.helper.make_node(
         'Clip',
-        inputs=outputs_pred_box_y2_sub_h,
-        outputs=outputs_pred_box_y2_clip,
-        min=0.0,
-        max=float(np.inf))
+        inputs=outputs_pred_box_y2_sub_h + [min_const_name, max_const_name],
+        outputs=outputs_pred_box_y2_clip)
     node_list.append(node_pred_box_y2_clip)
 
     outputs_pred_box_x2_res = [model_name + "@box_x2_res"]

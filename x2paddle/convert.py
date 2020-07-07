@@ -175,13 +175,15 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
-    import onnxruntime
     model = ONNXDecoder(model_path)
-    mapper = ONNXOpMapper(model, save_dir)
+    mapper = ONNXOpMapper(model)
+    print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
+    print("Model optimized.")
 
-    optimizer.delete_redundance_code()
+    print("Paddle model and code generating ...")
     mapper.save_inference_model(save_dir, params_merge)
+    print("Paddle model and code generated.")
 
 
 def paddle2onnx(model_path, save_dir):
@@ -210,18 +212,6 @@ def main():
 
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
-
-    if args.framework == "onnx":
-        try:
-            import onnxruntime as rt
-            version = rt.__version__
-            if version != '1.0.0':
-                print("[ERROR] onnxruntime==1.0.0 is required")
-                return
-        except:
-            print(
-                "[ERROR] onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
-            )
 
     try:
         import paddle
@@ -261,6 +251,7 @@ def main():
     elif args.framework == "onnx":
         assert args.model is not None, "--model should be defined while translating onnx model"
         params_merge = False
+
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
