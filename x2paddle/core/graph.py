@@ -98,5 +98,6 @@ class Graph(object):
     def connect(self, src, dst):
         if dst not in self.node_map:
             raise Exception("node[{}] not in graph".format(dst))
+        
         self.node_map[dst].inputs.append(src)
         self.node_map[src].outputs.append(dst)

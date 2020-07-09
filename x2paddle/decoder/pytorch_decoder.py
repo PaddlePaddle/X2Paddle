@@ -249,7 +249,8 @@ class PyTorchGraph(Graph):
                             return_str = block.returnNode().__str__()
                             p = re.compile(r"prim::Return[(]%(.*)[)]")
                             m = p.search(return_str)  
-                            assert m is not None, 'This is not a standard model'
+                            if m is None:
+                                continue
                             self.node_map[ifelse_node_name + '__1'] = PyTorchGraphControlNode(None, 
                                                                                        "assign", 
                                                                                        ifelse_node_name + '__1')

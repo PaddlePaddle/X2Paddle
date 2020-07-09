@@ -146,6 +146,8 @@ class FluidCode(object):
         layer.op = op
         layer.is_dygraph = True
         layer.output = name
+        if inputs is not None:
+            layer.inputs = inputs
         if param_attr is not None:
             layer.param_attr = param_attr
         self.layers.append(layer)
