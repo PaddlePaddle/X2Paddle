@@ -261,7 +261,8 @@ class PyTorchOpMapper(OpMapper):
             node.fluid_code.add_note("{} = {}"
                                      .format(opt_name.replace('/', '_').
                                              replace('-', '_').replace('.', '_').replace('%', 'x_'), input_node_name))
-        
+    def init(self, node):
+        pass
         
     def control_if(self, node):
         input_node = self.graph.get_input_node(node, idx=0)
@@ -270,4 +271,9 @@ class PyTorchOpMapper(OpMapper):
         
     def control_else(self, node):
         node.fluid_code.add_note("else:")
+        
+    def control_for(self, node):
+        node.fluid_code.add_note("for {} in range({}):".format(node.middle_name.replace('/', '_').
+                                             replace('-', '_').replace('.', '_').replace('%', 'x_'), 
+                                                               node.attrs))
         

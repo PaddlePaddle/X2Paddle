@@ -59,6 +59,7 @@ class PyTorchGraphControlNode(GraphNode):
         self.input_ids = []
         self.node_ids = []
         self.attrs = None
+        self.middle_name = None
         
         
 class PyTorchGraph(Graph):
@@ -70,6 +71,7 @@ class PyTorchGraph(Graph):
         self.ipt_opts = {}
         self.delete_indexes = []
         self.ifelse_id = 0
+        self.for_id = 0
         
         
     def _get_input_info(self, graph):
@@ -101,13 +103,57 @@ class PyTorchGraph(Graph):
         node_name = '_'.join(node_ids)
         return node_name, node_ids
   
-    def _connect_ifelse_block(self, src_node_name, dst_node_name):
+    def _connect_control_block(self, src_node_name, dst_node_name):
         if isinstance(self.node_map[src_node_name], PyTorchGraphControlNode):
             if self.node_map[src_node_name].layer_type == 'control_if':
                 if src_node_name + '__0' in self.node_map:
                     self.connect(src_node_name + '__0', dst_node_name)
                 if src_node_name + '__1' in self.node_map:
                     self.connect(src_node_name + '__1', dst_node_name)
+            elif self.node_map[src_node_name].layer_type == 'control_for':
+                self.connect(src_node_name + '__0', dst_node_name)
+                    
+    def construct_if_node(self, 
+                          return_str,
+                          control_node_name, 
+                          assign_node_name, 
+                          block_opts_name,
+                          ifelse_ids):
+        self.node_map[assign_node_name] = PyTorchGraphControlNode(None, 
+                                                                  "assign", 
+                                                                  assign_node_name)
+        p = re.compile(r"prim::Return[(](.*)[)]")
+        m = p.search(return_str)  
+        for nid in m.groups()[0].split(','):
+            nid = nid.replace(' ', '')
+            self.node_map[assign_node_name].input_ids.append(nid)
+            self.connect(block_opts_name[nid], assign_node_name)
+        self.connect(control_node_name, assign_node_name)
+        self.node_map[control_node_name].block_nodes_name.append(assign_node_name)
+        self.node_map[assign_node_name].attrs = ifelse_ids
+        self.node_map[assign_node_name].node_ids.append(assign_node_name)
+        
+    def construct_for_node(self, 
+                           return_str,
+                           control_node_name, 
+                           assign_node_name, 
+                           block_opts_name,
+                           for_ids):
+        self.node_map[assign_node_name] = PyTorchGraphControlNode(None, 
+                                                                  "assign", 
+                                                                  assign_node_name)
+        p = re.compile(r"prim::Return[(](.*)[)]")
+        m = p.search(return_str)        
+        for i, nid in enumerate(m.groups()[0].split(',')):
+            nid = nid.replace(' ', '')
+            if i == 0:
+                continue
+            self.node_map[assign_node_name].input_ids.append(nid)
+            self.connect(block_opts_name[nid], assign_node_name)
+        self.connect(control_node_name, assign_node_name)
+        self.node_map[control_node_name].block_nodes_name.append(assign_node_name)
+        self.node_map[assign_node_name].attrs = for_ids
+        self.node_map[assign_node_name].node_ids.append(assign_node_name)
             
     def deal_node(self, node):
         node_name, node_ids = self._get_node_info(node)
@@ -133,12 +179,12 @@ class PyTorchGraph(Graph):
                     cnode.input_names.append(input_node_name)
                     self.connect(input_node_name, cnode_name)
                     node_attrs.append(None)
-                    self._connect_ifelse_block(input_node_name, cnode_name)
+                    self._connect_control_block(input_node_name, cnode_name)
                 elif len(match) == 1:
                     cnode.input_names.append(input_node_name)
                     self.connect(match[0], cnode_name)
                     node_attrs.append(None)
-                    self._connect_ifelse_block(match[0], cnode_name)
+                    self._connect_control_block(match[0], cnode_name)
                 else:
                     if input_node_name is None:
                         node_attrs.append(None)
@@ -229,21 +275,11 @@ class PyTorchGraph(Graph):
                             p = re.compile(r"prim::Return[(]%(.*)[)]")
                             m = p.search(return_str)  
                             assert m is not None, 'This is not a standard model'
-                            self.node_map[ifelse_node_name + '__0'] = PyTorchGraphControlNode(None, 
-                                                                                       "assign", 
-                                                                                       ifelse_node_name + '__0')
-                            
-                            
-                            p = re.compile(r"prim::Return[(](.*)[)]")
-                            m = p.search(return_str)        
-                            for nid in m.groups()[0].split(','):
-                                self.node_map[ifelse_node_name + '__0'].input_ids.append(nid)
-                                self.connect(block_opts_name[nid], ifelse_node_name + '__0')
-                                self._connect_ifelse_block(block_opts_name[nid], ifelse_node_name + '__0')
-                            self.connect(control_node_name, ifelse_node_name + '__0')
-                            self.node_map[control_node_name].block_nodes_name.append(ifelse_node_name + '__0')
-                            self.node_map[ifelse_node_name + '__0'].attrs = ifelse_ids
-                            self.node_map[ifelse_node_name + '__0'].node_ids.append(ifelse_node_name + '__0')                       
+                            self.construct_if_node(return_str,
+                                                   control_node_name, 
+                                                   ifelse_node_name + '__0', 
+                                                   block_opts_name,
+                                                   ifelse_ids)
                             last_node_name = ifelse_node_name + '__0'
                         if i == 1:
                             return_str = block.returnNode().__str__()
@@ -251,21 +287,11 @@ class PyTorchGraph(Graph):
                             m = p.search(return_str)  
                             if m is None:
                                 continue
-                            self.node_map[ifelse_node_name + '__1'] = PyTorchGraphControlNode(None, 
-                                                                                       "assign", 
-                                                                                       ifelse_node_name + '__1')
-                            p = re.compile(r"prim::Return[(](.*)[)]")
-                            m = p.search(return_str)        
-                            for nid in m.groups()[0].split(','):
-                                self.node_map[ifelse_node_name + '__1'].input_ids.append(nid)
-                                self.connect(block_opts_name[nid], ifelse_node_name + '__1')
-                                self._connect_ifelse_block(block_opts_name[nid], ifelse_node_name + '__1')
-                            self.connect(control_node_name, ifelse_node_name + '__1')
-                            self.node_map[control_node_name].block_nodes_name.append(ifelse_node_name + '__1')
-                            self.node_map[ifelse_node_name + '__1'].attrs = ifelse_ids
-                            self.node_map[ifelse_node_name + '__1'].node_ids.append(ifelse_node_name + '__1')
-                            last_node_name = ifelse_node_name + '__1'
-                                
+                            self.construct_if_node(return_str,
+                                                   control_node_name, 
+                                                   ifelse_node_name + '__1', 
+                                                   block_opts_name,
+                                                   ifelse_ids)
                     for j, node in enumerate(block.nodes()):
                         out = self.deal_node(node)
                         node_name = list(self.node_map.keys())[-1]
@@ -281,38 +307,91 @@ class PyTorchGraph(Graph):
                             if m is None:
                                 last_node_name = node_name
                             else:
-                                self.node_map[ifelse_node_name + '__0'] = PyTorchGraphControlNode(None, 
-                                                                                           "assign", 
-                                                                                           ifelse_node_name + '__0')               
-                                p = re.compile(r"prim::Return[(](.*)[)]")
-                                m = p.search(return_str)        
-                                for nid in m.groups()[0].split(','):
-                                    self.node_map[ifelse_node_name + '__0'].input_ids.append(nid)
-                                    self.connect(block_opts_name[nid], ifelse_node_name + '__0')
-                                    self._connect_ifelse_block(block_opts_name[nid], ifelse_node_name + '__0')
-                                self.connect(control_node_name, ifelse_node_name + '__0')
-                                self.node_map[control_node_name].block_nodes_name.append(ifelse_node_name + '__0')
-                                self.node_map[ifelse_node_name + '__0'].attrs = ifelse_ids
-                                self.node_map[ifelse_node_name + '__0'].node_ids.append(ifelse_node_name + '__0')
+                                self.construct_if_node(return_str,
+                                                   control_node_name, 
+                                                   ifelse_node_name + '__0', 
+                                                   block_opts_name,
+                                                   ifelse_ids)
                                 last_node_name = ifelse_node_name + '__0'
                         elif i == 1 and j == len(list(block.nodes())) - 1:
                             return_str = block.returnNode().__str__()
                             p = re.compile(r"prim::Return[(]%(.*)[)]")
                             m = p.search(return_str)  
                             if m is not None:
-                                self.node_map[ifelse_node_name + '__1'] = PyTorchGraphControlNode(None, 
-                                                                                           "assign", 
-                                                                                           ifelse_node_name + '__1')
-                                p = re.compile(r"prim::Return[(](.*)[)]")
-                                m = p.search(return_str)        
-                                for nid in m.groups()[0].split(','):
-                                    self.node_map[ifelse_node_name + '__1'].input_ids.append(nid)
-                                    self.connect(block_opts_name[nid], ifelse_node_name + '__1')
-                                    self._connect_ifelse_block(block_opts_name[nid], ifelse_node_name + '__1')
-                                self.connect(control_node_name, ifelse_node_name + '__1')
-                                self.node_map[control_node_name].block_nodes_name.append(ifelse_node_name + '__1')
-                                self.node_map[ifelse_node_name + '__1'].attrs = ifelse_ids
-                                self.node_map[ifelse_node_name + '__1'].node_ids.append(ifelse_node_name + '__1')
+                                self.construct_if_node(return_str,
+                                                       control_node_name, 
+                                                       ifelse_node_name + '__1', 
+                                                       block_opts_name,
+                                                       ifelse_ids)
+            elif kind == 'prim::Loop':
+                for_node_name, for_ids = self._get_node_info(node)
+                if for_node_name == '':
+                    for_node_name = '%for' + str(self.for_id)
+                    self.for_id += 1
+                control_node_name = for_node_name
+                self.node_map[control_node_name] = PyTorchGraphControlNode(node,
+                                                                           'control_for',
+                                                                           control_node_name)
+                input_node_names = []
+                for i, input in enumerate(node.inputs()):
+                    input_node = input.node()
+                    if input_node.kind() == 'prim::Param':
+                        input_node_name = '%' + input.debugName()
+                    else:
+                        input_node_name, _ = self._get_node_info(input_node)
+                    if i == 0:
+                        self.node_map[control_node_name].attrs = self.attrs[input_node_name]
+                    elif i == 1:
+                        continue
+                    else:
+                        self.connect(input_node_name, control_node_name)
+                        input_node_names.append(input_node_name)
+                p = re.compile(r"prim::Loop[(]%(.*), %(.*), (.*)[)]")
+                m = p.search(node_str) 
+                for part in m.groups()[2].split(','):
+                    self.node_map[control_node_name].input_ids.append(part.replace(' ', '')) 
+                self.node_map[control_node_name].node_ids.append(control_node_name)
+                block = list(node.blocks())[0]
+                self.node_map[control_node_name].middle_name = '%' + list(block.inputs())[0].__str__().split(' ')[0]
+                for i, bipt in enumerate(block.inputs()):
+                    if i == 0:
+                        init_node_name = self.node_map[control_node_name].middle_name
+                        self.node_map[init_node_name] = PyTorchGraphControlNode(None, 
+                                                                  "init", 
+                                                                  init_node_name)
+                        self.connect(control_node_name, init_node_name)
+                    else:
+                        assign_node_name = '%' + bipt.__str__().split(' ')[0]
+                        self.node_map[assign_node_name] = PyTorchGraphControlNode(None, 
+                                                                  "assign", 
+                                                                  assign_node_name)
+                        self.connect(input_node_names[i - 1], assign_node_name)
+                        self.connect(control_node_name, assign_node_name)
+                        self.node_map[assign_node_name].attrs = [assign_node_name]
+                
+                block_opts_name = {}
+                for opt in block.outputs():
+                    opt_name, opt_ids = self._get_node_info(opt.node())
+                    for id in opt_ids:
+                        block_opts_name[id] = opt_name
+                for j, node in enumerate(block.nodes()):
+                    out = self.deal_node(node)
+                    node_name = list(self.node_map.keys())[-1]
+                    if node_name == control_node_name:
+                        continue
+                    if out:
+                        self.node_map[control_node_name].block_nodes_name.append(node_name)
+                        self.connect(control_node_name, node_name)
+                    if j == len(list(block.nodes())) - 1:
+                        return_str = block.returnNode().__str__()
+                        p = re.compile(r"prim::Return[(]%(.*)[)]")
+                        m = p.search(return_str)  
+                        if m is not None:
+                            self.construct_for_node(return_str,
+                                                   control_node_name, 
+                                                   for_node_name + '__0', 
+                                                   block_opts_name,
+                                                   for_ids)
             else:
                 print(index)
                 print(node_name)        

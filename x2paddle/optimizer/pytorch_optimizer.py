@@ -79,7 +79,6 @@ class PyTorchOptimizer(object):
                     part = parent_node_layer.split('=')
                     part[0] = part[0].replace(dropout_ipt_name, dropout_opt_name)
                     parent_node.fluid_code.layers[-1] = '='.join(part)
-                    print('='.join(part))
                 node.fluid_code.clear()
                     
 
