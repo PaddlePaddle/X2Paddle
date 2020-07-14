@@ -48,7 +48,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def out_shapes(self):
-        if self.layer_type == "OneShotIterator":
+        if self.layer_type == "OneShotIterator" or self.layer_type == "IteratorV2":
             values = self.layer.attr["output_shapes"].list.shape
         else:
             values = self.layer.attr["_output_shapes"].list.shape
@@ -68,7 +68,8 @@ class TFGraphNode(GraphNode):
         if dtype == 0:
             dtype = self.layer.attr['output_types'].list.type[0]
         if dtype not in self.dtype_map:
-            raise Exception("Dtype[{}] not in dtype_map".format(dtype))
+            raise Exception("Dtype[{}] of node({}) not in dtype_map".format(
+                dtype, self.layer.name))
         return self.dtype_map[dtype]
 
     @property
@@ -114,16 +115,20 @@ class TFGraph(Graph):
     def __init__(self, model, data_format="NHWC"):
         super(TFGraph, self).__init__(model)
         self.identity_map = dict()
-        self.multi_out_ops = ['Split', 'SplitV']
+        self.multi_out_ops = ['Split', 'SplitV', 'IteratorV2']
         self.tf_data_format = data_format
 
     def build(self):
         for layer in self.model.node:
+            if layer.op == 'Assert':
+                continue
             self.node_map[layer.name.replace('/', '_').replace(
                 '-', '_')] = TFGraphNode(
                     layer, data_format=self.tf_data_format)
 
         for layer_name, node in self.node_map.items():
+            if node.layer_type == 'Const':
+                continue
             for in_node in node.layer.input:
                 in_node = in_node.replace('/', '_').replace('-', '_').replace(
                     '^', '')
@@ -138,6 +143,14 @@ class TFGraph(Graph):
                     self.connect(in_node, layer_name)
 
         super(TFGraph, self).build()
+
+        for layer in self.model.node:
+            if layer.op == 'Assert':
+                for ipt in layer.input:
+                    ipt_name = ipt.replace('-', '_').replace('/', '_')
+                    if ipt_name in self.output_nodes:
+                        idx = self.output_nodes.index(ipt_name)
+                        del self.output_nodes[idx]
 
         # tensorflow graph optimize
         self._remove_isolated_node()
@@ -322,7 +335,7 @@ class TFDecoder(object):
         graph_def = cp.deepcopy(graph_def)
         input_map = dict()
         for layer in graph_def.node:
-            if layer.op != "Placeholder" and layer.op != "OneShotIterator":
+            if layer.op != "Placeholder" and layer.op != "OneShotIterator" and layer.op != "IteratorV2":
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
