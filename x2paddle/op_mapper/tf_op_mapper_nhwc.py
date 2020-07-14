@@ -88,7 +88,6 @@ class TFOpMapperNHWC(OpMapper):
         sys.stderr.write("Total nodes: {}\n".format(len(self.graph.topo_sort)))
         for i, node_name in enumerate(self.graph.topo_sort):
             sys.stderr.write("\rConverting node {} ...     ".format(i + 1))
-            # sys.stderr.write("\rConverting node {} name: {:50}...     ".format(i + 1, node_name))
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if op in self.directly_map_ops:
