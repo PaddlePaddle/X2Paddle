@@ -196,8 +196,8 @@ class OpSet9(object):
                 pool_type[op.attr('pooling_type')][1],
                 inputs=op.input('X'),
                 outputs=op.output('Out'), )
-        #elif op.attr('adaptive'):
-        #    k_size = op.attr('ksize')
+        elif op.attr('adaptive'):
+            raise Excpetion("ONNX cannot support adaptive pool")
         else:
             input_shape = block.var(op.input('X')[0]).shape
             k_size = op.attr('ksize')

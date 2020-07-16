@@ -125,7 +125,7 @@ def multiclass_nms(op, block):
                 vals=[value]))
         node_list.append(node)
 
-    # Ine this code block, we will deocde the raw score data, reshape N * C * M to 1 * N*C*M
+    # In this code block, we will deocde the raw score data, reshape N * C * M to 1 * N*C*M
     # and the same time, decode the select indices to 1 * D, gather the select_indices
     outputs_gather_1 = [result_name + "@gather_1"]
     node_gather_1 = onnx.helper.make_node(
@@ -405,12 +405,43 @@ def multiclass_nms(op, block):
 
     inputs_concat_final_results = outputs_cast_topk_class + outputs_unsqueeze_topk_scores +\
         outputs_gather_select_boxes
-    outputs_concat_final_results = outputs['Out']
-    node_concat_final_results = onnx.helper.make_node(
+    outputs_sort_by_socre_results = [result_name + "@concat_topk_scores"]
+    node_sort_by_socre_results = onnx.helper.make_node(
         'Concat',
         inputs=inputs_concat_final_results,
-        outputs=outputs_concat_final_results,
+        outputs=outputs_sort_by_socre_results,
         axis=2)
-    node_list.append(node_concat_final_results)
+    node_list.append(node_sort_by_socre_results)
 
+    # select topk classes indices
+    outputs_squeeze_cast_topk_class = [result_name + "@squeeze_cast_topk_class"]
+    node_squeeze_cast_topk_class = onnx.helper.make_node(
+        'Squeeze',
+        inputs=outputs_cast_topk_class,
+        outputs=outputs_squeeze_cast_topk_class,
+        axes=[0, 2])
+    node_list.append(node_squeeze_cast_topk_class)
+    outputs_neg_squeeze_cast_topk_class = [
+        result_name + "@neg_squeeze_cast_topk_class"
+    ]
+    node_neg_squeeze_cast_topk_class = onnx.helper.make_node(
+        'Neg',
+        inputs=outputs_squeeze_cast_topk_class,
+        outputs=outputs_neg_squeeze_cast_topk_class)
+    node_list.append(node_neg_squeeze_cast_topk_class)
+    outputs_topk_select_classes_indices = [result_name + "@topk_select_topk_classes_scores",\
+        result_name + "@topk_select_topk_classes_indices"]
+    node_topk_select_topk_indices = onnx.helper.make_node(
+        'TopK',
+        inputs=outputs_neg_squeeze_cast_topk_class + outputs_cast_topk_indices,
+        outputs=outputs_topk_select_classes_indices)
+    node_list.append(node_topk_select_topk_indices)
+    outputs_concat_final_results = outputs['Out']
+    node_concat_final_results = onnx.helper.make_node(
+        'Gather',
+        inputs=outputs_sort_by_socre_results +
+        [outputs_topk_select_classes_indices[1]],
+        outputs=outputs_concat_final_results,
+        axis=1)
+    node_list.append(node_concat_final_results)
     return node_list
