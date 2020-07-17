@@ -192,12 +192,12 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
-def paddle2onnx(model_path, save_dir, opset_number):
+def paddle2onnx(model_path, save_dir, opset_version=10):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(model.program, save_dir, opset_number=opset_number)
+    mapper.convert(model.program, save_dir, opset_number=opset_version)
 
 
 def main():
