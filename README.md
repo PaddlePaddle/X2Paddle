@@ -61,6 +61,7 @@ x2paddle --framework=paddle2onnx --model=paddle_infer_model_dir --save_dir=onnx_
 |--without_data_format_optimization | **[可选]** For TensorFlow, 当指定该参数时，关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
 |--define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](FAQ.md) |
 |--params_merge | **[可选]** 当指定该参数时，转换完成后，inference_model中的所有模型参数将合并保存为一个文件__params__ |
+|--onnx_opset | **[可选]** 当framework为paddle2onnx时，该参数可设置转换为ONNX的OpSet版本，目前支持9、10、11，默认为10 |
 
 
 

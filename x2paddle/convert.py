@@ -76,6 +76,12 @@ def arg_parser():
         default=False,
         help="define input shape for tf model")
     parser.add_argument(
+        "--onnx_opset",
+        "-oo",
+        type=int,
+        default=10,
+        help="when paddle2onnx set onnx opset version to export")
+    parser.add_argument(
         "--params_merge",
         "-pm",
         action="store_true",
@@ -172,7 +178,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
+    from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
     model = ONNXDecoder(model_path)
@@ -186,12 +192,12 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
-def paddle2onnx(model_path, save_dir):
+def paddle2onnx(model_path, save_dir, opset_number):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
-    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(model.program, save_dir)
+    mapper.convert(model.program, save_dir, opset_number=opset_number)
 
 
 def main():
@@ -258,7 +264,7 @@ def main():
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir)
+        paddle2onnx(args.model, args.save_dir, args.onnx_opset)
 
     else:
         raise Exception(
