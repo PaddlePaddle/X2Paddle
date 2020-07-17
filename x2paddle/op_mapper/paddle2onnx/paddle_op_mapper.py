@@ -96,7 +96,7 @@ class PaddleOpMapper(object):
             run_opset = opset_number
         else:
             for support_opset_number in self.support_opsets:
-                if support_opset_number > opset_number:
+                if support_opset_number < opset_number:
                     run_opset = support_opset_number
                 else:
                     break
