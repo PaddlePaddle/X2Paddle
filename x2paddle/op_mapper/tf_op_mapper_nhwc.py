@@ -806,7 +806,7 @@ class TFOpMapperNHWC(OpMapper):
                 "transpose", inputs=input, output=node, param_attr=attr)
             input = node
         else:
-            self.data_format_propagation(node)
+            self.graph.data_format_propagation(node)
 
         attr = {
             "bias_attr": False,

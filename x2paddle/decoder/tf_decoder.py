@@ -285,7 +285,6 @@ class TFGraph(Graph):
 
     def data_format_propagation(self, node):
         current_node = self.node_map[node.layer_name]
-        current_node = node.tf_data_format
         outputs = current_node.outputs
         if len(outputs) == 0:
             return
@@ -416,7 +415,7 @@ class TFDecoder(object):
             else:
                 value = graph_node.layer.attr["shape"].shape
                 shape = [dim.size for dim in value.dim]
-                self.input_info[graph_node.layer_name] = (shape, dtype)
+                self.input_info[layer.name] = (shape, dtype)
 
         return input_map
 
