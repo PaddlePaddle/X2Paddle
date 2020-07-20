@@ -1380,8 +1380,8 @@ class OpSet9():
                 node, idx=5 - miss_arg_num, copy=True)
 
         x_shape = val_x.out_shapes[0]
-        print(x_shape)
-        #assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
+
+        assert x_shape[1] == 1, 'only X with batch_size = 1 supported'
         assert node.get_attr('clip', None) is None, 'clipping not supported'
 
         hidden_size = node.get_attr('hidden_size', None)
