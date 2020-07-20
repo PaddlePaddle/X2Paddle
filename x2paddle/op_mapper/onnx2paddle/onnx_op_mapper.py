@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.op_mapper.onnx2paddle.opsets.opset9 import OpSet9
+from x2paddle.op_mapper.onnx2paddle.opset9 import OpSet9, custom_layers
 from x2paddle.core.op_mapper import OpMapper
-from x2paddle.op_mapper.onnx_opsets.custom_layer import *
 from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
 
 
