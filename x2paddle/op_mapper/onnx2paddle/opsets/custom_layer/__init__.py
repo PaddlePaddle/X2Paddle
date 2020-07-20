@@ -13,10 +13,6 @@
 # limitations under the License.
 
 from .register import get_registered_layers
-#custom layer import begins
-
-from . import InstanceNormalization
-#custom layer import ends
 
 custom_layers = get_registered_layers()
 
