@@ -55,6 +55,24 @@ def export_paddle_param(param, param_name, dir):
 def run_net(param_dir="./"):
     import os
     inputs, outputs = x2paddle_net()
+
+    ops = fluid.default_main_program().global_block().ops
+    used_vars = list()
+    for op in ops:
+        used_vars += op.input_arg_names
+
+    tmp = list()
+    for input in inputs:
+        if isinstance(input, list):
+            for ipt in input:
+                if ipt.name not in used_vars:
+                    continue
+                tmp.append(ipt)
+        else:
+            if input.name not in used_vars:
+                continue
+            tmp.append(input)
+    inputs = tmp
     for i, out in enumerate(outputs):
         if isinstance(out, list):
             for out_part in out:
@@ -122,12 +140,30 @@ class OpMapper(object):
         import model
         try:
             inputs, outputs = model.x2paddle_net()
+
+            ops = fluid.default_main_program().global_block().ops
+            used_vars = list()
+            for op in ops:
+                used_vars += op.input_arg_names
+
             for i, out in enumerate(outputs):
                 if isinstance(out, list):
                     for out_part in out:
                         outputs.append(out_part)
                     del outputs[i]
-            input_names = [input.name for input in inputs]
+
+            input_names = list()
+            for input in inputs:
+                if isinstance(input, list):
+                    for ipt in input:
+                        if ipt.name not in used_vars:
+                            continue
+                        input_names.append(ipt.name)
+                else:
+                    if input.name not in used_vars:
+                        continue
+                    input_names.append(input.name)
+
             exe = fluid.Executor(fluid.CPUPlace())
             exe.run(fluid.default_startup_program())
 
