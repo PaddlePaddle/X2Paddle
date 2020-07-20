@@ -39,6 +39,7 @@ class GraphNode(object):
 class Graph(object):
     def __init__(self, model):
         self.node_map = collections.OrderedDict()
+        self.father_input_nodes = list()
         self.input_nodes = list()
         self.output_nodes = list()
         self.topo_sort = list()
@@ -75,6 +76,7 @@ class Graph(object):
                 if num_inputs[node] == 0:
                     self.topo_sort.append(node)
             idx += 1
+        print(self.topo_sort)
 
     def get_node(self, name, copy=False):
         if name not in self.node_map:
@@ -98,6 +100,6 @@ class Graph(object):
     def connect(self, src, dst):
         if dst not in self.node_map:
             raise Exception("node[{}] not in graph".format(dst))
-        
+
         self.node_map[dst].inputs.append(src)
         self.node_map[src].outputs.append(dst)

@@ -17,31 +17,46 @@ import copy
 import torch
 
 regular_expressions = {}
-regular_expressions['AdaptiveAvgPool2d'] = (r"(\s*)%.*: int\[\] = aten::size[(]%.*[)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: str = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: bool = aten::le[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: int\[\] = prim::ListConstruct[(][)](\n)(\s*).*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::neg[(]%.*[)] # .*(\n)(\s*)%.*: int\[\] = aten::slice[(]%.*, %.*, %.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int\[\] = prim::ListConstruct[(]%.*, %.*[)](\n)(\s*)%.*: int = prim::min[(]%.*[)] # .*(\n)(\s*)= prim::Loop[(]%.*, %.*[)] # .*(\n)(\s*)block0[(]%.* : int[)]:(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int\[\] = aten::append[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)%.*: Tensor = aten::adaptive_avg_pool2d[(]%.*, %.*[)] # .*(\n)", 
-28)
-regular_expressions['Dropout'] = (r"(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: bool = prim::GetAttr\[name=\".*\"\][(]%.*[)](\n)(\s*)%.*: str = prim::Constant\[value=\".*\"\][(][)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: bool = aten::lt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: bool = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::dropout_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::dropout[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)", 26)
+regular_expressions['AdaptiveAvgPool2d'] = (
+    r"(\s*)%.*: int\[\] = aten::size[(]%.*[)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: str = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: bool = aten::le[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: int\[\] = prim::ListConstruct[(][)](\n)(\s*).*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::neg[(]%.*[)] # .*(\n)(\s*)%.*: int\[\] = aten::slice[(]%.*, %.*, %.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int\[\] = prim::ListConstruct[(]%.*, %.*[)](\n)(\s*)%.*: int = prim::min[(]%.*[)] # .*(\n)(\s*)= prim::Loop[(]%.*, %.*[)] # .*(\n)(\s*)block0[(]%.* : int[)]:(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int\[\] = aten::append[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)%.*: Tensor = aten::adaptive_avg_pool2d[(]%.*, %.*[)] # .*(\n)",
+    28)
+regular_expressions['Dropout'] = (
+    r"(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: bool = prim::GetAttr\[name=\".*\"\][(]%.*[)](\n)(\s*)%.*: str = prim::Constant\[value=\".*\"\][(][)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: bool = aten::lt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: bool = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::dropout_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::dropout[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)",
+    26)
 
-regular_expressions['Linear'] = (r"(\s*)%.*: int = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::dim[(]%.*[)] # .*(\n)(\s*)%.*: bool = aten::eq[(]%.*, %.*[)] # .*(\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::t[(]%.*[)] # .*(\n)(\s*)%.*: Tensor = aten::addmm[(]%.*, %.*, %.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::t[(]%.*[)] # .*(\n)(\s*)%.*: Tensor = aten::matmul[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::add_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)-> [(]%.*[)](\n)", 20)
+regular_expressions['Linear'] = (
+    r"(\s*)%.*: int = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::dim[(]%.*[)] # .*(\n)(\s*)%.*: bool = aten::eq[(]%.*, %.*[)] # .*(\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::t[(]%.*[)] # .*(\n)(\s*)%.*: Tensor = aten::addmm[(]%.*, %.*, %.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::t[(]%.*[)] # .*(\n)(\s*)%.*: Tensor = aten::matmul[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::add_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)-> [(]%.*[)](\n)",
+    20)
 
-regular_expressions['MaxPool2d'] = (r"(\s*)%.*: bool = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: int\[\] = prim::If[(].*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: int\[\] = prim::ListConstruct[(][)](\n)(\s*)-> [(](.*)[)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)%.*: Tensor = aten::max_pool2d[(]%.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)", 8)
+regular_expressions['MaxPool2d'] = (
+    r"(\s*)%.*: bool = prim::Constant\[value=.*\][(][)](\n)(\s*)%.*: int\[\] = prim::If[(].*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: int\[\] = prim::ListConstruct[(][)](\n)(\s*)-> [(](.*)[)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(]%.*[)](\n)(\s*)%.*: Tensor = aten::max_pool2d[(]%.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)",
+    8)
 
-regular_expressions['ReLU'] = (r"(\s*)%.*: Tensor = prim::If(.*) # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::relu_[(].*[)] # .*(\n)(\s*)-> [(](.*)[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.* : Tensor = aten::relu[(].*[)] # .*(\n)(\s*)-> [(](.*)[)](\n)", 7)
+regular_expressions['ReLU'] = (
+    r"(\s*)%.*: Tensor = prim::If(.*) # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::relu_[(].*[)] # .*(\n)(\s*)-> [(](.*)[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.* : Tensor = aten::relu[(].*[)] # .*(\n)(\s*)-> [(](.*)[)](\n)",
+    7)
 
-regular_expressions['Conv2d'] = (r"(\s*)%.*: Tensor = aten::conv2d[(]%.*, %.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)", 1)
+regular_expressions['Conv2d'] = (
+    r"(\s*)%.*: Tensor = aten::conv2d[(]%.*, %.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)",
+    1)
 
-regular_expressions['Flatten'] = (r"(\s*)%.*: Tensor = aten::flatten[(]%.*, %.*, %.*[)] # .*(\n)", 1)
+regular_expressions['Flatten'] = (
+    r"(\s*)%.*: Tensor = aten::flatten[(]%.*, %.*, %.*[)] # .*(\n)", 1)
 
-regular_expressions['Max'] = (r"(\s*)%.*: Tensor = aten::max[(]%.*[)] # .*(\n)", 1)
+regular_expressions['Max'] = (r"(\s*)%.*: Tensor = aten::max[(]%.*[)] # .*(\n)",
+                              1)
 
-regular_expressions['GreaterThan'] = (r"(\s*)%.*: Tensor = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = aten::Bool[(]%.*[)] # .*(\n)", 2)
+regular_expressions['GreaterThan'] = (
+    r"(\s*)%.*: Tensor = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = aten::Bool[(]%.*[)] # .*(\n)",
+    2)
 
 
 class CombinedNode:
-    def __init__(self, node_name, kind, inputs):        
-        self.node_name = node_name
+    def __init__(self, cnode_ids, kind, inputs):
+        self.cnode_ids = cnode_ids
         self.kind = kind
         self.inputs = inputs
-        
+
     def get_node_ids(self):
         node_ids = []
         lines = self.nodes_str.split('/n')
@@ -60,64 +75,64 @@ class ReLUCombinedNode(CombinedNode):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(ReLUCombinedNode, self).__init__(self.node_name,
-                                               'relu',
+        super(ReLUCombinedNode, self).__init__(self.cnode_ids, 'relu',
                                                self.inputs)
-                                                       
+
     def get_combined_node_info(self):
         pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(](.*)[)] #")
         m1 = pattern1.search(self.nodes_str)
-        self.node_name = ['%' + m1.groups()[0]]
+        self.cnode_ids = ['%' + m1.groups()[0]]
         pattern2 = re.compile(r"Tensor = aten::relu_[(]%(.*?)[)]")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append(m2.groups()[0])
         self.inputs.append(m1.groups()[1])
-        
-        
+
+
 class AdaptiveAvgPool2dCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(AdaptiveAvgPool2dCombinedNode, self).__init__(self.node_name,
-                                               'adaptive_avg_pool2d',
-                                               self.inputs)
-        
+        super(AdaptiveAvgPool2dCombinedNode, self).__init__(
+            self.cnode_ids, 'adaptive_avg_pool2d', self.inputs)
+
     def get_combined_node_info(self):
-        pattern1 = re.compile(r"%(.*) : Tensor = aten::adaptive_avg_pool2d[(]%(.*), %(.*)[)] #")
-        m1 = pattern1.search(self.nodes_str)        
-        self.node_name = ['%' + m1.groups()[0]]
+        pattern1 = re.compile(
+            r"%(.*) : Tensor = aten::adaptive_avg_pool2d[(]%(.*), %(.*)[)] #")
+        m1 = pattern1.search(self.nodes_str)
+        self.cnode_ids = ['%' + m1.groups()[0]]
         self.inputs.append('%' + m1.groups()[1])
-        pattern2 = re.compile(r"%(.*) : int = aten::__getitem__[(]%(.*), %(.*)[)] #")
+        pattern2 = re.compile(
+            r"%(.*) : int = aten::__getitem__[(]%(.*), %(.*)[)] #")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[1])
-        
-        
+
+
 class DropoutCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(DropoutCombinedNode, self).__init__(self.node_name,
-                                                  'dropout',
+        super(DropoutCombinedNode, self).__init__(self.cnode_ids, 'dropout',
                                                   self.inputs)
-        
+
     def get_combined_node_info(self):
-        pattern = re.compile(r"%(.*) : Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.* : Tensor = aten::dropout_[(]%(.*), %(.*), %(.*)[)] #")
+        pattern = re.compile(
+            r"%(.*) : Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.* : Tensor = aten::dropout_[(]%(.*), %(.*), %(.*)[)] #"
+        )
         m = pattern.search(self.nodes_str)
-        self.node_name = ['%' + m.groups()[0]]
+        self.cnode_ids = ['%' + m.groups()[0]]
         self.inputs.append('%' + m.groups()[5])
-        
+
 
 class MaxPool2dCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(MaxPool2dCombinedNode, self).__init__(self.node_name,
-                                                  'max_pool2d',
-                                                  self.inputs)
-  
+        super(MaxPool2dCombinedNode, self).__init__(self.cnode_ids,
+                                                    'max_pool2d', self.inputs)
+
     def get_combined_node_info(self):
         pattern1 = re.compile(r"bool = prim::Constant\[value=(.*)\]")
         m1 = pattern1.search(self.nodes_str)
@@ -126,55 +141,60 @@ class MaxPool2dCombinedNode(CombinedNode):
             pattern2 = re.compile(r"block1[(][)]:(\n)(\s*)-> [(]%(.*)[)]")
             m2 = pattern2.search(self.nodes_str)
             stride = '%' + m2.groups()[2]
-        pattern3 = re.compile(r"%(.*) : Tensor = aten::max_pool2d[(]%(.*), %(.*), %(.*), %(.*), %(.*), %(.*)[)] #")
+        pattern3 = re.compile(
+            r"%(.*) : Tensor = aten::max_pool2d[(]%(.*), %(.*), %(.*), %(.*), %(.*), %(.*)[)] #"
+        )
         m3 = pattern3.search(self.nodes_str)
-        self.node_name = ['%' + m3.groups()[0]]
+        self.cnode_ids = ['%' + m3.groups()[0]]
         self.inputs.append('%' + m3.groups()[1])
         self.inputs.append('%' + m3.groups()[2])
         self.inputs.append(stride)
         self.inputs.append('%' + m3.groups()[4])
         self.inputs.append('%' + m3.groups()[5])
         self.inputs.append('%' + m3.groups()[6])
-        
-        
+
+
 class LinearCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(LinearCombinedNode, self).__init__(self.node_name,
-                                                  'linear',
-                                                  self.inputs)
-        
+        super(LinearCombinedNode, self).__init__(self.cnode_ids, 'linear',
+                                                 self.inputs)
+
     def get_combined_node_info(self):
-        pattern1 = re.compile(r"%(.*) : Tensor = aten::matmul[(]%(.*?), %(.*?)[)] #")
+        pattern1 = re.compile(
+            r"%(.*) : Tensor = aten::matmul[(]%(.*?), %(.*?)[)] #")
         m1 = pattern1.search(self.nodes_str)
         self.inputs.append('%' + m1.groups()[1])
         pattern2 = re.compile(r"%(.*) : Tensor = aten::t[(]%(.*)[)] #")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[1])
-        pattern3 = re.compile(r"%(.*) : Tensor = aten::add_[(]%(.*), %(.*), %(.*)[)] #")
+        pattern3 = re.compile(
+            r"%(.*) : Tensor = aten::add_[(]%(.*), %(.*), %(.*)[)] #")
         m3 = pattern3.search(self.nodes_str)
         self.inputs.append('%' + m3.groups()[2])
-        pattern4 = re.compile(r"%(.*) : Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%(.*) : Tensor = aten::t")
+        pattern4 = re.compile(
+            r"%(.*) : Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%(.*) : Tensor = aten::t"
+        )
         m4 = pattern4.search(self.nodes_str)
-        self.node_name = ['%' + m4.groups()[0]]
-        
-        
+        self.cnode_ids = ['%' + m4.groups()[0]]
+
+
 class Conv2dCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(Conv2dCombinedNode, self).__init__(self.node_name,
-                                                  'conv2d',
-                                                  self.inputs)
-        
+        super(Conv2dCombinedNode, self).__init__(self.cnode_ids, 'conv2d',
+                                                 self.inputs)
+
     def get_combined_node_info(self):
         pattern1 = re.compile(r"%(.*) : Tensor")
         m1 = pattern1.search(self.nodes_str)
-        self.node_name = ['%' + m1.groups()[0]]
-        pattern2 = re.compile(r"[(]%(.*), %(.*), %(.*), %(.*), %(.*), %(.*), %(.*)[)]")
+        self.cnode_ids = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(
+            r"[(]%(.*), %(.*), %(.*), %(.*), %(.*), %(.*), %(.*)[)]")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[0])
         self.inputs.append('%' + m2.groups()[1])
@@ -183,63 +203,60 @@ class Conv2dCombinedNode(CombinedNode):
         self.inputs.append('%' + m2.groups()[4])
         self.inputs.append('%' + m2.groups()[5])
         self.inputs.append('%' + m2.groups()[6])
-        
+
 
 class FlattenCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(FlattenCombinedNode, self).__init__(self.node_name,
-                                                  'flatten',
+        super(FlattenCombinedNode, self).__init__(self.cnode_ids, 'flatten',
                                                   self.inputs)
-        
+
     def get_combined_node_info(self):
         pattern1 = re.compile(r"%(.*) : Tensor")
         m1 = pattern1.search(self.nodes_str)
-        self.node_name = ['%' + m1.groups()[0]]
+        self.cnode_ids = ['%' + m1.groups()[0]]
         pattern2 = re.compile(r"[(]%(.*), %(.*), %(.*)[)]")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[0])
         self.inputs.append('%' + m2.groups()[1])
         self.inputs.append('%' + m2.groups()[2])
-        
-        
+
+
 class MaxCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(MaxCombinedNode, self).__init__(self.node_name,
-                                              'max',
+        super(MaxCombinedNode, self).__init__(self.cnode_ids, 'max',
                                               self.inputs)
-                    
+
     def get_combined_node_info(self):
         pattern = re.compile(r"%(.*) : Tensor = aten::max[(]%(.*)[)]")
         m = pattern.search(self.nodes_str)
-        self.node_name = ['%' + m.groups()[0]]
+        self.cnode_ids = ['%' + m.groups()[0]]
         self.inputs.append('%' + m.groups()[1])
-        
-        
+
+
 class GreaterThanCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
         self.get_combined_node_info()
-        super(GreaterThanCombinedNode, self).__init__(self.node_name,
-                                                      'greater_than',
-                                                      self.inputs)
-    
+        super(GreaterThanCombinedNode, self).__init__(
+            self.cnode_ids, 'greater_than', self.inputs)
+
     def get_combined_node_info(self):
         pattern1 = re.compile(r"%(.*) : bool")
         m1 = pattern1.search(self.nodes_str)
-        self.node_name = ['%' + m1.groups()[0]]
+        self.cnode_ids = ['%' + m1.groups()[0]]
         pattern2 = re.compile(r"aten::gt[(]%(.*), %(.*)[)]")
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[0])
         self.inputs.append('%' + m2.groups()[1])
-        
-        
+
+
 def _get_str_line_index(graph_str):
     graph_str_list = graph_str.split('\n')
     line_index = {}
@@ -249,19 +266,20 @@ def _get_str_line_index(graph_str):
         line_index[line] = index + 1
     return line_index
 
+
 def _can_combined(combined_node, ipt_opts):
     node_ids = combined_node.get_node_ids()
     can_combined = True
     for node_id in node_ids:
         if node_id not in ipt_opts or \
-                node_id in combined_node.node_name:
+                node_id in combined_node.cnode_ids:
             continue
         outputs = ipt_opts[node_id]
         if not set(outputs).issubset(node_ids):
             can_combined = False
             break
     return can_combined
-    
+
 
 def get_combined_graph(graph, ipt_opts):
     graph_str = graph.__str__()
@@ -272,7 +290,7 @@ def get_combined_graph(graph, ipt_opts):
     no_match_lines = []
     match_dict = {}
     from x2paddle.decoder import pytorch_combime_node as pcn
-    
+
     def dfs(sub_graph_str, used_graph_stack):
         for op_name, regex_info in regular_expressions.items():
             regex = regex_info[0]
@@ -281,7 +299,9 @@ def get_combined_graph(graph, ipt_opts):
             current_line = sub_graph_str.split('\n')[0]
             if current_line == '':
                 return
-            if current_line in no_match_lines or (current_line in match_dict and op_name not in list(match_dict.values())):
+            if current_line in no_match_lines or (
+                    current_line in match_dict and
+                    op_name not in list(match_dict.values())):
                 if 'aten' in current_line:
                     continue
                 used_graph_stack.append(current_line + '\n')
@@ -306,7 +326,8 @@ def get_combined_graph(graph, ipt_opts):
                     is_return = False
                     if sub_graph_str == '':
                         is_return = True
-                        line_combine_infos.append(copy.deepcopy(line_combine_info))
+                        line_combine_infos.append(
+                            copy.deepcopy(line_combine_info))
                     dfs(sub_graph_str, used_graph_stack)
                     out_str = used_graph_stack.pop()
                     sub_graph_str = out_str + sub_graph_str
@@ -337,10 +358,10 @@ def get_combined_graph(graph, ipt_opts):
                 sub_graph_str = out_str + sub_graph_str
                 if len(out_str.split('\n')) > 2 or 'aten' in out_str:
                     line_combine_info.pop()
-    
+
     dfs(graph_str, used_graph_stack)
-    min_line_count = len(line_index) 
-    origin_line_count = len(line_index) 
+    min_line_count = len(line_index)
+    origin_line_count = len(line_index)
     if len(line_combine_infos) == 0:
         raise Exception('The graph can not be combined.')
     final_line_combine_info = line_combine_infos[0]
@@ -351,10 +372,3 @@ def get_combined_graph(graph, ipt_opts):
             min_line_count = origin_line_count
             final_line_combine_info = info
     return final_line_combine_info
-            
-                    
-                    
-                    
-                    
-                    
-    

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.core.graph import GraphNode
+from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.util import *
 import collections
 import six
@@ -71,7 +71,8 @@ class Layer(object):
                             input.layer_name)
                 else:
                     layer_code = layer_code + key + "={}, ".format(input)
-        elif isinstance(self.inputs, GraphNode):
+        elif isinstance(self.inputs, GraphNode) or isinstance(self.inputs,
+                                                              Graph):
             if hasattr(self.inputs, "index"):
                 layer_code += (
                     self.inputs.layer_name + "[{}]".format(self.inputs.index))
@@ -84,6 +85,8 @@ class Layer(object):
             if self.op != "=":
                 layer_code += ", "
         else:
+            print('-------', self.op)
+            print(self.inputs)
             raise Exception("Unknown type of inputs.")
 
         param_attr = collections.OrderedDict(self.param_attr)

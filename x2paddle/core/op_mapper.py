@@ -14,6 +14,7 @@
 import paddle.fluid as fluid
 from paddle.fluid.proto import framework_pb2
 from x2paddle.core.util import *
+from x2paddle.core.graph import *
 import inspect
 import os
 import os.path as osp
@@ -148,6 +149,22 @@ class OpMapper(object):
             self.add_codes("import functools")
         self.add_codes("")
 
+    def search_node(self, graph, net_init_indent, net_forward_indent):
+        for i in range(len(graph.topo_sort)):
+            node_name = graph.topo_sort[i]
+            node = graph.get_node(node_name)
+            if node is None:
+                continue
+            if self.is_dygraph:
+                if isinstance(node, Graph):
+                    self.search_node(node, net_init_indent,
+                                     net_forward_indent + 1)
+                else:
+                    self.add_codes_dygraph(node.fluid_code.gen_codes(),
+                                           net_init_indent, net_forward_indent)
+            else:
+                self.add_codes(node.fluid_code.gen_codes(), net_init_indent)
+
     def save_inference_model(self, save_dir, params_merge):
         self.save_python_model(save_dir)
 
@@ -224,36 +241,14 @@ class OpMapper(object):
             self.add_codes_dygraph("\ndef __init__(self):", 1)
             self.add_codes_dygraph("\nsuper(X2PaddleNet, self).__init__()", 2)
             self.add_codes_dygraph(
-                "\ndef forward(self, {}):".format(','.join(self.datas_name)), forward_indent=1)
+                "\ndef forward(self, {}):".format(','.join(self.datas_name)),
+                forward_indent=1)
             net_indent = 2
             self.node_net_indent = {}
         else:
             self.add_codes("\ndef x2paddle_net():", 0)
             net_indent = 1
-        
-        for i in range(len(self.graph.topo_sort)):
-            node_name = self.graph.topo_sort[i]
-            node = self.graph.get_node(node_name)
-            if node is None:
-                continue
-            if len(node.fluid_code.layers) == 0:
-                continue
-            if self.is_dygraph:
-                from x2paddle.decoder.pytorch_decoder import PyTorchGraphControlNode
-                if isinstance(node, PyTorchGraphControlNode):
-                    block_indent = net_indent + 1
-                    if node.layer_name in self.node_net_indent:
-                        block_indent = self.node_net_indent[node.layer_name] + 1
-                    for node_name in node.block_nodes_name:
-                        node_name = node_name.replace('/', '_').replace('-', '_').replace('.', '_').replace('%', 'x_')
-                        self.node_net_indent[node_name] = block_indent
-                net_init_indent = net_indent
-                net_forward_indent = net_indent
-                if node.layer_name in self.node_net_indent:
-                    net_forward_indent = self.node_net_indent[node.layer_name]
-                self.add_codes_dygraph(node.fluid_code.gen_codes(), net_init_indent, net_forward_indent)
-            else:
-                self.add_codes(node.fluid_code.gen_codes(), net_indent)
+        self.search_node(self.graph, net_indent, net_indent)
         self.add_codes(self.paddle_codes_init)
         self.add_codes("", 0)
         self.add_codes(self.paddle_codes_forward)

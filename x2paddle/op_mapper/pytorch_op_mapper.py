@@ -28,17 +28,25 @@ class PyTorchOpMapper(OpMapper):
         self.graph = decoder.pytorch_graph
         self.weights = dict()
         self.datas_name = []
+        self.parser(self.graph)
 
-        print("Total nodes: {}".format(len(self.graph.topo_sort)))
-        for node_name in self.graph.topo_sort:
-            node = self.graph.get_node(node_name)
-            op = node.layer_type
-            if hasattr(self, op):
-                func = getattr(self, op)
-                func(node)
+    def parser(self, graph):
+        topo_graph = graph.topo_sort
+        print("Total nodes: {}".format(len(topo_graph)))
+        for node_name in topo_graph:
+            node = graph.get_node(node_name)
+            if not isinstance(node, PyTorchGraph):
+                print(node.layer_type)
+            if isinstance(node, PyTorchGraph):
+                self.parser(node)
             else:
-                raise Exception(
-                    "The op {} in model is not supported yet.".format(op))
+                op = node.layer_type
+                if hasattr(self, op):
+                    func = getattr(self, op)
+                    func(graph, node)
+                else:
+                    raise Exception(
+                        "The op {} in model is not supported yet.".format(op))
 
     def op_checker(self):
         unsupported_ops = set()
@@ -62,14 +70,13 @@ class PyTorchOpMapper(OpMapper):
         else:
             return node.layer_name
 
-    def data(self, node):
-        node.fluid_code.add_note(
-            "{} = fluid.dygraph.base.to_variable({})".format(
-                node.layer_name, node.layer_name))
+    def data(self, graph, node):
+        node.fluid_code.add_note("{} = fluid.dygraph.base.to_variable({})".
+                                 format(node.layer_name, node.layer_name))
         self.datas_name.append(node.layer_name)
 
-    def conv2d(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def conv2d(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         node_attrs = node.attrs
         weight_name = node_attrs[1]
         bias_name = node_attrs[2]
@@ -88,19 +95,21 @@ class PyTorchOpMapper(OpMapper):
         op_name = 'conv2d_' + node.layer_name
         self.weights[op_name + '.weight'] = node.params[weight_name].numpy()
         self.weights[op_name + '.bias'] = node.params[bias_name].numpy()
-        node.fluid_code.add_dygraph("Conv2D",
-                                    name=op_name,
-                                    inputs=[input_node],
-                                    output=node,
-                                    param_attr=attrs)
+        node.fluid_code.add_dygraph(
+            "Conv2D",
+            name=op_name,
+            inputs=[input_node],
+            output=node,
+            param_attr=attrs)
 
-    def flatten(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def flatten(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         node_attrs = node.attrs
-        node.fluid_code.add_layer('shape',
-                                  inputs=input_node,
-                                  output=node.layer_name + '__shape',
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            'shape',
+            inputs=input_node,
+            output=node.layer_name + '__shape',
+            param_attr=None)
         node.fluid_code.add_note("{} = list({}.numpy())".format(
             node.layer_name + '__shape', node.layer_name + '__shape'))
         start_dim = node_attrs[1]
@@ -108,16 +117,16 @@ class PyTorchOpMapper(OpMapper):
         if start_dim == 0 and end_dim == -1:
             node.fluid_code.add_note(
                 "{} = [1, functools.reduce(lambda x,y:x * y, {})]".format(
-                    node.layer_name + '__new_shape',
-                    node.layer_name + '__shape'))
+                    node.layer_name + '__new_shape', node.layer_name +
+                    '__shape'))
         else:
             if end_dim == -1:
                 end_dim = ''
             else:
                 end_dim += 1
-            node.fluid_code.add_note("{} = {}[: {}]".format(
-                node.layer_name + '__new_shape1', node.layer_name + '__shape',
-                start_dim))
+            node.fluid_code.add_note(
+                "{} = {}[: {}]".format(node.layer_name + '__new_shape1',
+                                       node.layer_name + '__shape', start_dim))
             node.fluid_code.add_note("{} = {}[{}: {}]".format(
                 node.layer_name + '__new_shape2', node.layer_name + '__shape',
                 start_dim, end_dim))
@@ -126,33 +135,29 @@ class PyTorchOpMapper(OpMapper):
                                                           '__new_shape3'))
             else:
                 node.fluid_code.add_note("{} = {}[{}: ]".format(
-                    node.layer_name + '__new_shape3',
-                    node.layer_name + '__shape', end_dim))
+                    node.layer_name + '__new_shape3', node.layer_name +
+                    '__shape', end_dim))
             node.fluid_code.add_note(
                 "{} = [functools.reduce(lambda x,y:x * y, {})]".format(
-                    node.layer_name + '__new_shape2',
-                    node.layer_name + '__new_shape2'))
+                    node.layer_name + '__new_shape2', node.layer_name +
+                    '__new_shape2'))
             node.fluid_code.add_note("{} = {} + {} + {}".format(
-                node.layer_name + '__new_shape',
-                node.layer_name + '__new_shape1',
-                node.layer_name + '__new_shape2',
+                node.layer_name + '__new_shape', node.layer_name +
+                '__new_shape1', node.layer_name + '__new_shape2',
                 node.layer_name + '__new_shape3'))
         input_node_name = self.get_input_name(input_node)
-        node.fluid_code.add_note(
-            "{} = fluid.layers.reshape({}, shape={})".format(
-                node.layer_name, input_node_name,
-                node.layer_name + '__new_shape'))
+        node.fluid_code.add_note("{} = fluid.layers.reshape({}, shape={})".
+                                 format(node.layer_name, input_node_name,
+                                        node.layer_name + '__new_shape'))
 
-    def relu(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def relu(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         # inplace这个参数在paddle中未实现
-        node.fluid_code.add_layer('relu',
-                                  inputs=input_node,
-                                  output=node.layer_name,
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            'relu', inputs=input_node, output=node.layer_name, param_attr=None)
 
-    def max_pool2d(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def max_pool2d(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         node_attrs = node.attrs
         attrs = {}
         attrs['pool_size'] = node_attrs[1]
@@ -164,14 +169,15 @@ class PyTorchOpMapper(OpMapper):
         assert node_attrs[4][0] == 1 and node_attrs[4][1] ==1, \
             "The dilation in MaxPool2d must be 1."
         op_name = 'pool2d_' + node.layer_name
-        node.fluid_code.add_dygraph("Pool2D",
-                                    name=op_name,
-                                    inputs=[input_node],
-                                    output=node,
-                                    param_attr=attrs)
+        node.fluid_code.add_dygraph(
+            "Pool2D",
+            name=op_name,
+            inputs=[input_node],
+            output=node,
+            param_attr=attrs)
 
-    def linear(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def linear(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         node_attrs = node.attrs
         weight_name = node_attrs[1]
         bias_name = node_attrs[2]
@@ -183,18 +189,18 @@ class PyTorchOpMapper(OpMapper):
         attrs['param_attr'] = string(weight_name)
         attrs['bias_attr'] = string(bias_name)
         op_name = 'linear_' + node.layer_name
-        self.weights[op_name +
-                     '.weight'] = node.params[weight_name].numpy().transpose(
-                         (1, 0))
+        self.weights[op_name + '.weight'] = node.params[weight_name].numpy(
+        ).transpose((1, 0))
         self.weights[op_name + '.bias'] = node.params[bias_name].numpy()
-        node.fluid_code.add_dygraph("Linear",
-                                    name=op_name,
-                                    inputs=[input_node],
-                                    output=node,
-                                    param_attr=attrs)
+        node.fluid_code.add_dygraph(
+            "Linear",
+            name=op_name,
+            inputs=[input_node],
+            output=node,
+            param_attr=attrs)
 
-    def adaptive_avg_pool2d(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def adaptive_avg_pool2d(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         node_attrs = node.attrs
         output_size = node_attrs[1]
         if isinstance(output_size, list):
@@ -203,10 +209,11 @@ class PyTorchOpMapper(OpMapper):
         else:
             output_h = output_size
             output_w = output_size
-        node.fluid_code.add_layer('shape',
-                                  inputs=input_node,
-                                  output=node.layer_name + '__shape',
-                                  param_attr=None)
+        node.fluid_code.add_layer(
+            'shape',
+            inputs=input_node,
+            output=node.layer_name + '__shape',
+            param_attr=None)
         node.fluid_code.add_note("{} = {}.numpy()".format(
             node.layer_name + '__shape', node.layer_name + '__shape'))
         node.fluid_code.add_note("{} = math.floor({}[3] / float({}))".format(
@@ -224,56 +231,55 @@ class PyTorchOpMapper(OpMapper):
         input_node_name = self.get_input_name(input_node)
         node.fluid_code.add_note(
             "{} = fluid.layers.pool2d(input={}, pool_size=[{}, {}], pool_type='max', pool_stride=[{}, {}], pool_padding=0)"
-            .format(node.layer_name, 
-                    input_node_name,
-                    node.layer_name + '__kernel_h',
-                    node.layer_name + '__kernel_w',
-                    node.layer_name + '__stride_h',
-                    node.layer_name + '__stride_w'))
+            .format(node.layer_name, input_node_name, node.layer_name +
+                    '__kernel_h', node.layer_name + '__kernel_w', node.
+                    layer_name + '__stride_h', node.layer_name + '__stride_w'))
 
-    def dropout(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+    def dropout(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         op_name = 'dropout_' + node.layer_name
-        node.fluid_code.add_dygraph("Dropout",
-                                    name=op_name,
-                                    inputs=[input_node],
-                                    output=node,
-                                    param_attr={'p': 0.0})
-        
-    def max(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
-        node.fluid_code.add_layer('reduce_max',
-                              inputs=input_node,
-                              output=node.layer_name,
-                              param_attr=None)
-        
-    def greater_than(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+        node.fluid_code.add_dygraph(
+            "Dropout",
+            name=op_name,
+            inputs=[input_node],
+            output=node,
+            param_attr={'p': 0.0})
+
+    def max(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
+        node.fluid_code.add_layer(
+            'reduce_max',
+            inputs=input_node,
+            output=node.layer_name,
+            param_attr=None)
+
+    def greater_than(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         input_node_name = self.get_input_name(input_node)
         node_attrs = node.attrs
         node.fluid_code.add_note("{} = {} > {}"
-                                 .format(node.layer_name, input_node_name, str(node_attrs[1])))
-        
-    def assign(self, node):
+                                 .format(node.layer_name, input_node_name,
+                                         str(node_attrs[1])))
+
+    def assign(self, graph, node):
         for i, opt_name in enumerate(node.attrs):
-            input_node = self.graph.get_input_node(node, idx=i)
-            input_node_name = self.get_input_name(input_node)
-            node.fluid_code.add_note("{} = {}"
-                                     .format(opt_name.replace('/', '_').
-                                             replace('-', '_').replace('.', '_').replace('%', 'x_'), input_node_name))
-    def init(self, node):
-        pass
-        
-    def control_if(self, node):
-        input_node = self.graph.get_input_node(node, idx=0)
+            if isinstance(node.attrs[i], str):
+                node.attrs[i] = node.attrs[i].replace('/', '_').replace(
+                    '-', '_').replace('.', '_').replace('%', 'x_')
+            node.fluid_code.add_note("{} = {}".format(node.node_ids[i].replace(
+                '/', '_').replace('-', '_').replace('.', '_').replace(
+                    '%', 'x_'), node.attrs[i]))
+
+    def control_if(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
         input_node_name = self.get_input_name(input_node)
         node.fluid_code.add_note("if {}:".format(input_node_name))
-        
-    def control_else(self, node):
+
+    def control_else(self, graph, node):
         node.fluid_code.add_note("else:")
-        
-    def control_for(self, node):
-        node.fluid_code.add_note("for {} in range({}):".format(node.middle_name.replace('/', '_').
-                                             replace('-', '_').replace('.', '_').replace('%', 'x_'), 
-                                                               node.attrs))
-        
+
+    def control_loop(self, graph, node):
+        input_node = graph.get_input_node(node, idx=0)
+        input_node_name = self.get_input_name(input_node)
+        node.fluid_code.add_note("for {} in range({}):".format(
+            node.layer_name.replace('__block', '__loop'), input_node_name))
