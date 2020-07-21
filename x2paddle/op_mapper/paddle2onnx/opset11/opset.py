@@ -41,6 +41,33 @@ class OpSet11(OpSet10):
             outputs=op.output('Out'), )
         return [min_node, max_node, node]
 
+    def pad2d(self, op, block):
+        x_shape = block.var(op.input('X')[0]).shape
+        paddings = op.attr('paddings')
+        onnx_pads = []
+        #TODO support pads is Variable
+        if op.attr('data_format') == 'NCHW':
+            pads = [
+                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+            ]
+        else:
+            pads = [
+                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+            ]
+        pads_name = self.get_name(op.type, 'pads')
+        pads_node = self.make_constant_node(pads_name,
+                                            onnx_pb.TensorProto.INT64, pads)
+        constant_value_name = self.get_name(op.type, 'constant_value')
+        constant_value_node = self.make_constant_node(constant_value_name,
+                                                      onnx_pb.TensorProto.FLOAT,
+                                                      op.attr('pad_value'))
+        node = helper.make_node(
+            'Pad',
+            inputs=op.input('X') + [pads_name, constant_value_name],
+            outputs=op.output('Out'),
+            mode=op.attr('mode'))
+        return [pads_node, constant_value_node, node]
+
     def bilinear_interp(self, op, block):
         input_names = op.input_names
         coordinate_transformation_mode = ''
