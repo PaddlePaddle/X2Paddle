@@ -76,6 +76,12 @@ def arg_parser():
         default=False,
         help="define input shape for tf model")
     parser.add_argument(
+        "--onnx_opset",
+        "-oo",
+        type=int,
+        default=10,
+        help="when paddle2onnx set onnx opset version to export")
+    parser.add_argument(
         "--params_merge",
         "-pm",
         action="store_true",
@@ -172,24 +178,26 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.op_mapper.onnx_op_mapper import ONNXOpMapper
+    from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
-    import onnxruntime
     model = ONNXDecoder(model_path)
-    mapper = ONNXOpMapper(model, save_dir)
+    mapper = ONNXOpMapper(model)
+    print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
+    print("Model optimized.")
 
-    optimizer.delete_redundance_code()
+    print("Paddle model and code generating ...")
     mapper.save_inference_model(save_dir, params_merge)
+    print("Paddle model and code generated.")
 
 
-def paddle2onnx(model_path, save_dir):
+def paddle2onnx(model_path, save_dir, opset_version=10):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
-    from x2paddle.op_mapper.paddle_op_mapper import PaddleOpMapper
+    from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(model.program, save_dir)
+    mapper.convert(model.program, save_dir, opset_number=opset_version)
 
 
 def main():
@@ -210,18 +218,6 @@ def main():
 
     assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
     assert args.save_dir is not None, "--save_dir is not defined"
-
-    if args.framework == "onnx":
-        try:
-            import onnxruntime as rt
-            version = rt.__version__
-            if version != '1.0.0':
-                print("[ERROR] onnxruntime==1.0.0 is required")
-                return
-        except:
-            print(
-                "[ERROR] onnxruntime is not installed, use \"pip install onnxruntime==1.0.0\"."
-            )
 
     try:
         import paddle
@@ -261,13 +257,14 @@ def main():
     elif args.framework == "onnx":
         assert args.model is not None, "--model should be defined while translating onnx model"
         params_merge = False
+
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir)
+        paddle2onnx(args.model, args.save_dir, args.onnx_opset)
 
     else:
         raise Exception(
