@@ -50,6 +50,18 @@ regular_expressions['GreaterThan'] = (
     r"(\s*)%.*: Tensor = aten::gt[(]%.*, %.*[)] # .*(\n)(\s*)%.*: bool = aten::Bool[(]%.*[)] # .*(\n)",
     2)
 
+regular_expressions['Invalid_BatchNorm'] = (
+    r"(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: str = prim::Constant\[value=\"Exception\"\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=4\][(][)] # .*(\n)(\s*)%.*: int = aten::dim[(]%.*[)] # .*(\n)(\s*)%.*: bool = aten::ne[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: bool = prim::GetAttr\[name=\"training\"\][(]%.*[)](\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = prim::GetAttr\[name=\".*\"\][(]%.*[)](\n)(\s*)%.*: Tensor = aten::add[(]%.*, %.*, %.*[)] # .*(\n)(\s*)= prim::SetAttr\[name=\".*\"\][(]%.*, %.*[)](\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)",
+    20)
+
+regular_expressions['BatchNorm'] = (
+    r"= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: int\[\] = aten::size[(]%.*[)] # .*(\n)(\s*)%.*: str = prim::Constant\[value=\"Exception\"\][(][)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::sub[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = prim::Loop[(]%.*, %.*, %.*[)] # .*(\n)(\s*)block0[(]%.*: int, %.*: int[)]:(\n)(\s*)%.*: int = aten::add[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::mul[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*, %.*[)](\n)(\s*)%.*: bool = aten::eq[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: Tensor = aten::batch_norm[(]%.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)",
+    28)
+
+regular_expressions['ReLU6'] = (
+    r".*: float = prim::Constant\[value=6.\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=0.\][(][)] # .*(\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)",
+    9)
+
 
 class CombinedNode:
     def __init__(self, cnode_ids, kind, inputs):
@@ -255,6 +267,59 @@ class GreaterThanCombinedNode(CombinedNode):
         m2 = pattern2.search(self.nodes_str)
         self.inputs.append('%' + m2.groups()[0])
         self.inputs.append('%' + m2.groups()[1])
+
+
+class BatchNormCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(BatchNormCombinedNode, self).__init__(self.cnode_ids, 'batchnorm',
+                                                    self.inputs)
+
+    def get_combined_node_info(self):
+        pattern = re.compile(
+            r"%(.*) : Tensor = aten::batch_norm[(]%(.*), %(.*), %(.*), %(.*), %(.*), %(.*), %(.*), %(.*), %(.*)[)] #"
+        )
+        m = pattern.search(self.nodes_str)
+        self.cnode_ids = ['%' + m.groups()[0]]
+        self.inputs.append('%' + m.groups()[1])
+        self.inputs.append('%' + m.groups()[2])
+        self.inputs.append('%' + m.groups()[3])
+        self.inputs.append('%' + m.groups()[4])
+        self.inputs.append('%' + m.groups()[5])
+        self.inputs.append('%' + m.groups()[6])
+        self.inputs.append('%' + m.groups()[7])
+        self.inputs.append('%' + m.groups()[8])
+        self.inputs.append('%' + m.groups()[9])
+
+
+class ReLU6CombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(ReLU6CombinedNode, self).__init__(self.cnode_ids, 'relu6',
+                                                self.inputs)
+
+    def get_combined_node_info(self):
+        pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(](.*)[)] #")
+        m1 = pattern1.search(self.nodes_str)
+        self.cnode_ids = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(
+            r"Tensor = aten::hardtanh_[(]%(.*?), %(.*?), %(.*?)[)]")
+        m2 = pattern2.search(self.nodes_str)
+        self.inputs.append(m2.groups()[0])
+        self.inputs.append(m1.groups()[1])
+
+
+class Invalid_BatchNormCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.self.cnode_ids = []
+        super(Invalid_BatchNormCombinedNode, self).__init__(
+            self.cnode_ids, 'invalid_batchnorm', self.inputs)
 
 
 def _get_str_line_index(graph_str):

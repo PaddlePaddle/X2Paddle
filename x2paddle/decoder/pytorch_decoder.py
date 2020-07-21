@@ -19,7 +19,7 @@ import torch.jit
 from torch.jit import _unique_state_dict
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.decoder.pytorch_combime_node import get_combined_graph, _get_str_line_index, CombinedNode
+from x2paddle.decoder.pytorch_combime_node import get_combined_graph, _get_str_line_index, CombinedNode, Invalid_BatchNormCombinedNode
 
 
 class PyTorchGraphNode(GraphNode):
@@ -142,6 +142,8 @@ class PyTorchGraph(Graph):
             self.delete_indexes.extend(
                 list(range(index, index + self.line_combine_info[index][0])))
             cnode = self.line_combine_info[index][1]
+            if isinstance(cnode, Invalid_BatchNormCombinedNode):
+                return False
             cnode_name = '_'.join(cnode.cnode_ids)
             cnode.input_ids = []
             self.node_map[cnode_name] = PyTorchGraphNode(cnode, cnode.kind,
