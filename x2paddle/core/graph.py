@@ -28,7 +28,10 @@ class GraphNode(object):
         self.layer_name = layer_name
 
     def __hash__(self):
-        return hash(self.layer.name)
+        try:
+            return hash(self.layer.name)
+        except Exception:
+            return hash(self.layer_name)
 
     def __eq__(self, other):
         if self.layer.name == other.layer.name:
@@ -80,12 +83,26 @@ class Graph(object):
 
     def get_node(self, name, copy=False):
         if name not in self.node_map:
+            if name in self.father_node_map:
+                if copy:
+                    node = cp.copy(self.father_node_map[name])
+                else:
+                    node = self.father_node_map[name]
+                return node
             if name.split(':')[0] in self.node_map:
                 name_prefix, idx = name.split(':')
                 if copy:
                     node = cp.copy(self.node_map[name_prefix])
                 else:
                     node = self.node_map[name_prefix]
+                node.index = int(idx)
+                return node
+            elif name.split(':')[0] in self.father_node_map:
+                name_prefix, idx = name.split(':')
+                if copy:
+                    node = cp.copy(self.father_node_map[name_prefix])
+                else:
+                    node = self.father_node_map[name_prefix]
                 node.index = int(idx)
                 return node
             else:

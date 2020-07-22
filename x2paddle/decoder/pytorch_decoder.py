@@ -59,11 +59,13 @@ class PyTorchGraph(Graph):
     def __init__(self,
                  pytorch_graph,
                  params,
+                 origin_model,
                  graph_type='Normal',
                  graph_opts=None,
                  graph_ipts=None,
                  graph_name=None):
         self.params = params
+        self.origin_model = origin_model
         self.graph_type = graph_type
         self.pytorch_graph = pytorch_graph
         self.graph_opts = graph_opts
@@ -185,7 +187,7 @@ class PyTorchGraph(Graph):
                         if ipt_id + '_%' in s or s.endswith(ipt_id) or ipt_id +
                         '__' in s
                     ]
-                    if ipt_id in self.father_node_map or len(match) >= 1:
+                    if ipt_id in self.father_node_map or len(father_match) >= 1:
                         cnode.input_ids.append(ipt_id)
                         if ipt_id in self.father_attrs:
                             node_attrs.append(self.father_attrs[ipt_id])
@@ -247,13 +249,48 @@ class PyTorchGraph(Graph):
                         raise Exception('The {} is not implement yet!'.format(
                             matches1[0]))
             elif kind == 'prim::ListConstruct':
-                list_info = []
-                if len(list(node.inputs())) > 0:
+                if len(list(node.inputs())) == 0:
+                    self.attrs[node_name] = []
+                else:
+                    self.node_map[node_name] = PyTorchGraphNode(node, "list_construct",
+                                                             node_name)
+                    self.node_map[node_name].node_ids = node_ids
+                    node_attrs = []
+                    is_all_attr = True
                     for input_node in node.inputs():
                         input_node = input_node.node()
                         input_node_name, _ = self._get_node_info(input_node)
-                        list_info.append(self.attrs[input_node_name])
-                self.attrs[node_name] = list_info
+                        if input_node_name in self.node_map:
+                            self.connect(input_node_name, node_name)
+                            node_attrs.append(input_node_name)
+                            is_all_attr = False
+                        elif input_node_name in self.attrs:
+                            node_attrs.append(self.attrs[input_node_name])
+                        elif input_node_name in self.father_node_map:
+                            self.father_input_nodes.append(input_node_name)
+                            node_attrs.append(input_node_name)
+                            is_all_attr = False
+                        elif input_node_name in self.father_attrs:
+                            node_attrs.append(self.father_attrs[input_node_name])
+                        else:
+                            print('Error----', ipt_id)
+                    if is_all_attr:
+                        self.node_map.pop(node_name)
+                        self.attrs[node_name] = node_attrs
+                    else:
+                        self.node_map[node_name].set_attrs(node_attrs)
+            elif kind == 'prim::shape':
+                input_node = list(node.inputs())[0]
+                self.node_map[node_name] = PyTorchGraphNode(node, "shape",
+                                                             node_name)
+                self.node_map[node_name].node_ids = node_ids
+                input_node_name, _ = self._get_node_info(input_node)
+                if input_node_name in self.node_map:
+                    self.connect(input_node_name, node_name)
+                elif input_node_name in self.father_node_map:
+                    self.father_input_nodes.append(input_node_name)
+                else:
+                    print('Error----', ipt_id)
             elif kind == 'prim::If':
                 ifelse_node_name, ifelse_ids = self._get_node_info(node)
                 if ifelse_node_name == '':
@@ -270,9 +307,23 @@ class PyTorchGraph(Graph):
                                                              ipt_id)
                     self.node_map[ipt_id].node_ids = [ipt_id]
                     self.node_map[ipt_id].input_ids = None
-                    self.node_map[ipt_id].set_attrs([
-                        self.attrs[ipt_id]
-                    ] if ipt_id in self.attrs else [self.father_attrs[ipt_id]])
+                    if ipt_id in self.attrs:
+                        if isinstance(self.attrs[ipt_id], str):
+                            part_str = self.attrs[ipt_id].split('.')
+                            ipt_attr = self.origin_model
+                            for s in part_str:
+                                ipt_attr = getattr(ipt_attr, s)
+                        else:
+                            ipt_attr = self.attrs[ipt_id]
+                    else:
+                        if isinstance(self.father_attrs[ipt_id], str):
+                            part_str = self.father_attrs[ipt_id].split('.')
+                            ipt_attr = self.origin_model
+                            for s in part_str:
+                                ipt_attr = getattr(ipt_attr, s)
+                        else:
+                            ipt_attr = self.father_attrs[ipt_id]
+                    self.node_map[ipt_id].set_attrs([ipt_attr])
                     ipt_node_name = ipt_id
                 else:
                     ipt_node_name = self._get_ipt_node_name(ipt_id)
@@ -282,6 +333,7 @@ class PyTorchGraph(Graph):
                 sub_graph = PyTorchGraph(
                     block,
                     self.params,
+                    self.origin_model,
                     graph_type='If',
                     graph_opts=ifelse_ids,
                     graph_name=sub_graph_name)
@@ -295,19 +347,25 @@ class PyTorchGraph(Graph):
                 sub_graph_ipts = sub_graph.father_input_nodes
                 for ipt_name in sub_graph_ipts:
                     self.connect(ipt_name, sub_graph_name)
+                    self.connect(ipt_name, control_node_name)
                 self.connect(control_node_name, sub_graph_name)
                 self.node_map[sub_graph_name].node_ids = ifelse_ids
                 # 处理else这个分支
                 control_node_name = ifelse_node_name + '__else'
+                block = list(node.blocks())[1]
+                if len(list(block.nodes())) == 0 and len(list(block.outputs())) == 0:
+                    return True
                 self.node_map[control_node_name] = PyTorchGraphControlNode(
                     node, 'control_else', control_node_name)
                 self.node_map[control_node_name].node_ids = [control_node_name]
                 self.connect(sub_graph_name, control_node_name)
-                block = list(node.blocks())[1]
+                if len(list(block.nodes())) == 0:
+                    return True
                 sub_graph_name = ifelse_node_name + '__block1'
                 sub_graph = PyTorchGraph(
                     block,
                     self.params,
+                    self.origin_model,
                     graph_type='Else',
                     graph_opts=ifelse_ids,
                     graph_name=sub_graph_name)
@@ -344,19 +402,35 @@ class PyTorchGraph(Graph):
                                                                  ipt_id)
                         self.node_map[ipt_id].node_ids = [ipt_id]
                         self.node_map[ipt_id].input_ids = None
-                        self.node_map[ipt_id].set_attrs(
-                            [self.attrs[ipt_id]] if ipt_id in self.attrs else
-                            [self.father_attrs[ipt_id]])
+                        if ipt_id in self.attrs:
+                            if isinstance(self.attrs[ipt_id], str):
+                                part_str = self.attrs[ipt_id].split('.')
+                                ipt_attr = self.origin_model
+                                for s in part_str:
+                                    ipt_attr = getattr(ipt_attr, s)
+                            else:
+                                ipt_attr = self.attrs[ipt_id]
+                        else:
+                            if isinstance(self.father_attrs[ipt_id], str):
+                                part_str = self.father_attrs[ipt_id].split('.')
+                                ipt_attr = self.origin_model
+                                for s in part_str:
+                                    ipt_attr = getattr(ipt_attr, s)
+                            else:
+                                ipt_attr = self.father_attrs[ipt_id]
                         ipt_node_name = ipt_id
+                        self.node_map[ipt_id].set_attrs([ipt_attr])
                     else:
                         ipt_node_name = self._get_ipt_node_name(ipt_id)
                     self.connect(ipt_node_name, control_node_name)
                     ipts.append(ipt_node_name)
+                
                 block = list(node.blocks())[0]
                 sub_graph_name = loop_node_name + '__block'
                 sub_graph = PyTorchGraph(
                     block,
                     self.params,
+                    self.origin_model,
                     graph_type='Loop',
                     graph_opts=loop_ids,
                     graph_ipts=ipts,
@@ -374,7 +448,7 @@ class PyTorchGraph(Graph):
                 self.connect(control_node_name, sub_graph_name)
                 self.node_map[sub_graph_name].node_ids = loop_ids
             else:
-                print(index)
+                print('----', index)
                 print(node_name)
         return True
 
@@ -424,6 +498,9 @@ class PyTorchGraph(Graph):
             self.line_combine_info = {}
             line_combine_info = get_combined_graph(self.pytorch_graph,
                                                    self.ipt_opts)
+#             import pickle
+#             with open('tmp.pickle', 'rb') as file:
+#                 line_combine_info =pickle.load(file)
             for l in line_combine_info:
                 self.line_combine_info.update(l)
         else:
@@ -496,7 +573,9 @@ class PyTorchGraph(Graph):
 
     def get_input_node(self, pytorch_node, idx=0, copy=False):
         # 获取输入node
-        if len(pytorch_node.inputs) == 0:
+        if len(pytorch_node.inputs) == 0 or \
+           (hasattr(pytorch_node.layer, 'input_ids') and len(pytorch_node.layer.input_ids) != len(pytorch_node.inputs)):
+            
             if isinstance(pytorch_node.layer, CombinedNode):
                 ipt_id = pytorch_node.layer.input_ids[idx]
             else:
@@ -509,20 +588,20 @@ class PyTorchGraph(Graph):
                     print('Error------', pytorch_node.layer_name)
             match = [s for s in list(self.node_map.keys()) \
                      if ipt_id + '_%' in s or s.endswith(ipt_id) or ipt_id + '__' in s]
-            if len(match) == 1:
-                ipt_name = match[0]
+            if len(match) > 1:
+                ipt_name = match[-1]
                 ipt_pytorch_node = self.node_map[ipt_name]
             elif ipt_id in self.node_map:
-                ipt_name = self.node_map[ipt_id]
+                ipt_name = ipt_id
                 ipt_pytorch_node = self.node_map[ipt_name]
             elif self.father_node_map is not None:
                 father_match = [s for s in list(self.father_node_map.keys()) \
                             if ipt_id + '_%' in s or s.endswith(ipt_id) or ipt_id + '__' in s]
-                if len(father_match) == 1:
-                    ipt_name = father_match[0]
+                if len(father_match) > 1:
+                    ipt_name = father_match[-1]
                     ipt_pytorch_node = self.father_node_map[ipt_name]
                 elif ipt_id in self.father_node_map:
-                    ipt_name = self.father_node_map[ipt_id]
+                    ipt_name = ipt_id
                     ipt_pytorch_node = self.father_node_map[ipt_name]
             else:
                 print('Error------', ipt_id)
@@ -551,6 +630,8 @@ class PyTorchGraph(Graph):
         else:
             name = ipt_name
         ipt_pytorch_node = self.get_node(name, copy=copy)
+        
+        
         if hasattr(
                 ipt_pytorch_node,
                 'layer') and ipt_pytorch_node.layer_type == 'data' and hasattr(
@@ -567,7 +648,7 @@ class PyTorchDecoder(object):
             model = torch.load(model_path, map_location='cpu')
         self.params = _unique_state_dict(model)
         jit_script = self.get_jit_script(model)
-        self.pytorch_graph = PyTorchGraph(jit_script, self.params)
+        self.pytorch_graph = PyTorchGraph(jit_script, self.params, model)
         self.pytorch_graph.build()
 
     def get_jit_script(self, model):

@@ -15,6 +15,8 @@
 import re
 import copy
 import torch
+import sys
+sys.setrecursionlimit(100000)
 
 regular_expressions = {}
 regular_expressions['AdaptiveAvgPool2d'] = (
@@ -55,12 +57,18 @@ regular_expressions['Invalid_BatchNorm'] = (
     20)
 
 regular_expressions['BatchNorm'] = (
-    r"= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: int\[\] = aten::size[(]%.*[)] # .*(\n)(\s*)%.*: str = prim::Constant\[value=\"Exception\"\][(][)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::sub[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = prim::Loop[(]%.*, %.*, %.*[)] # .*(\n)(\s*)block0[(]%.*: int, %.*: int[)]:(\n)(\s*)%.*: int = aten::add[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::mul[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*, %.*[)](\n)(\s*)%.*: bool = aten::eq[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: Tensor = aten::batch_norm[(]%.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)",
+    r"(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: int\[\] = aten::size[(]%.*[)] # .*(\n)(\s*)%.*: str = prim::Constant\[value=\"Exception\"\][(][)] # .*(\n)(\s*)%.*: bool = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = prim::Constant\[value=.*\][(][)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::len[(]%.*[)] # .*(\n)(\s*)%.*: int = aten::sub[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = prim::Loop[(]%.*, %.*, %.*[)] # .*(\n)(\s*)block0[(]%.*: int, %.*: int[)]:(\n)(\s*)%.*: int = aten::add[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)(\s*)%.*: int = aten::mul[(]%.*, %.*[)] # .*(\n)(\s*)-> [(]%.*, %.*[)](\n)(\s*)%.*: bool = aten::eq[(]%.*, %.*[)] # .*(\n)(\s*)= prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)= prim::RaiseException[(]%.*[)] # .*(\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)-> [(][)](\n)(\s*)block1[(][)]:(\n)(\s*)-> [(][)](\n)(\s*)%.*: Tensor = aten::batch_norm[(]%.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*, %.*[)] # .*(\n)",
     28)
 
 regular_expressions['ReLU6'] = (
-    r".*: float = prim::Constant\[value=6.\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=0.\][(][)] # .*(\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)",
+    r"(\s*)%.*: float = prim::Constant\[value=6.\][(][)] # .*(\n)(\s*)%.*: float = prim::Constant\[value=0.\][(][)] # .*(\n)(\s*)%.*: Tensor = prim::If[(]%.*[)] # .*(\n)(\s*)block0[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh_[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)(\s*)block1[(][)]:(\n)(\s*)%.*: Tensor = aten::hardtanh[(]%.*, %.*, %.*[)] # .*(\n)(\s*)-> [(]%.*[)](\n)",
     9)
+
+regular_expressions['Add'] = (r"(\s*)%.*: Tensor = aten::add[(]%.*, %.*, %.*[)] # .*(\n)", 1)
+
+regular_expressions['Reshape'] = (r"(\s*)%.*: Tensor = aten::reshape[(]%.*, %.*[)] # .*(\n)", 1)
+
+regular_expressions['GetItem'] = (r"(\s*)%.*: int = aten::__getitem__[(]%.*, %.*[)] # .*(\n)", 1)
 
 
 class CombinedNode:
@@ -91,13 +99,13 @@ class ReLUCombinedNode(CombinedNode):
                                                self.inputs)
 
     def get_combined_node_info(self):
-        pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(](.*)[)] #")
+        pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(]%(.*)[)] #")
         m1 = pattern1.search(self.nodes_str)
         self.cnode_ids = ['%' + m1.groups()[0]]
         pattern2 = re.compile(r"Tensor = aten::relu_[(]%(.*?)[)]")
         m2 = pattern2.search(self.nodes_str)
-        self.inputs.append(m2.groups()[0])
-        self.inputs.append(m1.groups()[1])
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m1.groups()[1])
 
 
 class AdaptiveAvgPool2dCombinedNode(CombinedNode):
@@ -303,21 +311,79 @@ class ReLU6CombinedNode(CombinedNode):
                                                 self.inputs)
 
     def get_combined_node_info(self):
-        pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(](.*)[)] #")
+        pattern1 = re.compile(r"%(.*) : Tensor = prim::If[(]%(.*)[)] #")
         m1 = pattern1.search(self.nodes_str)
         self.cnode_ids = ['%' + m1.groups()[0]]
         pattern2 = re.compile(
             r"Tensor = aten::hardtanh_[(]%(.*?), %(.*?), %(.*?)[)]")
         m2 = pattern2.search(self.nodes_str)
-        self.inputs.append(m2.groups()[0])
-        self.inputs.append(m1.groups()[1])
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m1.groups()[1])
+        
+        
+class AddCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(AddCombinedNode, self).__init__(self.cnode_ids, 'add',
+                                                self.inputs)
 
+    def get_combined_node_info(self):
+        pattern1 = re.compile(r"%(.*) : Tensor")
+        m1 = pattern1.search(self.nodes_str)
+        self.cnode_ids = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(
+            r"[(]%(.*), %(.*), %(.*)[)]")
+        m2 = pattern2.search(self.nodes_str)
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m2.groups()[1])
+        self.inputs.append('%' + m2.groups()[2])
+        
+        
+class ReshapeCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(ReshapeCombinedNode, self).__init__(self.cnode_ids, 'reshape',
+                                                self.inputs)
+
+    def get_combined_node_info(self):
+        pattern1 = re.compile(r"%(.*) : Tensor")
+        m1 = pattern1.search(self.nodes_str)
+        self.cnode_ids = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(
+            r"[(]%(.*), %(.*)[)]")
+        m2 = pattern2.search(self.nodes_str)
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m2.groups()[1])
+        
+        
+class GetItemCombinedNode(CombinedNode):
+    def __init__(self, nodes_str):
+        self.nodes_str = nodes_str
+        self.inputs = []
+        self.get_combined_node_info()
+        super(GetItemCombinedNode, self).__init__(self.cnode_ids, 'getitem',
+                                                self.inputs)
+
+    def get_combined_node_info(self):
+        pattern1 = re.compile(r"%(.*) : int")
+        m1 = pattern1.search(self.nodes_str)
+        self.cnode_ids = ['%' + m1.groups()[0]]
+        pattern2 = re.compile(
+            r"[(]%(.*), %(.*)[)]")
+        m2 = pattern2.search(self.nodes_str)
+        self.inputs.append('%' + m2.groups()[0])
+        self.inputs.append('%' + m2.groups()[1])
+        
 
 class Invalid_BatchNormCombinedNode(CombinedNode):
     def __init__(self, nodes_str):
         self.nodes_str = nodes_str
         self.inputs = []
-        self.self.cnode_ids = []
+        self.cnode_ids = []
         super(Invalid_BatchNormCombinedNode, self).__init__(
             self.cnode_ids, 'invalid_batchnorm', self.inputs)
 
@@ -375,6 +441,8 @@ def get_combined_graph(graph, ipt_opts):
                 if sub_graph_str == '':
                     line_combine_infos.append(copy.deepcopy(line_combine_info))
                 dfs(sub_graph_str, used_graph_stack)
+                if len(line_combine_infos) > 0:
+                    return
                 out_str = used_graph_stack.pop()
                 sub_graph_str = out_str + sub_graph_str
                 if len(out_str.split('\n')) > 2 or 'aten' in out_str:
@@ -382,6 +450,9 @@ def get_combined_graph(graph, ipt_opts):
                 return
             if m is None:
                 if 'aten' in current_line:
+                    if op_name == list(regular_expressions.keys())[-1]:
+                        if current_line not in list(match_dict.keys()):
+                            no_match_lines.append(current_line) 
                     continue
                 else:
                     used_graph_stack.append(current_line + '\n')
@@ -394,6 +465,8 @@ def get_combined_graph(graph, ipt_opts):
                         line_combine_infos.append(
                             copy.deepcopy(line_combine_info))
                     dfs(sub_graph_str, used_graph_stack)
+                    if len(line_combine_infos) > 0:
+                        return
                     out_str = used_graph_stack.pop()
                     sub_graph_str = out_str + sub_graph_str
                     if len(out_str.split('\n')) > 2 or 'aten' in out_str:
@@ -419,12 +492,18 @@ def get_combined_graph(graph, ipt_opts):
                 if sub_graph_str == '':
                     line_combine_infos.append(copy.deepcopy(line_combine_info))
                 dfs(sub_graph_str, used_graph_stack)
+                if len(line_combine_infos) > 0:
+                    return
                 out_str = used_graph_stack.pop()
                 sub_graph_str = out_str + sub_graph_str
                 if len(out_str.split('\n')) > 2 or 'aten' in out_str:
                     line_combine_info.pop()
 
+    import time
+    start = time.time()
     dfs(graph_str, used_graph_stack)
+    end = time.time()
+    print('dfs cost--', str(end - start))
     min_line_count = len(line_index)
     origin_line_count = len(line_index)
     if len(line_combine_infos) == 0:
@@ -436,4 +515,7 @@ def get_combined_graph(graph, ipt_opts):
         if origin_line_count < min_line_count:
             min_line_count = origin_line_count
             final_line_combine_info = info
+#     import pickle
+#     file = open('tmp.pickle', 'wb')
+#     pickle.dump(final_line_combine_info, file)
     return final_line_combine_info
