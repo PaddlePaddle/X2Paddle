@@ -202,7 +202,7 @@ def paddle2onnx(model_path, save_dir, opset_version=10):
         model.program,
         save_dir,
         scope=fluid.global_scope(),
-        opset_number=opset_number)
+        opset_version=opset_version)
 
 
 def main():
@@ -269,7 +269,7 @@ def main():
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir, args.onnx_opset)
+        paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
 
     else:
         raise Exception(
