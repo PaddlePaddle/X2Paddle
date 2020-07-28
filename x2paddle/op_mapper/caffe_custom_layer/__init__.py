@@ -10,6 +10,8 @@ from . import select
 from . import shufflechannel
 from . import convolutiondepthwise
 from . import axpy
+from . import upsample
+from . import relu6
 #custom layer import ends
 
 custom_layers = get_registered_layers()

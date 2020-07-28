@@ -33,6 +33,8 @@
 | MobileNet_V1 | [code](https://github.com/shicai/MobileNet-Caffe) |
 | MobileNet_V2 | [code](https://github.com/shicai/MobileNet-Caffe) |
 | ShuffleNet_v2 | [code](https://github.com/miaow1988/ShuffleNet_V2_pytorch_caffe/releases/tag/v0.1.0) |
+| InceptionV3 | [code](https://github.com/soeaver/caffe-model/blob/master/cls/inception/) |
+| InceptionV4 | [code](https://github.com/soeaver/caffe-model/blob/master/cls/inception/) |
 | mNASNet | [code](https://github.com/LiJianfei06/MnasNet-caffe) |
 | MTCNN | [code](https://github.com/kpzhang93/MTCNN_face_detection_alignment/tree/master/code/codes/MTCNNv1/model) |
 | Mobilenet_SSD | [code](https://github.com/chuanqi305/MobileNet-SSD) |

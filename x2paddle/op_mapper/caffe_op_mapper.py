@@ -23,7 +23,6 @@ from x2paddle.op_mapper.caffe_custom_layer import *
 
 class CaffeOpMapper(OpMapper):
     directly_map_ops = {
-        'ReLU': 'relu',
         'AbsVal': 'abs',
         'Sigmoid': 'sigmoid',
         'TanH': 'tanh',
@@ -434,6 +433,26 @@ class CaffeOpMapper(OpMapper):
         attr = {'axis': axis, 'name': string(node.layer_name)}
         node.fluid_code.add_layer(
             "concat", inputs=inputs, output=node, param_attr=attr)
+
+    def ReLU(self, node):
+        """
+
+        :param node:
+        :return:
+        """
+        assert len(
+            node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+
+        params = node.layer.relu_param
+        if params.HasField('negative_slope') and params.negative_slope != 0:
+            negative_slope = float(params.negative_slope)
+
+            attr = {'alpha': negative_slope}
+            node.fluid_code.add_layer(
+                'leaky_relu', inputs=input, output=node, param_attr=attr)
+        else:
+            node.fluid_code.add_layer('relu', inputs=input, output=node)
 
     def PReLU(self, node):
         assert len(
