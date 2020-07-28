@@ -59,7 +59,7 @@ class OpSet9(object):
             'Constant', inputs=[], outputs=[name], value=tensor)
         return node
 
-    def convert_weights(self, program):
+    def convert_weights(self, program, scope=None):
         var_names = program.global_block().vars
         nodes = list()
         for name in var_names:
@@ -68,7 +68,7 @@ class OpSet9(object):
                 continue
             if not var.persistable:
                 continue
-            weight = np.array(fluid.global_scope().find_var(name).get_tensor())
+            weight = np.array(scope.find_var(name).get_tensor())
             tensor = helper.make_tensor(
                 name=name,
                 dims=var.shape,

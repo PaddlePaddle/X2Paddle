@@ -33,9 +33,9 @@ class PaddleOpMapper(object):
         self.name_counter = dict()
         self.op_set = None
 
-    def convert(self, program, save_dir, opset_number=10):
+    def convert(self, program, save_dir, scope=None, opset_number=10):
         self.op_set = self.create_opset(opset_number)
-        weight_nodes = self.op_set.convert_weights(program)
+        weight_nodes = self.op_set.convert_weights(program, scope=scope)
         op_nodes = list()
         input_nodes = list()
         output_nodes = list()

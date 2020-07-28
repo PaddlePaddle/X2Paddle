@@ -195,9 +195,14 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
 def paddle2onnx(model_path, save_dir, opset_number):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
+    import paddle.fluid as fluid
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(model.program, save_dir, opset_number=opset_number)
+    mapper.convert(
+        model.program,
+        save_dir,
+        scope=fluid.global_scope(),
+        opset_number=opset_number)
 
 
 def main():
