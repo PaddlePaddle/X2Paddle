@@ -88,39 +88,6 @@ class CaffeGraph(Graph):
             # filter them out here.
             if (not exclude) and (phase == 'test'):
                 exclude = (type_str == 'Dropout')
-                '''
-                如果要去除Dropout Layer的话，原先这里写的不对，因为还得修正下一层Layer的bottom指向
-
-                例如：
-                    layer {
-                      name: "pool_8x8_s1"
-                      type: "Pooling"
-                      bottom: "inception_c2_concat"
-                      top: "pool_8x8_s1"
-                      pooling_param {
-                        pool: AVE
-                        global_pooling: true
-                      }
-                    }
-                    layer {
-                      name: "pool_8x8_s1_drop"
-                      type: "Dropout"
-                      bottom: "pool_8x8_s1"
-                      top: "pool_8x8_s1_drop"
-                      dropout_param {
-                        dropout_ratio: 0.2
-                      }
-                    }
-                    layer {
-                      name: "classifier"
-                      type: "InnerProduct"
-                      bottom: "pool_8x8_s1_drop"
-                    }
-
-                这种prototxt形式下，直接去除pool_8x8_s1_drop不行
-                会导致dropout的下一层找不到正确的bottom而报错
-                需要将下一层里的bottom指向dropout的上一层
-                '''
                 if layer.type == 'Dropout':
                     drop_layer_top = layer.top[0]
                     drop_layer_bottom = layer.bottom[0]

@@ -444,7 +444,6 @@ class CaffeOpMapper(OpMapper):
             node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
 
-        # 如果存在negative_slope，则相当于 LeakyReLU
         params = node.layer.relu_param
         if params.HasField('negative_slope') and params.negative_slope != 0:
             negative_slope = float(params.negative_slope)
