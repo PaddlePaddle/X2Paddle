@@ -448,14 +448,11 @@ class CaffeOpMapper(OpMapper):
         if params.HasField('negative_slope') and params.negative_slope != 0:
             negative_slope = float(params.negative_slope)
 
-            attr = {
-                'alpha': negative_slope
-            }
+            attr = {'alpha': negative_slope}
             node.fluid_code.add_layer(
                 'leaky_relu', inputs=input, output=node, param_attr=attr)
         else:
-            node.fluid_code.add_layer(
-                'relu', inputs=input, output=node)
+            node.fluid_code.add_layer('relu', inputs=input, output=node)
 
     def PReLU(self, node):
         assert len(

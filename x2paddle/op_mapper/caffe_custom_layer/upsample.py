@@ -42,10 +42,8 @@ def upsample_layer(inputs, scale, input_shape=None, name=None):
     :return:
     """
     x = inputs[0]
-    out = fluid.layers.resize_nearest(x,
-                                      align_corners=False,
-                                      scale=scale,
-                                      name=name)
+    out = fluid.layers.resize_nearest(
+        x, align_corners=False, scale=scale, name=name)
 
     return out
 
@@ -61,4 +59,8 @@ def upsample_weights(name, data=None):
     return weights_name
 
 
-register(kind='Upsample', shape=upsample_shape, layer=upsample_layer, weights=upsample_weights)
+register(
+    kind='Upsample',
+    shape=upsample_shape,
+    layer=upsample_layer,
+    weights=upsample_weights)

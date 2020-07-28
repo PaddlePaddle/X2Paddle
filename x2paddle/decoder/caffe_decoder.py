@@ -93,10 +93,13 @@ class CaffeGraph(Graph):
                     drop_layer_bottom = layer.bottom[0]
                     if drop_layer_top != drop_layer_bottom:
                         for next_layer in layers:
-                            for next_layer_bottom_idx, next_layer_bottom in enumerate(next_layer.bottom):
+                            for next_layer_bottom_idx, next_layer_bottom in enumerate(
+                                    next_layer.bottom):
                                 if drop_layer_top == next_layer_bottom:
                                     next_layer.bottom.remove(drop_layer_top)
-                                    next_layer.bottom.insert(next_layer_bottom_idx, drop_layer_bottom)
+                                    next_layer.bottom.insert(
+                                        next_layer_bottom_idx,
+                                        drop_layer_bottom)
 
             if not exclude:
                 filtered_layers.append(layer)

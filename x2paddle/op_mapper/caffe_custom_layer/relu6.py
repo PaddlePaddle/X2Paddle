@@ -18,7 +18,4 @@ def relu6_weights(name, data=None):
 
 
 register(
-    kind='ReLU6',
-    shape=relu6_shape,
-    layer=relu6_layer,
-    weights=relu6_weights)
+    kind='ReLU6', shape=relu6_shape, layer=relu6_layer, weights=relu6_weights)
