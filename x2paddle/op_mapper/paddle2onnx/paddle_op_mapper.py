@@ -33,9 +33,9 @@ class PaddleOpMapper(object):
         self.name_counter = dict()
         self.op_set = None
 
-    def convert(self, program, save_dir, opset_number=10):
-        self.op_set = self.create_opset(opset_number)
-        weight_nodes = self.op_set.convert_weights(program)
+    def convert(self, program, save_dir, scope=None, opset_version=10):
+        self.op_set = self.create_opset(opset_version)
+        weight_nodes = self.op_set.convert_weights(program, scope=scope)
         op_nodes = list()
         input_nodes = list()
         output_nodes = list()
@@ -77,7 +77,7 @@ class PaddleOpMapper(object):
             initializer=[],
             inputs=input_nodes,
             outputs=output_nodes)
-        opset_imports = [helper.make_opsetid("", opset_number)]
+        opset_imports = [helper.make_opsetid("", opset_version)]
         model = helper.make_model(
             graph, producer_name='X2Paddle', opset_imports=opset_imports)
         onnx.checker.check_model(model)
@@ -89,20 +89,20 @@ class PaddleOpMapper(object):
         print("\nTranslated model saved in {}".format(
             os.path.join(save_dir, 'x2paddle_model.onnx')))
 
-    def create_opset(self, opset_number):
+    def create_opset(self, opset_version=10):
         run_opset = self.default_opset
         opset = ''
-        if opset_number in self.support_opsets:
-            run_opset = opset_number
+        if opset_version in self.support_opsets:
+            run_opset = opset_version
         else:
-            for support_opset_number in self.support_opsets:
-                if support_opset_number < opset_number:
-                    run_opset = support_opset_number
+            for support_opset_version in self.support_opsets:
+                if support_opset_version < opset_version:
+                    run_opset = support_opset_version
                 else:
                     break
         print(
             'Now, onnx2paddle support convert onnx model opset_verison {},'
             'opset_verison of your onnx model is {}, automatically treated as op_set: {}.'
-            .format(self.support_opsets, opset_number, run_opset))
+            .format(self.support_opsets, opset_version, run_opset))
         opset = 'OpSet' + str(run_opset)
         return eval(opset)()
