@@ -215,6 +215,28 @@ class OpSet9(object):
                 pads=op.attr('paddings') + op.attr('paddings'))
         return node
 
+    def pad2d(self, op, block):
+        x_shape = block.var(op.input('X')[0]).shape
+        paddings = op.attr('paddings')
+        onnx_pads = []
+        if op.attr('data_format') == 'NCHW':
+            pads = [
+                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+            ]
+        else:
+            pads = [
+                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+            ]
+        #TODO support pads is Variable
+        node = helper.make_node(
+            'Pad',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            mode=op.attr('mode'),
+            value=op.attr('pad_value'),
+            pads=pads)
+        return node
+
     def softmax(self, op, block):
         axis = op.attr('axis')
         shape = block.var(op.output('Out')[0]).shape

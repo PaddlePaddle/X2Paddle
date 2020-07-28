@@ -15,6 +15,7 @@
 from x2paddle.decoder.tf_decoder import TFGraph
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
+import math
 import inspect
 import numpy
 import sys
@@ -47,7 +48,8 @@ class TFOpMapperNHWC(OpMapper):
         'LeakyRelu': ['leaky_relu', {
             'alpha': 'alpha'
         }],
-        'Floor': ['floor']
+        'Floor': ['floor'],
+        'Erf': ['erf']
     }
     elementwise_ops = {
         'Add': 'elementwise_add',
@@ -56,6 +58,7 @@ class TFOpMapperNHWC(OpMapper):
         'Sub': 'elementwise_sub',
         'Maximum': 'elementwise_max',
         'Minimum': 'elementwise_min',
+        'LessEqual': 'less_equal',
         'Mul': 'elementwise_mul',
         'FloorDiv': 'elementwise_floordiv'
     }
@@ -71,7 +74,11 @@ class TFOpMapperNHWC(OpMapper):
 
         not_placeholder = list()
         for name in self.graph.input_nodes:
-            if self.graph.get_node(name).layer_type != "Placeholder":
+            if self.graph.get_node(
+                    name).layer_type != "Placeholder" and self.graph.get_node(
+                        name
+                    ).layer_type != "OneShotIterator" and self.graph.get_node(
+                        name).layer_type != "IteratorV2":
                 not_placeholder.append(name)
         for name in not_placeholder:
             idx = self.graph.input_nodes.index(name)
@@ -631,9 +638,19 @@ class TFOpMapperNHWC(OpMapper):
             attr = {"shape": shape}
             node.fluid_code.add_layer(
                 "reshape", inputs=x, output=x, param_attr=attr)
+        if transpose_a is None:
+            transpose_a = node.get_attr('adj_x')
+        if transpose_b is None:
+            transpose_b = node.get_attr('adj_y')
         attr = {"transpose_x": transpose_a, "transpose_y": transpose_b}
         node.fluid_code.add_layer(
             "matmul", inputs=inputs, output=node, param_attr=attr)
+
+    def BatchMatMul(self, node):
+        return self.MatMul(node)
+
+    def BatchMatMulV2(self, node):
+        return self.MatMul(node)
 
     def ArgMax(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
@@ -789,7 +806,7 @@ class TFOpMapperNHWC(OpMapper):
                 "transpose", inputs=input, output=node, param_attr=attr)
             input = node
         else:
-            self.data_format_propagation(node)
+            self.graph.data_format_propagation(node)
 
         attr = {
             "bias_attr": False,
@@ -957,7 +974,9 @@ class TFOpMapperNHWC(OpMapper):
         if y.layer_type == 'Const':
             self.add_omit_nodes(y.layer_name, node.layer_name)
             dim = y.value.tolist()
-            attr = {'axes': [dim]}
+            if not isinstance(dim, list):
+                dim = [dim]
+            attr = {'axes': dim}
         else:
             attr = {'axes': y}
         node.fluid_code.add_layer(
@@ -980,3 +999,95 @@ class TFOpMapperNHWC(OpMapper):
                 "=", inputs=x, output=node, param_attr=None)
         else:
             raise Exception("SpaceToBatchND is not supported")
+
+    def OneHot(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        depth = self.graph.get_node(node.layer.input[1], copy=True)
+        on_value = self.graph.get_node(node.layer.input[2], copy=True)
+        off_value = self.graph.get_node(node.layer.input[3], copy=True)
+        assert depth.layer_type == 'Const', 'Parameter depth should be Const in OneHot'
+        assert on_value.layer_type == 'Const', 'Parameter on_value should be Const in OneHot'
+        assert off_value.layer_type == 'Const', 'Parameter off_value should be Const in OneHot'
+        self.add_omit_nodes(depth.layer_name, node.layer_name)
+        self.add_omit_nodes(on_value.layer_name, node.layer_name)
+        self.add_omit_nodes(off_value.layer_name, node.layer_name)
+        depth = depth.value
+        on_value = on_value.value
+        off_value = off_value.value
+        assert math.fabs(on_value -
+                         1.0) < 1e-06, "on_value should be 1 in OneHot"
+        assert math.fabs(off_value -
+                         0.0) < 1e-06, "off_value should be 0 in OneHot"
+        attr = {'depth': depth}
+        node.fluid_code.add_layer(
+            "one_hot",
+            inputs=input,
+            output=node,
+            param_attr=attr,
+            use_fluid=True)
+
+    def Pow(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        factor = self.graph.get_node(node.layer.input[1], copy=True)
+        self.add_omit_nodes(factor.layer_name, node.layer_name)
+        if factor.layer_type == 'Const':
+            factor = factor.value.tolist()
+        else:
+            factor = self.decoder.infer_tensor(factor)
+        attr = {'factor': factor}
+        node.fluid_code.add_layer("pow", inputs=x, output=node, param_attr=attr)
+
+    def All(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
+        self.add_omit_nodes(reduce_idx.layer_name, node.layer_name)
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        dims = reduce_idx.value.tolist()
+        keep_dims = node.get_attr("keep_dims")
+
+        attr = {"dim": dims, "keep_dim": keep_dims}
+        node.fluid_code.add_layer(
+            "reduce_all", inputs=input, output=node, param_attr=attr)
+
+    def GatherV2(self, node):
+        embeddings = self.graph.get_node(node.layer.input[0], copy=True)
+        index = self.graph.get_node(node.layer.input[1], copy=True)
+        axis = self.graph.get_node(node.layer.input[2], copy=True)
+        self.add_omit_nodes(axis.layer_name, node.layer_name)
+        assert axis.layer_type == 'Const', "Only support Const parameter[axis]"
+        axis = axis.value.tolist()
+        assert axis == 0, "Only support axis=0 in GatherV2 OP"
+        attr = {'overwrite': False}
+        if len(index.out_shapes[0]) != 1:
+            reshape_attr = {"shape": [-1]}
+            node.fluid_code.add_layer(
+                "reshape", inputs=index, output=index, param_attr=reshape_attr)
+        inputs = {'input': embeddings, 'index': index}
+        node.fluid_code.add_layer(
+            "gather", inputs=inputs, output=node, param_attr=attr)
+
+    def OneShotIterator(self, node):
+        return self.Placeholder(node)
+
+    def IteratorV2(self, node):
+        dtype_map = {
+            1: "float32",
+            3: "int32",
+            4: "uint8",
+            9: "int64",
+            10: "bool"
+        }
+        shapes = node.out_shapes
+        dtypes = node.layer.attr['output_types'].list.type
+        node.fluid_code.add_note("{} = [0] * {}".format(node.layer_name,
+                                                        len(shapes)))
+        for i, shape in enumerate(shapes):
+            attr = {
+                'dtype': string(dtype_map[dtypes[i]]),
+                'shape': shape,
+                'name': string("{}_{}".format(node.layer_name, i)),
+                'append_batch_size': False
+            }
+            output = "{}[{}]".format(node.layer_name, i)
+            node.fluid_code.add_layer(
+                "data", inputs=None, output=output, param_attr=attr)
