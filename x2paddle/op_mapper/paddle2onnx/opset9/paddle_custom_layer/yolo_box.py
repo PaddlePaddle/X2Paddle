@@ -769,7 +769,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_x1_decode,
         outputs=outputs_pred_box_x1_clip,
         min=0.0,
-        max=MAX_FLOAT32)
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_x1_clip)
 
     node_pred_box_y1_clip = onnx.helper.make_node(
@@ -777,7 +777,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_y1_decode,
         outputs=outputs_pred_box_y1_clip,
         min=0.0,
-        max=MAX_FLOAT32)
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_y1_clip)
 
     node_pred_box_x2_clip = onnx.helper.make_node(
@@ -785,7 +785,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_x2_sub_w,
         outputs=outputs_pred_box_x2_clip,
         min=0.0,
-        max=MAX_FLOAT32)
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_x2_clip)
 
     node_pred_box_y2_clip = onnx.helper.make_node(
@@ -793,7 +793,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_y2_sub_h,
         outputs=outputs_pred_box_y2_clip,
         min=0.0,
-        max=MAX_FLOAT32)
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_y2_clip)
 
     outputs_pred_box_x2_res = [model_name + "@box_x2_res"]

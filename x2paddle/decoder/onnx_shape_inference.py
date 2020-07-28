@@ -545,9 +545,6 @@ class SymbolicShapeInference:
                 self.sympy_data_[node.output[0]] = data
                 new_shape = np.array(data).shape
             vi = self.known_vi_[node.output[0]]
-            #print(node.output[0])
-            #print(new_shape)
-            #vi.CopyFrom(helper.make_tensor_value_info(node.output[0], self.known_vi_[node.input[0]].type.tensor_type.elem_type, list(new_shape)))
 
     def _pass_on_sympy_data(self, node):
         assert len(node.input) == 1 or node.op_type == 'Reshape'
@@ -854,12 +851,7 @@ class SymbolicShapeInference:
         axis = handle_negative_axis(
             get_attribute(node, 'axis', 0), len(data_shape))
         indices_shape = self._get_shape(node, 1)
-        #if indices_shape == []:
-        #    value = self._get_initializer_value(node, 1)
-        #    if isinstance(value.tolist(), int):
-        #        indices_shape = [1]
         new_shape = data_shape[:axis] + indices_shape + data_shape[axis + 1:]
-        #print(new_shape)
         vi = self.known_vi_[node.output[0]]
         vi.CopyFrom(
             helper.make_tensor_value_info(node.output[
