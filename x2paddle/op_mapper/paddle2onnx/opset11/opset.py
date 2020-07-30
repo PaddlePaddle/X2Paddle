@@ -61,6 +61,12 @@ class OpSet11(OpSet10):
         constant_value_node = self.make_constant_node(constant_value_name,
                                                       onnx_pb.TensorProto.FLOAT,
                                                       op.attr('pad_value'))
+        node = helper.make_node(
+            'Pad',
+            inputs=op.input('X') + [pads_name, constant_value_name],
+            outputs=op.output('Out'),
+            mode=op.attr('mode'))
+        return [pads_node, constant_value_node, node]
 
     def clip(self, op, block):
         min_name = self.get_name(op.type, 'min')
