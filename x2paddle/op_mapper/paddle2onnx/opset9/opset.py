@@ -59,7 +59,7 @@ class OpSet9(object):
             'Constant', inputs=[], outputs=[name], value=tensor)
         return node
 
-    def convert_weights(self, program):
+    def convert_weights(self, program, scope=None):
         var_names = program.global_block().vars
         nodes = list()
         for name in var_names:
@@ -68,7 +68,7 @@ class OpSet9(object):
                 continue
             if not var.persistable:
                 continue
-            weight = np.array(fluid.global_scope().find_var(name).get_tensor())
+            weight = np.array(scope.find_var(name).get_tensor())
             tensor = helper.make_tensor(
                 name=name,
                 dims=var.shape,
@@ -234,6 +234,28 @@ class OpSet9(object):
                 kernel_shape=k_size,
                 strides=op.attr('strides'),
                 pads=op.attr('paddings') + op.attr('paddings'))
+        return node
+
+    def pad2d(self, op, block):
+        x_shape = block.var(op.input('X')[0]).shape
+        paddings = op.attr('paddings')
+        onnx_pads = []
+        if op.attr('data_format') == 'NCHW':
+            pads = [
+                0, 0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3]
+            ]
+        else:
+            pads = [
+                0, paddings[0], paddings[2], 0, 0, paddings[1], paddings[3], 0
+            ]
+        #TODO support pads is Variable
+        node = helper.make_node(
+            'Pad',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            mode=op.attr('mode'),
+            value=op.attr('pad_value'),
+            pads=pads)
         return node
 
     def softmax(self, op, block):
