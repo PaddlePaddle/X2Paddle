@@ -814,11 +814,13 @@ class OpSet9():
                 inputs=val_shape,
                 output=val_shape_cast,
                 param_attr={'dtype': string('int32')})
-            node.fluid_code.add_layer(
-                'reshape',
-                inputs=val_shape_cast,
-                output=val_shape_cast,
-                param_attr={'shape': val_shape.out_shapes[0]})
+            # shape may be [], come form Gather by scalar indices
+            if len(val_shape.out_shapes[0]) > 0:
+                node.fluid_code.add_layer(
+                    'reshape',
+                    inputs=val_shape_cast,
+                    output=val_shape_cast,
+                    param_attr={'shape': val_shape.out_shapes[0]})
             node.fluid_code.add_layer(
                 'reshape',
                 inputs={'x': val_x,
@@ -826,11 +828,13 @@ class OpSet9():
                 output=node,
                 param_attr=attr)
         else:
-            node.fluid_code.add_layer(
-                'reshape',
-                inputs=val_shape,
-                output=val_shape,
-                param_attr={'shape': val_shape.out_shapes[0]})
+            # shape may be [], come form Gather by scalar indices
+            if len(val_shape.out_shapes[0]) > 0:
+                node.fluid_code.add_layer(
+                    'reshape',
+                    inputs=val_shape,
+                    output=val_shape,
+                    param_attr={'shape': val_shape.out_shapes[0]})
             node.fluid_code.add_layer(
                 'reshape',
                 inputs={'x': val_x,
