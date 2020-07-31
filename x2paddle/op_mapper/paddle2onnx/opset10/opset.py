@@ -59,3 +59,11 @@ class OpSet10(OpSet9):
     def multiclass_nms(self, op, block):
         from .paddle_custom_layer.multiclass_nms import multiclass_nms
         return multiclass_nms(op, block)
+
+    def box_coder(self, op, block):
+        from .paddle_custom_layer.box_coder import box_coder
+        return box_coder(op, block)
+
+    def prior_box(self, op, block):
+        from .paddle_custom_layer.prior_box import prior_box
+        return prior_box(op, block)
