@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO useless node remove
+import math
+import sys
+import os
+import numpy as np
+import paddle.fluid.core as core
+import paddle.fluid as fluid
+import onnx
+import warnings
+from onnx import helper, onnx_pb
+from x2paddle.op_mapper.paddle2onnx.opset9.paddle_custom_layer.multiclass_nms import multiclass_nms as multiclass_nms9
 
 
-class ONNXOptimizer(object):
-    def __init__(self, op_mapper):
-        self.op_mapper = op_mapper
-        self.graph = op_mapper.graph
-
-    def delete_redundance_code(self):
-        for node_name in self.graph.topo_sort:
-            if node_name in self.op_mapper.omit_nodes:
-                node = self.graph.get_node(node_name)
-                omit_freq = self.op_mapper.omit_nodes.count(node_name)
-                if len(node.outputs) <= omit_freq:
-                    node.fluid_code.clear()
+def multiclass_nms(op, block):
+    """
+    Convert the paddle multiclass_nms to onnx op.
+    This op is get the select boxes from origin boxes.
+    """
+    return multiclass_nms9(op, block)

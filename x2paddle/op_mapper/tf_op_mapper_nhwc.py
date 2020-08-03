@@ -15,6 +15,10 @@
 from x2paddle.decoder.tf_decoder import TFGraph
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
+from x2paddle import program
+from x2paddle import gen_name
+import traceback
+import math
 import inspect
 import numpy
 import sys
@@ -35,7 +39,6 @@ class TFOpMapperNHWC(OpMapper):
     directly_map_ops = {
         'Relu': ['relu'],
         'Relu6': ['relu6'],
-        'Shape': ['shape'],
         'Abs': ['abs'],
         'Sigmoid': ['sigmoid'],
         'Exp': ['exp'],
@@ -46,7 +49,9 @@ class TFOpMapperNHWC(OpMapper):
         'Softplus': ['softplus'],
         'LeakyRelu': ['leaky_relu', {
             'alpha': 'alpha'
-        }]
+        }],
+        'Floor': ['floor'],
+        'Erf': ['erf']
     }
     elementwise_ops = {
         'Add': 'elementwise_add',
@@ -54,6 +59,9 @@ class TFOpMapperNHWC(OpMapper):
         'RealDiv': 'elementwise_div',
         'Sub': 'elementwise_sub',
         'Maximum': 'elementwise_max',
+        'Minimum': 'elementwise_min',
+        'LessEqual': 'less_equal',
+        'GreaterEqual': 'greater_equal',
         'Mul': 'elementwise_mul',
         'FloorDiv': 'elementwise_floordiv'
     }
@@ -63,17 +71,24 @@ class TFOpMapperNHWC(OpMapper):
         self.decoder = decoder
         self.graph = decoder.tf_graph
         self.weights = dict()
-        self.batch_node = None
         self.omit_nodes = list()
         self.used_custom_layers = dict()
+        program.clear()
 
         not_placeholder = list()
         for name in self.graph.input_nodes:
-            if self.graph.get_node(name).layer_type != "Placeholder":
+            if self.graph.get_node(
+                    name).layer_type != "Placeholder" and self.graph.get_node(
+                        name
+                    ).layer_type != "OneShotIterator" and self.graph.get_node(
+                        name).layer_type != "IteratorV2":
                 not_placeholder.append(name)
         for name in not_placeholder:
             idx = self.graph.input_nodes.index(name)
             del self.graph.input_nodes[idx]
+
+        program.inputs = self.graph.input_nodes
+        program.outputs = self.graph.output_nodes
 
         unsupported_ops = set()
         sys.stderr.write("Total nodes: {}\n".format(len(self.graph.topo_sort)))
@@ -95,31 +110,23 @@ class TFOpMapperNHWC(OpMapper):
                 func = getattr(self, op)
                 try:
                     func(node)
-                except:
+                except Exception as e:
                     unsupported_ops.add(op)
+                    print("\n{}\n".format(traceback.format_exc()))
             else:
                 unsupported_ops.add(op)
         if len(unsupported_ops) > 0:
-            print("========= {} OPs are not supported yet ===========".format(
+            print("\n========= {} OPs are not supported yet ===========".format(
                 len(unsupported_ops)))
             for op in unsupported_ops:
                 print("========== {} ============".format(op))
             sys.exit(-1)
         sys.stderr.write("\nDone!\n")
 
-    def add_omit_nodes(self, in_node_name, out_node_name):
-        in_node = self.graph.get_node(in_node_name)
-        out_node = self.graph.get_node(out_node_name)
-        index = in_node.outputs.index(out_node_name)
-        del in_node.outputs[index]
-        index = out_node.inputs.index(in_node_name)
-        del out_node.inputs[index]
-        self.omit_nodes.append(in_node.layer_name)
-
     def directly_map(self, node):
         assert node.layer_type in self.directly_map_ops
         op_info = self.directly_map_ops[node.layer_type]
-        input = self.graph.get_node(node.layer.input[0], copy=True)
+        input = self.graph.get_node(node.layer.input[0])
         attr = dict()
         for param in op_info[1:]:
             tf_param_name = list(param.keys())[0]
@@ -127,128 +134,35 @@ class TFOpMapperNHWC(OpMapper):
             tf_param = node.get_attr(tf_param_name)
             attr[pd_param_name] = tf_param
 
-        if len(input.out_shapes[0]) == 4 and op_info[0] != 'shape':
-            attr1 = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                'transpose', inputs=input, output=node, param_attr=attr1)
-            input = node
-            node.fluid_code.add_layer(
-                op_info[0], inputs=input, output=node, param_attr=attr)
-            input = node
-            attr2 = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                'transpose', inputs=input, output=node, param_attr=attr2)
-        else:
-            node.fluid_code.add_layer(
-                op_info[0], inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.{}".format(op_info[0]),
+            inputs={"x": input.name},
+            outputs=[node.name],
+            **attr)
 
     def elementwise_map(self, node):
         assert node.layer_type in self.elementwise_ops
         op_type = self.elementwise_ops[node.layer_type]
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        x_shape = x.out_shapes[0]
-        y_shape = y.out_shapes[0]
-        if len(x_shape) == 0:
-            x_shape = [1]
-        if len(y_shape) == 0:
-            y_shape = [1]
-        # incomplement broadcasting support for paddle
-        x_input = x
-        y_input = y
-        if len(x_shape) < len(y_shape):
-            unrevertable_ops = [
-                "elementwise_sub", "elementwise_div", "elementwise_floordiv",
-                "elementwise_mod", "elementwise_pow"
-            ]
-            if op_type not in unrevertable_ops:
-                x_input = y
-                y_input = x
-                x_shape = y.out_shapes[0]
-                if len(x_shape) == 0:
-                    x_shape = [1]
-                y_shape = x.out_shapes[0]
-                if len(y_shape) == 0:
-                    y_shape = [1]
-            else:
-                raise Exception("Unexpected situation happend")
-
-        if len(x_shape) == 4 and len(y_shape) == 1:
-            inputs = {"x": x_input, "y": y_input}
-            node.fluid_code.add_layer(op_type, inputs=inputs, output=node)
-            return
-
-        is_sub_seq = True
-        for i in range(len(y_shape)):
-            index = -1 * i - 1
-            if y_shape[index] != x_shape[index]:
-                is_sub_seq = False
-        if not is_sub_seq:
-            x_expand_times = [1] * len(x_shape)
-            y_expand_times = [1] * len(y_shape)
-            x_need_expand = False
-            y_need_expand = False
-            for i in range(len(y_shape)):
-                index = -1 * i - 1
-                if y_shape[index] != x_shape[index]:
-                    if y_shape[index] == 1:
-                        y_expand_times[index] = x_shape[index]
-                        y_need_expand = True
-                    elif x_shape[index] == 1:
-                        x_expand_times[index] = y_shape[index]
-                        x_need_expand = True
-                    else:
-                        raise Exception("Unexpected situation happend")
-            if x_need_expand:
-                attr = {"expand_times": x_expand_times}
-                node.fluid_code.add_layer(
-                    "expand", inputs=x_input, output="x_tmp", param_attr=attr)
-                x_input = "x_tmp"
-            if y_need_expand:
-                attr = {"expand_times": y_expand_times}
-                node.fluid_code.add_layer(
-                    "expand", inputs=y_input, output="y_tmp", param_attr=attr)
-                y_input = "y_tmp"
-        if len(x_shape) == 4 and len(y_shape) == 4:
-            node.fluid_code.add_layer(
-                "transpose",
-                inputs=x_input,
-                output=x_input,
-                param_attr={'perm': [0, 3, 1, 2]})
-            node.fluid_code.add_layer(
-                "transpose",
-                inputs=y_input,
-                output=y_input,
-                param_attr={'perm': [0, 3, 1, 2]})
-            inputs = {"x": x_input, "y": y_input}
-            node.fluid_code.add_layer(
-                op_type, inputs=inputs, output=node, param_attr=None)
-            node.fluid_code.add_layer(
-                "transpose",
-                inputs=node,
-                output=node,
-                param_attr={'perm': [0, 2, 3, 1]})
-        else:
-            inputs = {"x": x_input, "y": y_input}
-            node.fluid_code.add_layer(
-                op_type, inputs=inputs, output=node, param_attr=None)
+        x = self.graph.get_node(node.layer.input[0])
+        y = self.graph.get_node(node.layer.input[1])
+        program.add_layer(
+            kernel="fluid.layers.{}".format(op_type),
+            inputs={"x": x.name,
+                    "y": y.name},
+            outputs=[node.name])
 
     def Placeholder(self, node):
         shape = node.out_shapes[0]
         assert len(shape) != 0, "Unknown shape of input nodes[{}].".format(
             node.layer_name)
         dtype = node.dtype
-        if shape[0] < 0:
-            self.batch_node = node
-        attr = {
-            'dtype': string(dtype),
-            'shape': shape,
-            'name': string(node.layer_name),
-            'append_batch_size': False
-        }
-
-        node.fluid_code.add_layer(
-            "data", inputs=None, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.data",
+            inputs={},
+            outputs=[node.name],
+            dtype=string(dtype),
+            shape=shape,
+            name=string(node.name))
 
     def Const(self, node):
         shape = node.out_shapes[0]
@@ -260,477 +174,475 @@ class TFOpMapperNHWC(OpMapper):
             shape = [1]
             initializer = "Constant({})".format(value)
 
-        self.weights[node.layer_name] = node.value
-
-        attr = {
-            'dtype': string(dtype),
-            'shape': shape,
-            'name': string(node.layer_name),
-            'default_initializer': initializer
-        }
-        node.fluid_code.add_layer(
-            "create_parameter", inputs=None, output=node, param_attr=attr)
+        program.parameters[node.name] = node.value
+        program.add_layer(
+            kernel="fluid.layers.create_parameter",
+            inputs={},
+            outputs=[node.name],
+            dtype=string(dtype),
+            shape=shape,
+            name=string(node.name),
+            default_initializer=initializer)
 
     def Transpose(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        perm = self.graph.get_node(node.layer.input[1], copy=True)
+        input = self.graph.get_node(node.layer.input[0])
+        perm = self.graph.get_node(node.layer.input[1])
         assert perm.layer_type == "Const", "Perm of transpose OP should be Const"
-        del self.weights[perm.layer_name.replace('/', '_')]
-        perm.fluid_code.clear()
         perm = perm.value.tolist()
 
-        attr = {'perm': perm}
-        node.fluid_code.add_layer(
-            "transpose", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.transpose",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            perm=perm)
+
+    def Fill(self, node):
+        dims = self.graph.get_node(node.layer.input[0], copy=True)
+        input_value = self.graph.get_node(node.layer.input[1], copy=True)
+        assert input_value.layer_type == "Const", "Value of fill OP should be Const"
+
+        input_value = input_value.value
+        input_dtype = string(input_value.dtype)
+        program.add_layer(
+            "fluid.layers.fill_constant",
+            inputs={},
+            outputs=[node.name],
+            shape=dims,
+            dtype=string(input_dtype),
+            value=input_value)
+
+    def DepthToSpace(self, node):
+        input = self.graph.get_node(node.layer.input[0], copy=True)
+
+        block_size = node.get_attr("block_size")
+        data_format = node.get_attr("data_format").decode()
+        n, h, w, c = input.out_shapes[0]
+
+        input_name = input.name
+        if data_format == "NHWC":
+            transpose_name = gen_name("depth_to_space", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            input_name = transpose_name
+
+        shape = [0, block_size * block_size, -1, h, w]
+        reshape_name = gen_name("depth_to_space", "reshape")
+        program.add_layer(
+            kernel="fluid.layers.reshape",
+            inputs={"x": input_name},
+            outputs=[reshape_name],
+            shape=shape)
+
+        transpose_name = gen_name("depth_to_space", "transpose")
+        program.add_layer(
+            kernel="fluid.layers.transpose",
+            inputs={"x": reshape_name},
+            outputs=[transpose_name],
+            perm=[0, 2, 1, 3, 4])
+
+        reshape_name = gen_name("depth_to_space", "reshape")
+        program.add_layer(
+            kernel="fluid.layers.reshape",
+            inputs={"x": transpose_name},
+            outputs=[reshape_name],
+            shape=[0, c, h, w])
+
+        program.add_layer(
+            kernel="fluid.layers.pixed_shuffle",
+            inputs={"input": reshape_name},
+            outputs=[node.name],
+            upscale_factor=block_size)
+
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
     def MaxPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
-
-        in_shape = input.out_shapes[0]
-        if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(input).shape
 
         k_size = node.get_attr("ksize")
         strides = node.get_attr("strides")
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
-        channel_first = data_format == "NCHW"
 
-        if not channel_first:
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+        input_name = input.name
+        if data_format == "NHWC":
+            transpose_name = gen_name("max_pool", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
             strides = [strides[i] for i in [0, 3, 1, 2]]
             k_size = [k_size[i] for i in [0, 3, 1, 2]]
-            input = node
+            input_name = transpose_name
 
-        attr = {
-            "pool_size": k_size[2:4],
-            "pool_type": string("max"),
-            "pool_stride": strides[2:4],
-            "pool_padding": string(pad_mode)
-        }
-        node.fluid_code.add_layer(
-            "pool2d", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.pool2d",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            pool_size=k_size[2:4],
+            pool_type=string("max"),
+            pool_stride=strides[2:4],
+            pool_padding=string(pad_mode))
 
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
     def Conv2D(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        kernel = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(kernel.layer_name, node.layer_name)
+        input = self.graph.get_node(node.layer.input[0])
+        kernel = self.graph.get_node(node.layer.input[1])
 
-        in_shape = input.out_shapes[0]
-        if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(input).shape
         k_size = kernel.out_shapes[0]
-        if k_size.count(-1) > 2:
-            k_size = self.decoder.infer_tensor(kernel).shape
-
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
-        channel_first = data_format == "NCHW"
 
         if kernel.layer_type == 'Const':
             kernel_value = kernel.value
+            kernel_weight_name = kernel.layer_name.replace('/', '_')
         else:
             kernel_value = self.decoder.infer_tensor(kernel)
-        self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
-            kernel_value, (3, 2, 0, 1))
+            if kernel.layer_type == 'Split':
+                kernel_weight_name = "{}_{}_kernel".format(node.layer_name,
+                                                           kernel.layer_name)
+            else:
+                kernel_weight_name = kernel.layer_name.replace('/', '_')
+        program.parameters[kernel_weight_name] = numpy.transpose(kernel_value,
+                                                                 (3, 2, 0, 1))
 
-        if not channel_first:
-            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+        input_name = input.name
+        if data_format == "NHWC":
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            input = node
+            transpose_name = gen_name("conv2d", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            input_name = transpose_name
 
-        attr = {
-            "bias_attr": False,
-            "param_attr": string(kernel.layer_name),
-            "num_filters": k_size[3],
-            "filter_size": k_size[0:2],
-            "stride": strides[2:4],
-            "dilation": dilations[2:4],
-            "padding": string(pad_mode)
-        }
+        program.add_layer(
+            kernel="fluid.layers.conv2d",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            bias_attr=False,
+            param_attr=string(kernel_weight_name),
+            num_filters=k_size[3],
+            filter_size=k_size[0:2],
+            stride=strides[2:4],
+            dilation=dilations[2:4],
+            padding=string(pad_mode))
 
-        if hasattr(node, 'dilation') and attr['dilation'] == [1, 1]:
-            if len(node.dilation) == 1:
-                attr['dilation'] = [1, node.dilation[0]]
-
-        node.fluid_code.add_layer(
-            "conv2d", inputs=input, output=node, param_attr=attr)
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
     def BiasAdd(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        bias = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": input, "y": bias}
-        node.fluid_code.add_layer(
-            "elementwise_add", inputs=inputs, output=node, param_attr=None)
+        input = self.graph.get_node(node.layer.input[0])
+        bias = self.graph.get_node(node.layer.input[1])
+        program.add_layer(
+            kernel="fluid.layers.elementwise_add",
+            inputs={"x": input.name,
+                    "y": bias.name},
+            outputs=[node.name])
 
     def FusedBatchNorm(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        gamma = self.graph.get_node(node.layer.input[1], copy=True)
-        beta = self.graph.get_node(node.layer.input[2], copy=True)
-        moving_mean = self.graph.get_node(node.layer.input[3], copy=True)
-        moving_var = self.graph.get_node(node.layer.input[4], copy=True)
+        input = self.graph.get_node(node.layer.input[0])
+        gamma = self.graph.get_node(node.layer.input[1])
+        beta = self.graph.get_node(node.layer.input[2])
+        moving_mean = self.graph.get_node(node.layer.input[3])
+        moving_var = self.graph.get_node(node.layer.input[4])
         data_format = node.get_attr("data_format").decode()
-        channel_first = data_format == "NCHW"
 
         assert gamma.layer_type == "Const"
         assert beta.layer_type == "Const"
         assert moving_mean.layer_type == "Const"
         assert moving_var.layer_type == "Const"
-        self.add_omit_nodes(gamma.layer_name, node.layer_name)
-        self.add_omit_nodes(beta.layer_name, node.layer_name)
-        self.add_omit_nodes(moving_mean.layer_name, node.layer_name)
-        self.add_omit_nodes(moving_var.layer_name, node.layer_name)
 
-        if not channel_first:
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            input = node
+        input_name = input.name
+        if data_format == "NHWC":
+            transpose_name = gen_name("batch_norm", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            input_name = transpose_name
 
-        attr = {
-            "epsilon": node.get_attr("epsilon"),
-            "param_attr": string(gamma.layer_name),
-            "bias_attr": string(beta.layer_name),
-            "moving_mean_name": string(moving_mean.layer_name),
-            "moving_variance_name": string(moving_var.layer_name),
-            "is_test": True
-        }
+        program.add_layer(
+            kernel="fluid.layers.batch_norm",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            epsilon=node.get_attr("epsilon"),
+            param_attr=string(gamma.name),
+            bias_attr=string(beta.name),
+            moving_mean_name=string(moving_mean.name),
+            moving_variance_name=string(moving_var.name),
+            is_test=True)
 
-        node.fluid_code.add_layer(
-            "batch_norm", inputs=input, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
+    def Mean(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        reduce_idx = self.graph.get_node(node.layer.input[1])
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        dims = reduce_idx.value.tolist()
+        keep_dims = node.get_attr("keep_dims")
+
+        program.add_layer(
+            kernel="fluid.layers.reduce_mean",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            dim=dims,
+            keep_dim=keep_dims)
+
+    def Reshape(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        param = self.graph.get_node(node.layer.input[1])
+        if param.layer_type == "Const":
+            shape = param.value.tolist()
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                shape=shape)
+        else:
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": input.name,
+                        "shape": param.name},
+                outputs=[node.name])
+        if param.layer_type != "Const":
+            out_shape = numpy.array(node.out_shapes[0])
+            if (out_shape > 0).any():
+                out_shape[out_shape < 0] = 0
+                program.add_layer(
+                    kernel="fluid.layers.reshape",
+                    inputs={"x": node.name},
+                    outputs=[node.name],
+                    shape=out_shape.tolist())
+
+    def Pad(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        paddings = self.graph.get_node(node.layer.input[1])
+        assert paddings.layer_type == "Const", "Padding should be Const"
+        paddings = paddings.value.flatten().tolist()
+
+        if len(input.out_shapes[0]) == 4:
+            if paddings[0] + paddings[1] + paddings[6] + paddings[7] == 0:
+                new_padding = paddings[2:6]
+                transpose_name = gen_name("pad", "transpose")
+                program.add_layer(
+                    kernel="fluid.layers.transpose",
+                    inputs={"x": input.name},
+                    outputs=[transpose_name],
+                    perm=[0, 3, 1, 2])
+                program.add_layer(
+                    kernel="fluid.layers.pad2d",
+                    inputs={"input": transpose_name},
+                    outputs=[node.name],
+                    paddings=new_padding)
+                program.add_layer(
+                    kernel="fluid.layers.transpose",
+                    inputs={"x": node.name},
+                    outputs=[node.name],
+                    perm=[0, 2, 3, 1])
+                return
+
+        program.add_layer(
+            kernel="fluid.layers.pad",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            paddings=paddings)
+
+    def Squeeze(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        squeeze_dims = node.get_attr('squeeze_dims')
+        program.add_layer(
+            kernel="fluid.layers.squeeze",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            axes=squeeze_dims)
+
+    def Softmax(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        axis = node.get_attr("axis")
+        program.add_layer(
+            kernel="fluid.layers.softmax",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            axis=axis)
+
+    def Shape(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        program.add_layer(
+            kernel="fluid.layers.shape",
+            inputs={"input": input.name},
+            outputs=[node.name])
+
+    def ArgMax(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        axis = self.graph.get_node(node.layer.input[1])
+        assert axis.layer_type == "Const", "ArgMax only support Const parameter"
+        axis = axis.value
+        program.add_layer(
+            kernel="fluid.layers.argmax",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            axis=axis)
+
+    def MatMul(self, node):
+        x = self.graph.get_node(node.layer.input[0])
+        y = self.graph.get_node(node.layer.input[1])
+        transpose_a = node.get_attr('transpose_a')
+        transpose_b = node.get_attr('transpose_b')
+        if transpose_a is None:
+            transpose_a = node.get_attr('adj_x')
+        if transpose_b is None:
+            transpose_b = node.get_attr('adj_y')
+        program.add_layer(
+            kernel="fluid.layers.matmul",
+            inputs={"x": x.name,
+                    "y": y.name},
+            outputs=[node.name],
+            transpose_x=transpose_a,
+            transpose_y=transpose_b)
 
     def DepthwiseConv2dNative(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        kernel = self.graph.get_node(node.layer.input[1], copy=True)
+        input = self.graph.get_node(node.layer.input[0])
+        kernel = self.graph.get_node(node.layer.input[1])
         assert kernel.layer_type == "Const", "Kernel of DepthwiseConv2DNative should be Const"
-        self.add_omit_nodes(kernel.layer_name, node.layer_name)
 
         in_shape = input.out_shapes[0]
-        if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(input).shape
         k_size = kernel.out_shapes[0]
-        if k_size.count(-1) > 2:
-            k_size = self.decoder.infer_tensor(kernel).shape
-
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
-        channel_first = data_format == "NCHW"
 
-        self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
-            kernel.value, (2, 3, 0, 1))
+        program.parameters[kernel.layer_name.replace(
+            '/', '_')] = numpy.transpose(kernel.value, (2, 3, 0, 1))
 
-        if not channel_first:
+        input_name = input.name
+        if data_format == "NHWC":
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            input = node
+            transpose_name = gen_name('depthwise_conv2d', 'transpose')
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            input_name = transpose_name
 
-        attr = {
-            "bias_attr": False,
-            "param_attr": string(kernel.layer_name),
-            "num_filters": in_shape[1],
-            "filter_size": k_size[0:2],
-            "stride": strides[2:4],
-            "dilation": dilations[2:4],
-            "groups": k_size[3] * in_shape[1],
-            "use_cudnn": False,
-            "padding": string(pad_mode)
-        }
-        node.fluid_code.add_layer(
-            "conv2d", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.conv2d",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            num_filters=in_shape[1],
+            filter_size=k_size[0:2],
+            stride=strides[2:4],
+            dilation=dilations[2:4],
+            groups=k_size[3] * in_shape[1],
+            padding=string(pad_mode),
+            param_attr=string(kernel.layer_name),
+            bias_attr=False)
 
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
-
-    def Reshape(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        param = self.graph.get_node(node.layer.input[1], copy=True)
-        is_variable = False
-        if param.layer_type == "Const":
-            attr = {"shape": param.value.tolist()}
-            self.add_omit_nodes(param.layer_name, node.layer_name)
-        else:
-            # Here is a trick method to solove tensor parameter in tensorflow
-            shape = self.decoder.infer_shape_tensor(param, node.out_shapes[0])
-            if shape.count(-1) <= 1:
-                attr = {"shape": shape}
-                self.add_omit_nodes(param.layer_name, node.layer_name)
-            else:
-                assert len(param.out_shapes[
-                    0]) == 1, "Unexpected situation of shape parameter"
-                attr = {"shape": [-1]}
-                node.fluid_code.add_layer(
-                    "reshape",
-                    inputs=param,
-                    output="shape_param",
-                    param_attr=attr)
-                attr = {"num_or_sections": param.out_shapes[0][0], "dim": 0}
-                node.fluid_code.add_layer(
-                    "split", inputs="shape_param", output=node, param_attr=attr)
-                new_param = "["
-                for i in range(param.out_shapes[0][0]):
-                    new_param += (node.layer_name + "[{}]".format(i) + ", ")
-                new_param = new_param.strip(", ") + "]"
-                attr = {"shape": new_param}
-                is_variable = True
-        # to change [192, -1]->[-1, 192], allways put -1 in the first dimension
-        # optimization for Paddle-Lite
-        in_shape = input.out_shapes[0]
-        if not is_variable and in_shape.count(-1) < 1:
-            total_size = 1
-            for i in range(len(in_shape)):
-                total_size *= in_shape[i]
-            for i in range(len(attr["shape"])):
-                if attr["shape"][i] == 0:
-                    attr["shape"][i] = in_shape[i]
-                if attr["shape"][i] != -1:
-                    total_size /= attr["shape"][i]
-            if attr["shape"].count(-1) > 0:
-                index = attr["shape"].index(-1)
-                attr["shape"][index] = int(total_size)
-                attr["shape"][0] = -1
-
-        node.fluid_code.add_layer(
-            "reshape", inputs=input, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
     def AvgPool(self, node):
         input = self.graph.get_node(node.layer.input[0], copy=True)
-
-        in_shape = input.out_shapes[0]
-        if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(input).shape
 
         k_size = node.get_attr("ksize")
         strides = node.get_attr("strides")
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
-        channel_first = data_format == "NCHW"
 
-        if not channel_first:
-            in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
+        input_name = input.name
+        if data_format == "NHWC":
+            transpose_name = gen_name("avg_pool", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
             strides = [strides[i] for i in [0, 3, 1, 2]]
             k_size = [k_size[i] for i in [0, 3, 1, 2]]
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            input = node
+            input_name = transpose_name
 
-        attr = {
-            "pool_size": k_size[2:4],
-            "pool_type": string("avg"),
-            "pool_stride": strides[2:4],
-            "pool_padding": string(pad_mode)
-        }
-        node.fluid_code.add_layer(
-            "pool2d", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.pool2d",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            pool_size=k_size[2:4],
+            pool_type=string("avg"),
+            pool_stride=strides[2:4],
+            pool_padding=string(pad_mode))
 
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
 
-    def SplitV(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        num_sections = self.graph.get_node(node.layer.input[1], copy=True)
-        dim = self.graph.get_node(node.layer.input[2], copy=True)
-        assert num_sections.layer_type == "Const"
-        assert dim.layer_type == "Const"
-        self.add_omit_nodes(num_sections.layer_name, node.layer_name)
-        self.add_omit_nodes(dim.layer_name, node.layer_name)
-        dim = dim.value
-        attr = {
-            "num_or_sections": num_sections.value.tolist(),
-            "dim": dim.value
-        }
-        node.fluid_code.add_layer(
-            "split", inputs=input, output=node, param_attr=attr)
+    def Pack(self, node):
+        inputs = [self.graph.get_node(name) for name in node.layer.input]
+        axis = node.get_attr("axis")
+        program.add_layer(
+            kernel="fluid.layers.stack",
+            inputs={"x": [i.name for i in inputs]},
+            outputs=[node.name],
+            axis=axis)
 
     def ConcatV2(self, node):
-        inputs = [
-            self.graph.get_node(
-                name, copy=True) for name in node.layer.input[:-1]
-        ]
-        axis = self.graph.get_node(node.layer.input[-1], copy=True)
-        assert axis.layer_type == "Const"
-        self.add_omit_nodes(axis.layer_name, node.layer_name)
+        inputs = [self.graph.get_node(name) for name in node.layer.input[:-1]]
+        axis = self.graph.get_node(node.layer.input[-1])
+        assert axis.layer_type == "Const", "axis for ConcatV2 must be type Const"
         axis = axis.value
         if axis < 0:
             axis += len(inputs[0].out_shapes[0])
-
-        attr = {"axis": axis}
-        node.fluid_code.add_layer(
-            "concat", inputs=inputs, output=node, param_attr=attr)
-
-    def Tile(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        expand_times = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(expand_times.layer_name, node.layer_name)
-        if expand_times.layer_type == "Const":
-            expand_times = expand_times.value.tolist()
-        else:
-            expand_times = self.decoder.infer_shape_tensor(expand_times)
-        for i in range(len(expand_times)):
-            if expand_times[i] < 0:
-                expand_times[i] = 1
-        attr = {"expand_times": expand_times}
-        node.fluid_code.add_layer(
-            "expand", inputs=input, output=node, param_attr=attr)
-
-    def Pack(self, node):
-        inputs = [
-            self.graph.get_node(
-                name, copy=True) for name in node.layer.input
-        ]
-        axis = node.get_attr("axis")
-        attr = {"axis": axis}
-        node.fluid_code.add_layer(
-            "stack", inputs=inputs, output=node, param_attr=attr)
-
-    def Pad(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        paddings = self.graph.get_node(node.layer.input[1], copy=True)
-        assert paddings.layer_type == "Const", "Padding should be Const"
-        self.add_omit_nodes(paddings.layer_name, node.layer_name)
-        paddings = paddings.value.flatten().tolist()
-        data_format = input.tf_data_format
-
-        if len(input.out_shapes[0]) == 4:
-            new_padding = None
-            if input.tf_data_format == "NHWC":
-                if paddings[0] + paddings[1] + paddings[6] + paddings[7] == 0:
-                    new_padding = paddings[2:6]
-            else:
-                if paddings[0] + paddings[1] + paddings[2] + paddings[3] == 0:
-                    new_padding = paddings[4:]
-            if new_padding is not None:
-                if input.tf_data_format == "NHWC":
-                    attr = {"perm": [0, 3, 1, 2]}
-                    node.fluid_code.add_layer(
-                        "transpose", inputs=input, output=node, param_attr=attr)
-                    input = node
-                attr = {"paddings": new_padding}
-                node.fluid_code.add_layer(
-                    "pad2d", inputs=input, output=node, param_attr=attr)
-                if input.tf_data_format == "NHWC":
-                    attr = {"perm": [0, 2, 3, 1]}
-                    node.fluid_code.add_layer(
-                        "transpose", inputs=node, output=node, param_attr=attr)
-
-                return
-
-        attr = {"paddings": paddings}
-        node.fluid_code.add_layer(
-            "pad", inputs=input, output=node, param_attr=attr)
-
-    def Range(self, node):
-        start = self.graph.get_node(node.layer.input[0], copy=True)
-        limit = self.graph.get_node(node.layer.input[1], copy=True)
-        delta = self.graph.get_node(node.layer.input[2], copy=True)
-        self.add_omit_nodes(start.layer_name, node.layer_name)
-        self.add_omit_nodes(limit.layer_name, node.layer_name)
-        self.add_omit_nodes(delta.layer_name, node.layer_name)
-        if start.layer_type == "Const":
-            start = start.value
-        else:
-            start = self.decoder.infer_tensor(start)
-        if limit.layer_type == "Const":
-            limit = limit.value
-        else:
-            limit = self.decoder.infer_tensor(limit)
-        if delta.layer_type == "Const":
-            delta = delta.value
-        else:
-            delta = self.decoder.infer_tensor(delta)
-        dtype = node.dtype
-        inputs = {
-            "start": start,
-            "end": limit,
-            "step": delta,
-        }
-        attr = {"dtype": string(node.dtype)}
-        node.fluid_code.add_layer(
-            "range", inputs=inputs, output=node, param_attr=attr)
-
-    def Mean(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
-        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
-        dims = reduce_idx.value.tolist()
-        keep_dims = node.get_attr("keep_dims")
-
-        attr = {"dim": dims, "keep_dim": keep_dims}
-        node.fluid_code.add_layer(
-            "reduce_mean", inputs=input, output=node, param_attr=attr)
-
-    def MatMul(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        transpose_a = node.get_attr('transpose_a')
-        transpose_b = node.get_attr('transpose_b')
-        inputs = {"x": x, "y": y}
-        # fix paddle shape infer problem
-        # should be removed after paddle 1.6
-        if x.out_shapes[0][-1] < 0 and y.out_shapes[0][0] > 0:
-            shape = x.out_shapes[0]
-            shape[-1] = y.out_shapes[0][0]
-            attr = {"shape": shape}
-            node.fluid_code.add_layer(
-                "reshape", inputs=x, output=x, param_attr=attr)
-        attr = {"transpose_x": transpose_a, "transpose_y": transpose_b}
-        node.fluid_code.add_layer(
-            "matmul", inputs=inputs, output=node, param_attr=attr)
-
-    def ArgMax(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        axis = self.graph.get_node(node.layer.input[1], copy=True)
-        assert axis.layer_type == "Const", "ArgMax only support Const parameter"
-        self.add_omit_nodes(axis.layer_name, node.layer_name)
-        axis = axis.value
-        attr = {"axis": axis}
-        node.fluid_code.add_layer(
-            "argmax", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.concat",
+            inputs={"input": [i.name for i in inputs]},
+            outputs=[node.name],
+            axis=axis)
 
     def StridedSlice(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        begin = self.graph.get_node(node.layer.input[1], copy=True)
-        end = self.graph.get_node(node.layer.input[2], copy=True)
-        strides = self.graph.get_node(node.layer.input[3], copy=True)
+        input = self.graph.get_node(node.layer.input[0])
+        begin = self.graph.get_node(node.layer.input[1])
+        end = self.graph.get_node(node.layer.input[2])
+        strides = self.graph.get_node(node.layer.input[3])
         assert begin.layer_type == "Const"
         assert end.layer_type == "Const"
         assert strides.layer_type == "Const"
-        self.add_omit_nodes(begin.layer_name, node.layer_name)
-        self.add_omit_nodes(end.layer_name, node.layer_name)
-        self.add_omit_nodes(strides.layer_name, node.layer_name)
         strides = strides.value.tolist()
         assert len(set(strides)) == 1 and strides[
             0] == 1, "Only support strides be 1 in StridedSlice OP"
@@ -779,64 +691,227 @@ class TFOpMapperNHWC(OpMapper):
             else:
                 new_end.append(end[i])
 
-        attr = {
-            "axes": [i for i in range(len(new_begin))],
-            "starts": new_begin,
-            "ends": new_end
-        }
-        node.fluid_code.add_layer(
-            "slice", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.slice",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            axes=[i for i in range(len(new_begin))],
+            starts=new_begin,
+            ends=new_end)
         if len(new_axes) > 0:
-            attr = {"axes": new_axes}
-            node.fluid_code.add_layer(
-                "unsqueeze", inputs=node, output=node, param_attr=attr)
+            program.add_layer(
+                kernel="fluid.layers.unsqueeze",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                axes=new_axes)
         if len(shrink_axes) > 0:
             if len(input.out_shapes[0]) + len(new_axes) <= 1:
                 pass
             else:
-                attr = {"axes": shrink_axes}
-                node.fluid_code.add_layer(
-                    "squeeze", inputs=node, output=node, param_attr=attr)
+                program.add_layer(
+                    kernel="fluid.layers.unsqueeze",
+                    inputs={"x": node.name},
+                    outputs=[node.name],
+                    axes=new_axes)
+
+    def Split(self, node):
+        dim = self.graph.get_node(node.layer.input[0])
+        input = self.graph.get_node(node.layer.input[1])
+        assert dim.layer_type == "Const"
+        num_split = node.get_attr('num_split')
+        dim = dim.value
+
+        program.add_layer(
+            kernel="fluid.layers.split",
+            inputs={"input": input.name},
+            outputs=[
+                "{}_p{}".format(node.layer_name, i) for i in range(num_split)
+            ],
+            num_or_sections=num_split,
+            dim=dim)
 
     def Slice(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        begin = self.graph.get_node(node.layer.input[1], copy=True)
-        size = self.graph.get_node(node.layer.input[2], copy=True)
-        self.add_omit_nodes(begin.layer_name, node.layer_name)
-        self.add_omit_nodes(size.layer_name, node.layer_name)
+        input = self.graph.get_node(node.layer.input[0])
+        begin = self.graph.get_node(node.layer.input[1])
+        size = self.graph.get_node(node.layer.input[2])
+
+        inputs = {"x": input.name}
+        attrs = {}
         if begin.layer_type == "Const":
             begin = begin.value.tolist()
+            attrs['offsets'] = begin
         else:
-            begin = self.decoder.infer_tensor(begin).tolist()
-        if size.layer_type == "const":
+            shape = begin.out_shapes[0]
+            reshape_name = gen_name("slice", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": begin.name},
+                outputs=[reshape_name],
+                shape=shape)
+            inputs['offsets'] = reshape_name
+        if size.layer_type == "Const":
             size = size.value.tolist()
+            attrs['shape'] = size
         else:
-            size = self.decoder.infer_tensor(size).tolist()
+            shape = size.out_shapes[0]
+            reshape_name = gen_name("slice", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": size.name},
+                outputs=[reshape_name],
+                shape=shape)
+            inputs['shape'] = reshape_name
+        program.add_layer(
+            kernel="fluid.layers.crop_tensor",
+            inputs=inputs,
+            outputs=[node.name],
+            **attrs)
 
-        for i in range(len(size)):
-            if size[i] < 0:
-                size[i] = 99999999
-            else:
-                size[i] = size[i] + begin[i]
+    def ResizeNearestNeighbor(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        resize_shape = self.graph.get_node(node.layer.input[1])
+        data_format = "NHWC"
+        inputs = {"input": input.name}
+        attrs = {"align_corners": node.get_attr("align_corners")}
 
-        attr = {
-            "axes": [i for i in range(len(size))],
-            "starts": begin,
-            "ends": size
-        }
+        if resize_shape.layer_type == "Const":
+            resize_shape = resize_shape.value.tolist()
+            attrs["out_shape"] = resize_shape
+        else:
+            shape = resize_shape.out_shapes[0]
+            reshape_name = gen_name("resize_nearest", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": resize_shape.name},
+                outputs=[reshape_name],
+                shape=shape)
+            inputs["out_shape"] = reshape_name
 
-        node.fluid_code.add_layer(
-            "slice", inputs=input, output=node, param_attr=attr)
+        if data_format == "NHWC":
+            transpose_name = gen_name("resize_nearest", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            inputs["input"] = transpose_name
+
+        program.add_layer(
+            kernel="fluid.layers.resize_nearest",
+            inputs=inputs,
+            outputs=[node.name],
+            **attrs)
+
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
+
+    def ResizeBilinear(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        resize_shape = self.graph.get_node(node.layer.input[1])
+        data_format = "NHWC"
+        inputs = {"input": input.name}
+        attrs = {"align_corners": node.get_attr("align_corners")}
+
+        if resize_shape.layer_type == "Const":
+            resize_shape = resize_shape.value.tolist()
+            attrs["out_shape"] = resize_shape
+        else:
+            shape = resize_shape.out_shapes[0]
+            reshape_name = gen_name("resize_bilinear", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": resize_shape.name},
+                outputs=[reshape_name],
+                shape=shape)
+            inputs["out_shape"] = reshape_name
+
+        if data_format == "NHWC":
+            transpose_name = gen_name("resize_bilinear", "reshape")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            inputs["input"] = transpose_name
+
+        program.add_layer(
+            kernel="fluid.layers.resize_bilinear",
+            inputs=inputs,
+            outputs=[node.name],
+            **attrs)
+
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
+
+    def Cast(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        dtype = node.dtype
+        program.add_layer(
+            kernel="fluid.layers.cast",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            dtype=string(dtype))
+
+    def Sum(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        reduce_idx = self.graph.get_node(node.layer.input[1])
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        keep_dims = node.get_attr("keep_dims")
+        dim = reduce_idx.value.tolist()
+
+        program.add_layer(
+            kernel="fluid.layers.reduce_sum",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            dim=dim,
+            keep_dim=keep_dims)
+
+    def Max(self, node):
+        input = self.graph.get_node(node.layer.input[0])
+        reduce_idx = self.graph.get_node(node.layer.input[1])
+        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
+        keep_dims = node.get_attr("keep_dims")
+        dim = reduce_idx.value.tolist()
+        program.add_layer(
+            kernel="fluid.layers.reduce_max",
+            inputs={"input": input.name},
+            outputs=[node.name],
+            dim=dim,
+            keep_dim=keep_dims)
+
+    def RandomUniform(self, node):
+        shape = self.graph.get_node(node.layer.input[0], copy=True)
+        if shape.layer_type == "Const":
+            shape = shape.value.tolist()
+            program.add_layer(
+                kernel="fluid.layers.uniform_random",
+                inputs={},
+                outputs=[node.name],
+                shape=shape,
+                min=0.0,
+                max=0.9999)
+        else:
+            program.add_layer(
+                kernel="fluid.layers.uniform_random",
+                inputs={'shape': shape.name},
+                outputs=[node.name],
+                min=0.0,
+                max=0.9999)
 
     def Conv2DBackpropInput(self, node):
-        out_shape = self.graph.get_node(node.layer.input[0], copy=True)
-        kernel = self.graph.get_node(node.layer.input[1], copy=True)
-        input = self.graph.get_node(node.layer.input[2], copy=True)
+        out_shape = self.graph.get_node(node.layer.input[0])
+        kernel = self.graph.get_node(node.layer.input[1])
+        input = self.graph.get_node(node.layer.input[2])
 
         assert kernel.layer_type == "Const", "Kernel of Conv2DBackpropInput should be Const"
-
-        self.add_omit_nodes(kernel.layer_name, node.layer_name)
-        self.add_omit_nodes(out_shape.layer_name, node.layer_name)
 
         if out_shape.layer_type == "Const":
             out_shape = out_shape.value.tolist()
@@ -855,201 +930,39 @@ class TFOpMapperNHWC(OpMapper):
         strides = node.get_attr("strides")
         dilations = node.get_attr("dilations")
         data_format = node.get_attr("data_format").decode()
-        channel_first = data_format == "NCHW"
 
-        self.weights[kernel.layer_name.replace('/', '_')] = numpy.transpose(
-            kernel.value, (3, 2, 0, 1))
-        if not channel_first:
+        program.parameters[kernel.layer_name.replace(
+            '/', '_')] = numpy.transpose(kernel.value, (3, 2, 0, 1))
+
+        input_name = input.name
+        if data_format == "NHWC":
             in_shape = [in_shape[i] for i in [0, 3, 1, 2]]
             strides = [strides[i] for i in [0, 3, 1, 2]]
             dilations = [dilations[i] for i in [0, 3, 1, 2]]
-            attr = {"perm": [0, 3, 1, 2]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=input, output=node, param_attr=attr)
-            input = node
-        else:
-            self.data_format_propagation(node)
+            transpose_name = gen_name("conv2dbackpropinput", "transpose")
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": input.name},
+                outputs=[transpose_name],
+                perm=[0, 3, 1, 2])
+            input_name = transpose_name
 
-        attr = {
-            "bias_attr": False,
-            "param_attr": string(kernel.layer_name),
-            "num_filters": k_size[2],
-            "filter_size": k_size[0:2],
-            "stride": strides[2:4],
-            "dilation": dilations[2:4],
-            "padding": string(pad_mode),
-            "output_size": out_shape[1:3]
-        }
-        node.fluid_code.add_layer(
-            "conv2d_transpose", inputs=input, output=node, param_attr=attr)
+        program.add_layer(
+            kernel="fluid.layers.conv2d_transpose",
+            inputs={"input": input_name},
+            outputs=[node.name],
+            bias_attr=False,
+            param_attr=string(kernel.layer_name),
+            num_filters=k_size[2],
+            filter_size=k_size[0:2],
+            stride=strides[2:4],
+            dilation=dilations[2:4],
+            padding=string(pad_mode),
+            output_size=out_shape[1:3])
 
-        if not channel_first:
-            attr = {"perm": [0, 2, 3, 1]}
-            node.fluid_code.add_layer(
-                "transpose", inputs=node, output=node, param_attr=attr)
-
-    def Max(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
-        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
-        keep_dims = node.get_attr("keep_dims")
-        dim = reduce_idx.value.tolist()
-
-        attr = {"dim": dim, "keep_dim": keep_dims}
-        node.fluid_code.add_layer(
-            "reduce_max", inputs=input, output=node, param_attr=attr)
-
-    def Sum(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        reduce_idx = self.graph.get_node(node.layer.input[1], copy=True)
-        assert reduce_idx.layer_type == "Const", "Only support Const parameter[reduce_idx]"
-        keep_dims = node.get_attr("keep_dims")
-        dim = reduce_idx.value.tolist()
-
-        attr = {"dim": dim, "keep_dim": keep_dims}
-        node.fluid_code.add_layer(
-            "reduce_sum", inputs=input, output=node, param_attr=attr)
-
-    def Cast(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        dtype = node.dtype_map[node.get_attr('DstT')]
-        attr = {"dtype": string(dtype)}
-        node.fluid_code.add_layer(
-            "cast", inputs=input, output=node, param_attr=attr)
-
-    def Split(self, node):
-        dim = self.graph.get_node(node.layer.input[0], copy=True)
-        input = self.graph.get_node(node.layer.input[1], copy=True)
-        assert dim.layer_type == "Const"
-        self.add_omit_nodes(dim.layer_name, node.layer_name)
-        num_split = node.get_attr('num_split')
-        dim = dim.value
-
-        attr = {"num_or_sections": num_split, "dim": dim}
-        node.fluid_code.add_layer(
-            "split", inputs=input, output=node, param_attr=attr)
-
-    def Squeeze(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        squeeze_dims = node.get_attr('squeeze_dims')
-        attr = {"axes": squeeze_dims}
-        node.fluid_code.add_layer(
-            "squeeze", inputs=input, output=node, param_attr=attr)
-
-    def Softmax(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        axis = node.get_attr("axis")
-        attr = {"axis": axis}
-        node.fluid_code.add_layer(
-            "softmax", inputs=input, output=node, param_attr=attr)
-
-    def ResizeNearestNeighbor(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape,
-                                                           node.out_shapes[0])
-        align_corners = node.get_attr("align_corners")
-        attr = {"perm": [0, 3, 1, 2]}
-        node.fluid_code.add_layer(
-            "transpose", inputs=input, output=node, param_attr=attr)
-        attr = {"align_corners": align_corners, "out_shape": resize_shape}
-        node.fluid_code.add_layer(
-            "resize_nearest", inputs=node, output=node, param_attr=attr)
-        attr = {"perm": [0, 2, 3, 1]}
-        node.fluid_code.add_layer(
-            "transpose", inputs=node, output=node, param_attr=attr)
-
-    def ResizeBilinear(self, node):
-        input = self.graph.get_node(node.layer.input[0], copy=True)
-        resize_shape = self.graph.get_node(node.layer.input[1], copy=True)
-        self.add_omit_nodes(resize_shape.layer_name, node.layer_name)
-        if resize_shape.layer_type == "Const":
-            resize_shape = resize_shape.value.tolist()
-        else:
-            resize_shape = self.decoder.infer_shape_tensor(resize_shape,
-                                                           node.out_shapes[0])
-        align_corners = node.get_attr("align_corners")
-        attr = {"perm": [0, 3, 1, 2]}
-        node.fluid_code.add_layer(
-            "transpose", inputs=input, output=node, param_attr=attr)
-        attr = {
-            "align_corners": align_corners,
-            "out_shape": resize_shape,
-            "align_mode": 1
-        }
-        node.fluid_code.add_layer(
-            "resize_bilinear", inputs=node, output=node, param_attr=attr)
-        attr = {"perm": [0, 2, 3, 1]}
-        node.fluid_code.add_layer(
-            "transpose", inputs=node, output=node, param_attr=attr)
-
-    def GreaterEqual(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer(
-            "greater_equal", inputs=inputs, output=node, param_attr=None)
-
-    def RandomUniform(self, node):
-        shape = self.graph.get_node(node.layer.input[0], copy=True)
-        self.add_omit_nodes(shape.layer_name, node.layer_name)
-        if shape.layer_type == "Const":
-            shape = shape.value.tolist()
-        else:
-            shape = self.decoder.infer_shape_tensor(shape)
-        attr = {"shape": shape, "min": 0.0, "max": 0.9999}
-
-        if shape[0] < 0:
-            input = self.batch_node
-            node.fluid_code.add_layer(
-                "uniform_random_batch_size_like",
-                inputs=input,
-                output=node,
-                param_attr=attr)
-        else:
-            node.fluid_code.add_layer(
-                "uniform_random", inputs=None, output=node, param_attr=attr)
-
-    def SquaredDifference(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        inputs = {"x": x, "y": y}
-        node.fluid_code.add_layer(
-            "elementwise_sub", inputs=inputs, output=node, param_attr=None)
-        inputs = {"x": node, "y": node}
-        node.fluid_code.add_layer(
-            "elementwise_mul", inputs=inputs, output=node, param_attr=None)
-
-    def ExpandDims(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        if y.layer_type == 'Const':
-            dim = y.value.tolist()
-        else:
-            dim = self.decoder.infer_tensor(y)
-        self.add_omit_nodes(y.layer_name, node.layer_name)
-        attr = {'axes': [dim]}
-        node.fluid_code.add_layer(
-            "unsqueeze", inputs=x, output=node, param_attr=attr)
-
-    def BatchToSpaceND(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        if hasattr(node, 'skip') and node.skip:
-            node.fluid_code.add_layer(
-                "=", inputs=x, output=node, param_attr=None)
-        else:
-            raise Exception("BatchToSpaceND is not supported")
-
-    def SpaceToBatchND(self, node):
-        x = self.graph.get_node(node.layer.input[0], copy=True)
-        y = self.graph.get_node(node.layer.input[1], copy=True)
-        if hasattr(node, 'skip') and node.skip:
-            node.fluid_code.add_layer(
-                "=", inputs=x, output=node, param_attr=None)
-        else:
-            raise Exception("SpaceToBatchND is not supported")
+        if data_format == "NHWC":
+            program.add_layer(
+                kernel="fluid.layers.transpose",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 2, 3, 1])
