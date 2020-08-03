@@ -457,6 +457,14 @@ class OpSet9(object):
             perm=op.attr('axis'))
         return node
 
+    def flatten2(self, op, block):
+        node = helper.make_node(
+            'Flatten',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            axis=op.attr('axis'))
+        return node
+
     def reshape2(self, op, block):
         input_names = op.input_names
         if len(op.input('ShapeTensor')) > 1:
@@ -481,7 +489,7 @@ class OpSet9(object):
                 inputs=[op.input('X')[0], temp_name],
                 outputs=op.output('Out'))
             return cast_shape_nodes + [shape_node, node]
-        else:
+        elif len(op.input('ShapeTensor')) == 1:
             temp_name = self.get_name(op.type, 'shape.cast')
             cast_shape_node = helper.make_node(
                 'Cast',
@@ -493,6 +501,16 @@ class OpSet9(object):
                 inputs=[op.input('X')[0], temp_name],
                 outputs=op.output('Out'))
             return [cast_shape_node, node]
+        elif op.attr('shape') is not None and len(op.attr('shape')) > 0:
+            shape_name = self.get_name(op.type, 'shape')
+            shape_node = self.make_constant_node(shape_name,
+                                                 onnx_pb.TensorProto.INT64,
+                                                 op.attr('shape'))
+            reshape_node = helper.make_node(
+                'Reshape',
+                inputs=[op.input('X')[0], shape_name],
+                outputs=op.output('Out'))
+            return [shape_node, reshape_node]
 
     def dropout(self, op, block):
         dropout_mode = op.attr('dropout_implementation')
@@ -527,7 +545,7 @@ class OpSet9(object):
         input_shape = block.vars[op.input('X')[0]].shape
         if op.attr('align_corners') or op.attr('align_mode') == 0:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric'."
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
             )
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
                 'SizeTensor' in input_names and
@@ -633,7 +651,7 @@ class OpSet9(object):
         input_names = op.input_names
         if op.attr('align_corners'):
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric'."
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
             )
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
@@ -787,3 +805,11 @@ class OpSet9(object):
     def multiclass_nms(self, op, block):
         from .paddle_custom_layer.multiclass_nms import multiclass_nms
         return multiclass_nms(op, block)
+
+    def box_coder(self, op, block):
+        from .paddle_custom_layer.box_coder import box_coder
+        return box_coder(op, block)
+
+    def prior_box(self, op, block):
+        from .paddle_custom_layer.prior_box import prior_box
+        return prior_box(op, block)
