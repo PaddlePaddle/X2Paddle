@@ -1026,3 +1026,13 @@ class TFOpMapperNHWC(OpMapper):
             inputs=inputs,
             outputs=[node.name],
             **attr)
+
+    def SquaredDifference(self, node):
+        x = self.graph.get_node(node.layer.input[0], copy=True)
+        y = self.graph.get_node(node.layer.input[1], copy=True)
+        inputs = {"x": x.name, "y": y.name}
+        program.add_layer(
+            "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+        inputs = {"x": node.name, "y": node.name}
+        program.add_layer(
+            "fluid.layers.elementwise_mul", inputs=inputs, outputs=[node.name])
