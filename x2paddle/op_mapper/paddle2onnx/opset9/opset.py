@@ -110,9 +110,30 @@ class OpSet9(object):
             'Relu', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def tanh(self, op, block):
+        node = helper.make_node(
+            'Tanh', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
+    def log(self, op, block):
+        node = helper.make_node(
+            'Log', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
     def sigmoid(self, op, block):
         node = helper.make_node(
             'Sigmoid', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
+    def clip(self, op, block):
+        min_value = op.attr('min')
+        max_value = op.attr('max')
+        node = helper.make_node(
+            'Clip',
+            inputs=[op.input('X')[0]],
+            outputs=op.output('Out'),
+            max=max_value,
+            min=min_value)
         return node
 
     def exp(self, op, block):
