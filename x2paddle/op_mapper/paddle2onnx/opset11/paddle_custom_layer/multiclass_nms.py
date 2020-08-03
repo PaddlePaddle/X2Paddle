@@ -19,7 +19,7 @@ import numpy as np
 import paddle.fluid.core as core
 import paddle.fluid as fluid
 import onnx
-import warnings
+import logging
 from onnx import helper, onnx_pb
 
 
@@ -42,9 +42,9 @@ def multiclass_nms(op, block):
     background = attrs['background_label']
     normalized = attrs['normalized']
     if normalized == False:
-        warnings.warn(
-            'The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX. \
-                         Please set normalized=True in multiclass_nms of Paddle')
+        logging.warn(
+                    "The parameter normalized of multiclass_nms OP of Paddle is False, which has diff with ONNX." \
+                    " Please set normalized=True in multiclass_nms of Paddle, see doc Q4 in https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md")
 
     #convert the paddle attribute to onnx tensor
     name_score_threshold = [outputs['Out'][0] + "@score_threshold"]

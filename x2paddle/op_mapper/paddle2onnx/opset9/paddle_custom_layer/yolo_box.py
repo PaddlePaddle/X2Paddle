@@ -33,6 +33,13 @@ def get_old_name(arg, name_prefix=''):
     return name_prefix + last_prefix
 
 
+def is_static_shape(shape):
+    if len(shape) > 1 and shape.count(-1) > 1:
+        raise Exception(
+            "Converting this model to ONNX need with static input shape, please converting with --fixed_input_shape [H,W]."
+        )
+
+
 def yolo_box(op, block):
     inputs = dict()
     outputs = dict()
@@ -45,6 +52,7 @@ def yolo_box(op, block):
         attrs[name] = op.attr(name)
     model_name = outputs['Boxes'][0]
     input_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    is_static_shape(input_shape)
     image_size = inputs['ImgSize']
     input_height = input_shape[2]
     input_width = input_shape[3]
