@@ -89,6 +89,16 @@ class TFGraphNode(GraphNode):
         field = getattr(attr, attr.WhichOneof('value'))
         return tensor_util.MakeNdarray(field)
 
+    @property
+    def name(self):
+        multi_out_ops = ['Split', 'SplitV', 'IteratorV2']
+        if self.layer_type in multi_out_ops:
+            if self.layer_name.count(':') > 0:
+                return self.layer_name.replace(':', '_p')
+            else:
+                return "{}_p0".format(self.layer_name)
+        return self.layer_name
+
     def get_attr(self, name):
         if name not in self.layer.attr:
             return None

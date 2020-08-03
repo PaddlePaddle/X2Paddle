@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from six import text_type as _text_type
+from x2paddle import program
 import argparse
 import sys
 
@@ -120,29 +121,10 @@ def tf2paddle(model_path,
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
 
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
-        mapper = TFOpMapperNHWC(model)
-        optimizer = TFOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
-    mapper.save_inference_model(save_dir, params_merge)
+    mapper = TFOpMapperNHWC(model)
+    program.build()
+    program.gen_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):
