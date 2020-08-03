@@ -524,7 +524,7 @@ class OpSet9(object):
         input_shape = block.vars[op.input('X')[0]].shape
         if op.attr('align_corners') or op.attr('align_mode') == 0:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric'."
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
             )
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
                 'SizeTensor' in input_names and
@@ -630,7 +630,7 @@ class OpSet9(object):
         input_names = op.input_names
         if op.attr('align_corners'):
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric'."
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
             )
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
