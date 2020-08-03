@@ -68,6 +68,19 @@ class OpSet11(OpSet10):
             mode=op.attr('mode'))
         return [pads_node, constant_value_node, node]
 
+    def clip(self, op, block):
+        min_name = self.get_name(op.type, 'min')
+        max_name = self.get_name(op.type, 'max')
+        min_node = self.make_constant_node(min_name, onnx_pb.TensorProto.FLOAT,
+                                           op.attr('min'))
+        max_node = self.make_constant_node(max_name, onnx_pb.TensorProto.FLOAT,
+                                           op.attr('max'))
+        node = helper.make_node(
+            'Clip',
+            inputs=[op.input('X')[0], min_name, max_name],
+            outputs=op.output('Out'))
+        return [min_node, max_node, node]
+
     def bilinear_interp(self, op, block):
         input_names = op.input_names
         coordinate_transformation_mode = ''
@@ -262,10 +275,6 @@ class OpSet11(OpSet10):
             min_node, max_node, scale_node, offset_node, node0, node1, node2,
             node3
         ]
-
-    def im2sequence(self, op, block):
-        from .paddle_custom_layer.im2sequence import im2sequence
-        return im2sequence(op, block)
 
     def yolo_box(self, op, block):
         from .paddle_custom_layer.yolo_box import yolo_box

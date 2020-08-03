@@ -47,15 +47,3 @@ class OpSet10(OpSet9):
             inputs=[op.input('Input')[0], starts_name, ends_name, axes_name],
             outputs=op.output('Out'), )
         return [starts_node, ends_node, axes_node, node]
-
-    def im2sequence(self, op, block):
-        from .paddle_custom_layer.im2sequence import im2sequence
-        return im2sequence(op, block)
-
-    def yolo_box(self, op, block):
-        from .paddle_custom_layer.yolo_box import yolo_box
-        return yolo_box(op, block)
-
-    def multiclass_nms(self, op, block):
-        from .paddle_custom_layer.multiclass_nms import multiclass_nms
-        return multiclass_nms(op, block)

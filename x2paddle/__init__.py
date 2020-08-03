@@ -1,4 +1,4 @@
-__version__ = "0.7.4"
+__version__ = "0.8.1"
 
 from .core.program import PaddleProgram
 

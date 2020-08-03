@@ -195,9 +195,14 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
 def paddle2onnx(model_path, save_dir, opset_version=10):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
+    import paddle.fluid as fluid
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(model.program, save_dir, opset_number=opset_version)
+    mapper.convert(
+        model.program,
+        save_dir,
+        scope=fluid.global_scope(),
+        opset_version=opset_version)
 
 
 def main():
@@ -264,7 +269,7 @@ def main():
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir, args.onnx_opset)
+        paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
 
     else:
         raise Exception(

@@ -16,6 +16,9 @@ import onnx
 import numpy as np
 from onnx import onnx_pb, helper
 
+MAX_FLOAT32 = np.asarray(
+    [255, 255, 127, 127], dtype=np.uint8).view(np.float32)[0]
+
 
 def get_old_name(arg, name_prefix=''):
     prefix_index = arg.find(name_prefix)
@@ -30,6 +33,13 @@ def get_old_name(arg, name_prefix=''):
     return name_prefix + last_prefix
 
 
+def is_static_shape(shape):
+    if len(shape) > 1 and shape.count(-1) > 1:
+        raise Exception(
+            "Converting this model to ONNX need with static input shape, please fix input shape of this model, see doc Q5 in https://github.com/PaddlePaddle/X2Paddle/blob/develop/FAQ.md."
+        )
+
+
 def yolo_box(op, block):
     inputs = dict()
     outputs = dict()
@@ -42,6 +52,7 @@ def yolo_box(op, block):
         attrs[name] = op.attr(name)
     model_name = outputs['Boxes'][0]
     input_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    is_static_shape(input_shape)
     image_size = inputs['ImgSize']
     input_height = input_shape[2]
     input_width = input_shape[3]
@@ -766,7 +777,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_x1_decode,
         outputs=outputs_pred_box_x1_clip,
         min=0.0,
-        max=float(np.inf))
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_x1_clip)
 
     node_pred_box_y1_clip = onnx.helper.make_node(
@@ -774,7 +785,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_y1_decode,
         outputs=outputs_pred_box_y1_clip,
         min=0.0,
-        max=float(np.inf))
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_y1_clip)
 
     node_pred_box_x2_clip = onnx.helper.make_node(
@@ -782,7 +793,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_x2_sub_w,
         outputs=outputs_pred_box_x2_clip,
         min=0.0,
-        max=float(np.inf))
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_x2_clip)
 
     node_pred_box_y2_clip = onnx.helper.make_node(
@@ -790,7 +801,7 @@ def yolo_box(op, block):
         inputs=outputs_pred_box_y2_sub_h,
         outputs=outputs_pred_box_y2_clip,
         min=0.0,
-        max=float(np.inf))
+        max=float(MAX_FLOAT32))
     node_list.append(node_pred_box_y2_clip)
 
     outputs_pred_box_x2_res = [model_name + "@box_x2_res"]
