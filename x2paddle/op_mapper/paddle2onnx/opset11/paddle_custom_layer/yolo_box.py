@@ -15,21 +15,9 @@
 import onnx
 import numpy as np
 from onnx import onnx_pb, helper
-
-MAX_FLOAT = np.asarray([255, 255, 127, 127], dtype=np.uint8).view(np.float32)[0]
-
-
-def get_old_name(arg, name_prefix=''):
-    prefix_index = arg.find(name_prefix)
-
-    if prefix_index != -1:
-        last_prefix = arg[len(name_prefix):]
-    else:
-        last_prefix = arg
-    idx = last_prefix.find('@')
-    if idx != -1:
-        last_prefix = last_prefix[:idx]
-    return name_prefix + last_prefix
+from x2paddle.op_mapper.paddle2onnx.opset9.paddle_custom_layer.yolo_box import is_static_shape
+from x2paddle.op_mapper.paddle2onnx.opset9.paddle_custom_layer.yolo_box import get_old_name
+from x2paddle.op_mapper.paddle2onnx.opset9.paddle_custom_layer.yolo_box import MAX_FLOAT32
 
 
 def yolo_box(op, block):
@@ -44,6 +32,7 @@ def yolo_box(op, block):
         attrs[name] = op.attr(name)
     model_name = outputs['Boxes'][0]
     input_shape = block.vars[get_old_name(inputs['X'][0])].shape
+    is_static_shape(input_shape)
     image_size = inputs['ImgSize']
     input_height = input_shape[2]
     input_width = input_shape[3]
@@ -785,7 +774,7 @@ def yolo_box(op, block):
             name=max_const_name,
             data_type=onnx.TensorProto.FLOAT,
             dims=(),
-            vals=[MAX_FLOAT]))
+            vals=[MAX_FLOAT32]))
     node_list.append(max_const)
 
     node_pred_box_x1_clip = onnx.helper.make_node(
