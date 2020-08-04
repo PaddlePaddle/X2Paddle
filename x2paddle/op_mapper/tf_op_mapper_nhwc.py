@@ -220,7 +220,10 @@ class TFOpMapperNHWC(OpMapper):
 
         block_size = node.get_attr("block_size")
         data_format = node.get_attr("data_format").decode()
-        n, h, w, c = input.out_shapes[0]
+        if data_format == "NHWC":
+            n, h, w, c = input.out_shapes[0]
+        else:
+            n, c, h, w = input.out_shapes[0]
 
         input_name = input.name
         if data_format == "NHWC":
