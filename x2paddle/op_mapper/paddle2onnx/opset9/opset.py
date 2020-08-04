@@ -400,7 +400,7 @@ class OpSet9(object):
 
     def sum(self, op, block):
         node = helper.make_node(
-            'Sum', inputs=op.input('X'), outputs=op.output('Y'))
+            'Sum', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
     def depthwise_conv2d(self, op, block):
