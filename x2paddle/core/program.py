@@ -22,7 +22,7 @@ import pickle
 
 
 class PaddleLayer(object):
-    def __init__(self, name, kernel, inputs, outputs, **kwargs):
+    def __init__(self, kernel, inputs, outputs, **kwargs):
         assert isinstance(
             inputs,
             dict), "parameter 'inputs' for PaddleLayer should be type of dict"
@@ -43,7 +43,6 @@ class PaddleLayer(object):
             assert isinstance(
                 v, six.
                 string_types), "elements in outputs should be type of string"
-        self.name = name
         self.kernel = kernel
         self.inputs = inputs
         self.outputs = outputs
@@ -54,7 +53,7 @@ class PaddleLayer(object):
         self.blocks.append(block)
 
 
-class PaddleProgram(object):
+class PaddleGraph(object):
     def __init__(self):
         self.layers = list()
         self.edges_out = dict()
@@ -62,6 +61,10 @@ class PaddleProgram(object):
         self.inputs = list()
         self.outputs = list()
         self.parameters = dict()
+        self.name = "PaddleNet"
+
+    def set_name(self, name):
+        self.name = name
 
     def clear(self):
         self.layers = list()
@@ -71,8 +74,8 @@ class PaddleProgram(object):
         self.outputs = list()
         self.parameters = dict()
 
-    def add_layer(self, name, kernel, inputs, outputs, **kwargs):
-        layer = PaddleLayer(name, kernel, inputs, outputs, **kwargs)
+    def add_layer(self, kernel, inputs, outputs, **kwargs):
+        layer = PaddleLayer(kernel, inputs, outputs, **kwargs)
         index = len(self.layers)
         self.layers.append(layer)
         return index
@@ -273,7 +276,9 @@ class PaddleProgram(object):
             return lines
 
         self.init_lines = []
+        # forward_func
         self.forward_lines = []
+        # def gen_head
         if indent == 2 and code_dir is not None:
             start_lines = gen_lines(
                 [
@@ -281,7 +286,7 @@ class PaddleProgram(object):
                     "from paddle.fluid.param_attr import ParamAttr",
                     "import paddle.fluid as fluid",
                     "",
-                    "class PaddleNet(fluid.dygraph.Layer):",
+                    "class {}(fluid.dygraph.Layer):".format(self.name),
                 ],
                 indent=0)
             self.get_dygraph_inputs(self.layers)
@@ -291,7 +296,7 @@ class PaddleProgram(object):
                     ["def __init__(self, middle_numpy):"], indent=1))
             self.init_lines.extend(
                 gen_lines(
-                    ["super(PaddleNet, self).__init__()"], indent=2))
+                    ["super({}, self).__init__()".format(self.name)], indent=2))
             self.forward_lines.extend(
                 gen_lines(
                     ["def forward(self, {}):".format(input_data_name)],
@@ -302,10 +307,10 @@ class PaddleProgram(object):
                 continue
             if "dygraph" in layer.kernel:
                 line = "{}".format(
-                    layer.name
+                    layer.outputs[0]
                 ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
                     "value"].startswith("middle_numpy[") else "self.{}".format(
-                        layer.name)
+                        layer.outputs[0])
                 line += " = {}(".format(layer.kernel)
                 for k, v in layer.attrs.items():
                     line += "{}={}, ".format(k, v)
@@ -321,13 +326,15 @@ class PaddleProgram(object):
 
                 if len(layer.outputs) == 1:
                     line = layer.outputs[0]
+                elif len(layer.outputs) == 2:
+                    line = layer.outputs[1]
                 else:
-                    line = ','.join(layer.outputs)
+                    line = ','.join(layer.outputs[1:])
                 if layer.kernel == "fluid.dygraph.base.to_variable" and layer.attrs[
                         "value"].startswith("middle_numpy["):
-                    line += " = self.{}".format(layer.name)
+                    line += " = self.{}".format(layer.outputs[0])
                 else:
-                    line += " = self.{}(".format(layer.name)
+                    line += " = self.{}(".format(layer.outputs[0])
                     for k, v in layer.inputs.items():
                         line += "{}, ".format(v)
                     line = line.strip(", ")

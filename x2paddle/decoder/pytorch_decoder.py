@@ -15,24 +15,12 @@
 import os
 import re
 import torch
-import torch.jit
-from torch.jit import _unique_state_dict
 
 
 class PyTorchDecoder(object):
-    def __init__(self, model_path):
-        try:
-            model = torch.load(model_path)
-        except:
-            model = torch.load(model_path, map_location='cpu')
-
-#         self.params = _unique_state_dict(model)
-        self.script, self.graph = self.get_jit(model)
-
-    def get_jit(self, model):
-        script = torch.jit.script(model)
-        graph = self._optimize_graph(script.inlined_graph)
-        return script, graph
+    def __init__(self, script_path):
+        self.script = torch.jit.load(script_path)
+        self.graph = self._optimize_graph(self.script.inlined_graph)
 
     def _optimize_graph(self, graph):
         torch._C._jit_pass_constant_propagation(graph)
