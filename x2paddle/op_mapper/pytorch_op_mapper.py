@@ -52,7 +52,6 @@ class PyTorchOpMapper(OpMapper):
             for i, ivalue in enumerate(graph.inputs()):
                 node = ivalue.node()
                 node_name_list, inputs = self.data(prog, node, ivalue.unique())
-                _update_prog_inputs(node_name_list, inputs)
         # 转换中间节点
         for node in graph.nodes():
             kind = node.kind()
@@ -88,17 +87,8 @@ class PyTorchOpMapper(OpMapper):
             if unique_id in self.output_nodenames:
                 return self.output_nodenames[unique_id]
             self.output_nodenames[unique_id] = node_name
-        self.node_index += 1
+            self.node_index += 1
         return node_name
-
-    def _get_input_node_name(self, input_unique_id, input_node):
-        if len(list(input_node.outputs())) <= 1 or input_node.kind(
-        ) == "prim::Param":
-            return self.output_nodenames[input_unique_id]
-        for i, output_ivalue in enumerate(input_node.outputs()):
-            unique_id = output_ivalue.unique()
-            if unique_id == input_unique_id:
-                return self.output_nodenames[input_unique_id] + "[{}]".format(i)
 
     def _check_input(self, prog, node, node_name, node_name_list,
                      add_dim=False):
@@ -144,7 +134,7 @@ class PyTorchOpMapper(OpMapper):
         if control_node is not None and index is not None:
             kind = control_node.kind()
             # block的输出
-            node_name = self._get_input_node_name(unique_id, node)
+            node_name = self.output_nodenames[unique_id]
             output_index = index
             if kind == "prim::Loop":
                 output_index = index - 1
@@ -198,8 +188,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             inputs['input{}'.format(i)] = input_node_name
         prog.add_layer(
             node_name, "prim.list", inputs=inputs, outputs=[node_name])
@@ -210,7 +199,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -234,8 +223,8 @@ class PyTorchOpMapper(OpMapper):
             if i == 0:
                 loop_input_node = list(node.inputs())[0].node()
                 loop_input_unique_id = list(node.inputs())[0].unique()
-                loop_input_node_name = self._get_input_node_name(
-                    loop_input_unique_id, loop_input_node)
+                loop_input_node_name = self.output_nodenames[
+                    loop_input_unique_id]
                 self._check_input(prog, loop_input_node, loop_input_node_name,
                                   node_name_list)
                 loop_inputs['input'] = loop_input_node_name
@@ -244,8 +233,8 @@ class PyTorchOpMapper(OpMapper):
             else:
                 loop_input_node = list(node.inputs())[i + 1].node()
                 loop_input_unique_id = list(node.inputs())[i + 1].unique()
-                loop_input_node_name = self._get_input_node_name(
-                    loop_input_unique_id, loop_input_node)
+                loop_input_node_name = self.output_nodenames[
+                    loop_input_unique_id]
                 self._check_input(prog, loop_input_node, loop_input_node_name,
                                   node_name_list)
                 prog.add_layer(
@@ -270,7 +259,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(node_name, "prim.if", {'input': input_node_name},
                        [node_name])
@@ -294,7 +283,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -309,12 +298,12 @@ class PyTorchOpMapper(OpMapper):
         adapoo2d_inputs = []
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         adapoo2d_inputs.append(input_node_name)
         attr_node = list(node.inputs())[1].node()
         attr_unique_id = list(node.inputs())[1].unique()
-        attr_node_name = self._get_input_node_name(attr_unique_id, attr_node)
+        attr_node_name = self.output_nodenames[attr_unique_id]
         attrs = {}
         attrs["pool_size"] = self.attrs[
             attr_node_name] if attr_node_name in self.attrs else attr_node_name
@@ -337,33 +326,33 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(
             prog, input_node, input_node_name, node_name_list, add_dim=True)
         inputs['input'] = input_node_name
         addmm_inputs.append(input_node_name)
         x_node = list(node.inputs())[1].node()
         x_unique_id = list(node.inputs())[1].unique()
-        x_node_name = self._get_input_node_name(x_unique_id, x_node)
+        x_node_name = self.output_nodenames[x_unique_id]
         self._check_input(prog, x_node, x_node_name, node_name_list)
         inputs['x'] = x_node_name
         addmm_inputs.append(x_node_name)
         y_node = list(node.inputs())[2].node()
         y_unique_id = list(node.inputs())[2].unique()
-        y_node_name = self._get_input_node_name(y_unique_id, y_node)
+        y_node_name = self.output_nodenames[y_unique_id]
         self._check_input(prog, y_node, y_node_name, node_name_list)
         inputs['y'] = y_node_name
         addmm_inputs.append(y_node_name)
         beta_node = list(node.inputs())[3].node()
         beta_unique_id = list(node.inputs())[3].unique()
-        beta_node_name = self._get_input_node_name(beta_unique_id, beta_node)
+        beta_node_name = self.output_nodenames[beta_unique_id]
         attrs['beta'] = self.attrs[
             beta_node_name] if beta_node_name in self.attrs else beta_node_name
         if beta_node_name not in self.attrs:
             addmm_inputs.append(beta_node_name)
         alpha_node = list(node.inputs())[4].node()
         alpha_unique_id = list(node.inputs())[4].unique()
-        alpha_node_name = self._get_input_node_name(alpha_unique_id, alpha_node)
+        alpha_node_name = self.output_nodenames[alpha_unique_id]
         attrs['alpha'] = self.attrs[
             alpha_node_name] if alpha_node_name in self.attrs else alpha_node_name
         if alpha_node_name not in self.attrs:
@@ -384,20 +373,20 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         x_node = list(node.inputs())[0].node()
         x_unique_id = list(node.inputs())[0].unique()
-        x_node_name = self._get_input_node_name(x_unique_id, x_node)
+        x_node_name = self.output_nodenames[x_unique_id]
         self._check_input(prog, x_node, x_node_name, node_name_list)
         inputs['x'] = x_node_name
         add_inputs.append(x_node_name)
         y_node = list(node.inputs())[1].node()
         y_unique_id = list(node.inputs())[1].unique()
-        y_node_name = self._get_input_node_name(y_unique_id, y_node)
+        y_node_name = self.output_nodenames[y_unique_id]
         self._check_input(
             prog, y_node, y_node_name, node_name_list, add_dim=True)
         inputs['y'] = y_node_name
         add_inputs.append(y_node_name)
         alpha_node = list(node.inputs())[2].node()
         alpha_unique_id = list(node.inputs())[2].unique()
-        alpha_node_name = self._get_input_node_name(alpha_unique_id, alpha_node)
+        alpha_node_name = self.output_nodenames[alpha_unique_id]
         attrs['alpha'] = self.attrs[
             alpha_node_name] if alpha_node_name in self.attrs else alpha_node_name
         if alpha_node_name not in self.attrs:
@@ -414,8 +403,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             self._check_input(prog, input_node, input_node_name, node_name_list)
             if i == 0:
                 inputs['list'] = input_node_name
@@ -434,11 +422,8 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             if i == 0:
-                self._check_input(prog, input_node, input_node_name,
-                                  node_name_list)
                 inputs['input'] = input_node_name
                 conv2d_inputs.append(input_node_name)
             elif i == 1:
@@ -483,7 +468,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -502,7 +487,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             'dropout_' + node_name,
@@ -520,8 +505,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             self._check_input(prog, input_node, input_node_name, node_name_list)
             inputs['eq{}'.format(i)] = input_node_name
             eq_inputs.append(input_node_name)
@@ -538,8 +522,7 @@ class PyTorchOpMapper(OpMapper):
                 continue
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             self._check_input(prog, input_node, input_node_name, node_name_list)
             prog.add_layer(
                 "assert_" + node_name,
@@ -551,7 +534,7 @@ class PyTorchOpMapper(OpMapper):
             flatten_inputs.append(input_node_name)
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -569,8 +552,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             self._check_input(prog, input_node, input_node_name, node_name_list)
             if i == 0:
                 inputs['list'] = input_node_name
@@ -587,8 +569,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             self._check_input(prog, input_node, input_node_name, node_name_list)
             inputs['input{}'.format(i)] = input_node_name
         prog.add_layer(node_name, "prim.le", inputs=inputs, outputs=[node_name])
@@ -599,7 +580,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -617,8 +598,7 @@ class PyTorchOpMapper(OpMapper):
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
             input_unique_id = input_ivalue.unique()
-            input_node_name = self._get_input_node_name(input_unique_id,
-                                                        input_node)
+            input_node_name = self.output_nodenames[input_unique_id]
             if i == 0:
                 self._check_input(prog, input_node, input_node_name,
                                   node_name_list)
@@ -659,12 +639,12 @@ class PyTorchOpMapper(OpMapper):
         inputs = {}
         x_node = list(node.inputs())[0].node()
         x_unique_id = list(node.inputs())[0].unique()
-        x_node_name = self._get_input_node_name(x_unique_id, x_node)
+        x_node_name = self.output_nodenames[x_unique_id]
         self._check_input(prog, x_node, x_node_name, node_name_list)
         inputs['x'] = x_node_name
         y_node = list(node.inputs())[1].node()
         y_unique_id = list(node.inputs())[1].unique()
-        y_node_name = self._get_input_node_name(y_unique_id, y_node)
+        y_node_name = self.output_nodenames[y_unique_id]
         inputs['y'] = y_node_name
         self._check_input(prog, y_node, y_node_name, node_name_list)
         prog.add_layer(
@@ -679,7 +659,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         # inplace这个参数在paddle中未实现
         prog.add_layer(
@@ -694,7 +674,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         # inplace这个参数在paddle中未实现
         prog.add_layer(
@@ -710,7 +690,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,
@@ -726,11 +706,11 @@ class PyTorchOpMapper(OpMapper):
         slice_inputs = []
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         slice_inputs.append(input_node_name)
         strat_node = list(node.inputs())[1].node()
         start_unique_id = list(node.inputs())[1].unique()
-        start_node_name = self._get_input_node_name(start_unique_id, strat_node)
+        start_node_name = self.output_nodenames[start_unique_id]
         slice_inputs.append(start_node_name)
         attrs['start'] = self.attrs[
             start_node_name] if start_node_name in self.attrs else start_node_name
@@ -739,7 +719,7 @@ class PyTorchOpMapper(OpMapper):
             slice_inputs.append(input_node_name)
         end_node = list(node.inputs())[2].node()
         end_unique_id = list(node.inputs())[2].unique()
-        end_node_name = self._get_input_node_name(end_unique_id, end_node)
+        end_node_name = self.output_nodenames[end_unique_id]
         slice_inputs.append(end_node_name)
         attrs['end'] = self.attrs[
             end_node_name] if end_node_name in self.attrs else end_node_name
@@ -748,7 +728,7 @@ class PyTorchOpMapper(OpMapper):
             slice_inputs.append(end_node_name)
         step_node = list(node.inputs())[3].node()
         step_unique_id = list(node.inputs())[3].unique()
-        step_node_name = self._get_input_node_name(step_unique_id, step_node)
+        step_node_name = self.output_nodenames[step_unique_id]
         slice_inputs.append(step_node_name)
         attrs['step'] = self.attrs[
             step_node_name] if step_node_name in self.attrs else step_node_name
@@ -768,7 +748,7 @@ class PyTorchOpMapper(OpMapper):
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
-        input_node_name = self._get_input_node_name(input_unique_id, input_node)
+        input_node_name = self.output_nodenames[input_unique_id]
         self._check_input(prog, input_node, input_node_name, node_name_list)
         prog.add_layer(
             node_name,

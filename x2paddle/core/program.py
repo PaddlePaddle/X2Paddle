@@ -285,9 +285,10 @@ class PaddleProgram(object):
                 ],
                 indent=0)
             self.get_dygraph_inputs(self.layers)
-            self.inputs.append("middle_numpy")
             input_data_name = ', '.join(self.inputs)
-            self.init_lines.extend(gen_lines(["def __init__(self):"], indent=1))
+            self.init_lines.extend(
+                gen_lines(
+                    ["def __init__(self, middle_numpy):"], indent=1))
             self.init_lines.extend(
                 gen_lines(
                     ["super(PaddleNet, self).__init__()"], indent=2))
@@ -302,29 +303,35 @@ class PaddleProgram(object):
             if "dygraph" in layer.kernel:
                 line = "{}".format(
                     layer.name
-                ) if layer.kernel == "fluid.dygraph.base.to_variable" else "self.{}".format(
-                    layer.name)
+                ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
+                    "value"].startswith("middle_numpy[") else "self.{}".format(
+                        layer.name)
                 line += " = {}(".format(layer.kernel)
                 for k, v in layer.attrs.items():
                     line += "{}={}, ".format(k, v)
                 line = line.strip(", ")
                 line += ")"
 
-                if layer.kernel == "fluid.dygraph.base.to_variable":
+                if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
+                        "value"].startswith("middle_numpy["):
                     self.forward_lines.extend(gen_lines([line], indent=indent))
                     continue
                 else:
-                    self.init_lines.extend(gen_lines([line], indent=indent))
+                    self.init_lines.extend(gen_lines([line], indent=2))
 
                 if len(layer.outputs) == 1:
                     line = layer.outputs[0]
                 else:
                     line = ','.join(layer.outputs)
-                line += " = self.{}(".format(layer.name)
-                for k, v in layer.inputs.items():
-                    line += "{}, ".format(v)
-                line = line.strip(", ")
-                line += ")"
+                if layer.kernel == "fluid.dygraph.base.to_variable" and layer.attrs[
+                        "value"].startswith("middle_numpy["):
+                    line += " = self.{}".format(layer.name)
+                else:
+                    line += " = self.{}(".format(layer.name)
+                    for k, v in layer.inputs.items():
+                        line += "{}, ".format(v)
+                    line = line.strip(", ")
+                    line += ")"
                 self.forward_lines.extend(gen_lines([line], indent=indent))
             elif "prim" in layer.kernel:
                 self.convert_prim(layer, indent=indent)
@@ -345,8 +352,12 @@ class PaddleProgram(object):
             f = open(os.path.join(code_dir, 'code.py'), 'w')
             for line in start_lines:
                 f.write(line)
+            init_writen_line = []
             for line in self.init_lines:
+                if line in init_writen_line:
+                    continue
                 f.write(line)
+                init_writen_line.append(line)
             f.write("\n")
             self.get_dygraph_outputs(self.layers)
             return_line = "return {}".format(", ".join(self.outputs))
