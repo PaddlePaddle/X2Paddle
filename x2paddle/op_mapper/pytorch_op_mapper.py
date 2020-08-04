@@ -81,14 +81,20 @@ class PyTorchOpMapper(OpMapper):
         return prog, prog_inputs
 
     def _get_node_name(self, node):
-        node_name = 'x' + str(self.node_index)
+        node_names = []
         for output_ivalue in node.outputs():
+            node_name = 'x' + str(self.node_index)
             unique_id = output_ivalue.unique()
             if unique_id in self.output_nodenames:
-                return self.output_nodenames[unique_id]
+                node_name = self.output_nodenames[unique_id]
             self.output_nodenames[unique_id] = node_name
             self.node_index += 1
-        return node_name
+            node_names.append(node_name)
+        if len(list(node.outputs())) == 0:
+            node_name = 'x' + str(self.node_index)
+            self.node_index += 1
+            node_names.append(node_name)
+        return node_names
 
     def _check_input(self, prog, node, node_name, node_name_list,
                      add_dim=False):
@@ -139,7 +145,7 @@ class PyTorchOpMapper(OpMapper):
             if kind == "prim::Loop":
                 output_index = index - 1
             output_node = list(control_node.outputs())[output_index].node()
-            output_node_name = self._get_node_name(output_node)
+            output_node_name = self._get_node_name(output_node)[0]
             prog.add_layer(
                 node_name,
                 "prim.equal",
@@ -148,7 +154,7 @@ class PyTorchOpMapper(OpMapper):
             return [output_node_name], [node_name]
 
     def prim_GetAttr(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         field_name_list = [node.s('name')]
         while True:
             input_node = list(node.inputs())[0].node()
@@ -168,7 +174,7 @@ class PyTorchOpMapper(OpMapper):
         return [node_name], []
 
     def prim_Constant(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         output = list(node.outputs())[0]
         value = output.toIValue()
         self.attrs[node_name] = value
@@ -183,7 +189,7 @@ class PyTorchOpMapper(OpMapper):
         return [node_name], []
 
     def prim_ListConstruct(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         inputs = {}
         for i, input_ivalue in enumerate(node.inputs()):
             input_node = input_ivalue.node()
@@ -195,7 +201,7 @@ class PyTorchOpMapper(OpMapper):
         return [node_name], list(inputs.values())
 
     def prim_RaiseException(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -209,7 +215,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def prim_Loop(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         loop_inputs = {}
         block = list(node.blocks())[0]
@@ -255,7 +261,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(current_layer.inputs.values())
 
     def prim_If(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -279,7 +285,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(current_layer.inputs.values())
 
     def prim_min(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -293,7 +299,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_adaptive_avg_pool2d(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         adapoo2d_inputs = []
         input_node = list(node.inputs())[0].node()
@@ -319,7 +325,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_addmm(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         inputs = {}
         attrs = {}
         addmm_inputs = []
@@ -366,7 +372,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, addmm_inputs
 
     def aten_add_(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         inputs = {}
         attrs = {}
         add_inputs = []
@@ -397,7 +403,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, add_inputs
 
     def aten_append(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         for i, input_ivalue in enumerate(node.inputs()):
@@ -414,7 +420,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(inputs.values())
 
     def aten_conv2d(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         attrs = {}
@@ -464,7 +470,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, conv2d_inputs
 
     def aten_dim(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -483,7 +489,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_dropout(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -498,7 +504,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_eq(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         eq_inputs = []
@@ -514,7 +520,7 @@ class PyTorchOpMapper(OpMapper):
 
     def aten_flatten(self, prog, node):
         # 目前只支持第一维的flatten
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         flatten_inputs = []
         for i, input_ivalue in enumerate(node.inputs()):
@@ -546,7 +552,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, flatten_inputs
 
     def aten___getitem__(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         for i, input_ivalue in enumerate(node.inputs()):
@@ -563,7 +569,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(inputs.values())
 
     def aten_le(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         for i, input_ivalue in enumerate(node.inputs()):
@@ -576,7 +582,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(inputs.values())
 
     def aten_len(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -590,7 +596,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_max_pool2d(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         attrs = {}
@@ -634,7 +640,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, pool_inputs
 
     def aten_matmul(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         inputs = {}
         x_node = list(node.inputs())[0].node()
@@ -655,7 +661,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, list(inputs.values())
 
     def aten_relu_(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -670,7 +676,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_relu6(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -686,7 +692,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_size(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
@@ -700,7 +706,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_slice(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         attrs = {}
         slice_inputs = []
@@ -744,7 +750,7 @@ class PyTorchOpMapper(OpMapper):
         return node_name_list, [input_node_name]
 
     def aten_t(self, prog, node):
-        node_name = self._get_node_name(node)
+        node_name = self._get_node_name(node)[0]
         node_name_list = [node_name]
         input_node = list(node.inputs())[0].node()
         input_unique_id = list(node.inputs())[0].unique()
