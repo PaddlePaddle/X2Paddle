@@ -141,6 +141,11 @@ class OpSet9(object):
             'Exp', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def abs(self, op, block):
+        node = helper.make_node(
+            'Abs', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
     def leaky_relu(self, op, block):
         node = helper.make_node(
             'LeakyRelu',
@@ -370,6 +375,16 @@ class OpSet9(object):
             'Bias') + op.input('Mean') + op.input('Variance')
         node = helper.make_node(
             'BatchNormalization',
+            inputs=inputs,
+            outputs=op.output('Y'),
+            **kwargs)
+        return node
+
+    def instance_norm(self, op, block):
+        kwargs = {'epsilon': op.attr('epsilon'), }
+        inputs = op.input('X') + op.input('Scale') + op.input('Bias')
+        node = helper.make_node(
+            'InstanceNormalization',
             inputs=inputs,
             outputs=op.output('Y'),
             **kwargs)
