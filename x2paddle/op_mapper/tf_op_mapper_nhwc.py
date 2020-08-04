@@ -322,14 +322,14 @@ class TFOpMapperNHWC(OpMapper):
 
         if kernel.layer_type == 'Const':
             kernel_value = kernel.value
-            kernel_weight_name = kernel.layer_name.replace('/', '_')
+            kernel_weight_name = kernel.name.replace('/', '_')
         else:
             kernel_value = self.decoder.infer_tensor(kernel)
             if kernel.layer_type == 'Split':
-                kernel_weight_name = "{}_{}_kernel".format(node.layer_name,
-                                                           kernel.layer_name)
+                kernel_weight_name = "{}_{}_kernel".format(node.name,
+                                                           kernel.name)
             else:
-                kernel_weight_name = kernel.layer_name.replace('/', '_')
+                kernel_weight_name = kernel.name.replace('/', '_')
         program.parameters[kernel_weight_name] = numpy.transpose(kernel_value,
                                                                  (3, 2, 0, 1))
 
