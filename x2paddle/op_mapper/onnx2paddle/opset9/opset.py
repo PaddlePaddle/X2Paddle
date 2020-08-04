@@ -730,7 +730,7 @@ class OpSet9():
                 axes = _const_weight_or_none(axes, necessary=True)
             if len(node.inputs) > 4:
                 steps = self.graph.get_input_node(node, idx=4, copy=True)
-                steps = _const_weight_or_none(steps, necessary=True)
+                steps = _const_weight_or_none(steps)
                 if steps is not None:
                     assert steps == 1, "Only support convert op:Slice, which attribute:steps == 1"
             attr = {
@@ -738,8 +738,8 @@ class OpSet9():
                 "starts": starts.layer_name,
                 "ends": ends.layer_name
             }
-            starts_value = _const_weight_or_none(starts, necessary=True)
-            ends_value = _const_weight_or_none(ends, necessary=True)
+            starts_value = _const_weight_or_none(starts)
+            ends_value = _const_weight_or_none(ends)
             if starts_value is not None and ends_value is not None:
                 self.omit_nodes.append(starts.layer_name)
                 self.omit_nodes.append(ends.layer_name)
