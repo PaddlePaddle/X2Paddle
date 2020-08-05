@@ -398,6 +398,11 @@ class OpSet9(object):
             axis=op.attr('axis'))
         return node
 
+    def sum(self, op, block):
+        node = helper.make_node(
+            'Sum', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
     def depthwise_conv2d(self, op, block):
         return self.conv2d(op, block)
 
