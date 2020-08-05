@@ -492,16 +492,6 @@ class OpSet9():
         node.fluid_code.add_layer(
             'hard_shrink', inputs=val_x, output=node, param_attr=attr)
 
-    def Greater(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        node.fluid_code.add_layer(
-            'greater_than',
-            inputs={'x': val_x,
-                    'y': val_y},
-            output=node,
-            param_attr=None)
-
     @print_mapping_info
     def Constant(self, node):
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
@@ -1160,7 +1150,6 @@ class OpSet9():
                     'y': cast_condition},
             output=mul_val_x,
             param_attr=None)
-
         mul_val_y = val_y.layer_name + '_mul'
         node.fluid_code.add_layer(
             "elementwise_mul",
