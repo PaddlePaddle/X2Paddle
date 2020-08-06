@@ -467,7 +467,7 @@ class CaffeOpMapper(OpMapper):
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
             node.layer_name, node.layer_type)
-        self.weights[node.layer_name + '_weights'] = data[0]
+        self.weights[node.layer_name + '_weights'] = data[0].reshape(1, -1)
         attr = {
             'mode': string(mode),
             'param_attr': string(node.layer_name + '_weights'),
