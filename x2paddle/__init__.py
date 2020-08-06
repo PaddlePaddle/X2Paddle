@@ -1,6 +1,6 @@
 __version__ = "0.7.4"
 
-from .core.program import PaddleGraph
+from .core.paddle_graph import PaddleGraph
 
 program = PaddleGraph()
 

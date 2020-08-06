@@ -16,7 +16,7 @@ import torch
 import numpy as np
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
-from x2paddle.core.program import PaddleGraph
+from x2paddle.core.paddle_graph import PaddleGraph
 from x2paddle.op_mapper.pytorch2paddle import prim
 from x2paddle.op_mapper.pytorch2paddle import aten
 
@@ -82,6 +82,10 @@ class PyTorchOpMapper(OpMapper):
                     control_node=control_node,
                     index=i)
                 _update_graph_inputs(inputs, outputs)
+        # 设置graph的参数
+        if isinstance(script_graph, torch._C.Graph):
+            self.paddle_params.update(self.middle_numpy)
+            graph.set_parameters(self.paddle_params)
         return graph, graph_inputs
 
     def _get_node_name(self, node):
