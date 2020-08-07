@@ -34,6 +34,7 @@
 | 21 | Axpy      | 22 | ROIPolling   | 23 | Permute        | 24 | DetectionOutput      |
 | 25 | Normalize | 26 | Select       | 27 | ShuffleChannel | 28 | ConvolutionDepthwise |
 | 29 | ReLU      | 30 | AbsVal       | 31 | Sigmoid        | 32 | TanH                 |
+| 33 | ReLU6     | 34 | Upsample |
 
 ## ONNX
 
