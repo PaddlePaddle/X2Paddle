@@ -22,8 +22,8 @@
 | 49 | Identity         | 50 | GreaterEqual   | 51 | StopGradient   | 52 | Minimum               |
 | 53 | RadnomUniform    | 54 | Fill           | 55 | Floor          | 56 | DepthToSpace          |
 | 57 | Sqrt             | 58 | Softplus       | 59 | Erf            | 60 | AddV2                 |
-| 61 | LessEqual        | 62 | BatchMatMul    | 63 | BatchMatMul    | 64 | ExpandDims            |
-| 65 | BatchToSpaceND   | 66 | BatchToSpaceND | 67 | OneHot         | 68 | Pow                   |
+| 61 | LessEqual        | 62 | BatchMatMul    | 63 | BatchMatMulV2  | 64 | ExpandDims            |
+| 65 | BatchToSpaceND   | 66 | SpaceToBatchND | 67 | OneHot         | 68 | Pow                   |
 | 69 | All              | 70 | GatherV2       | 71 | IteratorV2     |    |                       |
 
 ## Caffe
