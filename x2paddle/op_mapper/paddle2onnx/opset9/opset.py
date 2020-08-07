@@ -155,7 +155,6 @@ class OpSet9(object):
         return node
 
     def elementwise_add(self, op, block):
-        print(op.input('Y'))
         axis = op.attr('axis')
         x_shape = block.var(op.input('X')[0]).shape
         y_shape = block.var(op.input('Y')[0]).shape
