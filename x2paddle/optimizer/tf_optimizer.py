@@ -863,7 +863,7 @@ class TFOptimizer(object):
                     weight = numpy.expand_dims(weight, 2)
                     weight = numpy.expand_dims(weight, 3)
                     self.op_mapper.weights[in_nodes3[0].layer_name] = weight
-                    # fix bug in Paddle1.8.3 and may change in next version
+                    # fix bug in Paddle1.8.3 and may change in next version.
                     self.op_mapper.weights[in_nodes3[0].layer_name +
                                            '_1'] = weight.reshape(1, -1)
                     in_nodes3[0].fluid_code.layers[0].param_attr["shape"] = [

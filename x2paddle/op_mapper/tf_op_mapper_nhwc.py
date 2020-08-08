@@ -333,16 +333,15 @@ class TFOpMapperNHWC(OpMapper):
             "dilation": dilations[2:4],
             "padding": string(pad_mode)
         }
-
         if hasattr(node, 'dilation') and attr['dilation'] == [1, 1]:
             if len(node.dilation) == 1:
                 attr['dilation'] = [1, node.dilation[0]]
-                
+
         if c == -1:
             reshape_attr = {"shape": [0, k_size[2], 0, 0]}
             node.fluid_code.add_layer(
                 "reshape", inputs=input, output=input, param_attr=reshape_attr)
-                
+
         node.fluid_code.add_layer(
             "conv2d", inputs=input, output=node, param_attr=attr)
         if not channel_first:
@@ -759,6 +758,7 @@ class TFOpMapperNHWC(OpMapper):
             begin = begin.value.tolist()
         else:
             begin = self.decoder.infer_tensor(begin).tolist()
+
 #             shape = begin.out_shapes[0]
 #             attr = {"shape": shape}
 #             node.fluid_code.add_layer(
@@ -1101,4 +1101,3 @@ class TFOpMapperNHWC(OpMapper):
             output = "{}[{}]".format(node.layer_name, i)
             node.fluid_code.add_layer(
                 "data", inputs=None, output=output, param_attr=attr)
-
