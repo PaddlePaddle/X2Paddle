@@ -299,6 +299,10 @@ class TFOpMapperNHWC(OpMapper):
         data_format = node.get_attr("data_format").decode()
         pad_mode = node.get_attr("padding").decode()
         channel_first = data_format == "NCHW"
+        if data_format == "NHWC":
+            n, h, w, c = input.out_shapes[0]
+        else:
+            n, c, h, w = input.out_shapes[0]
 
         if kernel.layer_type == 'Const':
             kernel_value = kernel.value
@@ -333,6 +337,12 @@ class TFOpMapperNHWC(OpMapper):
         if hasattr(node, 'dilation') and attr['dilation'] == [1, 1]:
             if len(node.dilation) == 1:
                 attr['dilation'] = [1, node.dilation[0]]
+                
+        if c == -1:
+            reshape_attr = {"shape": [0, k_size[2], 0, 0]}
+            node.fluid_code.add_layer(
+                "reshape", inputs=input, output=input, param_attr=reshape_attr)
+                
         node.fluid_code.add_layer(
             "conv2d", inputs=input, output=node, param_attr=attr)
         if not channel_first:
@@ -748,11 +758,11 @@ class TFOpMapperNHWC(OpMapper):
             self.add_omit_nodes(begin.layer_name, node.layer_name)
             begin = begin.value.tolist()
         else:
-            begin = begin
-            shape = begin.out_shapes[0]
-            attr = {"shape": shape}
-            node.fluid_code.add_layer(
-                "reshape", inputs=begin, output=begin, param_attr=attr)
+            begin = self.decoder.infer_tensor(begin).tolist()
+#             shape = begin.out_shapes[0]
+#             attr = {"shape": shape}
+#             node.fluid_code.add_layer(
+#                 "reshape", inputs=begin, output=begin, param_attr=attr)
         if size.layer_type == "Const":
             self.add_omit_nodes(size.layer_name, node.layer_name)
             size = size.value.tolist()
@@ -1091,3 +1101,4 @@ class TFOpMapperNHWC(OpMapper):
             output = "{}[{}]".format(node.layer_name, i)
             node.fluid_code.add_layer(
                 "data", inputs=None, output=output, param_attr=attr)
+
