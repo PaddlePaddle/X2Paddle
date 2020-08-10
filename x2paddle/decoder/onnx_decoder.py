@@ -350,6 +350,7 @@ class ONNXGraph(Graph):
                     node.out_shapes.append(value_info['shape'])
                 else:
                     node.out_shapes.append([])
+                print(layer.name, node.out_shapes)
 
 
 class ONNXDecoder(object):

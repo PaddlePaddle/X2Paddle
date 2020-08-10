@@ -53,14 +53,21 @@ class ONNXOpMapper(OpMapper):
 
     def op_checker(self):
         unsupported_ops = set()
+        contain_ops = set()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
+            contain_ops.add(op)
             if not hasattr(self.opset, op) and \
                 op not in self.opset.default_op_mapping and \
                 op not in custom_layers and \
                 op not in self.opset.elementwise_ops:
                 unsupported_ops.add(op)
+
+        print("There are {} ops need converted , list as below".format(
+            len(contain_ops)))
+        for op in contain_ops:
+            print(op)
         if len(unsupported_ops) == 0:
             return True
         else:
