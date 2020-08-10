@@ -673,7 +673,7 @@ class OpSet9(object):
         input_names = op.input_names
         if op.attr('align_corners'):
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opset 11"
             )
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
