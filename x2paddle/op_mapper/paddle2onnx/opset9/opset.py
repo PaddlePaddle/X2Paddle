@@ -562,15 +562,6 @@ class OpSet9(object):
             keepdims=op.attr('keep_dim'))
         return node
 
-    def cast(self, op, block):
-        dtype = op.attr('out_dtype')
-        node = helper.make_node(
-            'Cast',
-            inputs=op.input('X'),
-            outputs=op.output('Out'),
-            to=self.paddle_onnx_dtype_map[dtype])
-        return node
-
     def bilinear_interp(self, op, block):
         input_names = op.input_names
         input_shape = block.vars[op.input('X')[0]].shape
