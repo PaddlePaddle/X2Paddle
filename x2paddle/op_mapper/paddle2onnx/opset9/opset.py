@@ -802,6 +802,14 @@ class OpSet9(object):
             axes=op.attr('axes'))
         return node
 
+    def cast(self, op, block):
+        node = helper.make_node(
+            'Cast',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            to=self.paddle_onnx_dtype_map[op.attr('out_dtype')])
+        return node
+
     def arg_max(self, op, block):
         node = helper.make_node(
             'ArgMax',
