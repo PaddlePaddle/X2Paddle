@@ -1,8 +1,7 @@
 __version__ = "0.7.4"
 
-from .core.program import PaddleProgram
-
-program = PaddleProgram()
+from .core.paddle_graph import PaddleGraph
+program = PaddleGraph()
 
 name_counter = dict()
 
