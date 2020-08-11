@@ -16,7 +16,9 @@ from __future__ import print_function
 from __future__ import division
 import paddle.fluid as fluid
 from paddle.fluid.proto import framework_pb2
+from collections import OrderedDict
 import numpy
+import time
 import collections
 import sys
 import os
@@ -49,19 +51,25 @@ class PaddleLayer(object):
         self.inputs = inputs
         self.outputs = outputs
         self.attrs = kwargs
+        self.id = str(time.time())
+
+    def add_block(self, block):
+        block.father_layer = self
+        self.blocks.append(block)
 
 
 class PaddleProgram(object):
     def __init__(self):
-        self.layers = list()
+        self.layers = OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
         self.outputs = list()
         self.parameters = dict()
+        self.father_layer = None
 
     def clear(self):
-        self.layers = list()
+        self.layers = OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
@@ -70,13 +78,15 @@ class PaddleProgram(object):
 
     def add_layer(self, kernel, inputs, outputs, **kwargs):
         layer = PaddleLayer(kernel, inputs, outputs, **kwargs)
-        index = len(self.layers)
-        self.layers.append(layer)
-        return index
+        layer_id = str(len(self.layers))
+        if self.father_layer is not None:
+            layer_id = "{}.{}.{}".format(layer_id, len(self.father_layer.blocks()), self.father_layer.id)
+        self.layers[layer_id] = layer
+        return layer_id
 
     def build(self):
         outputs_from_nodes = dict()
-        for i, layer in enumerate(self.layers):
+        for layer_id, layer in self.layers.items():
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):
@@ -84,22 +94,16 @@ class PaddleProgram(object):
                 for v in vs:
                     assert v in outputs_from_nodes, "Couldn't find {} in previous layers, the layers should be make by topological sort".format(
                         v)
-                    in_layer_index = outputs_from_nodes[v]
-                    if in_layer_index not in self.edges_out:
-                        self.edges_out[in_layer_index] = list()
-                    self.edges_out[in_layer_index].append(i)
+                    in_layer_id = outputs_from_nodes[v]
+                    if in_layer_id not in self.edges_out:
+                        self.edges_out[in_layer_id] = list()
+                    self.edges_out[in_layer_id].append(layer_id)
 
-                    if i not in self.edges_in:
-                        self.edges_in[i] = list()
-                    self.edges_in[i].append(in_layer_index)
+                    if layer_id not in self.edges_in:
+                        self.edges_in[layer_id] = list()
+                    self.edges_in[layer_id].append(in_layer_id)
             for output in layer.outputs:
-                outputs_from_nodes[output] = i
-
-    def get_layer_outputs(self, i):
-        return self.edges_out[i]
-
-    def get_layer_inputs(self, i):
-        return self.edges_in[i]
+                outputs_from_nodes[output] = layer_id
 
     def gen_code(self, code_dir):
         def write_code(f, code_list, indent=0):
@@ -122,9 +126,9 @@ class PaddleProgram(object):
                 "", "def x2paddle_net():"
             ],
             indent=0)
-        for i, layer in enumerate(self.layers):
-            edges_in = self.edges_in.get(i, [])
-            edges_out = self.edges_out.get(i, [])
+        for layer_id, layer in self.layers.items():
+            edges_in = self.edges_in.get(layer_id, [])
+            edges_out = self.edges_out.get(layer_id, [])
             if len(edges_in) == 0 and len(edges_out) == 0:
                 continue
 
