@@ -54,7 +54,7 @@ class PaddleLayer(object):
         self.id = str(time.time())
 
     def add_block(self, block):
-        block.father_unique_id = self.unique_id
+        block.father_layer = self
         self.blocks.append(block)
 
 
@@ -66,7 +66,7 @@ class PaddleProgram(object):
         self.inputs = list()
         self.outputs = list()
         self.parameters = dict()
-        self.father_layer_id = None
+        self.father_layer = None
 
     def clear(self):
         self.layers = OrderedDict()
@@ -79,8 +79,8 @@ class PaddleProgram(object):
     def add_layer(self, kernel, inputs, outputs, **kwargs):
         layer = PaddleLayer(kernel, inputs, outputs, **kwargs)
         layer_id = str(len(self.layers))
-        if self.father_layer_id is not None:
-            layer_id = "{}.{}".format(layer_id, self.father_layer_id)
+        if self.father_layer is not None:
+            layer_id = "{}.{}.{}".format(layer_id, len(self.father_layer.blocks()), self.father_layer.id)
         self.layers[layer_id] = layer
         return layer_id
 
