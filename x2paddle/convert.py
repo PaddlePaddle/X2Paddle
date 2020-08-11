@@ -67,7 +67,7 @@ def arg_parser():
         "--without_data_format_optimization",
         "-wo",
         action="store_true",
-        default=False,
+        default=True,
         help="tf model conversion without data format optimization")
     parser.add_argument(
         "--define_input_shape",

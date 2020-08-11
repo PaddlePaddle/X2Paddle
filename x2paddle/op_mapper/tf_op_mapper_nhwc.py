@@ -1068,13 +1068,25 @@ class TFOpMapperNHWC(OpMapper):
         axis = axis.value.tolist()
         assert axis == 0, "Only support axis=0 in GatherV2 OP"
         attr = {'overwrite': False}
+        embeddings_shape = embeddings.out_shapes[0][-1]
+        reshape_list = list()
+        reshape_name = index.layer_name
         if len(index.out_shapes[0]) != 1:
+            reshape_list = index.out_shapes[0]
             reshape_attr = {"shape": [-1]}
+            reshape_name = "{}_reshape".format(index.layer_name)
             node.fluid_code.add_layer(
-                "reshape", inputs=index, output=index, param_attr=reshape_attr)
-        inputs = {'input': embeddings, 'index': index}
+                "reshape",
+                inputs=index,
+                output=reshape_name,
+                param_attr=reshape_attr)
+        inputs = {'input': embeddings, 'index': reshape_name}
         node.fluid_code.add_layer(
             "gather", inputs=inputs, output=node, param_attr=attr)
+        if len(index.out_shapes[0]) != 1:
+            reshape_attr = {"shape": reshape_list + [embeddings_shape]}
+            node.fluid_code.add_layer(
+                "reshape", inputs=node, output=node, param_attr=reshape_attr)
 
     def OneShotIterator(self, node):
         return self.Placeholder(node)
