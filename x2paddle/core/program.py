@@ -129,7 +129,7 @@ class PaddleGraph(object):
             if len(layer.blocks) > 0:
                 for block in layer.blocks:
                     block.build(layer.inputs, layer.outputs)
-                    
+
         if self.graph_type == "dygraph":
             self.get_dygraph_inputs()
             self.get_dygraph_outputs()
@@ -284,6 +284,7 @@ class PaddleGraph(object):
                     for block in layer.blocks:
                         block.get_dygraph_inputs()
                         self.inputs.extend(block.inputs)
+
         update(self.layers)
         self.inputs = list(set(self.inputs))
 
@@ -310,7 +311,7 @@ class PaddleGraph(object):
                 else:
                     codes.append(indent_blank + code_line + '\n')
             return codes
-        
+
         def gen_head():
             self.head = gen_codes(
                 [
@@ -332,7 +333,7 @@ class PaddleGraph(object):
                 gen_codes(
                     ["def forward(self, {}):".format(input_data_name)],
                     indent=1))
-            
+
         def write_code(code_dir):
             f = open(os.path.join(code_dir, 'code.py'), 'w')
             for code_line in self.head:
@@ -396,9 +397,11 @@ class PaddleGraph(object):
                 self.forward_func.extend(gen_codes([line], indent=indent))
             elif "prim" in layer.kernel:
                 from .convert_prim import convert_prim
-                convert_prim(layer, indent=indent, 
-                             init_func=self.init_func, 
-                             forward_func=self.forward_func)
+                convert_prim(
+                    layer,
+                    indent=indent,
+                    init_func=self.init_func,
+                    forward_func=self.forward_func)
             else:
                 if len(layer.outputs) == 1:
                     line = layer.outputs[0]

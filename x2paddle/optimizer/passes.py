@@ -30,11 +30,11 @@ class PyTorchMatcher(Matcher):
     def __init__(self):
         super(PyTorchMatcher, self).__init__()
 
-    def match_pattern(self, pattern, graph, start_id):
+    def match_pattern(self, pattern, graph, start_index):
         pattern_index = 0
         pattern_global_layers = pattern.get_global_layers()
         subgraph_global_layers = dict()
-        graph_layers = dict(list(graph.layers.items())[start_id:])
+        graph_layers = dict(list(graph.layers.items())[start_index:])
         for layer_id, layer in graph_layers.items():
             pattern_layer = pattern.layers[list(pattern.layers.keys())[
                 pattern_index]]

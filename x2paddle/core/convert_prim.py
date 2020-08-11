@@ -62,8 +62,7 @@ def convert_prim(layer, indent=1, init_func=[], forward_func=[]):
         inputs_list = list(layer.inputs.values())
         for i, input in enumerate(inputs_list):
             if input is None:
-                inputs_list[i] = str(layer.attrs[list(layer.inputs.keys())[
-                    i]])
+                inputs_list[i] = str(layer.attrs[list(layer.inputs.keys())[i]])
         inputs_str = ', '.join(inputs_list)
         line = "{} = [{}]".format(layer.outputs[0], inputs_str)
     elif layer.kernel == "prim.exception":
@@ -131,6 +130,5 @@ def convert_prim(layer, indent=1, init_func=[], forward_func=[]):
             attrs_str += "{}:".format(v)
         attrs_str = attrs_str[:-1]
         line = "{} = {}[{}]".format(layer.outputs[0],
-                                    list(layer.inputs.values())[0],
-                                    attrs_str)
+                                    list(layer.inputs.values())[0], attrs_str)
     forward_func.extend(gen_codes([line], indent=indent))
