@@ -1052,12 +1052,6 @@ class OpSet9():
         val_input = self.graph.get_input_node(node, idx=0, copy=True)
         node.fluid_code.add_layer('logical_not', inputs=val_input, output=node)
 
-        node.fluid_code.add_layer(
-            'cast',
-            inputs=node,
-            output=node,
-            param_attr={'dtype': string('int64')})
-
     @print_mapping_info
     def AveragePool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
