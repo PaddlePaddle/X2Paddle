@@ -23,7 +23,7 @@ class Pass(object):
 
 class Matcher(object):
     def __init__(self):
-        self.unique_id_layer = dict()
+        pass
 
 
 class PyTorchMatcher(Matcher):

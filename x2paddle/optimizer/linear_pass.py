@@ -20,7 +20,6 @@ from x2paddle.optimizer.passes import Pass, Matcher, PyTorchMatcher
 
 class LinearPass(Pass):
     def __init__(self):
-        self.linear_index = 0
         super(LinearPass, self).__init__()
 
     def build_pattern(self):
