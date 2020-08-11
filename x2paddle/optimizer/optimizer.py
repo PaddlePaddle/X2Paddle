@@ -45,5 +45,5 @@ class GraphOptimizer(object):
             self.current_pass = _pass
             self.current_matcher = matcher
             graph, _ = self.run(graph)
-            print("{} done!".format(pa.__class__.__name__))
+            print("{} done!".format(_pass.__class__.__name__))
         return graph

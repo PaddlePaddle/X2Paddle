@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.core.paddle_graph import PaddleGraph
+from x2paddle.core.program import PaddleGraph
 
 
 class Pass(object):

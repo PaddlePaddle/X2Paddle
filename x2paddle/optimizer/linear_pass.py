@@ -14,7 +14,7 @@
 
 import numpy as np
 from x2paddle.core.util import *
-from x2paddle.core.paddle_graph import PaddleLayer, PaddleGraph
+from x2paddle.core.program import PaddleLayer, PaddleGraph
 from x2paddle.optimizer.passes import Pass, Matcher, PyTorchMatcher
 
 

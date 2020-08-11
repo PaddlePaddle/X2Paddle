@@ -16,7 +16,7 @@ import torch
 import numpy as np
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
-from x2paddle.core.paddle_graph import PaddleGraph
+from x2paddle.core.program import PaddleGraph
 from x2paddle.op_mapper.pytorch2paddle import prim
 from x2paddle.op_mapper.pytorch2paddle import aten
 
