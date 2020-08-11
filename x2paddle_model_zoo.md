@@ -1,5 +1,5 @@
 # X2Paddle模型测试库
-> 目前X2Paddle支持50+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
+> 目前X2Paddle支持70+的TensorFlow OP，40+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
 
 **注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
 
@@ -20,10 +20,13 @@
 | ResNet_V1_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |-|
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |-|
 | UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |-|
-|MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |-|
-|YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 转换需要关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
-| FALSR | [code](https://github.com/xiaomi-automl/FALSR) | - |
-| DCSCN | [code](https://modelzoo.co/model/dcscn-super-resolution) | - |
+| MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |-|
+| YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 转换需要关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
+| FALSR | [code](https://github.com/xiaomi-automl/FALSR) | 需使用参数without_data_format_optimization |
+| DCSCN | [code](https://modelzoo.co/model/dcscn-super-resolution) | 需使用参数without_data_format_optimization |
+| Bert（albert） | [code](https://github.com/google-research/albert#pre-trained-models) | 需使用参数without_data_format_optimization |
+| Bert（chinese_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 需使用参数without_data_format_optimization |
+| Bert（multi_cased_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 需使用参数without_data_format_optimization |
 
 ## Caffe
 
