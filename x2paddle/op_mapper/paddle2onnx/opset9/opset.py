@@ -749,11 +749,6 @@ class OpSet9(object):
                 mode='linear')
             node_list.extend([result_node])
             return node_list
-            #node = helper.make_node(
-            #    'Resize',
-            #    inputs=[op.input('X')[0], op.input('OutSize')[0]],
-            #    outputs=op.output('Out'),
-            #    mode='nearest')
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
