@@ -676,11 +676,84 @@ class OpSet9(object):
                 "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opset 11"
             )
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
-            node = helper.make_node(
+            node_list = list()
+            shape_name0 = self.get_name(op.type, 'shape')
+            shape_node0 = helper.make_node(
+                'Shape', inputs=op.input('X'), outputs=[shape_name0])
+            starts_name = self.get_name(op.type, 'slice.starts')
+            starts_node = self.make_constant_node(
+                starts_name, onnx_pb.TensorProto.INT64, [0])
+            ends_name = self.get_name(op.type, 'slice.ends')
+            ends_node = self.make_constant_node(ends_name,
+                                                onnx_pb.TensorProto.INT64, [2])
+            shape_name1 = self.get_name(op.type, 'shape')
+            shape_node1 = helper.make_node(
+                'Slice',
+                inputs=[shape_name0, starts_name, ends_name],
+                outputs=[shape_name1])
+            node_list.extend([shape_node0, starts_node, ends_node, shape_node1])
+            if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=op.input('OutSize'),
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.append(cast_shape_node)
+            else:
+                concat_shape_name = self.get_name(
+                    op.type, op.output('Out')[0] + "shape.concat")
+                concat_shape_node = helper.make_node(
+                    "Concat",
+                    inputs=op.input('SizeTensor'),
+                    outputs=[concat_shape_name],
+                    axis=0)
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=[concat_shape_name],
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.extend([concat_shape_node, cast_shape_node])
+            shape_name2 = self.get_name(op.type, "shape.concat")
+            shape_node2 = helper.make_node(
+                'Concat',
+                inputs=[shape_name1, cast_shape_name],
+                outputs=[shape_name2],
+                axis=0)
+            node_list.append(shape_node2)
+            cast_shape_name2 = self.get_name(op.type, "shape.cast")
+            cast_shape_node2 = helper.make_node(
+                'Cast',
+                inputs=[shape_name2],
+                outputs=[cast_shape_name2],
+                to=onnx_pb.TensorProto.FLOAT)
+            node_list.append(cast_shape_node2)
+            cast_shape_name0 = self.get_name(op.type, "shape.cast")
+            cast_shape_node0 = helper.make_node(
+                'Cast',
+                inputs=[shape_name0],
+                outputs=[cast_shape_name0],
+                to=onnx_pb.TensorProto.FLOAT)
+            node_list.append(cast_shape_node0)
+            outputs_h_w_scales = op.output('Out')[0] + "@out_hw_scales"
+            node_h_w_scales = helper.make_node(
+                'Div',
+                inputs=[cast_shape_name2, cast_shape_name0],
+                outputs=[outputs_h_w_scales])
+            node_list.append(node_h_w_scales)
+            result_node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], op.input('OutSize')[0]],
+                inputs=[op.input('X')[0], outputs_h_w_scales],
                 outputs=op.output('Out'),
-                mode='nearest')
+                mode='linear')
+            node_list.extend([result_node])
+            return node_list
+            #node = helper.make_node(
+            #    'Resize',
+            #    inputs=[op.input('X')[0], op.input('OutSize')[0]],
+            #    outputs=op.output('Out'),
+            #    mode='nearest')
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
