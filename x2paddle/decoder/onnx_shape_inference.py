@@ -267,8 +267,9 @@ class SymbolicShapeInference:
 
         if pending_nodes and self.verbose_ > 0:
             print('SymbolicShapeInference: orphaned nodes discarded: ')
-            print('\n'.join(
-                [n.op_type + ': ' + n.output[0] for n in pending_nodes]))
+            for n in pending_nodes:
+                print(n.op_type + ': ' + n.output[0])
+
         if input_shapes is not None:
             for input_name, shape in input_shapes.items():
                 for idx in range(len(self.out_mp_.graph.input)):
