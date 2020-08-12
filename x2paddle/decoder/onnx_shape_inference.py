@@ -1585,12 +1585,9 @@ class SymbolicShapeInference:
                     in_mp)
             symbolic_shape_inference._update_output_from_vi()
             if not all_shapes_inferred:
-                print('!' * 10)
                 symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                     symbolic_shape_inference.out_mp_)
             #onnx.save(symbolic_shape_inference.out_mp_, 'tmp.onnx')
         except:
-            print('Stopping at incomplete shape inference')
-            symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
-                symbolic_shape_inference.out_mp_)
+            return None
         return symbolic_shape_inference.out_mp_.graph

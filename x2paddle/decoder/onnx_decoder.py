@@ -18,7 +18,7 @@ from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx.utils import polish_model
-from onnx import helper
+from onnx import helper, shape_inference
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
@@ -29,11 +29,9 @@ import onnx
 from onnx.helper import ValueInfoProto
 import numpy as np
 from copy import deepcopy
-import logging as _logging
 import os
 
 default_op_domain = 'ai.onnx'
-_logger = _logging.getLogger(__name__)
 
 
 class ONNXGraphNode(GraphNode):
@@ -130,18 +128,16 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, onnx_model):
+    def __init__(self, onnx_model, define_input_shape=False):
         super(ONNXGraph, self).__init__(onnx_model)
+        self.graph = onnx_model.graph
+        self.define_input_shape = define_input_shape
         self.fixed_input_shape = {}
         self.initializer = {}
         self.place_holder_nodes = list()
         self.value_infos = {}
-        self.graph = onnx_model.graph
         self.get_place_holder_nodes()
-        print("shape inferencing ...")
-        self.graph = SymbolicShapeInference.infer_shapes(
-            onnx_model, fixed_input_shape=self.fixed_input_shape)
-        print("shape inferenced.")
+        self.shape_inference()
         self.build()
         self.collect_value_infos()
         self.allocate_shapes()
@@ -152,7 +148,7 @@ class ONNXGraph(Graph):
         """
         inner_nodes = []
         if not isinstance(self.graph, onnx.GraphProto):
-            logger.error('graph is not a GraphProto instance')
+            assert 'graph is not a GraphProto instance'
             return
         for initializer in self.graph.initializer:
             name = initializer.name
@@ -168,36 +164,47 @@ class ONNXGraph(Graph):
                 shape.append(dim.dim_value)
         return shape
 
-    def check_input_shape(self, vi):
+    def shape_inference(self):
+        print('shape inferencing ...')
+        infered_graph = SymbolicShapeInference.infer_shapes(
+            self.model, fixed_input_shape=self.fixed_input_shape)
+        if infered_graph is None:
+            infered_model = shape_inference.infer_shapes(self.model)
+            self.graph = infered_model.graph
+        else:
+            self.graph = infered_graph
+        print('shape inferenced.')
+
+    def is_static_shape(self, vi):
         if vi.type.HasField('tensor_type'):
             for dim in vi.type.tensor_type.shape.dim:
                 if dim.HasField(
                         'dim_param') and vi.name not in self.fixed_input_shape:
-                    shape = self.get_symbolic_shape(
-                        vi.type.tensor_type.shape.dim)
-                    print(
-                        "Unknown shape for input tensor[tensor name: '{}'] -> shape: {}, Please define shape of input here,\nNote:you can use visualization tools like Netron to check input shape."
-                        .format(vi.name, shape))
-                    right_shape_been_input = False
-                    while not right_shape_been_input:
-                        try:
-                            shape = raw_input(
-                                "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
-                            )
-                        except:
-                            shape = input(
-                                "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
-                            )
-                        if shape.count("-1") > 1:
-                            print("Only 1 dimension can be -1, type again:)")
-                        else:
-                            right_shape_been_input = True
-                    if shape == 'N':
-                        break
-                    shape = [int(dim) for dim in shape.strip().split(',')]
-                    assert shape.count(-1) <= 1, "Only one dimension can be -1"
-                    self.fixed_input_shape[vi.name] = shape
-                    break
+                    return False
+        return True
+
+    def fix_unkown_input_shape(self, vi):
+        shape = self.get_symbolic_shape(vi.type.tensor_type.shape.dim)
+        print(
+            "Unknown shape for input tensor[tensor name: '{}'] -> shape: {}, Please define shape of input here,\nNote:you can use visualization tools like Netron to check input shape."
+            .format(vi.name, shape))
+        right_shape_been_input = False
+        while not right_shape_been_input:
+            try:
+                shape = raw_input(
+                    "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: ")
+            except:
+                shape = input(
+                    "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: ")
+            if shape.count("-1") > 1:
+                print("Only 1 dimension can be -1, type again:)")
+            else:
+                right_shape_been_input = True
+        if shape == 'N':
+            break
+        shape = [int(dim) for dim in shape.strip().split(',')]
+        assert shape.count(-1) <= 1, "Only one dimension can be -1"
+        self.fixed_input_shape[vi.name] = shape
 
     def get_place_holder_nodes(self):
         """
@@ -206,7 +213,8 @@ class ONNXGraph(Graph):
         inner_nodes = self.get_inner_nodes()
         for ipt_vi in self.graph.input:
             if ipt_vi.name not in inner_nodes:
-                self.check_input_shape(ipt_vi)
+                if self.define_input_shape:
+                    self.check_input_shape(ipt_vi)
                 self.place_holder_nodes.append(ipt_vi.name)
 
     def get_output_nodes(self):
@@ -310,7 +318,7 @@ class ONNXGraph(Graph):
         """
 
         if not isinstance(self.graph, onnx.GraphProto):
-            logger.error('graph is not a GraphProto instance')
+            assert 'graph is not a GraphProto instance'
             return
 
         for initializer in self.graph.initializer:
@@ -353,7 +361,7 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model):
+    def __init__(self, onnx_model, define_input_shape=False):
         onnx_model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             onnx_model.ir_version, onnx_model.opset_import[0].version))
@@ -364,7 +372,7 @@ class ONNXDecoder(object):
         onnx_model = self.optimize_model_skip_op(onnx_model)
         onnx_model = self.optimize_model_strip_initializer(onnx_model)
         onnx_model = self.optimize_node_name(onnx_model)
-        self.graph = ONNXGraph(onnx_model)
+        self.graph = ONNXGraph(onnx_model, define_input_shape)
         #self.onnx_model = onnx_model
 
     def build_value_refs(self, nodes):

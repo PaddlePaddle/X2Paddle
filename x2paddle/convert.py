@@ -165,7 +165,10 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):
     mapper.save_inference_model(save_dir, params_merge)
 
 
-def onnx2paddle(model_path, save_dir, params_merge=False):
+def onnx2paddle(model_path,
+                save_dir,
+                define_input_shape=False,
+                params_merge=False):
     # check onnx installation and version
     try:
         import onnx
@@ -181,7 +184,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
-    model = ONNXDecoder(model_path)
+    model = ONNXDecoder(model_path, define_input_shape=define_input_shape)
     mapper = ONNXOpMapper(model)
     print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
@@ -262,11 +265,13 @@ def main():
                      args.caffe_proto, params_merge)
     elif args.framework == "onnx":
         assert args.model is not None, "--model should be defined while translating onnx model"
+        define_input_shape = False
         params_merge = False
-
+        if args.define_input_shape:
+            define_input_shape = True
         if args.params_merge:
             params_merge = True
-        onnx2paddle(args.model, args.save_dir, params_merge)
+        onnx2paddle(args.model, args.save_dir, define_input_shape, params_merge)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
