@@ -43,6 +43,21 @@ def _const_weight_or_none(node, necessary=False):
     return None
 
 
+def _is_static_shape(shape):
+    negtive_dims = 0
+    error_dims = 0
+    for dim in shape:
+        if dim < 0:
+            negtive_dims += 1
+        if dim < -1:
+            error_dims += 1
+    if negtive_dims > 1:
+        return False
+    if error_dims > 0:
+        return False
+    return True
+
+
 def _get_same_padding(in_size, kernel_size, stride):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
@@ -231,42 +246,9 @@ class OpSet9():
 
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        val_y_shape = val_y.out_shapes[0]
-        val_x_shape = val_x.out_shapes[0]
-
-        if len(val_x_shape) < len(val_y_shape):
-            val_x, val_y = val_y, val_x
-            val_y_shape, val_x_shape = val_x_shape, val_y_shape
-
-        str_y_shape = ','.join(str(e) for e in val_y_shape)
-        str_x_shape = ','.join(str(e) for e in val_x_shape)
-        slice_idx = 0
-        if str_y_shape not in str_x_shape:
-            for dim in val_y_shape:
-                if dim == 1:
-                    slice_idx += 1
-                else:
-                    break
-        attr = {"name": string(node.layer_name)}
-        if slice_idx < len(val_y_shape) and slice_idx > 0:
-            val_y_reshaped = val_y_shape[slice_idx:]
-            var_y_reshaped = val_y.layer_name + '_reshaped'
-            attr_reshaped = {
-                'shape': val_y_reshaped,
-                'name': string(var_y_reshaped)
-            }
-            node.fluid_code.add_layer(
-                'reshape',
-                inputs=val_y,
-                output=var_y_reshaped,
-                param_attr=attr_reshaped)
-            inputs = {'x': val_x, 'y': var_y_reshaped}
-            node.fluid_code.add_layer(
-                op_type, inputs=inputs, output=node, param_attr=attr)
-        else:
-            inputs = {'x': val_x, 'y': val_y}
-            node.fluid_code.add_layer(
-                op_type, inputs=inputs, output=node, param_attr=attr)
+        inputs = {'x': val_x, 'y': val_y}
+        node.fluid_code.add_layer(
+            op_type, inputs=inputs, output=node, param_attr=None)
 
     @print_mapping_info
     def place_holder(self, node):
@@ -479,8 +461,21 @@ class OpSet9():
                     output=node,
                     param_attr={'shape': [1]})
         else:
-            node.fluid_code.add_layer(
-                'unsqueeze', inputs=val_x, output=node, param_attr=attr)
+            if str(val_x.dtype) == 'bool':
+                val_x_cast = val_x.layer_name + '_cast'
+                node.fluid_code.add_layer(
+                    'cast',
+                    inputs=val_x,
+                    output=val_x_cast,
+                    param_attr={'dtype': string('int64')})
+                node.fluid_code.add_layer(
+                    'unsqueeze',
+                    inputs=val_x_cast,
+                    output=node,
+                    param_attr=attr)
+            else:
+                node.fluid_code.add_layer(
+                    'unsqueeze', inputs=val_x, output=node, param_attr=attr)
 
     @print_mapping_info
     def Shrink(self, node):
@@ -590,12 +585,35 @@ class OpSet9():
         #assert len(
         #    indices_shape) <= 2, "Gather op don't support dim of indice >2 "
         if axis == 0 and len(indices_shape) <= 1:
-            node.fluid_code.add_layer(
-                'gather',
-                inputs={'input': val_x,
-                        'index': indices},
-                output=node,
-                param_attr=None)
+            if len(val_x.out_shapes[0]) <= 1:
+                node.fluid_code.add_layer(
+                    'gather',
+                    inputs={'input': val_x,
+                            'index': indices},
+                    output=node,
+                    param_attr=None)
+            elif len(val_x.out_shapes[0]) > 1:
+                if len(indices_shape) == 0:
+                    gather_ = node.layer_name + '_1'
+                    node.fluid_code.add_layer(
+                        'gather',
+                        inputs={'input': val_x,
+                                'index': indices},
+                        output=gather_,
+                        param_attr=None)
+                    node.fluid_code.add_layer(
+                        'squeeze',
+                        inputs={'input': gather_,
+                                'axes': [0]},
+                        output=node,
+                        param_attr=None)
+                else:
+                    node.fluid_code.add_layer(
+                        'gather',
+                        inputs={'input': val_x,
+                                'index': indices},
+                        output=node,
+                        param_attr=None)
         elif axis > 0 and len(indices_shape) <= 1:
             perm = list(range(len(val_x.out_shapes[0])))
             perm = [axis] + perm[:axis] + perm[axis + 1:]
@@ -614,6 +632,13 @@ class OpSet9():
                 param_attr=None)
             node.fluid_code.add_layer(
                 'transpose', inputs=node, output=node, param_attr=attr_trans)
+            if len(indices_shape) < 1:
+                node.fluid_code.add_layer(
+                    'squeeze',
+                    inputs={'input': node,
+                            'axes': [axis]},
+                    output=node,
+                    param_attr=None)
         elif axis == 0 and len(indices_shape) > 1:
             if val_x.out_shapes[0] is not None and isinstance(
                     val_x, ONNXGraphDataNode):
@@ -701,6 +726,86 @@ class OpSet9():
                 inputs=input_transpose,
                 output=node,
                 param_attr={'shape': reshaped_shape})
+
+    @print_mapping_info
+    def ScatterND(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        indices = self.graph.get_input_node(node, idx=1, copy=True)
+        updates = self.graph.get_input_node(node, idx=2, copy=True)
+        if len(indices.out_shapes[0]) == 1:
+            node.fluid_code.add_layer(
+                'scatter',
+                inputs={'input': val_x,
+                        'index': indices,
+                        'updates': updates},
+                output=node,
+                param_attr=None)
+        else:
+            input_inner_indices = node.layer_name + '_input_inner_indices'
+            node.fluid_code.add_layer(
+                'scatter_nd',
+                inputs={
+                    'shape': val_x.out_shapes[0],
+                    'index': indices,
+                    'updates': updates
+                },
+                output=input_inner_indices,
+                param_attr=None)
+
+            constant_minus_one = node.layer_name + '_constant_minus_one'
+            node.fluid_code.add_layer(
+                'fill_constant',
+                inputs=None,
+                output=constant_minus_one,
+                param_attr={
+                    'shape': updates.out_shapes[0],
+                    'dtype': string(updates.dtype),
+                    'value': -1
+                })
+
+            indices_mask = node.layer_name + '_indices_mask'
+            node.fluid_code.add_layer(
+                'scatter_nd',
+                inputs={
+                    'shape': val_x.out_shapes[0],
+                    'index': indices,
+                    'updates': constant_minus_one
+                },
+                output=indices_mask,
+                param_attr=None)
+
+            constant_1 = node.layer_name + '_constant_1'
+            node.fluid_code.add_layer(
+                'fill_constant',
+                inputs=None,
+                output=constant_1,
+                param_attr={
+                    'shape': val_x.out_shapes[0],
+                    'dtype': string(val_x.dtype),
+                    'value': 1
+                })
+            input_out_indices_mask = node.layer_name + '_input_out_indices_mask'
+            node.fluid_code.add_layer(
+                "elementwise_add",
+                inputs={"x": indices_mask,
+                        "y": constant_1},
+                output=input_out_indices_mask,
+                param_attr=None)
+
+            input_out_indices = node.layer_name + '_input_out_indices'
+            node.fluid_code.add_layer(
+                "elementwise_mul",
+                inputs={"x": val_x,
+                        "y": input_out_indices_mask},
+                output=input_out_indices,
+                param_attr=None)
+
+            node.fluid_code.add_layer(
+                "elementwise_add",
+                inputs={"x": input_inner_indices,
+                        "y": input_out_indices},
+                output=node,
+                param_attr=None)
 
     @print_mapping_info
     def Range(self, node):
@@ -791,8 +896,6 @@ class OpSet9():
                                  'this is not supported')
         if len(value) == 1:
             value = value[0]
-            if dtype.name == 'int64':
-                dtype = 'int32'
             attr = {
                 'shape': val_shape.layer_name,
                 'dtype': string(dtype),
@@ -833,6 +936,14 @@ class OpSet9():
                 inputs={'x': val_x},
                 output=node,
                 param_attr={'shape': shape_value.tolist()})
+        elif len(node.out_shapes[0]) > 0 and _is_static_shape(node.out_shapes[
+                0]):
+            node.fluid_code.add_layer(
+                'reshape',
+                inputs={'x': val_x,
+                        'shape': node.out_shapes[0]},
+                output=node,
+                param_attr=attr)
         elif val_shape.dtype == 'int64':
             val_shape_cast = val_shape.layer_name + '_cast'
             node.fluid_code.add_layer(
@@ -885,6 +996,11 @@ class OpSet9():
             'cast', inputs=val_input, output=node, param_attr=attr)
 
     @print_mapping_info
+    def Not(self, node):
+        val_input = self.graph.get_input_node(node, idx=0, copy=True)
+        node.fluid_code.add_layer('logical_not', inputs=val_input, output=node)
+
+    @print_mapping_info
     def AveragePool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
 
@@ -924,12 +1040,16 @@ class OpSet9():
     @print_mapping_info
     def Concat(self, node):
         inputs = []
+        dtypes = set()
         for i in range(len(node.layer.input)):
             ipt = self.graph.get_input_node(node, idx=i, copy=True)
             if isinstance(ipt, str):
                 inputs.append(ipt)
             else:
                 inputs.append(ipt.layer_name)
+                dtypes.add(ipt.dtype)
+        if len(dtypes) > 1:
+            assert 'Unspported situation happened, please create issue on https://github.com/PaddlePaddle/X2Paddle/issues.'
         axis = node.get_attr('axis')
         attr = {'axis': axis}
         node.fluid_code.add_layer(
@@ -1017,10 +1137,22 @@ class OpSet9():
     def MatMul(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        x_shape = val_x.out_shapes[0]
+        y_shape = val_y.out_shapes[0]
         inputs = {"x": val_x, "y": val_y}
-        attr = {"name": string(node.layer_name)}
-        node.fluid_code.add_layer(
-            "matmul", inputs=inputs, output=node, param_attr=attr)
+        if y_shape[0] == 1 and x_shape[-1] != 1:
+            y_squeeze = val_y.layer_name + '_squeeze'
+            node.fluid_code.add_layer(
+                "squeeze",
+                inputs=val_y,
+                output=y_squeeze,
+                param_attr={'axes': [0]})
+            inputs['y'] = y_squeeze
+            node.fluid_code.add_layer(
+                "matmul", inputs=inputs, output=node, param_attr=None)
+        else:
+            node.fluid_code.add_layer(
+                "matmul", inputs=inputs, output=node, param_attr=None)
 
     @print_mapping_info
     def BatchNormalization(self, node):
