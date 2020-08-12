@@ -1339,7 +1339,9 @@ class OpSet9():
             if val_repeats.dtype != 'int32':
                 attr = {"dtype": string("int32")}
                 node.fluid_code.add_layer(
-                    "cast", inputs=repeats, output="{}.tmp".format(repeats),  param_attr=attr)
+                    "cast", inputs=repeats, 
+                    output="{}.tmp".format(repeats),
+                    param_attr=attr)
                 repeats = "{}.tmp".format(repeats)
 
         elif isinstance(repeats, int):
