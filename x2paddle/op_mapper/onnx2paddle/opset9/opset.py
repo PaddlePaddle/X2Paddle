@@ -642,14 +642,15 @@ class OpSet9():
         elif axis == 0 and len(indices_shape) > 1:
             if val_x.out_shapes[0] is not None and isinstance(
                     val_x, ONNXGraphDataNode):
+                indices_cast = indices.layer_name + '_cast'
                 node.fluid_code.add_layer(
                     'cast',
                     inputs=indices,
-                    output=indices,
+                    output=indices_cast,
                     param_attr={'dtype': string('int64')})
                 node.fluid_code.add_layer(
                     'embedding',
-                    inputs=indices,
+                    inputs=indices_cast,
                     output=node,
                     use_fluid=True,
                     param_attr={
@@ -1140,7 +1141,7 @@ class OpSet9():
         x_shape = val_x.out_shapes[0]
         y_shape = val_y.out_shapes[0]
         inputs = {"x": val_x, "y": val_y}
-        if y_shape[0] == 1 and x_shape[-1] != 1:
+        if y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
             y_squeeze = val_y.layer_name + '_squeeze'
             node.fluid_code.add_layer(
                 "squeeze",

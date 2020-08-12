@@ -170,8 +170,8 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     try:
         import onnx
         version = onnx.version.version
-        if version != '1.6.0':
-            print("[ERROR] onnx==1.6.0 is required")
+        if version < '1.6.0':
+            print("[ERROR] onnx>=1.6.0 is required")
             return
     except:
         print("[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
