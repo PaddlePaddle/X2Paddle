@@ -415,7 +415,6 @@ class OpSet9(object):
             'RandomUniformLike',
             inputs=op.input('Input'),
             outputs=op.output('Out'),
-            #shape=op.attr('shape'),
             high=op.attr('max'),
             dtype=self.paddle_onnx_dtype_map[op.attr('dtype')],
             low=op.attr('min'),
