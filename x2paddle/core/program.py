@@ -59,14 +59,14 @@ class PaddleLayer(object):
 
 
 class PaddleGraph(object):
-    def __init__(self, father_layer=None, graph_type="dygraph"):
+    def __init__(self, parent_layer=None, graph_type="dygraph"):
         self.layers = OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
         self.outputs = list()
         self.parameters = dict()
-        self.father_layer = father_layer
+        self.parent_layer = parent_layer
         self.graph_type = graph_type
 
     def set_name(self, name):
@@ -89,9 +89,9 @@ class PaddleGraph(object):
 
     def add_layer(self, kernel, inputs, outputs, **kwargs):
         layer_id = str(len(self.layers))
-        if self.father_layer is not None:
-            layer_id = "{}.{}.{}".format(self.father_layer.id,
-                                         len(self.father_layer.blocks),
+        if self.parent_layer is not None:
+            layer_id = "{}.{}.{}".format(self.parent_layer.id,
+                                         len(self.parent_layer.blocks),
                                          layer_id)
         layer = PaddleLayer(layer_id, kernel, inputs, outputs, **kwargs)
         self.layers[layer_id] = layer
@@ -135,7 +135,7 @@ class PaddleGraph(object):
             self.get_dygraph_outputs()
 
     def get_global_layers(self):
-        # 该全局layers的信息是按住奥拓扑排序组成的
+        # 该全局layers的信息是按照拓扑排序组成的
         def update(layers):
             global_layers = dict()
             for layer_id, layer in layers.items():
@@ -295,8 +295,7 @@ class PaddleGraph(object):
                 continue
             if self.edges_out.get(layer_id, 0) == 0:
                 for output_name in layer.outputs:
-                    if output_name.endswith(
-                            "_assert") or not output_name.startswith("x"):
+                    if not output_name.startswith("x"):
                         continue
                     self.outputs.append(output_name)
         self.outputs = list(set(self.outputs))
@@ -358,7 +357,7 @@ class PaddleGraph(object):
 
         for layer_id, layer in self.layers.items():
             if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                    layer_id, 0) == 0:
+                    layer_id, 0) == 0 and layer.kernel != "prim.assert":
                 continue
             if "dygraph" in layer.kernel:
                 line = "{}".format(

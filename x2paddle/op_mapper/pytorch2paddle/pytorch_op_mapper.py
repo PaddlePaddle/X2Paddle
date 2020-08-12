@@ -34,7 +34,7 @@ class PyTorchOpMapper(OpMapper):
         # 转换
         self.graph, _ = self.traverse(decoder.graph)
 
-    def traverse(self, script_graph, control_node=None, father_layer=None):
+    def traverse(self, script_graph, parent_layer=None):
         # 用于获取graph的输入
         def _update_graph_inputs(inputs, outputs):
             current_node_outputs.extend(outputs)
@@ -43,7 +43,7 @@ class PyTorchOpMapper(OpMapper):
                     graph_inputs.append(name)
 
         # 初始化
-        graph = PaddleGraph(father_layer)
+        graph = PaddleGraph(parent_layer)
         current_node_outputs = []
         graph_inputs = []
         # 转换输入节点
@@ -71,7 +71,7 @@ class PyTorchOpMapper(OpMapper):
         # 转换输出节点
         if hasattr(script_graph, 'returnNode'):
             for i, ivalue in enumerate(script_graph.returnNode().inputs()):
-                if control_node.kind() == "prim::Loop" and i == 0:
+                if parent_layer.kernel == "prim.loop" and i == 0:
                     continue
                 node = ivalue.node()
                 script_unique_id = ivalue.unique()
@@ -79,7 +79,7 @@ class PyTorchOpMapper(OpMapper):
                     graph,
                     node,
                     uid=script_unique_id,
-                    control_node=control_node,
+                    parent_layer=parent_layer,
                     index=i)
                 _update_graph_inputs(inputs, outputs)
         # 设置graph的参数
@@ -129,6 +129,17 @@ class PyTorchOpMapper(OpMapper):
                     value=string(param) if isinstance(param, str) else param)
             node_outputs.append(output_name)
 
+    def _get_inputs_name(self, node):
+        inputs_name = []
+        inputs_node = []
+        for script_input_ivalue in node.inputs():
+            script_input_node = script_input_ivalue.node()
+            script_input_unique_id = script_input_ivalue.unique()
+            input_node_name = self.outputs_info[script_input_unique_id]
+            inputs_node.append(script_input_node)
+            inputs_name.append(input_node_name)
+        return inputs_name, inputs_node
+
     def data(self, graph, node, uid):
         for output_ivalue in node.outputs():
             script_unique_id = output_ivalue.unique()
@@ -145,17 +156,14 @@ class PyTorchOpMapper(OpMapper):
             value=output_name)
         return [], [output_name]
 
-    def equal(self, graph, node, uid=None, control_node=None, index=None):
-        if control_node is not None and index is not None:
-            kind = control_node.kind()
+    def equal(self, graph, node, uid=None, parent_layer=None, index=None):
+        if parent_layer is not None and index is not None:
             # block的输出
             input_node_name = self.outputs_info[uid]
             control_output_id = index
-            if kind == "prim::Loop":
+            if parent_layer.kernel == "prim.loop":
                 control_output_id = index - 1
-            output_ivalue = list(control_node.outputs())[
-                control_output_id].unique()
-            output_node_name = self.outputs_info[output_ivalue]
+            output_node_name = parent_layer.outputs[control_output_id]
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},

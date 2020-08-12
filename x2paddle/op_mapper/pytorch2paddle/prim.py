@@ -19,13 +19,12 @@ from x2paddle.core.util import *
 def prim_Constant(mapper, graph, node):
     """ 构造constant的PaddleLayer，该节点实现常量赋值。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %2 : int = prim::Constant[value=-1]()
         参数含义:
         %2 (常量类型由赋值类型定义，该示例中为int型): 常量赋值结果输出。
     """
     output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
     output = list(node.outputs())[0]
     value = output.toIValue()
     mapper.attrs[output_name] = value
@@ -33,20 +32,19 @@ def prim_Constant(mapper, graph, node):
         value = string(value)
     graph.add_layer(
         "prim.constant", inputs={}, outputs=[output_name], value=value)
-    return [], node_outputs
+    return [], [output_name]
 
 
 def prim_GetAttr(mapper, graph, node):
     """ 获取attribute信息。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %27 : Tensor? = prim::GetAttr[name="bias"](%7)
         参数含义:
         %7 (Tensor): 输入Tensor。
         %27 (Tensor): 输入Tensor。
     """
     output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
     field_name_list = [node.s('name')]
     while True:
         input_node = list(node.inputs())[0].node()
@@ -63,13 +61,13 @@ def prim_GetAttr(mapper, graph, node):
                 param = param.detach().numpy()
             mapper.pytorch_params[output_name] = param
             part_script = param
-    return [], node_outputs
+    return [], [output_name]
 
 
 def prim_ListConstruct(mapper, graph, node):
     """ 构造list的PaddleLayer。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %86 : int[] = prim::ListConstruct(%84, %85)
         参数含义:
         %84 (int/其他): list第一个元素信息。
@@ -77,42 +75,48 @@ def prim_ListConstruct(mapper, graph, node):
         %86 (list): list节点输出。
     """
     output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
-    inputs = {}
-    for i, input_ivalue in enumerate(node.inputs()):
-        input_node = input_ivalue.node()
-        script_input_unique_id = input_ivalue.unique()
-        input_node_name = mapper.outputs_info[script_input_unique_id]
-        inputs['input{}'.format(i)] = input_node_name
-    graph.add_layer("prim.list", inputs=inputs, outputs=[output_name])
-    return list(inputs.values()), node_outputs
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 处理每个输入
+    for i, input_name in enumerate(inputs_name):
+        layer_inputs["input{}".format(i)] = input_name
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    current_outputs = layer_outputs
+
+    graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
 
 
 def prim_RaiseException(mapper, graph, node):
     """ 构造抛出异常的PaddleLayer。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         = prim::RaiseException(%76)
         参数含义:
         %76 (str): 异常信息。
     """
     output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
-    input_node = list(node.inputs())[0].node()
-    script_input_unique_id = list(node.inputs())[0].unique()
-    input_node_name = mapper.outputs_info[script_input_unique_id]
-    mapper._check_input(graph, input_node, input_node_name, node_outputs)
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 处理输入0，即%76
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    current_outputs = layer_outputs
+
     graph.add_layer(
-        "prim.exception",
-        inputs={'input': input_node_name},
-        outputs=[output_name])
-    return [input_node_name], node_outputs
+        "prim.exception", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
 
 
 def prim_Loop(mapper, graph, node):
     """ 构造loop循环的PaddleLayer。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %x : Tensor = prim::Loop(%4, %3, %x.3)
         block0(%i : int, %x.12 : Tensor):
           %72 : int[] = prim::Constant[value=[6, 6]]()
@@ -125,11 +129,10 @@ def prim_Loop(mapper, graph, node):
        %x.3 (Tensor): 循环中修改的Tensor。
        %x (Tensor): loop循环的输出，与%x.5对应。
     """
-    output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
+    node_outputs = mapper._get_outputs_name(node)
     loop_inputs = {}
     block = list(node.blocks())[0]
-    loop_outputs = [output_name]
+    loop_outputs = node_outputs
     for i, block_input_ivalue in enumerate(block.inputs()):
         block_input_node_name = 'x' + str(mapper.output_index)
         unique_id = block_input_ivalue.unique()
@@ -161,7 +164,7 @@ def prim_Loop(mapper, graph, node):
 
     graph.add_layer("prim.loop", inputs=loop_inputs, outputs=loop_outputs)
     current_layer = list(graph.layers.values())[-1]
-    block_graph, graph_inputs = mapper.traverse(block, node, current_layer)
+    block_graph, graph_inputs = mapper.traverse(block, current_layer)
     for i, input_name in enumerate(graph_inputs):
         if input_name == loop_outputs[1]:
             continue
@@ -173,7 +176,7 @@ def prim_Loop(mapper, graph, node):
 def prim_If(mapper, graph, node):
     """ 构造if控制流的PaddleLayer。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %input.5 : Tensor = prim::If(%107)
           block0():
             %109 : Tensor = aten::t(%102)
@@ -196,14 +199,14 @@ def prim_If(mapper, graph, node):
     graph.add_layer("prim.if", {'input': input_node_name}, [output_name])
     current_layer = list(graph.layers.values())[-1]
     block0 = list(node.blocks())[0]
-    block0_graph, graph_inputs0 = mapper.traverse(block0, node, current_layer)
+    block0_graph, graph_inputs0 = mapper.traverse(block0, current_layer)
     len0 = 0
     for i, input_name in enumerate(graph_inputs0):
         current_layer.inputs['input-{}'.format(i)] = input_name
         len0 = i
     current_layer.add_block(block0_graph)
     block1 = list(node.blocks())[1]
-    block1_graph, graph_inputs1 = mapper.traverse(block1, node, current_layer)
+    block1_graph, graph_inputs1 = mapper.traverse(block1, current_layer)
     for i, input_name in enumerate(graph_inputs1):
         current_layer.inputs['input-{}'.format(len0 + 1 + i)] = input_name
     current_layer.add_block(block1_graph)
@@ -213,18 +216,22 @@ def prim_If(mapper, graph, node):
 def prim_min(mapper, graph, node):
     """ 构造min的PaddleLayer。
 
-    PyTorch Script 示例:
+    TorchScript示例:
         %87 : int = prim::min(%86)
         参数含义:
         %86 (list): 输入。
         %87 (int): 输出。
     """
     output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
-    input_node = list(node.inputs())[0].node()
-    script_input_unique_id = list(node.inputs())[0].unique()
-    input_node_name = mapper.outputs_info[script_input_unique_id]
-    mapper._check_input(graph, input_node, input_node_name, node_outputs)
-    graph.add_layer(
-        "prim.min", inputs={'input': input_node_name}, outputs=[output_name])
-    return [input_node_name], node_outputs
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 处理输入0，即%86
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    current_outputs = layer_outputs
+
+    graph.add_layer("prim.min", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
