@@ -865,7 +865,7 @@ class OpSet9():
                         param_attr={'dtype': string('int32')})
                     attr['starts'] = starts_cast
                 if ends.dtype != 'int32':
-                    ends_cast = ens.layer_name + '_cast'
+                    ends_cast = ends.layer_name + '_cast'
                     node.fluid_code.add_layer(
                         'cast',
                         inputs=ends,
