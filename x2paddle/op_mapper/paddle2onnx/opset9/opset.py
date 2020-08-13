@@ -462,7 +462,7 @@ class OpSet9(object):
         ends = op.attr('ends')
         node = helper.make_node(
             "Slice",
-            inputs=[op.input('Input')[0], starts_name, ends_name, axes_name],
+            inputs=[op.input('Input')[0]],
             outputs=op.output('Out'),
             axes=axes,
             starts=starts,
