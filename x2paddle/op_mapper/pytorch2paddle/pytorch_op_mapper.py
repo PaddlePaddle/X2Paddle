@@ -32,7 +32,27 @@ class PyTorchOpMapper(OpMapper):
         self.output_index = 0
         self.dygraph_name_id = {}  # 动态图__init__输出名字中的id，key为kernel类型，value为id
         # 转换
+        self.check_op(decoder.graph)
         self.graph, _ = self.traverse(decoder.graph)
+
+    def check_op(self, script_graph):
+        def _update_op_list(graph):
+            for node in graph.nodes():
+                op_list.append(node.kind())
+                for block in node.blocks():
+                    _update_op_list(block)
+
+        op_list = list()
+        _update_op_list(script_graph)
+        op_list = list(set(op_list))
+        unsupported_op_list = []
+        for op in op_list:
+            func_name = op.replace('::', '_')
+            if not (hasattr(prim, func_name) or hasattr(aten, func_name)):
+                unsupported_op_list.append(op)
+        if len(unsupported_op_list) > 0:
+            raise Exception("The kind {} in model is not supported yet.".format(
+                unsupported_op_list))
 
     def traverse(self, script_graph, parent_layer=None):
         # 用于获取graph的输入
@@ -65,9 +85,7 @@ class PyTorchOpMapper(OpMapper):
                 func = getattr(aten, func_name)
                 inputs, outputs = func(self, graph, node)
                 _update_graph_inputs(inputs, outputs)
-            else:
-                raise Exception("The kind {} in model is not supported yet.".
-                                format(node.kind()))
+
         # 转换输出节点
         if hasattr(script_graph, 'returnNode'):
             for i, ivalue in enumerate(script_graph.returnNode().inputs()):
@@ -97,9 +115,9 @@ class PyTorchOpMapper(OpMapper):
             self.outputs_info[script_unique_id] = output_name
             self.output_index += 1
             outputs_name.append(output_name)
-        # if节点没有输出的情况
+        # if或loop节点没有输出的情况
         if len(list(node.outputs())) == 0:
-            output_name = 'x' + str(self.output_index)
+            output_name = '_x' + str(self.output_index)
             self.output_index += 1
             outputs_name.append(output_name)
         return outputs_name
@@ -122,11 +140,19 @@ class PyTorchOpMapper(OpMapper):
                     outputs=[output_name],
                     value="params[{}]".format(string(output_name)))
             else:
-                graph.add_layer(
-                    "prim.constant",
-                    inputs={},
-                    outputs=[output_name],
-                    value=string(param) if isinstance(param, str) else param)
+                if isinstance(param, dict) and "Tensor" in param:
+                    graph.add_layer(
+                        "prim.constant",
+                        inputs={},
+                        outputs=[output_name],
+                        value=param["Tensor"])
+                else:
+                    graph.add_layer(
+                        "prim.constant",
+                        inputs={},
+                        outputs=[output_name],
+                        value=string(param)
+                        if isinstance(param, str) else param)
             node_outputs.append(output_name)
 
     def _get_inputs_name(self, node):
@@ -135,9 +161,9 @@ class PyTorchOpMapper(OpMapper):
         for script_input_ivalue in node.inputs():
             script_input_node = script_input_ivalue.node()
             script_input_unique_id = script_input_ivalue.unique()
-            input_node_name = self.outputs_info[script_input_unique_id]
+            input_name = self.outputs_info[script_input_unique_id]
             inputs_node.append(script_input_node)
-            inputs_name.append(input_node_name)
+            inputs_name.append(input_name)
         return inputs_name, inputs_node
 
     def data(self, graph, node, uid):

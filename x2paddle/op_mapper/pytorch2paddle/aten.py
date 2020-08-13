@@ -30,16 +30,19 @@ def aten_adaptive_avg_pool2d(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%x.3
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
     # 处理输入1，即%_output_size.1
     if inputs_name[1] in mapper.attrs:
         layer_attrs["pool_size"] = mapper.attrs[inputs_name[1]]
     else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs)
         layer_attrs["pool_size"] = inputs_name[1]
         current_inputs.append(inputs_name[1])
     layer_attrs["pool_type"] = string("avg")
@@ -70,29 +73,34 @@ def aten_addmm(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%150
     mapper._check_input(
-        graph, inputs_node[0], inputs_name[0], layer_outputs, add_dim=True)
+        graph, inputs_node[0], inputs_name[0], current_outputs, add_dim=True)
     layer_inputs["input"] = inputs_name[0]
     # 处理输入1，即%input.3
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["x"] = inputs_name[1]
     # 处理输入2，即%156
-    mapper._check_input(graph, inputs_node[2], inputs_name[2], layer_outputs)
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs)
     layer_inputs["y"] = inputs_name[2]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
     # 处理输入3，即%152
     if inputs_name[3] in mapper.attrs:
         layer_attrs["beta"] = mapper.attrs[inputs_name[3]]
     else:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs)
         layer_attrs["beta"] = inputs_name[3]
         current_inputs.append(inputs_name[3])
     # 处理输入4，即%151
     if inputs_name[4] in mapper.attrs:
         layer_attrs["alpha"] = mapper.attrs[inputs_name[4]]
     else:
+        mapper._check_input(graph, inputs_node[4], inputs_name[4],
+                            current_outputs)
         layer_attrs["alpha"] = inputs_name[4]
         current_inputs.append(inputs_name[4])
 
@@ -104,11 +112,41 @@ def aten_addmm(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-def aten_add_(mapper, graph, node):
-    """ 构造add的PaddleLayer，该节点实现out = x + alpha * y。
+def aten_add(mapper, graph, node):
+    """ 构造数值相加的PaddleLayer，该节点实现out = x + y。
 
     TorchScript示例:
-        %output.5 : Tensor = aten::add_(%output.2, %150, %151)
+        %296 : int = aten::add(%i.12, %288)
+        参数含义:
+        %296 (-): 相加结果。
+        %i.12 (-): 输入数值 x。
+        %288 (-): 输入数值 y。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%i.12
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%288
+    mapper._check_input(
+        graph, inputs_node[1], inputs_name[1], current_outputs, add_dim=True)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.add", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_add_(mapper, graph, node):
+    """ 构造数值相加的PaddleLayer，该节点实现out = x + alpha * y。
+
+    TorchScript示例:
+        %137 : Tensor = aten::add(%136, %130, %130)
         参数含义:
         %output.5 (Tensor): add结果Tensor。
         %output.2 (Tensor): 输入Tensor x。
@@ -120,25 +158,28 @@ def aten_add_(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%output.2
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
     # 处理输入1，即%150
     mapper._check_input(
-        graph, inputs_node[1], inputs_name[1], layer_outputs, add_dim=True)
+        graph, inputs_node[1], inputs_name[1], current_outputs, add_dim=True)
     layer_inputs["y"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
     # 处理输入2，即%151
     if inputs_name[2] in mapper.attrs:
         layer_attrs["alpha"] = mapper.attrs[inputs_name[2]]
     else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs)
         layer_attrs["alpha"] = inputs_name[2]
         current_inputs.append(inputs_name[2])
 
     graph.add_layer(
-        "prim.add", inputs=layer_inputs, outputs=layer_outputs, **layer_attrs)
+        "prim.add_", inputs=layer_inputs, outputs=layer_outputs, **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -156,17 +197,84 @@ def aten_append(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即_output_size.1
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["list"] = inputs_name[0]
     # 处理输入1，即v.1
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["element"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.append", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_batch_norm(mapper, graph, node):
+    """ 构造BatchNorm的PaddleLayer。
+
+    TorchScript示例:
+        %input.81 : Tensor = aten::batch_norm(%input.80, %778, %779, %776, %777, %780,
+                                              %exponential_average_factor.23, %766, %781)
+        参数含义:
+        %input.81 (Tensor): 输出，批处理后的结果。
+        %input.80 (Tensor): 需要进行批处理的特征层。
+        %778 (Tensor): weights。
+        %779 (Tensor): bias。
+        %776 (Tensor): 全局均值。
+        %777 (Tensor): 全局方差。
+        %780 (bool): 是否训练。
+        %exponential_average_factor.23 (float): 用于计算均值和方差的比例。
+        %766 (float): 为了数值稳定加在分母上的值。
+        %781 (bool): 是否启用cudnn。
+    """
+    if "batchnorm" in mapper.dygraph_name_id:
+        mapper.dygraph_name_id["batchnorm"] += 1
+    else:
+        mapper.dygraph_name_id["batchnorm"] = 0
+    batchnorm_name = "batchnorm" + str(mapper.dygraph_name_id["batchnorm"])
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [batchnorm_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    layer_attrs["is_test"] = True
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.80
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%778
+    weights = mapper.pytorch_params[inputs_name[1]]
+    mapper.paddle_params[batchnorm_name + ".weight"] = weights
+    layer_attrs['num_channels'] = weights.shape[0]
+    # 处理输入2，即%779
+    if inputs_name[2] in mapper.pytorch_params:
+        bias = mapper.pytorch_params[inputs_name[2]]
+        if bias is not None:
+            mapper.paddle_params[batchnorm_name + ".bias"] = bias
+    else:
+        mapper.paddle_params[batchnorm_name + ".bias"] = False
+    # 处理输入3，即%776
+    mean = mapper.pytorch_params[inputs_name[3]]
+    mapper.paddle_params[batchnorm_name + "._mean"] = mean
+    # 处理输入4，即%777
+    var = mapper.pytorch_params[inputs_name[4]]
+    mapper.paddle_params[batchnorm_name + "._variance"] = var
+    # 处理输入6，即%exponential_average_factor.23
+    layer_attrs["momentum"] = mapper.attrs[inputs_name[6]]
+    # 处理输入7，即%766
+    layer_attrs["epsilon"] = mapper.attrs[inputs_name[7]]
+
+    graph.add_layer(
+        "fluid.dygraph.BatchNorm",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -195,12 +303,13 @@ def aten_conv2d(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%input.8
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs[1:]
     # 处理输入1，即%25
     weights = mapper.pytorch_params[inputs_name[1]]
     mapper.paddle_params[conv2d_name + ".weight"] = weights
@@ -209,9 +318,12 @@ def aten_conv2d(mapper, graph, node):
     # 处理输入2，即%27
     if inputs_name[2] in mapper.pytorch_params:
         bias = mapper.pytorch_params[inputs_name[2]]
-        mapper.paddle_params[conv2d_name + ".bias"] = bias
+        if bias is not None:
+            mapper.paddle_params[conv2d_name + ".bias"] = bias
+        else:
+            layer_attrs["bias_attr"] = False
     else:
-        mapper.paddle_params[conv2d_name + ".bias"] = False
+        layer_attrs["bias_attr"] = False
     # 处理输入3，即%28
     layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
     # 处理输入4，即%29
@@ -244,12 +356,13 @@ def aten_dim(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%input.8
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
     graph.add_layer(
@@ -276,12 +389,13 @@ def aten_dropout(mapper, graph, node):
     layer_outputs = [dropout_name, output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%119
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入、输出的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs[1:]
 
     graph.add_layer(
         "fluid.dygraph.Dropout",
@@ -305,15 +419,16 @@ def aten_eq(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%124
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
-    layer_inputs["eq0"] = inputs_name[0]
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
     # 处理输入1，即%123
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
-    layer_inputs["eq1"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.eq", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -336,6 +451,8 @@ def aten_flatten(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入1，即%4
     graph.add_layer(
         "prim.assert",
@@ -353,11 +470,10 @@ def aten_flatten(mapper, graph, node):
         key=mapper.attrs[inputs_name[2]],
         value=-1)
     # 处理输入0，即%x
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "fluid.layers.flatten",
@@ -381,17 +497,65 @@ def aten___getitem__(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%72
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["list"] = inputs_name[0]
     # 处理输入1，即%88
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["index"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.getitem", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_hardtanh_(mapper, graph, node):
+    """ 构造hardtanh激活的PaddleLayer。
+
+    TorchScript示例:
+        %result.9 : Tensor = aten::hardtanh_(%input.20, %67, %66)
+        参数含义:
+        %result.9 (Tensor): 输出，hardtanh激活后的Tensor。
+        %input.20 (Tensor): 需要hardtanh激活的Tensor。
+        %67 (float): hardtanh激活的最小阈值。
+        %66 (float): hardtanh激活的最大阈值。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入1，即%67
+    graph.add_layer(
+        "prim.assert",
+        inputs={},
+        outputs=[inputs_name[1]],
+        type='eq',
+        key=mapper.attrs[inputs_name[1]],
+        value=0.0)
+    # 处理输入2，即%66
+    graph.add_layer(
+        "prim.assert",
+        inputs={},
+        outputs=[inputs_name[2]],
+        type='eq',
+        key=mapper.attrs[inputs_name[2]],
+        value=6.0)
+    # 处理输入0，即%input.20
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        'fluid.layers.relu6',
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        threshold=6.0)
     return current_inputs, current_outputs
 
 
@@ -409,15 +573,16 @@ def aten_le(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%78
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input0"] = inputs_name[0]
     # 处理输入1，即%79
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["input1"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.le", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -436,12 +601,13 @@ def aten_len(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%72
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.len", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -471,12 +637,13 @@ def aten_max_pool2d(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%result.11
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs[1:]
     # 处理输入1，即%20
     layer_attrs["pool_size"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%23
@@ -517,18 +684,103 @@ def aten_matmul(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%101
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
     # 处理输入1，即%102
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], layer_outputs)
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["y"] = inputs_name[1]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "fluid.layers.matmul", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_mul(mapper, graph, node):
+    """ 构造数值相乘的PaddleLayer。
+
+    TorchScript示例:
+        %size_prods.39 : int = aten::mul(%size_prods.38, %114)
+        参数含义:
+        %size_prods.39 (Tensor): 输出，相乘后的结果。
+        %size_prods.38 (-): 数值1。
+        %114 (-): 数值2。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%size_prods.38
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%114
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    current_outputs = layer_outputs
+
+    graph.add_layer("prim.mul", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_ne(mapper, graph, node):
+    """ 构造判断数值是否不相等的PaddleLayer。
+
+    TorchScript示例:
+        %134 : bool = aten::ne(%133, %132)
+        参数含义:
+        %134 (bool): 对比后结果。
+        %133 (-): 需对比的输入1。
+        %132 (-): 需对比的输入2。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%124
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%123
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.ne", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_neg(mapper, graph, node):
+    """ 构造对数值取负的PaddleLayer。
+
+    TorchScript示例:
+        %909 : int = aten::neg(%908)
+        参数含义:
+        %909 (int): 取负后结果。
+        %908 (int): 需取负的输入。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%124
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.neg", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -547,12 +799,13 @@ def aten_relu_(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%result.5
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "fluid.layers.relu", inputs=layer_inputs, outputs=layer_outputs)
@@ -574,18 +827,50 @@ def aten_relu6(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%result.5
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
     # 获取当前节点输入、输出的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "fluid.layers.relu6",
         inputs=layer_inputs,
         outputs=layer_outputs,
         threshold=6.0)
+    return current_inputs, current_outputs
+
+
+def aten_reshape(mapper, graph, node):
+    """ 构造调整大小的PaddleLayer。
+
+    TorchScript示例:
+        %x.6 : Tensor = aten::reshape(%4700, %4703)
+        参数含义:
+        %x.6 (Tensor): 输出，reshape后的Tensor。
+        %4700 (Tensor): 需要reshape的Tensor。
+        %4703 (list): 形状大小组成的list。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%4700
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%4703
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["shape"] = inputs_name[1]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "fluid.layers.reshape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -602,12 +887,13 @@ def aten_size(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%x.12
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -628,35 +914,55 @@ def aten_slice(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%73
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
-    current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
     # 处理输入1，即%82
-    if inputs_name[1] in mapper.attrs:
-        layer_attrs["start"] = mapper.attrs[inputs_name[1]]
-    else:
-        layer_attrs["start"] = inputs_name[1]
-        current_inputs.append(inputs_name[1])
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["start"] = inputs_name[1]
     # 处理输入2，即%75
-    if inputs_name[2] in mapper.attrs:
-        layer_attrs["end"] = mapper.attrs[inputs_name[2]]
-    else:
-        layer_attrs["end"] = inputs_name[2]
-        current_inputs.append(inputs_name[2])
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs)
+    layer_inputs["end"] = inputs_name[2]
     # 处理输入3，即%77
-    if inputs_name[3] in mapper.attrs:
-        layer_attrs["step"] = mapper.attrs[inputs_name[3]]
-    else:
-        layer_attrs["step"] = inputs_name[3]
-        current_inputs.append(inputs_name[3])
+    mapper._check_input(graph, inputs_node[3], inputs_name[3], current_outputs)
+    layer_inputs["step"] = inputs_name[3]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
 
-    graph.add_layer(
-        "prim.slice", inputs=layer_inputs, outputs=layer_outputs, **layer_attrs)
+    graph.add_layer("prim.slice", inputs=layer_inputs, outputs=current_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_sub(mapper, graph, node):
+    """ 构造数值相减的PaddleLayer。
+
+    TorchScript示例:
+        %840 : int = aten::sub(%839, %836)
+        参数含义:
+        %840 (-): 相减结果。
+        %839 (-): 输入数值 x。
+        %836 (-): 输入数值 y。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%839
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%836
+    mapper._check_input(
+        graph, inputs_node[1], inputs_name[1], current_outputs, add_dim=True)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.sub", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -664,7 +970,7 @@ def aten_t(mapper, graph, node):
     """ 构造矩阵转置的PaddleLayer。
 
     TorchScript示例:
-        %109 : Tensor = aten::t(%102)
+        %840 : int = aten::sub(%839, %836)
         参数含义:
         %109 (Tensor): 输出，转置后的矩阵。
         %102 (Tensor): 需要转置的Tensor。
@@ -673,12 +979,13 @@ def aten_t(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%x.12
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "fluid.layers.transpose",

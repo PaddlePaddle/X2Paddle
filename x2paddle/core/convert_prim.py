@@ -73,7 +73,7 @@ def convert_prim(layer, indent=1, init_func=[], forward_func=[]):
     elif layer.kernel == "prim.min":
         line = "{} = min({})".format(layer.outputs[0],
                                      list(layer.inputs.values())[0])
-    elif layer.kernel == "prim.add":
+    elif layer.kernel == "prim.add_":
         line = "{} = {} + {} * {}".format(layer.outputs[0],
                                           list(layer.inputs.values())[0],
                                           layer.attrs["alpha"],
@@ -124,11 +124,33 @@ def convert_prim(layer, indent=1, init_func=[], forward_func=[]):
         if list(layer.inputs.values())[1] is None:
             item1 = str(layer.attrs[list(layer.inputs.keys())[1]])
         line = "{} = {} < {}".format(layer.outputs[0], item0, item1)
+    elif layer.kernel == "prim.ne":
+        item0 = list(layer.inputs.values())[0]
+        item1 = list(layer.inputs.values())[1]
+        line = "{} = {} < {}".format(layer.outputs[0], item0, item1)
     elif layer.kernel == "prim.slice":
-        attrs_str = ""
-        for k, v in layer.attrs.items():
-            attrs_str += "{}:".format(v)
-        attrs_str = attrs_str[:-1]
+        inputs_str = ""
+        for v in list(layer.inputs.values())[1:]:
+            inputs_str += "{}:".format(v)
+        inputs_str = inputs_str[:-1]
         line = "{} = {}[{}]".format(layer.outputs[0],
-                                    list(layer.inputs.values())[0], attrs_str)
+                                    list(layer.inputs.values())[0], inputs_str)
+    elif layer.kernel == "prim.add":
+        line = "{} = {} + {}".format(layer.outputs[0],
+                                     list(layer.inputs.values())[0],
+                                     list(layer.inputs.values())[1])
+    elif layer.kernel == "prim.sub":
+        line = "{} = {} - {}".format(layer.outputs[0],
+                                     list(layer.inputs.values())[0],
+                                     list(layer.inputs.values())[1])
+    elif layer.kernel == "prim.mul":
+        line = "{} = {} * {}".format(layer.outputs[0],
+                                     list(layer.inputs.values())[0],
+                                     list(layer.inputs.values())[1])
+    elif layer.kernel == "prim.neg":
+        line = "{} = -{}".format(layer.outputs[0],
+                                 list(layer.inputs.values())[0])
+    else:
+        print(layer.kernel)
+        line = ""
     forward_func.extend(gen_codes([line], indent=indent))

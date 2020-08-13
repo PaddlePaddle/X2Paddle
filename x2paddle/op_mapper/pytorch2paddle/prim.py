@@ -53,14 +53,18 @@ def prim_GetAttr(mapper, graph, node):
             node = input_node
         except Exception:
             break
-    part_script = mapper.script
-    for field_name in field_name_list:
-        if hasattr(part_script, field_name):
-            param = getattr(part_script, field_name)
-            if isinstance(param, torch.Tensor):
-                param = param.detach().numpy()
-            mapper.pytorch_params[output_name] = param
-            part_script = param
+    if ".".join(field_name_list) in mapper.pytorch_params:
+        mapper.pytorch_params[output_name] = mapper.pytorch_params[".".join(
+            field_name_list)]
+    else:
+        part_script = mapper.script
+        for field_name in field_name_list:
+            if hasattr(part_script, field_name):
+                param = getattr(part_script, field_name)
+                if isinstance(param, torch.Tensor):
+                    param = param.detach().numpy()
+                mapper.pytorch_params[output_name] = param
+                part_script = param
     return [], [output_name]
 
 
@@ -78,12 +82,13 @@ def prim_ListConstruct(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理每个输入
     for i, input_name in enumerate(inputs_name):
         layer_inputs["input{}".format(i)] = input_name
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -101,12 +106,13 @@ def prim_RaiseException(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%76
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer(
         "prim.exception", inputs=layer_inputs, outputs=layer_outputs)
@@ -134,7 +140,10 @@ def prim_Loop(mapper, graph, node):
     block = list(node.blocks())[0]
     loop_outputs = node_outputs
     for i, block_input_ivalue in enumerate(block.inputs()):
-        block_input_node_name = 'x' + str(mapper.output_index)
+        if i == 0:
+            block_input_node_name = '_x' + str(mapper.output_index)
+        else:
+            block_input_node_name = 'x' + str(mapper.output_index)
         unique_id = block_input_ivalue.unique()
         if unique_id not in mapper.outputs_info:
             mapper.outputs_info[unique_id] = block_input_node_name
@@ -226,12 +235,65 @@ def prim_min(mapper, graph, node):
     layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
     # 处理输入0，即%86
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], layer_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
+    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_outputs = layer_outputs
 
     graph.add_layer("prim.min", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def prim_SetAttr(mapper, graph, node):
+    """ 设置attribute信息。
+
+    TorchScript示例:
+        = prim::SetAttr[name="num_batches_tracked"](%260, %277)
+        参数含义:
+        %260 (-): 属性名前缀。
+        %277 (-): 需要设置的值。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    field_name_list = []
+    tmp_node = node
+    while True:
+        input_node = list(tmp_node.inputs())[0].node()
+        try:
+            field_name_list.insert(0, input_node.s('name'))
+            tmp_node = input_node
+        except Exception:
+            break
+    field_name_list.append(node.s('name'))
+
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    param = {"Tensor": inputs_name[1]}
+    mapper.pytorch_params[".".join(field_name_list)] = param
+    return [], [output_name]
+
+
+def prim_shape(mapper, graph, node):
+    """ 构造获取shape的PaddleLayer。
+
+    TorchScript示例:
+        %4701 : int[] = prim::shape(%result.1)
+        参数含义:
+        %4701 (list): 输出，shape信息。
+        %result.1 (Tensor): 需要获取shape的值。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.8
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs

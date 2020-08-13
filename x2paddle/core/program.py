@@ -297,6 +297,7 @@ class PaddleGraph(object):
                 for output_name in layer.outputs:
                     if not output_name.startswith("x"):
                         continue
+                    print(layer.kernel)
                     self.outputs.append(output_name)
         self.outputs = list(set(self.outputs))
 
