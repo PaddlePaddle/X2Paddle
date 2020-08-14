@@ -196,7 +196,7 @@ class OpSet11(OpSet10):
         if align_corners:
             coordinate_transformation_mode = 'align_corners'
         else:
-            coordinate_transformation_mode = 'asymmetric'
+            coordinate_transformation_mode = 'half_pixel'
         roi_name = self.get_name(op.type, 'roi')
         roi_node = self.make_constant_node(roi_name, onnx_pb.TensorProto.FLOAT,
                                            [1, 1, 1, 1, 1, 1, 1, 1])
