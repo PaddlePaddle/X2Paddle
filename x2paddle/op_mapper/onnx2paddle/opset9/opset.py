@@ -411,6 +411,7 @@ class OpSet9():
         output_shape = node.out_shapes[0]
         assume_pad2d = False
         attr = {}
+        paddings = []
         if len(pads) == 4:
             assume_pad2d |= mode != 'constant'
             if data_shape:
