@@ -74,9 +74,9 @@ def prim_ListConstruct(mapper, graph, node):
     TorchScript示例:
         %86 : int[] = prim::ListConstruct(%84, %85)
         参数含义:
+        %86 (list): list节点输出。
         %84 (int/其他): list第一个元素信息。
         %85 (int/其他): list第二个元素信息。
-        %86 (list): list节点输出。
     """
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
@@ -247,6 +247,32 @@ def prim_min(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def prim_requires_grad(mapper, graph, node):
+    """ 构造是否计算梯度的PaddleLayer。
+
+    TorchScript示例:
+        %356 : bool = prim::requires_grad(%tensor.31)
+        参数含义:
+        %356 (bool): 输出，当前Tensor是否计算梯度。
+        %tensor.31 (Tensor): 输入的Tensor。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%86
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.requires_grad", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
 def prim_SetAttr(mapper, graph, node):
     """ 设置attribute信息。
 
@@ -297,3 +323,70 @@ def prim_shape(mapper, graph, node):
 
     graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
+
+
+def prim_TupleConstruct(mapper, graph, node):
+    """ 构造tuple的PaddleLayer。
+
+    TorchScript示例:
+        %4492 : (Tensor, Tensor?) = prim::TupleConstruct(%x.46, %aux)
+        参数含义:
+        %4492 (tuple): 输出，tuple。
+        %x.46 (Tensor/其他): tuple第一个元素信息。
+        %aux (Tensor/其他): tuple第二个元素信息。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理每个输入
+    for i, input_name in enumerate(inputs_name):
+        layer_inputs["input{}".format(i)] = input_name
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.tuple", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def prim_TupleUnpack(mapper, graph, node):
+    """ 构造获取tuple元素的PaddleLayer。
+
+    TorchScript示例:
+        %x.223 : Tensor, %aux.3 : Tensor? = prim::TupleUnpack(%4492)
+        参数含义:
+        %x.223 (Tensor/其他): 输出，tuple第一个元素信息。
+        %aux.3 (Tensor/其他): 输出，tuple第二个元素信息。
+        %4492 (tuple): 需要获取元素的tuple。
+    """
+    outputs_name = mapper._get_outputs_name(node)
+    layer_outputs = outputs_name
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = outputs_name
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def prim_Uninitialized(mapper, graph, node):
+    """ 构造表示编译器永远不会使用的值的PaddleLayer，该节点转换为None。
+
+    TorchScript示例:
+        %345 : bool = prim::Uninitialized()
+        参数含义:
+        %345 (bool): 输出，为赋值的bool。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    output = list(node.outputs())[0]
+    mapper.attrs[output_name] = None
+    graph.add_layer(
+        "prim.constant", inputs={}, outputs=[output_name], value=None)
+    return [], [output_name]

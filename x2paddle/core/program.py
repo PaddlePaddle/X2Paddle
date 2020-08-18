@@ -297,7 +297,6 @@ class PaddleGraph(object):
                 for output_name in layer.outputs:
                     if not output_name.startswith("x"):
                         continue
-                    print(layer.kernel)
                     self.outputs.append(output_name)
         self.outputs = list(set(self.outputs))
 
@@ -396,12 +395,19 @@ class PaddleGraph(object):
                     line += ")"
                 self.forward_func.extend(gen_codes([line], indent=indent))
             elif "prim" in layer.kernel:
-                from .convert_prim import convert_prim
-                convert_prim(
-                    layer,
-                    indent=indent,
-                    init_func=self.init_func,
-                    forward_func=self.forward_func)
+                func_name = layer.kernel.replace(".", "_")
+                from . import convert_prim
+                if hasattr(convert_prim, func_name):
+                    func = getattr(convert_prim, func_name)
+                    func(
+                        layer,
+                        indent=indent,
+                        init_func=self.init_func,
+                        forward_func=self.forward_func)
+                else:
+                    raise Exception(
+                        "The kind {} in paddle model is not supported yet.".
+                        format(layer.kernel))
             else:
                 if len(layer.outputs) == 1:
                     line = layer.outputs[0]

@@ -56,11 +56,19 @@ class PyTorchOpMapper(OpMapper):
 
     def traverse(self, script_graph, parent_layer=None):
         # 用于获取graph的输入
-        def _update_graph_inputs(inputs, outputs):
-            current_node_outputs.extend(outputs)
+        def _update_graph_inputs(kind, inputs, outputs):
+            # extend只能放更新graph_inputs之前的情况：
+            # 1. loop的输出i也是输入；i是输入的原因是：子图中为父图得到的。
+            # 2. 在_check_input中需要使用to_variable。
+            # extend只能放更新graph_inputs之后的情况：
+            # 使用了append。
+            if kind != "aten::append":
+                current_node_outputs.extend(outputs)
             for name in inputs:
                 if name not in current_node_outputs:
                     graph_inputs.append(name)
+            if kind == "aten::append":
+                current_node_outputs.extend(outputs)
 
         # 初始化
         graph = PaddleGraph(parent_layer)
@@ -80,11 +88,11 @@ class PyTorchOpMapper(OpMapper):
             if hasattr(prim, func_name):
                 func = getattr(prim, func_name)
                 inputs, outputs = func(self, graph, node)
-                _update_graph_inputs(inputs, outputs)
+                _update_graph_inputs(kind, inputs, outputs)
             elif hasattr(aten, func_name):
                 func = getattr(aten, func_name)
                 inputs, outputs = func(self, graph, node)
-                _update_graph_inputs(inputs, outputs)
+                _update_graph_inputs(kind, inputs, outputs)
 
         # 转换输出节点
         if hasattr(script_graph, 'returnNode'):
@@ -99,7 +107,7 @@ class PyTorchOpMapper(OpMapper):
                     uid=script_unique_id,
                     parent_layer=parent_layer,
                     index=i)
-                _update_graph_inputs(inputs, outputs)
+                _update_graph_inputs("equal", inputs, outputs)
         # 设置graph的参数
         if isinstance(script_graph, torch._C.Graph):
             graph.set_parameters(self.paddle_params)
@@ -190,8 +198,10 @@ class PyTorchOpMapper(OpMapper):
             if parent_layer.kernel == "prim.loop":
                 control_output_id = index - 1
             output_node_name = parent_layer.outputs[control_output_id]
+            current_outputs = [output_node_name]
+            self._check_input(graph, node, input_node_name, current_outputs)
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},
                 outputs=[output_node_name])
-            return [input_node_name], [output_node_name]
+            return [input_node_name], current_outputs
