@@ -12,17 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.optimizer.fusion import *
-from x2paddle.optimizer.pass_manager import PassManager
+from enum import Enum
 
 
-class GraphOptimizer(object):
+class Kind(Enum):
+    Program = 1
+    Code = 2
+
+
+class Pass(object):
+    name = "pass"
+
+    def __init__(self, kind):
+        self.kind = kind
+
+    def apply(self, graph):
+        raise NotImplementedError("The apply function must be implemented!")
+
+    @classmethod
+    def get_name(cls):
+        return cls.name
+
+
+class ProgramPass(Pass):
     def __init__(self):
-        self.passes = ["fc_fuse_pass"]
+        super(ProgramPass, self).__init__(Kind.Program)
 
-    def optimize(self, graph):
-        for pass_name in self.passes:
-            pass_ = PassManager.lookup(pass_name)()
-            pass_.apply(graph)
-            print("{} done!".format(pass_name))
-        return graph
+
+class CodePass(Pass):
+    def __init__(self):
+        super(CodePass, self).__init__(Kind.Code)

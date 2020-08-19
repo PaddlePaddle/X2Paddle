@@ -12,17 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.optimizer.fusion import *
-from x2paddle.optimizer.pass_manager import PassManager
-
-
-class GraphOptimizer(object):
-    def __init__(self):
-        self.passes = ["fc_fuse_pass"]
-
-    def optimize(self, graph):
-        for pass_name in self.passes:
-            pass_ = PassManager.lookup(pass_name)()
-            pass_.apply(graph)
-            print("{} done!".format(pass_name))
-        return graph
+from .fc_fuser import FcFuser
+from .fc_fuse_pass import FcFusePass
