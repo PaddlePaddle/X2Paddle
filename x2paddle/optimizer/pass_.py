@@ -14,6 +14,8 @@
 
 
 class Pass(object):
+    name = "pass"
+
     def __init__(self):
         pass
 
