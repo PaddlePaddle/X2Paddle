@@ -357,7 +357,8 @@ class PaddleGraph(object):
 
         for layer_id, layer in self.layers.items():
             if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                    layer_id, 0) == 0 and layer.kernel != "prim.assert":
+                    layer_id, 0) == 0 and layer.kernel != "prim.assert" \
+                    and layer.kernel != "prim.exception":
                 continue
             if "dygraph" in layer.kernel:
                 line = "{}".format(
@@ -396,9 +397,9 @@ class PaddleGraph(object):
                 self.forward_func.extend(gen_codes([line], indent=indent))
             elif "prim" in layer.kernel:
                 func_name = layer.kernel.replace(".", "_")
-                from . import convert_prim
-                if hasattr(convert_prim, func_name):
-                    func = getattr(convert_prim, func_name)
+                from x2paddle.op_mapper.pytorch2paddle import prim2code
+                if hasattr(prim2code, func_name):
+                    func = getattr(prim2code, func_name)
                     func(
                         layer,
                         indent=indent,

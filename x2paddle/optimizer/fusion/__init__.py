@@ -14,3 +14,5 @@
 
 from .fc_fuser import FcFuser
 from .fc_fuse_pass import FcFusePass
+from .constant_fuser import ConstantFuser
+from .constant_fuse_pass import ConstantFusePass

@@ -18,14 +18,18 @@ from x2paddle.core.program import PaddleGraph
 class PatternMatcher(object):
     def __init__(self, pattern):
         self.pattern = pattern
-        self.subgraphs = list()
+        # matches的每个match是按照拓扑排序组成layer的dict
+        self.matches = list()
 
-    def operate(self, graph):
-        self.detect_patterns(graph)
+    def operate(self, graph, match_kind="topo"):
+        if match_kind == "topo":
+            self.detect_patterns_by_topo(graph)
+        elif match_kind == "edge":
+            self.detect_patterns_by_edge(graph)
         self.remove_overlapped_match()
-        return self.subgraphs
+        return self.matches
 
-    def detect_patterns(self, graph):
+    def detect_patterns_by_topo(self, graph):
         """ 找到与模式匹配的子图，
             并将子图的id以拓扑排序存放到subgraph_id2layers。
         """
@@ -101,49 +105,79 @@ class PatternMatcher(object):
         for i, (layer_id, layer) in enumerate(graph.layers.items()):
             match_info = get_subgraph(self.pattern, graph, i)
             if match_info:
-                self.subgraphs.append(match_info)
+                self.matches.append(match_info)
             for j, block in enumerate(layer.blocks):
                 if len(block.layers) > 0:
-                    self.detect_patterns(layer.blocks[j])
+                    self.detect_patterns_by_topo(layer.blocks[j])
+
+    def detect_patterns_by_edge(self, graph):
+        """当遇见顺序没有强制规定的pattern时使用该方式
+        """
+        pass
 
     def remove_overlapped_match(self):
         """ 如果2个子图有重叠，只取前一个子图。
         """
         match_ids = []
-        for i, subgraph in enumerate(self.subgraphs):
+        for i, match in enumerate(self.matches):
             is_overlapped = False
-            for id in subgraph.keys():
+            for id in match.keys():
                 if id in match_ids:
-                    self.subgraphs.pop(i)
+                    self.matches.pop(i)
                     is_overlapped = True
                     break
             if not is_overlapped:
-                match_ids.extend(list(subgraph.keys()))
+                match_ids.extend(list(match.keys()))
+
+
+def get_subgraph(prefix_layer_id, suffix_layer_id, graph):
+    """ 根据prefix_layer_id和suffix_layer_id获取需要子图。
+        Args:
+            prefix_layer_id (str): 起初为一个空字符串，之后为suffix_layer_id分割出来的前缀。
+            suffix_layer_id (str): 起初为以一个layer的id，之后将分割部分给prefix_layer_id；例如”57.0.1“；
+            graph (x2paddle.core.program.PaddleGraph): 需要进行pass的子图。
+    """
+    id_part = suffix_layer_id.split(".")
+    if len(id_part) == 1:
+        return graph
+    if prefix_layer_id == "":
+        layer_id = id_part[0]
+        prefix_layer_id += ".".join(id_part[:2])
+    else:
+        layer_id = prefix_layer_id + "." + id_part[0]
+        prefix_layer_id += ("." + ".".join(id_part[:2]))
+    subgraph = graph.layers[layer_id].blocks[int(id_part[1])]
+    suffix_layer_id = ".".join(id_part[2:])
+    return get_subgraph(prefix_layer_id, suffix_layer_id, subgraph)
 
 
 class FuseBase(object):
     def __init__(self):
         self.pattern = PaddleGraph()
 
-    def operate(self, graph):
+    def operate(self, graph, match_kind="topo"):
         self.build_pattern()
-        self.perform_pattern_matcher(graph)
-        for subgraph in self.subgraphs:
-            self.insert_new_layer(graph, subgraph)
+        self.perform_pattern_matcher(graph, match_kind)
+        for match in self.matches:
+            first_layer_id = list(match.keys())[0]
+            subgraph = get_subgraph("", first_layer_id, graph)
+            self.insert_new_layer(subgraph, match)
         self.delete_inter_layer(graph)
         graph.build()
 
-    def perform_pattern_matcher(self, graph):
+    def perform_pattern_matcher(self, graph, match_kind="topo"):
         """ 执行模式匹配，找到匹配的子图。
         """
         pattern_matcher = PatternMatcher(self.pattern)
-        self.subgraphs = pattern_matcher.operate(graph)
+        self.matches = pattern_matcher.operate(graph, match_kind)
 
     def delete_inter_layer(self, graph):
         """ 删除不需要的中间layer及其对应参数。
         """
-        for subgraph in self.subgraphs:
-            for layer_id, layer in subgraph.items():
+        for match in self.matches:
+            first_layer_id = list(match.keys())[0]
+            subgraph = get_subgraph("", first_layer_id, graph)
+            for layer_id, layer in match.items():
                 if layer.kernel == "fluid.dygraph.base.to_variable" and \
                 layer.attrs["value"].startswith("params["):
                     param_name = layer.attrs["value"][8:-2]
@@ -151,4 +185,4 @@ class FuseBase(object):
                         graph.parameters.pop(param_name)
                 if layer_id in graph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
-                    graph.layers.pop(layer_id)
+                    subgraph.layers.pop(layer_id)

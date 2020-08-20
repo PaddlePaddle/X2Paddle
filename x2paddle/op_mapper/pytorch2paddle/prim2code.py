@@ -24,26 +24,39 @@ def gen_codes(code_list, indent=0):
     return codes
 
 
+def get_value(layer, key):
+    """ 进行optimizer后可能把inputs的value直接用数值代替（ConstantFuser），
+        会把input换成attr，所以需要此处的操作。
+    """
+    if key in layer.inputs:
+        return layer.inputs[key]
+    else:
+        return str(layer.attrs[key])
+
+
 def prim_add(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} + {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} + {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_add_(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} + {} * {}".format(layer.outputs[0], layer.inputs["x"],
-                                      layer.attrs["alpha"], layer.inputs["y"])
+    line = "{} = {} + {} * {}".format(layer.outputs[0],
+                                      get_value(layer, "x"),
+                                      layer.attrs["alpha"],
+                                      get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_and(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} and {}".format(layer.outputs[0], layer.inputs["x"],
-                                   layer.inputs["y"])
+    line = "{} = {} and {}".format(layer.outputs[0],
+                                   get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_append(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{}.append({})".format(layer.inputs["list"], layer.inputs["element"])
+    line = "{}.append({})".format(
+        get_value(layer, "list"), get_value(layer, "element"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -72,23 +85,23 @@ def prim_constant(layer, indent=1, init_func=[], forward_func=[]):
 
 
 def prim_eq(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} == {}".format(layer.outputs[0], layer.inputs["x"],
-                                  layer.inputs["y"])
+    line = "{} = {} == {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_equal(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = {}".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_exception(layer, indent=1, init_func=[], forward_func=[]):
-    line = "raise RaiseException({})".format(layer.inputs["input"])
+    line = "raise RaiseException({})".format(get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_if(layer, indent=1, init_func=[], forward_func=[]):
-    line = "if {} :".format(list(layer.inputs.values())[0])
+    line = "if {} :".format(get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
     block = layer.blocks[0]
     b_init_lines, b_forward_lines = block.gen_dygraph_code(indent=indent + 1)
@@ -105,45 +118,47 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[]):
 
 
 def prim_getitem(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}[{}]".format(layer.outputs[0], layer.inputs["list"],
-                                layer.inputs["index"])
+    line = "{} = {}[{}]".format(layer.outputs[0],
+                                get_value(layer, "list"),
+                                get_value(layer, "index"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_gt(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} > {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} > {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_le(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} <= {}".format(layer.outputs[0], layer.inputs["x"],
-                                  layer.inputs["y"])
+    line = "{} = {} <= {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_len(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = len({})".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = len({})".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_lt(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} < {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} < {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_list(layer, indent=1, init_func=[], forward_func=[]):
-    inputs_list = list(layer.inputs.values())
+    input_len = len(layer.inputs) + len(layer.attrs)
+    inputs_list = list()
+    for i in range(input_len):
+        inputs_list.append(get_value(layer, "input{}".format(i)))
     inputs_str = ', '.join(inputs_list)
     line = "{} = [{}]".format(layer.outputs[0], inputs_str)
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_loop(layer, indent=1, init_func=[], forward_func=[]):
-    loop_range = list(layer.inputs.values())[0]
-    if list(layer.inputs.values())[0] is None:
-        loop_range = str(layer.attrs[list(layer.inputs.keys())[0]])
+    loop_range = get_value(layer, "input")
     line = "for {} in range({}):".format(layer.outputs[1], loop_range)
     forward_func.extend(gen_codes([line], indent=indent))
     block = layer.blocks[0]
@@ -153,66 +168,71 @@ def prim_loop(layer, indent=1, init_func=[], forward_func=[]):
 
 
 def prim_min(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = min({})".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = min({})".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_mul(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} * {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} * {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_ne(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} < {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} < {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_neg(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = -{}".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = -{}".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_not(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = not {}".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = not {}".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_requires_grad(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = not {}.stop_gradient".format(layer.outputs[0],
-                                              layer.inputs["input"])
+                                              get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_select(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}[".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = {}[".format(layer.outputs[0], get_value(layer, "input"))
     for dim in range(layer.attrs["dim"]):
         line += ":, "
-    line += (layer.inputs["index"] + "]")
+    line += (get_value(layer, "index") + "]")
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_shape(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}.shape".format(layer.outputs[0], layer.inputs["input"])
+    line = "{} = {}.shape".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_slice(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}[{}: {}: {}]".format(
-        layer.outputs[0], layer.inputs["input"], layer.inputs["start"],
-        layer.inputs["end"], layer.inputs["step"])
+    line = "{} = {}[{}: {}: {}]".format(layer.outputs[0],
+                                        get_value(layer, "input"),
+                                        get_value(layer, "start"),
+                                        get_value(layer, "end"),
+                                        get_value(layer, "step"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_sub(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} - {}".format(layer.outputs[0], layer.inputs["x"],
-                                 layer.inputs["y"])
+    line = "{} = {} - {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_tuple(layer, indent=1, init_func=[], forward_func=[]):
-    inputs_list = list(layer.inputs.values())
+    input_len = len(layer.inputs) + len(layer.attrs)
+    inputs_list = list()
+    for i in range(input_len):
+        inputs_list.append(get_value(layer, "input{}".format(i)))
     inputs_str = ', '.join(inputs_list)
     line = "{} = ({})".format(layer.outputs[0], inputs_str)
     forward_func.extend(gen_codes([line], indent=indent))
@@ -220,13 +240,13 @@ def prim_tuple(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_tuple_unpack(layer, indent=1, init_func=[], forward_func=[]):
     outputs_str = ', '.join(layer.outputs)
-    line = "{} = {}".format(outputs_str, layer.inputs["input"])
+    line = "{} = {}".format(outputs_str, get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_warnings(layer, indent=1, init_func=[], forward_func=[]):
     lines = ["import warnings"]
-    line = "warnings.warn({}, stacklevel={})".format(layer.inputs["input"],
-                                                     layer.attrs["stacklevel"])
+    line = "warnings.warn({}, stacklevel={})".format(
+        get_value(layer, "input"), layer.attrs["stacklevel"])
     lines.append(line)
     forward_func.extend(gen_codes(lines, indent=indent))

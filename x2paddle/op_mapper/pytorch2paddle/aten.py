@@ -532,6 +532,41 @@ def aten_dropout(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_dropout_(mapper, graph, node):
+    """ 构造Dropout的PaddleLayer。
+
+    TorchScript示例:
+        %119 : Tensor = aten::dropout_(%result.3, %117, %118)
+        参数含义:
+        %119 (Tensor): Dropout后的Tensor。
+        %result.3 (Tensor): 输入Tensor。
+        %118 (bool): 是否是训练阶段。
+    """
+    if "dropout" in mapper.dygraph_name_id:
+        mapper.dygraph_name_id["dropout"] += 1
+    else:
+        mapper.dygraph_name_id["dropout"] = 0
+    dropout_name = "dropout" + str(mapper.dygraph_name_id["dropout"])
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [dropout_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%119
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "fluid.dygraph.Dropout",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        p=0.0)
+    return current_inputs, current_outputs
+
+
 def aten_eq(mapper, graph, node):
     """ 构造判断数值是否相等的PaddleLayer。
 
@@ -991,6 +1026,34 @@ def aten___not__(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer("prim.not", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_relu(mapper, graph, node):
+    """ 构造ReLU激活的PaddleLayer。
+
+    TorchScript示例:
+        %result.3 : Tensor = aten::relu(%input.5)
+        参数含义:
+        %result.3 (Tensor): 输出，ReLU后的结果。
+        %result.5 (Tensor): 需要ReLU的Tensor。
+
+    注意: inplace这个参数在paddle中未实现
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "fluid.layers.relu", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
