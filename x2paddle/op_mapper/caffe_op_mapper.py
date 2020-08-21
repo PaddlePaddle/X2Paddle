@@ -226,7 +226,7 @@ class CaffeOpMapper(OpMapper):
             data.append(
                 np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype(
                     'float32'))
-            data.append(np.zeros([output_c, ])).astype('float32')
+            data.append(np.zeros([output_c, ]).astype('float32'))
         else:
             data = self.adjust_parameters(node)
         self.weights[node.layer_name + '_weights'] = data[0]
