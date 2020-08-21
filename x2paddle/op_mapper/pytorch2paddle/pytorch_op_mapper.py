@@ -71,7 +71,7 @@ class PyTorchOpMapper(OpMapper):
                 current_node_outputs.extend(outputs)
 
         # 初始化
-        graph = PaddleGraph(parent_layer)
+        graph = PaddleGraph(parent_layer, graph_type="dygraph")
         current_node_outputs = []
         graph_inputs = []
         # 转换输入节点

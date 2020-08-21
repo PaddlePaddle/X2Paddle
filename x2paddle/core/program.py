@@ -59,7 +59,7 @@ class PaddleLayer(object):
 
 
 class PaddleGraph(object):
-    def __init__(self, parent_layer=None, graph_type="dygraph"):
+    def __init__(self, parent_layer=None, graph_type="static"):
         self.layers = OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
