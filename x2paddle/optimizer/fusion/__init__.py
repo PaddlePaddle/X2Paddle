@@ -14,5 +14,9 @@
 
 from .fc_fuser import FcFuser
 from .fc_fuse_pass import FcFusePass
+from .nn_adaptive_pool2d_fuser import NnAdaptivePool2dFuser
+from .nn_adaptive_pool2d_fuse_pass import NnAdaptivePool2dFusePass
+from .functional_adaptive_pool2d_fuser import FunctionalAdaptivePool2dFuser
+from .functional_adaptive_pool2d_fuse_pass import FunctionalAdaptivePool2dFusePass
 from .constant_fuser import ConstantFuser
 from .constant_fuse_pass import ConstantFusePass

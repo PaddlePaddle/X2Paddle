@@ -138,7 +138,7 @@ def prim_Loop(mapper, graph, node):
     node_outputs = mapper._get_outputs_name(node)
     loop_inputs = {}
     block = list(node.blocks())[0]
-    loop_outputs = node_outputs
+    loop_outputs = node_outputs.copy()
     for i, block_input_ivalue in enumerate(block.inputs()):
         if i == 0:
             block_input_node_name = '_x' + str(mapper.output_index)

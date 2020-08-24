@@ -204,37 +204,41 @@ class PaddleGraph(object):
         f.close()
 
     def gen_model(self, save_dir):
-        code_dir = os.path.join(save_dir, 'model_with_code')
-        infer_dir = os.path.join(save_dir, 'inference_model')
-        self.gen_code(code_dir)
-        sys.path.append(code_dir)
-        import x2paddle_model
-        scope = fluid.Scope()
-        startup_program = fluid.Program()
-        main_program = fluid.Program()
-        with fluid.scope_guard(scope):
-            with fluid.program_guard(main_program, startup_program):
-                inputs, outputs = x2paddle_model.x2paddle_net()
-                exe = fluid.Executor(fluid.CPUPlace())
-                exe.run(startup_program)
+        if self.graph_type == "static":
+            code_dir = os.path.join(save_dir, 'model_with_code')
+            infer_dir = os.path.join(save_dir, 'inference_model')
+            self.gen_code(code_dir)
+            sys.path.append(code_dir)
+            import x2paddle_model
+            scope = fluid.Scope()
+            startup_program = fluid.Program()
+            main_program = fluid.Program()
+            with fluid.scope_guard(scope):
+                with fluid.program_guard(main_program, startup_program):
+                    inputs, outputs = x2paddle_model.x2paddle_net()
+                    exe = fluid.Executor(fluid.CPUPlace())
+                    exe.run(startup_program)
 
-                param_dir = os.path.join(code_dir, 'weights')
-                for k, v in self.parameters.items():
-                    if scope.find_var(k):
-                        self.dump_parameter(k, v, param_dir)
+                    param_dir = os.path.join(code_dir, 'weights')
+                    for k, v in self.parameters.items():
+                        if scope.find_var(k):
+                            self.dump_parameter(k, v, param_dir)
 
-                def if_exist(var):
-                    b = os.path.exists(
-                        os.path.join(os.path.join(param_dir, var.name)))
-                    return b
+                    def if_exist(var):
+                        b = os.path.exists(
+                            os.path.join(os.path.join(param_dir, var.name)))
+                        return b
 
-                fluid.io.load_vars(
-                    exe, param_dir, main_program, predicate=if_exist)
-                fluid.io.save_inference_model(
-                    dirname=infer_dir,
-                    feeded_var_names=[i.name for i in inputs],
-                    target_vars=outputs,
-                    executor=exe)
+                    fluid.io.load_vars(
+                        exe, param_dir, main_program, predicate=if_exist)
+                    fluid.io.save_inference_model(
+                        dirname=infer_dir,
+                        feeded_var_names=[i.name for i in inputs],
+                        target_vars=outputs,
+                        executor=exe)
+        else:
+            self.gen_dygraph_code(save_dir)
+            self.dump_dygraph_parameter(save_dir)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -356,10 +360,12 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
-            if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                    layer_id, 0) == 0 and layer.kernel != "prim.assert" \
-                    and layer.kernel != "prim.exception":
-                continue
+            if len(self.layers) > 1:
+                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
+                        and layer.kernel != "prim.exception" \
+                        and layer.kernel != "prim.warnings":
+                    continue
             if "dygraph" in layer.kernel:
                 line = "{}".format(
                     layer.outputs[0]

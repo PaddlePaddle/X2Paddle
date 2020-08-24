@@ -179,8 +179,8 @@ def prim_mul(layer, indent=1, init_func=[], forward_func=[]):
 
 
 def prim_ne(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} < {}".format(layer.outputs[0],
-                                 get_value(layer, "x"), get_value(layer, "y"))
+    line = "{} = {} != {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

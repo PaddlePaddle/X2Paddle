@@ -83,24 +83,22 @@ class PatternMatcher(object):
                                     # 若pattern当前layer的输出是pattern的输出，则是正确的
                                     return False
                     # 当为控制流时的处理
-                    if layer.kernel == "prim.if":
-                        match_info = get_subgraph(pattern_layer.blocks[0],
-                                                  layer.blocks[0], 0)
-                        if match_info:
-                            subgraph_id2layers.update(match_info)
-                        else:
+                    if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                        if len(pattern_layer.blocks) != len(layer.blocks):
                             return False
-                        match_info = get_subgraph(pattern_layer.blocks[1],
-                                                  layer.blocks[1], 0)
-                        if match_info:
-                            subgraph_id2layers.update(match_info)
-                        else:
-                            return False
+                        for i, b in enumerate(pattern_layer.blocks):
+                            match_info = get_subgraph(pattern_layer.blocks[i],
+                                                      layer.blocks[i], 0)
+                            if match_info is not False:
+                                subgraph_id2layers.update(match_info)
+                            else:
+                                return False
                     pattern_index += 1
                     if pattern_index == len(pattern.layers):
                         return subgraph_id2layers
                 else:
                     return False
+            return subgraph_id2layers
 
         for i, (layer_id, layer) in enumerate(graph.layers.items()):
             match_info = get_subgraph(self.pattern, graph, i)
@@ -152,16 +150,17 @@ def get_subgraph(prefix_layer_id, suffix_layer_id, graph):
 
 
 class FuseBase(object):
-    def __init__(self):
-        self.pattern = PaddleGraph()
+    def __init__(self, graph_type):
+        self.pattern = PaddleGraph(graph_type=graph_type)
 
     def operate(self, graph, match_kind="topo"):
+        parameters = graph.parameters
         self.build_pattern()
         self.perform_pattern_matcher(graph, match_kind)
         for match in self.matches:
             first_layer_id = list(match.keys())[0]
             subgraph = get_subgraph("", first_layer_id, graph)
-            self.insert_new_layer(subgraph, match)
+            self.insert_new_layer(subgraph, parameters, match)
         self.delete_inter_layer(graph)
         graph.build()
 
@@ -183,6 +182,6 @@ class FuseBase(object):
                     param_name = layer.attrs["value"][8:-2]
                     if param_name in graph.parameters:
                         graph.parameters.pop(param_name)
-                if layer_id in graph.layers:
+                if layer_id in subgraph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
                     subgraph.layers.pop(layer_id)

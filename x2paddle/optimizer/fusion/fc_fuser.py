@@ -21,7 +21,7 @@ from x2paddle.core.util import *
 class FcFuser(FuseBase):
     def __init__(self):
         self.linear_index = 0
-        super(FcFuser, self).__init__()
+        super(FcFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的fc图结构。
@@ -70,7 +70,7 @@ class FcFuser(FuseBase):
         self.pattern.add_layer("prim.if", {'input': gen_name(3)}, [gen_name(4)])
         self.pattern.outputs.append(gen_name(4))
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(if_layer1)
+        pattern_block0 = PaddleGraph(if_layer1, graph_type="dygraph")
         pattern_block0.add_layer(
             "fluid.dygraph.base.to_variable",
             inputs={},
@@ -99,7 +99,7 @@ class FcFuser(FuseBase):
         pattern_block0.add_layer(
             "prim.equal", inputs={'input': gen_name(8)}, outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block0)
-        pattern_block1 = PaddleGraph(if_layer1)
+        pattern_block1 = PaddleGraph(if_layer1, graph_type="dygraph")
         pattern_block1.add_layer(
             "fluid.dygraph.base.to_variable",
             inputs={},
@@ -122,7 +122,7 @@ class FcFuser(FuseBase):
                                  [gen_name(11)])
         if_layer2 = pattern_block1.layers[list(pattern_block1.layers.keys())[
             -1]]
-        pattern_block1_block0 = PaddleGraph(if_layer2)
+        pattern_block1_block0 = PaddleGraph(if_layer2, graph_type="dygraph")
         pattern_block1_block0.add_layer(
             "fluid.dygraph.base.to_variable",
             inputs={},
@@ -140,7 +140,7 @@ class FcFuser(FuseBase):
             inputs={'input': gen_name(13)},
             outputs=[gen_name(11)])
         if_layer2.add_block(pattern_block1_block0)
-        pattern_block1_block1 = PaddleGraph(if_layer2)
+        pattern_block1_block1 = PaddleGraph(if_layer2, graph_type="dygraph")
         pattern_block1_block1.add_layer(
             "prim.equal", inputs={'input': gen_name(9)},
             outputs=[gen_name(11)])
@@ -150,12 +150,9 @@ class FcFuser(FuseBase):
             outputs=[gen_name(4)])
         if_layer2.add_block(pattern_block1_block1)
         if_layer1.add_block(pattern_block1)
-        self.pattern.build(
-            inputs={"input-0": "fc-input-0",
-                    "input-1": "fc-input-0"})
+        self.pattern.build(inputs={"input-0": "fc-input-0"})
 
-    def insert_new_layer(self, graph, matches):
-        parameters = graph.parameters
+    def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)
         new_layer_id = list(matches.keys())[0]
         graph.layers[new_layer_id] = new_layer
@@ -171,7 +168,7 @@ class FcFuser(FuseBase):
         weight_name = layer.attrs["value"][8:-2]
         layer = matches[layers_id[8]]
         bias_name = layer.attrs["value"][8:-2]
-        attrs = {}
+        attrs = dict()
         attrs["input_dim"] = parameters[weight_name].shape[1]
         attrs["output_dim"] = parameters[weight_name].shape[0]
         linear_name = "linear{}".format(self.linear_index)

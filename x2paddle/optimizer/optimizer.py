@@ -18,7 +18,10 @@ from x2paddle.optimizer.pass_manager import PassManager
 
 class GraphOptimizer(object):
     def __init__(self):
-        self.passes = ["fc_fuse_pass", "constant_fuse_pass"]
+        self.passes = [
+            "fc_fuse_pass", "nn_adaptive_pool2d_fuse_pass",
+            "functional_adaptive_pool2d_fuse_pass", "constant_fuse_pass"
+        ]
 
     def optimize(self, graph):
         for pass_name in self.passes:
