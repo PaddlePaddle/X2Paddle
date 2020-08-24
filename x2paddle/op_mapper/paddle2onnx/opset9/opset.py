@@ -141,6 +141,13 @@ class OpSet9(object):
             'Exp', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def square(self, op, block):
+        node = helper.make_node(
+            'Mul',
+            inputs=[op.input('X')[0], op.input('X')[0]],
+            outputs=op.output('Out'))
+        return node
+
     def abs(self, op, block):
         node = helper.make_node(
             'Abs', inputs=op.input('X'), outputs=op.output('Out'))
