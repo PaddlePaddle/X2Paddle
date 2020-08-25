@@ -113,15 +113,19 @@ class PyTorchOpMapper(OpMapper):
             graph.set_parameters(self.paddle_params)
         return graph, graph_inputs
 
-    def _get_outputs_name(self, node):
+    def _get_outputs_name(self, node, attr_name=None):
         outputs_name = []
         for output_ivalue in node.outputs():
-            output_name = 'x' + str(self.output_index)
             script_unique_id = output_ivalue.unique()
-            if script_unique_id in self.outputs_info:
-                output_name = self.outputs_info[script_unique_id]
+            if attr_name is None:
+                output_name = 'x' + str(self.output_index)
+                if script_unique_id in self.outputs_info:
+                    output_name = self.outputs_info[script_unique_id]
+            else:
+                output_name = attr_name.replace(".", "_")
             self.outputs_info[script_unique_id] = output_name
             self.output_index += 1
+
             outputs_name.append(output_name)
         # if或loop节点没有输出的情况
         if len(list(node.outputs())) == 0:
@@ -148,7 +152,33 @@ class PyTorchOpMapper(OpMapper):
                     outputs=[output_name],
                     value="params[{}]".format(string(output_name)))
             else:
-                if isinstance(param, dict) and "Tensor" in param:
+                if isinstance(param, dict) and "Tensor" in param and \
+                "parent_layer_id" in param:
+                    if graph.parent_layer is not None:
+                        # 当某个param被2个控制流（if-else）赋值时，else不可以引用if中的赋值结果
+                        id1 = param["parent_layer_id"]
+                        id2 = graph.parent_layer.id
+                        id1_part = id1.split(".")
+                        id2_part = id2.split(".")
+                        if len(id1_part) >= len(id2_part):
+                            for i in range(len(id1_part)):
+                                if id1_part[i] == id2_part[i]:
+                                    continue
+                                else:
+                                    if id1_part[i] == "0" and id2_part[
+                                            i] == "1":
+                                        if add_dim:
+                                            param = param[np.newaxis, :]
+                                        self.paddle_params[output_name] = param
+                                        graph.add_layer(
+                                            "fluid.dygraph.base.to_variable",
+                                            inputs={},
+                                            outputs=[output_name],
+                                            value="params[{}]".format(
+                                                string(output_name)))
+                                        node_outputs.append(output_name)
+                                        return
+                    # 若if-else外，则可直接引用if-else中的赋值结果
                     graph.add_layer(
                         "prim.constant",
                         inputs={},

@@ -101,6 +101,11 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
+            #             if "x5109" in layer.outputs or "x5110" in layer.outputs:
+            #                 print(layer.kernel)
+            #                 print(layer.inputs)
+            #                 print(layer.outputs)
+            #                 print(layer.attrs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):

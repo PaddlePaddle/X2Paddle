@@ -20,3 +20,5 @@ from .functional_adaptive_pool2d_fuser import FunctionalAdaptivePool2dFuser
 from .functional_adaptive_pool2d_fuse_pass import FunctionalAdaptivePool2dFusePass
 from .constant_fuser import ConstantFuser
 from .constant_fuse_pass import ConstantFusePass
+from .batchnorm2d_fuser import BatchNorm2dFuser
+from .batchnorm2d_fuse_pass import BatchNorm2dFusePass

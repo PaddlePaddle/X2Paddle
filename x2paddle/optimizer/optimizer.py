@@ -20,7 +20,8 @@ class GraphOptimizer(object):
     def __init__(self):
         self.passes = [
             "fc_fuse_pass", "nn_adaptive_pool2d_fuse_pass",
-            "functional_adaptive_pool2d_fuse_pass", "constant_fuse_pass"
+            "functional_adaptive_pool2d_fuse_pass", "batchnorm2d_fuse_pass",
+            "constant_fuse_pass"
         ]
 
     def optimize(self, graph):

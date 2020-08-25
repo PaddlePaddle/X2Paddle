@@ -208,6 +208,11 @@ def prim_select(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_set_attr(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_shape(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}.shape".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))

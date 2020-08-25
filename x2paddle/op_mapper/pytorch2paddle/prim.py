@@ -44,7 +44,7 @@ def prim_GetAttr(mapper, graph, node):
         %7 (Tensor): 输入Tensor。
         %27 (Tensor): 输入Tensor。
     """
-    output_name = mapper._get_outputs_name(node)[0]
+    current_node = node
     field_name_list = [node.s('name')]
     while True:
         input_node = list(node.inputs())[0].node()
@@ -53,18 +53,16 @@ def prim_GetAttr(mapper, graph, node):
             node = input_node
         except Exception:
             break
-    if ".".join(field_name_list) in mapper.pytorch_params:
-        mapper.pytorch_params[output_name] = mapper.pytorch_params[".".join(
-            field_name_list)]
-    else:
-        part_script = mapper.script
-        for field_name in field_name_list:
-            if hasattr(part_script, field_name):
-                param = getattr(part_script, field_name)
-                if isinstance(param, torch.Tensor):
-                    param = param.detach().numpy()
-                mapper.pytorch_params[output_name] = param
-                part_script = param
+    attr_name = ".".join(field_name_list)
+    output_name = mapper._get_outputs_name(current_node, attr_name)[0]
+    part_script = mapper.script
+    for field_name in field_name_list:
+        if hasattr(part_script, field_name):
+            param = getattr(part_script, field_name)
+            if isinstance(param, torch.Tensor):
+                param = param.detach().numpy()
+            mapper.pytorch_params[output_name] = param
+            part_script = param
     return [], [output_name]
 
 
@@ -295,8 +293,15 @@ def prim_SetAttr(mapper, graph, node):
     field_name_list.append(node.s('name'))
 
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    param = {"Tensor": inputs_name[1]}
+    param = {
+        "Tensor": "self." + ".".join(field_name_list).replace(".", "_"),
+        "parent_layer_id": graph.parent_layer.id
+    }
     mapper.pytorch_params[".".join(field_name_list)] = param
+    graph.add_layer(
+        "prim.set_attr",
+        inputs={"input": inputs_name[1]},
+        outputs=["self." + ".".join(field_name_list).replace(".", "_")])
     return [], [output_name]
 
 
