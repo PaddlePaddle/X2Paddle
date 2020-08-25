@@ -853,8 +853,9 @@ class OpSet9(object):
         node0 = helper.make_node(
             'Add', inputs=[op.input('X')[0], offset_name], outputs=[name0])
         name1 = self.get_name(op.type, 'relu')
-        min_value = op.attr('min')
-        max_value = op.attr('max')
+        min_value = 0.0
+        max_value = op.attr('threshold')
+
         node1 = helper.make_node(
             'Clip',
             inputs=[name0],
