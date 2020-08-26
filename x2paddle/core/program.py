@@ -18,15 +18,15 @@ import paddle.fluid as fluid
 from paddle.fluid.proto import framework_pb2
 from collections import OrderedDict
 import numpy
-import time
 import collections
 import sys
 import os
 import six
+import pickle
 
 
 class PaddleLayer(object):
-    def __init__(self, kernel, inputs, outputs, **kwargs):
+    def __init__(self, id, kernel, inputs, outputs, **kwargs):
         assert isinstance(
             inputs,
             dict), "parameter 'inputs' for PaddleLayer should be type of dict"
@@ -51,22 +51,29 @@ class PaddleLayer(object):
         self.inputs = inputs
         self.outputs = outputs
         self.attrs = kwargs
-        self.id = str(time.time())
+        self.id = id
+        self.blocks = list()
 
     def add_block(self, block):
-        block.father_layer = self
         self.blocks.append(block)
 
 
-class PaddleProgram(object):
-    def __init__(self):
+class PaddleGraph(object):
+    def __init__(self, parent_layer=None, graph_type="static"):
         self.layers = OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
         self.outputs = list()
         self.parameters = dict()
-        self.father_layer = None
+        self.parent_layer = parent_layer
+        self.graph_type = graph_type
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_parameters(self, parameters):
+        self.parameters = parameters
 
     def clear(self):
         self.layers = OrderedDict()
@@ -76,25 +83,44 @@ class PaddleProgram(object):
         self.outputs = list()
         self.parameters = dict()
 
+    def clear_edges(self):
+        self.edges_out = dict()
+        self.edges_in = dict()
+
     def add_layer(self, kernel, inputs, outputs, **kwargs):
-        layer = PaddleLayer(kernel, inputs, outputs, **kwargs)
         layer_id = str(len(self.layers))
-        if self.father_layer is not None:
-            layer_id = "{}.{}.{}".format(layer_id, len(self.father_layer.blocks()), self.father_layer.id)
+        if self.parent_layer is not None:
+            layer_id = "{}.{}.{}".format(self.parent_layer.id,
+                                         len(self.parent_layer.blocks),
+                                         layer_id)
+        layer = PaddleLayer(layer_id, kernel, inputs, outputs, **kwargs)
         self.layers[layer_id] = layer
         return layer_id
 
-    def build(self):
+    def build(self, inputs=None, outputs=None):
+        self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
+            #             if "x5109" in layer.outputs or "x5110" in layer.outputs:
+            #                 print(layer.kernel)
+            #                 print(layer.inputs)
+            #                 print(layer.outputs)
+            #                 print(layer.attrs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):
                     vs = [vs]
                 for v in vs:
-                    assert v in outputs_from_nodes, "Couldn't find {} in previous layers, the layers should be make by topological sort".format(
+                    assert v in outputs_from_nodes or (
+                        inputs is not None and v in list(inputs.values())
+                    ) or (
+                        outputs is not None and v in outputs
+                    ), "Couldn't find {} in previous layers, the layers should be make by topological sort".format(
                         v)
-                    in_layer_id = outputs_from_nodes[v]
+                    if v in outputs_from_nodes:
+                        in_layer_id = outputs_from_nodes[v]
+                    else:
+                        in_layer_id = -1
                     if in_layer_id not in self.edges_out:
                         self.edges_out[in_layer_id] = list()
                     self.edges_out[in_layer_id].append(layer_id)
@@ -104,6 +130,27 @@ class PaddleProgram(object):
                     self.edges_in[layer_id].append(in_layer_id)
             for output in layer.outputs:
                 outputs_from_nodes[output] = layer_id
+
+            if len(layer.blocks) > 0:
+                for block in layer.blocks:
+                    block.build(layer.inputs, layer.outputs)
+
+        if self.graph_type == "dygraph":
+            self.get_dygraph_inputs()
+            self.get_dygraph_outputs()
+
+    def get_global_layers(self):
+        # 该全局layers的信息是按照拓扑排序组成的
+        def update(layers):
+            global_layers = dict()
+            for layer_id, layer in layers.items():
+                global_layers[layer_id] = layer
+                for block in layer.blocks:
+                    block_global_layers = update(block.layers)
+                    global_layers.update(block_global_layers)
+            return global_layers
+
+        return update(self.layers)
 
     def gen_code(self, code_dir):
         def write_code(f, code_list, indent=0):
@@ -162,37 +209,41 @@ class PaddleProgram(object):
         f.close()
 
     def gen_model(self, save_dir):
-        code_dir = os.path.join(save_dir, 'model_with_code')
-        infer_dir = os.path.join(save_dir, 'inference_model')
-        self.gen_code(code_dir)
-        sys.path.append(code_dir)
-        import x2paddle_model
-        scope = fluid.Scope()
-        startup_program = fluid.Program()
-        main_program = fluid.Program()
-        with fluid.scope_guard(scope):
-            with fluid.program_guard(main_program, startup_program):
-                inputs, outputs = x2paddle_model.x2paddle_net()
-                exe = fluid.Executor(fluid.CPUPlace())
-                exe.run(startup_program)
+        if self.graph_type == "static":
+            code_dir = os.path.join(save_dir, 'model_with_code')
+            infer_dir = os.path.join(save_dir, 'inference_model')
+            self.gen_code(code_dir)
+            sys.path.append(code_dir)
+            import x2paddle_model
+            scope = fluid.Scope()
+            startup_program = fluid.Program()
+            main_program = fluid.Program()
+            with fluid.scope_guard(scope):
+                with fluid.program_guard(main_program, startup_program):
+                    inputs, outputs = x2paddle_model.x2paddle_net()
+                    exe = fluid.Executor(fluid.CPUPlace())
+                    exe.run(startup_program)
 
-                param_dir = os.path.join(code_dir, 'weights')
-                for k, v in self.parameters.items():
-                    if scope.find_var(k):
-                        self.dump_parameter(k, v, param_dir)
+                    param_dir = os.path.join(code_dir, 'weights')
+                    for k, v in self.parameters.items():
+                        if scope.find_var(k):
+                            self.dump_parameter(k, v, param_dir)
 
-                def if_exist(var):
-                    b = os.path.exists(
-                        os.path.join(os.path.join(param_dir, var.name)))
-                    return b
+                    def if_exist(var):
+                        b = os.path.exists(
+                            os.path.join(os.path.join(param_dir, var.name)))
+                        return b
 
-                fluid.io.load_vars(
-                    exe, param_dir, main_program, predicate=if_exist)
-                fluid.io.save_inference_model(
-                    dirname=infer_dir,
-                    feeded_var_names=[i.name for i in inputs],
-                    target_vars=outputs,
-                    executor=exe)
+                    fluid.io.load_vars(
+                        exe, param_dir, main_program, predicate=if_exist)
+                    fluid.io.save_inference_model(
+                        dirname=infer_dir,
+                        feeded_var_names=[i.name for i in inputs],
+                        target_vars=outputs,
+                        executor=exe)
+        else:
+            self.gen_dygraph_code(save_dir)
+            self.dump_dygraph_parameter(save_dir)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -227,3 +278,167 @@ class PaddleProgram(object):
         fp.write(tensor_desc.SerializeToString())
         param.tofile(fp)
         fp.close()
+
+    def get_dygraph_inputs(self):
+        def update(layers):
+            for layer_id, layer in layers.items():
+                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                        layer_id, 0) == 0:
+                    continue
+                if layer.kernel == "fluid.dygraph.base.to_variable":
+                    value = layer.attrs["value"]
+                    if not value.startswith("params["):
+                        self.inputs.append(value)
+                if len(layer.blocks) > 0:
+                    for block in layer.blocks:
+                        block.get_dygraph_inputs()
+                        self.inputs.extend(block.inputs)
+
+        update(self.layers)
+        self.inputs = list(set(self.inputs))
+
+    def get_dygraph_outputs(self):
+        for layer_id, layer in self.layers.items():
+            if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                    layer_id, 0) == 0:
+                continue
+            if self.edges_out.get(layer_id, 0) == 0:
+                for output_name in layer.outputs:
+                    if not output_name.startswith("x"):
+                        continue
+                    self.outputs.append(output_name)
+        self.outputs = list(set(self.outputs))
+
+    def gen_dygraph_code(self, code_dir=None, indent=2):
+        def gen_codes(code_list, indent=0):
+            indent_blank = "    " * indent
+            codes = []
+            for code_line in code_list:
+                if code_line.strip() == "":
+                    codes.append('\n')
+                else:
+                    codes.append(indent_blank + code_line + '\n')
+            return codes
+
+        def gen_head():
+            self.head = gen_codes(
+                [
+                    "from paddle.fluid.initializer import Constant",
+                    "from paddle.fluid.param_attr import ParamAttr",
+                    "import paddle.fluid as fluid",
+                    "",
+                    "class {}(fluid.dygraph.Layer):".format(self.name),
+                ],
+                indent=0)
+            input_data_name = ', '.join(self.inputs)
+            self.init_func.extend(
+                gen_codes(
+                    ["def __init__(self, params):"], indent=1))
+            self.init_func.extend(
+                gen_codes(
+                    ["super({}, self).__init__()".format(self.name)], indent=2))
+            self.forward_func.extend(
+                gen_codes(
+                    ["def forward(self, {}):".format(input_data_name)],
+                    indent=1))
+
+        def write_code(code_dir):
+            f = open(os.path.join(code_dir, 'code.py'), 'w')
+            for code_line in self.head:
+                f.write(code_line)
+            init_writen_codes = []
+            for code_line in self.init_func:
+                if code_line in init_writen_codes:
+                    continue
+                f.write(code_line)
+                init_writen_codes.append(code_line)
+            f.write("\n")
+            return_code = "return {}".format(", ".join(self.outputs))
+            self.forward_func.extend(gen_codes([return_code], indent=2))
+            for code_line in self.forward_func:
+                f.write(code_line)
+            f.close()
+
+        self.init_func = []
+        self.forward_func = []
+        if indent == 2 and code_dir is not None:
+            gen_head()
+
+        for layer_id, layer in self.layers.items():
+            if len(self.layers) > 1:
+                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
+                        and layer.kernel != "prim.exception" \
+                        and layer.kernel != "prim.warnings":
+                    continue
+            if "dygraph" in layer.kernel:
+                line = "{}".format(
+                    layer.outputs[0]
+                ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
+                    "value"].startswith("params[") else "self.{}".format(
+                        layer.outputs[0])
+                line += " = {}(".format(layer.kernel)
+                for k, v in layer.attrs.items():
+                    line += "{}={}, ".format(k, v)
+                line = line.strip(", ")
+                line += ")"
+
+                if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
+                        "value"].startswith("params["):
+                    self.forward_func.extend(gen_codes([line], indent=indent))
+                    continue
+                else:
+                    self.init_func.extend(gen_codes([line], indent=2))
+
+                if len(layer.outputs) == 1:
+                    line = layer.outputs[0]
+                elif len(layer.outputs) == 2:
+                    line = layer.outputs[1]
+                else:
+                    line = ','.join(layer.outputs[1:])
+                if layer.kernel == "fluid.dygraph.base.to_variable" and layer.attrs[
+                        "value"].startswith("params["):
+                    line += " = self.{}".format(layer.outputs[0])
+                else:
+                    line += " = self.{}(".format(layer.outputs[0])
+                    for k, v in layer.inputs.items():
+                        line += "{}, ".format(v)
+                    line = line.strip(", ")
+                    line += ")"
+                self.forward_func.extend(gen_codes([line], indent=indent))
+            elif "prim" in layer.kernel:
+                func_name = layer.kernel.replace(".", "_")
+                from x2paddle.op_mapper.pytorch2paddle import prim2code
+                if hasattr(prim2code, func_name):
+                    func = getattr(prim2code, func_name)
+                    func(
+                        layer,
+                        indent=indent,
+                        init_func=self.init_func,
+                        forward_func=self.forward_func)
+                else:
+                    raise Exception(
+                        "The kind {} in paddle model is not supported yet.".
+                        format(layer.kernel))
+            else:
+                if len(layer.outputs) == 1:
+                    line = layer.outputs[0]
+                else:
+                    line = ','.join(layer.outputs)
+                line += " = {}(".format(layer.kernel)
+                for k, v in layer.inputs.items():
+                    line += "{}={}, ".format(k, v)
+                for k, v in layer.attrs.items():
+                    line += "{}={}, ".format(k, v)
+                line = line.strip(", ")
+                line += ")"
+                self.forward_func.extend(gen_codes([line], indent=indent))
+        if indent == 2:
+            write_code(code_dir)
+        else:
+            return self.init_func, self.forward_func
+
+    def dump_dygraph_parameter(self, code_dir):
+        params_output = open(os.path.join(code_dir, 'model.pdparams'), 'wb')
+        pickle.dump(self.parameters, params_output)
+        params_output.close()
