@@ -257,7 +257,7 @@ class OpSet9():
         shape = node.out_shapes[0]
         for i, dim_shape in enumerate(shape):
             if dim_shape == 0 and i == 0:
-                shape[i] = 1
+                shape[i] = -1
             if dim_shape == 0 and i != 0:
                 assert 'shape of input is not assigned'
         attr = {
@@ -1142,19 +1142,21 @@ class OpSet9():
         x_shape = val_x.out_shapes[0]
         y_shape = val_y.out_shapes[0]
         inputs = {"x": val_x, "y": val_y}
-        if y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
-            y_squeeze = val_y.layer_name + '_squeeze'
-            node.fluid_code.add_layer(
-                "squeeze",
-                inputs=val_y,
-                output=y_squeeze,
-                param_attr={'axes': [0]})
-            inputs['y'] = y_squeeze
-            node.fluid_code.add_layer(
+        node.fluid_code.add_layer(
                 "matmul", inputs=inputs, output=node, param_attr=None)
-        else:
-            node.fluid_code.add_layer(
-                "matmul", inputs=inputs, output=node, param_attr=None)
+        #if y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
+        #    y_squeeze = val_y.layer_name + '_squeeze'
+        #    node.fluid_code.add_layer(
+        #        "squeeze",
+        #        inputs=val_y,
+        #        output=y_squeeze,
+        #        param_attr={'axes': [0]})
+        #    inputs['y'] = y_squeeze
+        #    node.fluid_code.add_layer(
+        #        "matmul", inputs=inputs, output=node, param_attr=None)
+        #else:
+        #    node.fluid_code.add_layer(
+        #        "matmul", inputs=inputs, output=node, param_attr=None)
 
     @print_mapping_info
     def BatchNormalization(self, node):

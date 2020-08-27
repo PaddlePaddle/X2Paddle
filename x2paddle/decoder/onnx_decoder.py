@@ -168,8 +168,10 @@ class ONNXGraph(Graph):
         print('shape inferencing ...')
         infered_graph = SymbolicShapeInference.infer_shapes(
             self.model, fixed_input_shape=self.fixed_input_shape)
+        #infered_graph = None 
         if infered_graph is None:
             infered_model = shape_inference.infer_shapes(self.model)
+            onnx.save(infered_model, 'infered_model.onnx')
             self.graph = infered_model.graph
         else:
             self.graph = infered_graph
@@ -196,15 +198,21 @@ class ONNXGraph(Graph):
             except:
                 shape = input(
                     "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: ")
-            if shape.count("-1") > 1:
-                print("Only 1 dimension can be -1, type again:)")
-            else:
-                right_shape_been_input = True
+            #if shape.count("-1") > 1:
+            #    print("Only 1 dimension can be -1, type again:)")
+            #else:
+            right_shape_been_input = True
             if shape == 'N':
-                break
-        shape = [int(dim) for dim in shape.strip().split(',')]
-        assert shape.count(-1) <= 1, "Only one dimension can be -1"
-        self.fixed_input_shape[vi.name] = shape
+                return 
+        #shape = [int(dim) for dim in shape.strip().split(',')]
+        shape_ = []
+        for dim in shape.strip().split(','):
+            if dim.isdigit():
+                shape_.append(int(dim))
+            else:
+                shape_.append(dim)
+        #assert shape.count(-1) <= 1, "Only one dimension can be -1"
+        self.fixed_input_shape[vi.name] = shape_
 
     def get_place_holder_nodes(self):
         """
