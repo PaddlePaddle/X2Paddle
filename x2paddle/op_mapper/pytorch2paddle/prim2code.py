@@ -100,6 +100,12 @@ def prim_exception(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_floordiv(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} // {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_if(layer, indent=1, init_func=[], forward_func=[]):
     line = "if {} :".format(get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
@@ -141,6 +147,14 @@ def prim_len(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_len2list(layer, indent=1, init_func=[], forward_func=[]):
+    lines = []
+    lines.append("{} = []".format(layer.outputs[0]))
+    lines.append("for i in range({}):".format(get_value(layer, "len")))
+    lines.append("    {}.append(i)".format(layer.outputs[0]))
+    forward_func.extend(gen_codes(lines, indent=indent))
+
+
 def prim_lt(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {} < {}".format(layer.outputs[0],
                                  get_value(layer, "x"), get_value(layer, "y"))
@@ -154,6 +168,11 @@ def prim_list(layer, indent=1, init_func=[], forward_func=[]):
         inputs_list.append(get_value(layer, "input{}".format(i)))
     inputs_str = ', '.join(inputs_list)
     line = "{} = [{}]".format(layer.outputs[0], inputs_str)
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_list_unpack(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}".format(", ".join(layer.outputs), get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -191,6 +210,13 @@ def prim_neg(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_not(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = not {}".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_replaceitem(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{}[{}] = {}".format(
+        get_value(layer, "list"),
+        get_value(layer, "index"), get_value(layer, "item"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

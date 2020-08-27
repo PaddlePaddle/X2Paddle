@@ -26,28 +26,23 @@ class FcFuser(FuseBase):
     def build_pattern(self):
         """ 描述需要替换的fc图结构。
         fc层模式python实现代码示例:
-            x149 = 2
-            x151 = x146.shape
-            x151 = len(x151)
-            x152 = x151 == x149
-            if x152 :
-                x147 = self.x147
-                x154 = fluid.layers.transpose(x=x147, perm=[1, 0])
-                x148 = self.x148
-                x155 = fluid.layers.addmm(input=x148, x=x146, y=x154, beta=1, alpha=1)
-                x153 = x155
+            x131 = 2
+            x133 = x128.shape
+            x133 = len(x133)
+            x134 = x133 == x131
+            if x134 :
+                classifier_6_weight = self.classifier_6_weight
+                x136 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
+                classifier_6_bias = self.classifier_6_bias
+                x137 = fluid.layers.addmm(input=classifier_6_bias, x=x128, y=x136, beta=1, alpha=1)
+                x135 = x137
             else:
-                x147 = self.x147
-                x157 = fluid.layers.transpose(x=x147, perm=[1, 0])
-                x158 = fluid.layers.matmul(x=x146, y=x157)
-                x159 = True
-                if x159 :
-                    x148 = self.x148
-                    x161 = x158 + 1 * x148
-                    x160 = x161
-                else:
-                    x160 = x158
-                x153 = x160
+                classifier_6_weight = self.classifier_6_weight
+                x138 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
+                x139 = fluid.layers.matmul(x=x128, y=x138)
+                classifier_6_bias = self.classifier_6_bias
+                x140 = x139 + 1 * classifier_6_bias
+                x135 = x140
         """
 
         def gen_name(id):
@@ -117,38 +112,19 @@ class FcFuser(FuseBase):
             outputs=[gen_name(9)])
         if_layer1.inputs["input-1"] = "fc-input-0"
         pattern_block1.add_layer(
-            "prim.constant", inputs={}, outputs=[gen_name(10)], value=True)
-        pattern_block1.add_layer("prim.if", {'input': gen_name(10)},
-                                 [gen_name(11)])
-        if_layer2 = pattern_block1.layers[list(pattern_block1.layers.keys())[
-            -1]]
-        pattern_block1_block0 = PaddleGraph(if_layer2, graph_type="dygraph")
-        pattern_block1_block0.add_layer(
             "fluid.dygraph.base.to_variable",
             inputs={},
             outputs=[gen_name(12)],
             value="params[{}]".format(string(gen_name(12))))
-        pattern_block1_block0.add_layer(
+        pattern_block1.add_layer(
             "prim.add_",
             inputs={"x": gen_name(9),
                     "y": gen_name(12)},
             outputs=[gen_name(13)],
             alpha=1)
-        if_layer2.inputs["input-0"] = gen_name(9)
-        pattern_block1_block0.add_layer(
-            "prim.equal",
-            inputs={'input': gen_name(13)},
-            outputs=[gen_name(11)])
-        if_layer2.add_block(pattern_block1_block0)
-        pattern_block1_block1 = PaddleGraph(if_layer2, graph_type="dygraph")
-        pattern_block1_block1.add_layer(
-            "prim.equal", inputs={'input': gen_name(9)},
-            outputs=[gen_name(11)])
-        if_layer2.inputs["input-1"] = gen_name(9)
         pattern_block1.add_layer(
-            "prim.equal", inputs={'input': gen_name(11)},
+            "prim.equal", inputs={'input': gen_name(13)},
             outputs=[gen_name(4)])
-        if_layer2.add_block(pattern_block1_block1)
         if_layer1.add_block(pattern_block1)
         self.pattern.build(inputs={"input-0": "fc-input-0"})
 
