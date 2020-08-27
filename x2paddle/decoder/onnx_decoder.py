@@ -111,7 +111,7 @@ class ONNXGraphDataNode(GraphNode):
         if isinstance(self.layer, ValueInfoProto):
             values = self.layer.type.tensor_type.shape.dim
             out_shapes = list()
-            out_shapes.append([dim.dim_value for dim in values])
+            out_shapes.append([-1 if dim.dim_value == 0 else dim.dim_value for dim in values])
             return out_shapes
         else:
             values = self.layer.dims
@@ -330,7 +330,7 @@ class ONNXGraph(Graph):
                 'dtype':
                 TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
                 'shape':
-                [dim.dim_value for dim in item.type.tensor_type.shape.dim],
+                [-1 if dim.dim_value == 0 else dim.dim_value for dim in item.type.tensor_type.shape.dim],
                 'external': False
             }
 

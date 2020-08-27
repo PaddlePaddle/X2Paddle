@@ -255,11 +255,6 @@ class OpSet9():
         self.input_shapes.append(node.out_shapes[0])
 
         shape = node.out_shapes[0]
-        for i, dim_shape in enumerate(shape):
-            if dim_shape == 0 and i == 0:
-                shape[i] = 1
-            if dim_shape == 0 and i != 0:
-                assert 'shape of input is not assigned'
         attr = {
             "dtype": string(node.dtype),
             "shape": shape,

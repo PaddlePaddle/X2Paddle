@@ -151,7 +151,6 @@ class SymbolicShapeInference:
             'TopK': self._infer_TopK,
             'Unsqueeze': self._infer_Unsqueeze,
             'Where': self._infer_symbolic_compute_ops,
-            'Transpose': self._infer_Transpose,
             'ZipMap': self._infer_ZipMap
         }
         self.run_ = True
@@ -730,15 +729,6 @@ class SymbolicShapeInference:
         vi.CopyFrom(
             helper.make_tensor_value_info(node.output[0], output_type,
                                           self._get_shape(node, 0)))
-
-    def _infer_Transpose(self, node):
-        input_shape = self._get_shape(node, 0)
-        perm = get_attribute(node, 'perm')
-        output_shape = np.array(input_shape)[perm].tolist()
-        vi = self.known_vi_[node.output[0]]
-        vi.CopyFrom(
-            helper.make_tensor_value_info(node.output[0], self.known_vi_[
-                node.input[0]].type.tensor_type.elem_type, output_shape))
 
     def _infer_Compress(self, node):
         input_shape = self._get_shape(node, 0)
