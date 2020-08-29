@@ -111,13 +111,14 @@ def prim_If(mapper, graph, node):
         %107 (bool): if判断条件。
         %input.5 (Tensor): if控制流的输出，与%output.4对应。
     """
-    output_name = mapper._get_outputs_name(node)[0]
-    node_outputs = [output_name]
+    outputs_name = mapper._get_outputs_name(node)
+    node_outputs = outputs_name.copy()
+    current_outputs = outputs_name.copy()
     input_node = list(node.inputs())[0].node()
     script_input_unique_id = list(node.inputs())[0].unique()
     input_node_name = mapper.outputs_info[script_input_unique_id]
-    mapper._check_input(graph, input_node, input_node_name, node_outputs)
-    graph.add_layer("prim.if", {'input': input_node_name}, [output_name])
+    mapper._check_input(graph, input_node, input_node_name, current_outputs)
+    graph.add_layer("prim.if", {'input': input_node_name}, node_outputs)
     current_layer = list(graph.layers.values())[-1]
     block0 = list(node.blocks())[0]
     block0_graph, graph_inputs0 = mapper.traverse(block0, current_layer)
@@ -131,7 +132,7 @@ def prim_If(mapper, graph, node):
     for i, input_name in enumerate(graph_inputs1):
         current_layer.inputs['input-{}'.format(len0 + 1 + i)] = input_name
     current_layer.add_block(block1_graph)
-    return list(current_layer.inputs.values()), node_outputs
+    return list(current_layer.inputs.values()), current_outputs
 
 
 def prim_ListConstruct(mapper, graph, node):
@@ -433,6 +434,34 @@ def prim_TupleUnpack(mapper, graph, node):
 
     graph.add_layer(
         "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def prim_unchecked_cast(mapper, graph, node):
+    """ 构造确认类型的PaddleLayer。
+
+    TorchScript示例:
+        %size.64 : int[] = prim::unchecked_cast(%size.63)
+        参数含义:
+        %size.64 (-): 输出。
+        %size.63 (-): 输入。
+
+    【注意】Paddle中无此用法，所以此处翻译成赋值。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%size.63
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 

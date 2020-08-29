@@ -132,7 +132,8 @@ class PaddleGraph(object):
 
         if self.graph_type == "dygraph":
             self.get_dygraph_inputs()
-            self.get_dygraph_outputs()
+            if len(self.outputs) == 0:
+                self.get_dygraph_outputs()
 
     def get_global_layers(self):
         # 该全局layers的信息是按照拓扑排序组成的
@@ -164,8 +165,8 @@ class PaddleGraph(object):
             f, [
                 "from paddle.fluid.initializer import Constant",
                 "from paddle.fluid.param_attr import ParamAttr",
-                "import paddle.fluid as fluid"
-                "", "def x2paddle_net():"
+                "import paddle.fluid as fluid", "import math", "",
+                "def x2paddle_net():"
             ],
             indent=0)
         for layer_id, layer in self.layers.items():
@@ -204,6 +205,8 @@ class PaddleGraph(object):
         f.close()
 
     def gen_model(self, save_dir):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         if self.graph_type == "static":
             code_dir = os.path.join(save_dir, 'model_with_code')
             infer_dir = os.path.join(save_dir, 'inference_model')

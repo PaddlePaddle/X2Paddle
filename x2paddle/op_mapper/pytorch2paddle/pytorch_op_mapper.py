@@ -108,9 +108,14 @@ class PyTorchOpMapper(OpMapper):
                     parent_layer=parent_layer,
                     index=i)
                 _update_graph_inputs("equal", inputs, outputs)
-        # 设置graph的参数
+
+        # 设置graph的参数和输出节点
         if isinstance(script_graph, torch._C.Graph):
             graph.set_parameters(self.paddle_params)
+            if hasattr(script_graph, 'return_node'):
+                inputs_name, inputs_node = self._get_inputs_name(
+                    script_graph.return_node())
+                graph.outputs = inputs_name
         return graph, graph_inputs
 
     def _get_outputs_name(self, node, attr_name=None):

@@ -62,18 +62,22 @@ def prim_append(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_assert(layer, indent=1, init_func=[], forward_func=[]):
     if layer.attrs["type"] == "eq":
-        if isinstance(layer.attrs["value"], list):
+        values = get_value(layer, "key")
+        if "value" in layer.attrs:
+            values = layer.attrs["value"]
+        if isinstance(values, list):
             s = ""
-            for v in layer.attrs["value"]:
-                s += "{} == {} or ".format(layer.attrs["key"], v)
+            for v in values:
+                s += "{} == {} or ".format(get_value(layer, "key"), v)
             if len(s) > 0:
                 s = s[:-4]
             line = "assert {}, \'The {} must be {}!\'".format(
-                s, layer.attrs["key"], layer.attrs["value"])
+                s, get_value(layer, "key"), get_value(layer, "value"))
         else:
             line = "assert {} == {}, \'The {} must be {}!\'".format(
-                layer.attrs["key"], layer.attrs["value"], layer.attrs["key"],
-                layer.attrs["value"])
+                get_value(layer, "key"),
+                get_value(layer, "value"),
+                get_value(layer, "key"), get_value(layer, "value"))
     else:
         raise Exception("Not implement yet!")
     forward_func.extend(gen_codes([line], indent=indent))
@@ -81,6 +85,18 @@ def prim_assert(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_constant(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}".format(layer.outputs[0], layer.attrs["value"])
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_contain(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} in {}".format(layer.outputs[0],
+                                  get_value(layer, "element"),
+                                  get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_dict(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = dict()".format(layer.outputs[0])
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -100,9 +116,33 @@ def prim_exception(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_float(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = float({})".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_floor(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = math.floor({})".format(layer.outputs[0],
+                                        get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_floordiv(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {} // {}".format(layer.outputs[0],
                                   get_value(layer, "x"), get_value(layer, "y"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_getitem(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}[{}]".format(layer.outputs[0],
+                                get_value(layer, "list"),
+                                get_value(layer, "index"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_gt(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} > {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -123,16 +163,16 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[]):
         forward_func.extend(b_forward_lines)
 
 
-def prim_getitem(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}[{}]".format(layer.outputs[0],
-                                get_value(layer, "list"),
-                                get_value(layer, "index"))
+def prim_is(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} is {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_gt(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {} > {}".format(layer.outputs[0],
-                                 get_value(layer, "x"), get_value(layer, "y"))
+def prim_isnot(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} is not {}".format(layer.outputs[0],
+                                      get_value(layer, "x"),
+                                      get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -236,6 +276,13 @@ def prim_select(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_set_attr(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_set_item(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{}[{}] = {}".format(
+        get_value(layer, "dict"),
+        get_value(layer, "key"), get_value(layer, "value"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

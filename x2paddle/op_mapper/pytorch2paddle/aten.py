@@ -451,6 +451,35 @@ def aten_chunk(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten___contains__(mapper, graph, node):
+    """ 构造in的PaddleLayer。
+
+    TorchScript示例:
+        %51 : bool = aten::__contains__(%50, %name.1)
+        参数含义:
+        %51 (bool): 输出，第一个元素是否包含第二个元素。
+        %50 (-): 需对比的输入1。
+        %name.1 (-): 需对比的输入2。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%50
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 处理输入1，即%name.1
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["element"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.contain", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
 def aten_contiguous(mapper, graph, node):
     """ 构造在内存中连续存储的PaddleLayer。
 
@@ -542,6 +571,25 @@ def aten_conv2d(mapper, graph, node):
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_dict(mapper, graph, node):
+    """ 构造初始化dict的PaddleLayer。
+
+    TorchScript示例:
+        %features.1 : Dict(str, Tensor) = aten::dict()
+        参数含义:
+        %features.1: 输出，初始化的dict。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    current_inputs = {}
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+
+    graph.add_layer("prim.dict", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -720,6 +768,56 @@ def aten_flatten(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_Float(mapper, graph, node):
+    """ 构造取浮点型的PaddleLayer。
+
+    TorchScript示例:
+        %3992 : float = aten::Float(%3991)
+        参数含义:
+        %3992 (int): 向上取整后的整数。
+        %3991 (float): 需要取整的浮点数。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%3991
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.float", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_floor(mapper, graph, node):
+    """ 构造向上取整的PaddleLayer。
+
+    TorchScript示例:
+        %3978 : int = aten::floor(%scale.18)
+        参数含义:
+        %3978 (int): 向上取整后的整数。
+        %scale.18 (float): 需要取整的浮点数。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%scale.18
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.floor", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
 def aten_floordiv(mapper, graph, node):
     """ 构造向上取整除法的PaddleLayer。
 
@@ -727,7 +825,7 @@ def aten_floordiv(mapper, graph, node):
         %channels_per_group.2 : int = aten::floordiv(%num_channels.2, %3690)
         参数含义:
         %channels_per_group.2 (-): 除后的结果。
-        %%num_channels.2 (-): 被除数。
+        %num_channels.2 (-): 被除数。
         %2 (int): 除数。
     """
     output_name = mapper._get_outputs_name(node)[0]
@@ -851,6 +949,64 @@ def aten_hardtanh_(mapper, graph, node):
         inputs=layer_inputs,
         outputs=layer_outputs,
         threshold=6.0)
+    return current_inputs, current_outputs
+
+
+def aten___is__(mapper, graph, node):
+    """ 构造is not的PaddleLayer。
+
+    TorchScript示例:
+        %3949 : bool = aten::__isnot__(%size.122, %3931)
+        参数含义:
+        %3949 (bool): 输出，第一个元素是否不是第二个元素。
+        %size.122 (-): 需对比的输入1。
+        %3931 (-): 需对比的输入2。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%size.122
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%3931
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.is", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten___isnot__(mapper, graph, node):
+    """ 构造is not的PaddleLayer。
+
+    TorchScript示例:
+        %3949 : bool = aten::__isnot__(%size.122, %3931)
+        参数含义:
+        %3949 (bool): 输出，第一个元素是否不是第二个元素。
+        %size.122 (-): 需对比的输入1。
+        %3931 (-): 需对比的输入2。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%size.122
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%3931
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.isnot", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -1344,6 +1500,36 @@ def aten_select(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten__set_item(mapper, graph, node):
+    """ 构造对dict加入元素的PaddleLayer。
+
+    TorchScript示例:
+        = aten::_set_item(%features.1, %out_name.1, %x.3)
+        参数含义:
+        %features.1 (list): dict。
+        %out_name.1 (-): dict的key。
+        %x.3 (-): dict的value。
+    """
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = []
+    # 处理输入0，即%features.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["dict"] = inputs_name[0]
+    # 处理输入1，即%out_name.1
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["key"] = inputs_name[1]
+    # 处理输入2，即%x.3
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs)
+    layer_inputs["value"] = inputs_name[2]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.set_item", inputs=layer_inputs, outputs=[])
+    return current_inputs, current_outputs
+
+
 def aten_size(mapper, graph, node):
     """ 构造获取shape的PaddleLayer。
 
@@ -1563,6 +1749,70 @@ def aten_unsqueeze(mapper, graph, node):
         current_inputs.append(inputs_name[1])
     graph.add_layer(
         "fluid.layers.unsqueeze",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_upsample_bilinear2d(mapper, graph, node):
+    """ 构造使用bilinear上采样的PaddleLayer。
+
+    TorchScript示例:
+        %4997 : Tensor = aten::upsample_bilinear2d(%x.13, %4963, %5421, %4995, %4996)
+        参数含义:
+        %4997 (Tensor): 输出，上采样后的Tensor。
+        %x.13 (Tensor): 需要上采样的Tensor。
+        %4963 (list): 上采样后的大小。
+        %5421 (bool): 若为True，则将输入和输出张量的4个角落像素的中心对齐，并保留角点像素的值。
+        %4995 (float): 高度的乘数因子。
+        %4995 (float): 宽度的乘数因子。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%x.13
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%4963
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["out_shape"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs)
+        layer_inputs["out_shape"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入2，即%5421
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["align_corners"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs)
+        layer_inputs["align_corners"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+    # 处理输入3和4，构造assert
+    list_layer_inputs = {}
+    mapper._check_input(graph, inputs_node[3], inputs_name[3], current_outputs)
+    list_layer_inputs["key"] = inputs_name[3]
+    current_inputs.append(inputs_name[3])
+    mapper._check_input(graph, inputs_node[4], inputs_name[4], current_outputs)
+    list_layer_inputs["value"] = inputs_name[4]
+    current_inputs.append(inputs_name[4])
+    graph.add_layer(
+        "prim.assert",
+        inputs=list_layer_inputs,
+        outputs=[output_name + "_assert"],
+        type="eq")
+    layer_inputs["scale"] = inputs_name[3]
+    layer_attrs["align_mode"] = 0
+    graph.add_layer(
+        "fluid.layers.interpolate",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)

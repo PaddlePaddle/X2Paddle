@@ -174,6 +174,36 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
+def pytorch2paddle(model_path, save_dir):
+    # check pytorch installation and version
+    try:
+        import torch
+        version = torch.__version__
+        ver_part = version.split('.')
+        print(ver_part)
+        if int(ver_part[1]) < 5:
+            print("[ERROR] pytorch>=1.5.0 is required")
+            return
+    except:
+        print(
+            "[ERROR] Pytorch is not installed, use \"pip install torch==1.5.0 torchvision\"."
+        )
+        return
+    print("Now translating model from pytorch to paddle.")
+
+    from x2paddle.decoder.pytorch_decoder import PyTorchDecoder
+    from x2paddle.op_mapper.pytorch2paddle import pytorch_op_mapper
+    model = PyTorchDecoder(model_path)
+    mapper = pytorch_op_mapper.PyTorchOpMapper(model)
+    mapper.graph.build()
+    print("Model optimizing ...")
+    from x2paddle.optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer()
+    graph_opt.optimize(mapper.graph)
+    print("Model optimized.")
+    mapper.graph.gen_model(save_dir)
+
+
 def paddle2onnx(model_path, save_dir, opset_version=10):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
@@ -243,6 +273,9 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
+    elif args.framework == "pytorch":
+        assert args.model is not None, "--model should be defined while translating pytorch model"
+        pytorch2paddle(args.model, args.save_dir)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
