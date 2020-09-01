@@ -72,7 +72,7 @@ def multiclass_nms(op, block):
             dims=(),
             vals=[float(attrs['nms_threshold'])]))
 
-    boxes_num = block.var( outputs['Out'][0]).shape[0]
+    boxes_num = block.var(outputs['Out'][0]).shape[0]
     top_k_value = np.int64(boxes_num if attrs['keep_top_k'] == -1 else attrs['keep_top_k'])
     node_keep_top_k = onnx.helper.make_node(
         'Constant',
