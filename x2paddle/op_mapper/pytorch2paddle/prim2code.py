@@ -83,6 +83,17 @@ def prim_assert(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_check_dim(layer, indent=1, init_func=[], forward_func=[]):
+    lines = []
+    lines.append("if {} < 0:".format(get_value(layer, "dim")))
+    lines.append("    {} = {} + {}".format(layer.outputs[
+        0], get_value(layer, "dim"), get_value(layer, "len")))
+    lines.append("else:")
+    lines.append("    {} = {}".format(layer.outputs[0], get_value(layer,
+                                                                  "dim")))
+    forward_func.extend(gen_codes(lines, indent=indent))
+
+
 def prim_constant(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}".format(layer.outputs[0], layer.attrs["value"])
     forward_func.extend(gen_codes([line], indent=indent))
@@ -97,6 +108,12 @@ def prim_contain(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_dict(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = dict()".format(layer.outputs[0])
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_div(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} / {}".format(layer.outputs[0],
+                                 get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -161,6 +178,11 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[]):
             indent=indent + 1)
         init_func.extend(b_init_lines)
         forward_func.extend(b_forward_lines)
+
+
+def prim_int(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = int({})".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_is(layer, indent=1, init_func=[], forward_func=[]):
@@ -235,6 +257,8 @@ def prim_mul(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {} * {}".format(layer.outputs[0],
                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
+    if "x2589" in layer.outputs:
+        print(layer.inputs["y"])
 
 
 def prim_ne(layer, indent=1, init_func=[], forward_func=[]):
@@ -266,6 +290,14 @@ def prim_requires_grad(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_rsub(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} - {} * {}".format(layer.outputs[0],
+                                      get_value(layer, "y"),
+                                      get_value(layer, "x"),
+                                      get_value(layer, "alpha"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_select(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}[".format(layer.outputs[0], get_value(layer, "input"))
     for dim in range(layer.attrs["dim"]):
@@ -288,6 +320,13 @@ def prim_set_item(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_shape(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}.shape".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_shape_dim(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}.shape[{}]".format(layer.outputs[0],
+                                      get_value(layer, "input"),
+                                      get_value(layer, "dim"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

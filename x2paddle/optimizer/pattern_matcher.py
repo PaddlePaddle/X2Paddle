@@ -49,10 +49,12 @@ class PatternMatcher(object):
                     # 判断输入连接是否一致
                     if layer_id in graph.edges_in:
                         if pattern_layer_id not in pattern.edges_in:
+                            print("1--")
                             return False
                         else:
                             if len(graph.edges_in[layer_id]) != len(
                                     pattern.edges_in[pattern_layer_id]):
+                                print("2--")
                                 return False
                         layer_in = graph.edges_in[layer_id]
                         pattern_layer_in = pattern.edges_in[pattern_layer_id]
@@ -66,6 +68,7 @@ class PatternMatcher(object):
                                     # 判断pattern输入在pattern_ids的索引
                                     # 和graph输入在subgraph_ids的索引一致
                                     continue
+                                print("3--")
                                 return False
                     # 判断subgraph中的节点是否被外部图使用到(如若被使用到则无效)
                     if layer_id in graph.edges_out:
@@ -73,6 +76,7 @@ class PatternMatcher(object):
                             if not set(pattern_layer.outputs).issubset(
                                     pattern.outputs):
                                 # 若pattern当前layer的输出是pattern的输出，则是正确的
+
                                 return False
                         else:
                             if len(graph.edges_out[layer_id]) != len(

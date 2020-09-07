@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import torch
+import numpy as np
 from x2paddle.core.util import *
 
 
@@ -27,9 +28,12 @@ def prim_Constant(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     output = list(node.outputs())[0]
     value = output.toIValue()
+    output_type = output.type()
     mapper.attrs[output_name] = value
     if isinstance(value, str):
         value = string(value)
+    if str(output_type) == "Tensor":
+        value = "paddle.to_tensor({})".format(value)
     graph.add_layer(
         "prim.constant", inputs={}, outputs=[output_name], value=value)
     return [], [output_name]
@@ -89,6 +93,10 @@ def prim_GetAttr(mapper, graph, node):
             param = getattr(part_script, field_name)
             if isinstance(param, torch.Tensor):
                 param = param.detach().numpy()
+                if len(param.shape) == 0:
+                    param = np.reshape(param, 1)
+                if str(param.dtype) == "uint8":
+                    param = param.astype("int32")
             mapper.pytorch_params[output_name] = param
             part_script = param
     return [], [output_name]
@@ -273,6 +281,40 @@ def prim_min(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer("prim.min", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def prim_NumToTensor(mapper, graph, node):
+    """ 构造转为Tensor的PaddleLayer。
+
+    TorchScript示例:
+        %other.2 : Tensor = prim::NumToTensor(%1736)
+        参数含义:
+        %other.2 (Tensor): 输出。
+        %1736 (-): 输入。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%86
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["value"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    input_type = list(node.inputs())[0].type()
+    layer_attrs["dtype"] = input_type
+    layer_attrs["persistable"] = True
+    layer_attrs["shape"] = [1]
+
+    graph.add_layer(
+        "fluid.layers.create_global_var",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 

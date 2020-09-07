@@ -323,6 +323,7 @@ class PaddleGraph(object):
                 [
                     "from paddle.fluid.initializer import Constant",
                     "from paddle.fluid.param_attr import ParamAttr",
+                    "import paddle",
                     "import paddle.fluid as fluid",
                     "",
                     "class {}(fluid.dygraph.Layer):".format(self.name),
@@ -369,7 +370,7 @@ class PaddleGraph(object):
                         and layer.kernel != "prim.exception" \
                         and layer.kernel != "prim.warnings":
                     continue
-            if "dygraph" in layer.kernel:
+            if "paddle.nn" in layer.kernel or layer.kernel == "fluid.dygraph.base.to_variable":
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[

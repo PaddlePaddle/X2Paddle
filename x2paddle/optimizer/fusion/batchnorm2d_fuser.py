@@ -215,7 +215,7 @@ class BatchNorm2dFuser(FuseBase):
         pattern_block1 = PaddleGraph(if_layer3, graph_type="dygraph")
         if_layer3.add_block(pattern_block1)
         self.pattern.add_layer(
-            "fluid.dygraph.BatchNorm",
+            "paddle.nn.BatchNorm",
             inputs={"input": "bn-input-0"},
             outputs=[gen_name(34), gen_name(35)],
             is_test=True,

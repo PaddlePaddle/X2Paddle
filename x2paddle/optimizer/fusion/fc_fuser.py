@@ -34,7 +34,7 @@ class FcFuser(FuseBase):
                 classifier_6_weight = self.classifier_6_weight
                 x136 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
                 classifier_6_bias = self.classifier_6_bias
-                x137 = fluid.layers.addmm(input=classifier_6_bias, x=x128, y=x136, beta=1, alpha=1)
+                x137 = paddle.addmm(input=classifier_6_bias, x=x128, y=x136, beta=1, alpha=1)
                 x135 = x137
             else:
                 classifier_6_weight = self.classifier_6_weight
@@ -82,7 +82,7 @@ class FcFuser(FuseBase):
             outputs=[gen_name(7)],
             value="params[{}]".format(string(gen_name(7))))
         pattern_block0.add_layer(
-            "fluid.layers.addmm",
+            "paddle.addmm",
             inputs={"input": gen_name(7),
                     "x": "fc-input-0",
                     "y": gen_name(6)},
@@ -155,7 +155,7 @@ class FcFuser(FuseBase):
             bias_name])
         new_layer = PaddleLayer(
             layers_id[0],
-            "fluid.dygraph.Linear",
+            "paddle.nn.Linear",
             inputs={"input": input_name},
             outputs=[linear_name, output_name],
             **attrs)
