@@ -87,7 +87,7 @@ class PatternMatcher(object):
                                 if not set(pattern_layer.outputs).issubset(
                                         pattern.outputs):
                                     # 若pattern当前layer的输出是pattern的输出，则是正确的
-                                    print("5--")
+                                    #                                     print("5--")
                                     return False
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
