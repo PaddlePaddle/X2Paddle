@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from x2paddle.core.util import *
+from x2paddle.core.program import PaddleGraph
 
 dtype_dict = {
     0: string("uint8"),
@@ -833,7 +834,8 @@ def aten_dim(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer(
+        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs)
     graph.add_layer(
         "prim.len", inputs={"input": output_name}, outputs=layer_outputs)
     return current_inputs, current_outputs
@@ -1027,12 +1029,15 @@ def aten_eq(mapper, graph, node):
     # 处理输入0，即%124
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
+    x_value = list(node.inputs())[0]
+    x_type = x_value.type()
     # 处理输入1，即%123
     mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
     layer_inputs["y"] = inputs_name[1]
+    y_value = list(node.inputs())[1]
+    y_type = y_value.type()
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-
     graph.add_layer("prim.eq", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
@@ -1064,13 +1069,14 @@ def aten_exp(mapper, graph, node):
 
 
 def aten_expand(mapper, graph, node):
-    """ 构造复制维度的PaddleLayer。
+    """ 构造对某维度进行广播的PaddleLayer。
 
     TorchScript示例:
         %1889 : Tensor = aten::expand(%1875, %1888, %1567)
         参数含义:
-        %1889 (Tensor): 复制后的结果。
-        %1875 (Tensor): 需要复制的Tensor。
+        %1889 (Tensor): 广播后的结果。
+        %1875 (Tensor): 需要广播的Tensor。
+        %1888 (int): 广播的维度。
         %1567 (bool): 未使用。
     """
     output_name = mapper._get_outputs_name(node)[0]
@@ -1084,13 +1090,54 @@ def aten_expand(mapper, graph, node):
     layer_inputs["x"] = inputs_name[0]
     # 处理输入1，即%1888
     mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+
     graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.str",
+        inputs={"input": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_cond"],
+        y=string("VarType.BOOL"))
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if1"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[0]},
+        outputs=[inputs_name[0]],
+        dtype=string("int64"))
+    block.add_layer(
         "fluid.layers.create_global_var",
         inputs={"shape": inputs_name[1]},
         outputs=[inputs_name[1] + "_var"],
         value=1.0,
         dtype=string("int64"),
         persistable=True)
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    block.add_layer(
+        "fluid.layers.create_global_var",
+        inputs={"shape": inputs_name[1]},
+        outputs=[inputs_name[1] + "_var"],
+        value=1.0,
+        dtype=inputs_name[0] + "_type",
+        persistable=True)
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[0]
+    if_layer.inputs["input-1"] = inputs_name[1]
+
     layer_inputs["target_tensor"] = inputs_name[1] + "_var"
     current_outputs.append(inputs_name[1] + "_var")
     # 获取当前节点输入的list
@@ -1099,6 +1146,82 @@ def aten_expand(mapper, graph, node):
 
     graph.add_layer(
         "fluid.layers.expand_as", inputs=layer_inputs, outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
+def aten_expand_as(mapper, graph, node):
+    """ 构造广播的PaddleLayer。
+
+    TorchScript示例:
+        %1889 : Tensor = aten::expand_as(%1875, %1888)
+        参数含义:
+        %1889 (Tensor): 广播后的结果。
+        %1875 (Tensor): 需要广播的Tensor。
+        %1888 (Tensor): 广播的示例。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%1875
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%1888
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    layer_inputs["target_tensor"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.str",
+        inputs={"input": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_cond"],
+        y=string("VarType.BOOL"))
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if1"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[1]},
+        outputs=[inputs_name[1] + "_type"])
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[0]},
+        outputs=[inputs_name[0]],
+        dtype=inputs_name[1] + "_type")
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[0]
+    if_layer.inputs["input-1"] = inputs_name[1]
+    graph.add_layer(
+        "fluid.layers.expand_as", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if2"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": layer_outputs[0]},
+        outputs=layer_outputs,
+        dtype=string("bool"))
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = layer_outputs[0]
     return current_inputs, current_outputs
 
 
@@ -1734,6 +1857,101 @@ def aten_lt(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_masked_fill_(mapper, graph, node):
+    """ 构造填充mask的PaddleLayer。
+
+    TorchScript示例:
+        %input.4 : Tensor = aten::masked_fill_(%scores.2, %mask.2, %46)
+        参数含义:
+        %input.4 (Tensor): 输出，填充后的结果。
+        %scores.2 (Tensor): 需要填充的Tensor。
+        %mask.2 (Tensor): bool型的Tensor，哪些位置需要填充。
+        %46 (-): 填充的值。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输入的list
+    current_inputs = []
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.4
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    current_inputs.append(inputs_name[0])
+    graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    # 处理输入1，即%scores.2
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    current_inputs.append(inputs_name[1])
+    graph.add_layer(
+        "paddle.logical_not",
+        inputs={"x": inputs_name[1]},
+        outputs=[inputs_name[1] + "_not"])
+    graph.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[1]},
+        outputs=[inputs_name[1] + "_mask"],
+        dtype=inputs_name[0] + "_type")
+    graph.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[1] + "_not"},
+        outputs=[inputs_name[1] + "_not_mask"],
+        dtype=inputs_name[0] + "_type")
+    graph.add_layer(
+        "paddle.multiply",
+        inputs={"x": inputs_name[0],
+                "y": inputs_name[1] + "_not_mask"},
+        outputs=[inputs_name[0] + "_not_mask"])
+    # 处理输入2，即%46
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs)
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[2]},
+        outputs=[inputs_name[2] + "_cond1"],
+        y="-float('inf')")
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[2]},
+        outputs=[inputs_name[2] + "_cond2"],
+        y="float('inf')")
+    graph.add_layer(
+        "prim.or",
+        inputs={
+            "x": inputs_name[2] + "_cond1",
+            "y": inputs_name[2] + "_cond2"
+        },
+        outputs=[inputs_name[2] + "_cond"])
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[2] + "_cond"},
+        outputs=[inputs_name[2] + "_if"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "prim.equal",
+        inputs={"input": inputs_name[1] + "_mask"},
+        outputs=[inputs_name[2] + "_1"])
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "prim.mul",
+        inputs={"x": inputs_name[1] + "_mask",
+                "y": inputs_name[2]},
+        outputs=[inputs_name[2] + "_1"])
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[1] + "_mask"
+    if_layer.inputs["input-1"] = inputs_name[2]
+    if_layer.outputs.append(inputs_name[2] + "_1")
+    graph.add_layer(
+        "fluid.layers.elementwise_add",
+        inputs={"x": inputs_name[2] + "_1",
+                "y": inputs_name[0] + "_not_mask"},
+        outputs=layer_outputs)
+    return current_inputs, current_outputs
+
+
 def aten_max_pool2d(mapper, graph, node):
     """ 构造最大池化的PaddleLayer。
 
@@ -2185,10 +2403,51 @@ def aten_reshape(mapper, graph, node):
         current_inputs.append(inputs_name[1])
 
     graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.str",
+        inputs={"input": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_cond"],
+        y=string("VarType.BOOL"))
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if1"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[0]},
+        outputs=[inputs_name[0]],
+        dtype=string("int32"))
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[0]
+    graph.add_layer(
         "fluid.layers.reshape",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if2"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": layer_outputs[0]},
+        outputs=layer_outputs,
+        dtype=string("bool"))
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = layer_outputs[0]
     return current_inputs, current_outputs
 
 
@@ -2416,7 +2675,8 @@ def aten_size(mapper, graph, node):
             **layer_attrs)
         return current_inputs, current_outputs
 
-    graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer(
+        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -2465,7 +2725,7 @@ def aten_slice(mapper, graph, node):
         layer_inputs["axes"] = inputs_name[1] + "_list"
         current_inputs.append(inputs_name[1] + "_list")
         current_outputs.append(inputs_name[1] + "_list")
-        # 处理输入3，即%82
+        # 处理输入2，即%82
         if inputs_name[2] in mapper.attrs:
             graph.add_layer(
                 "prim.list",
@@ -2485,14 +2745,11 @@ def aten_slice(mapper, graph, node):
         current_outputs.append(inputs_name[2] + "_list")
         # 处理输入3，即%85
         if inputs_name[3] in mapper.attrs:
-            if 9223372036854775807 == mapper.attrs[inputs_name[3]]:
-                import math
-                input0 = int(math.pow(2, 31) - 1)
             graph.add_layer(
                 "prim.list",
                 inputs={},
                 outputs=[inputs_name[3] + "_list"],
-                input0=input0)
+                input0=mapper.attrs[inputs_name[3]])
         else:
             mapper._check_input(graph, inputs_node[3], inputs_name[3],
                                 current_outputs)
@@ -2749,27 +3006,7 @@ def aten_split(mapper, graph, node):
     if "[]" in str(input_type):
         layer_inputs["num_or_sections"] = inputs_name[1]
     else:
-        graph.add_layer(
-            "prim.shape",
-            inputs={"input": inputs_name[0]},
-            outputs=[inputs_name[1] + "_shape"])
-        graph.add_layer(
-            "prim.getitem",
-            inputs={
-                "list": inputs_name[1] + "_shape",
-                "index": inputs_name[2]
-            },
-            outputs=[inputs_name[1] + "_item"])
-        graph.add_layer(
-            "prim.div",
-            inputs={"x": inputs_name[1] + "_item",
-                    "y": inputs_name[1]},
-            outputs=[inputs_name[1] + "_div"])
-        graph.add_layer(
-            "prim.int",
-            inputs={"input": inputs_name[1] + "_div"},
-            outputs=[inputs_name[1] + "_int"])
-        layer_inputs["num_or_sections"] = inputs_name[1] + "_int"
+        layer_attrs["num_or_sections"] = 1
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
@@ -2849,7 +3086,7 @@ def aten_transpose(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     graph.add_layer(
-        "prim.shape",
+        "fluid.layers.shape",
         inputs={"input": inputs_name[0]},
         outputs=[output_name + "_shape"])
     current_outputs.append(output_name + "_shape")
@@ -3071,12 +3308,52 @@ def aten_view(mapper, graph, node):
                             current_outputs)
         layer_inputs["shape"] = inputs_name[1]
         current_inputs.append(inputs_name[1])
-
+    graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.str",
+        inputs={"input": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_type"])
+    graph.add_layer(
+        "prim.eq",
+        inputs={"x": inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_cond"],
+        y=string("VarType.BOOL"))
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if1"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": inputs_name[0]},
+        outputs=[inputs_name[0]],
+        dtype=string("int32"))
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[0]
     graph.add_layer(
         "fluid.layers.reshape",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)
+    graph.add_layer(
+        "prim.if", {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if2"])
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block.add_layer(
+        "fluid.layers.cast",
+        inputs={"x": layer_outputs[0]},
+        outputs=layer_outputs,
+        dtype=string("bool"))
+    if_layer.add_block(block)
+    block = PaddleGraph(if_layer, graph_type="dygraph")
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = layer_outputs[0]
     return current_inputs, current_outputs
 
 

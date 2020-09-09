@@ -257,8 +257,6 @@ def prim_mul(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {} * {}".format(layer.outputs[0],
                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
-    if "x2589" in layer.outputs:
-        print(layer.inputs["y"])
 
 
 def prim_ne(layer, indent=1, init_func=[], forward_func=[]):
@@ -274,6 +272,12 @@ def prim_neg(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_not(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = not {}".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_or(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {} or {}".format(layer.outputs[0],
+                                  get_value(layer, "x"), get_value(layer, "y"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -318,15 +322,10 @@ def prim_set_item(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_shape(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}.shape".format(layer.outputs[0], get_value(layer, "input"))
-    forward_func.extend(gen_codes([line], indent=indent))
-
-
 def prim_shape_dim(layer, indent=1, init_func=[], forward_func=[]):
-    line = "{} = {}.shape[{}]".format(layer.outputs[0],
-                                      get_value(layer, "input"),
-                                      get_value(layer, "dim"))
+    line = "{} = fluid.layers.shape({})[{}]".format(layer.outputs[0],
+                                                    get_value(layer, "input"),
+                                                    get_value(layer, "dim"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -336,6 +335,11 @@ def prim_slice(layer, indent=1, init_func=[], forward_func=[]):
                                         get_value(layer, "start"),
                                         get_value(layer, "end"),
                                         get_value(layer, "step"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_str(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = str({})".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -358,6 +362,11 @@ def prim_tuple(layer, indent=1, init_func=[], forward_func=[]):
 def prim_tuple_unpack(layer, indent=1, init_func=[], forward_func=[]):
     outputs_str = ', '.join(layer.outputs)
     line = "{} = {}".format(outputs_str, get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_type(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}.dtype".format(layer.outputs[0], get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

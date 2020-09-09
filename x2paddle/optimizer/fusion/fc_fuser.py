@@ -26,7 +26,6 @@ class FcFuser(FuseBase):
     def build_pattern(self):
         """ 描述需要替换的fc图结构。
         fc层模式python实现代码示例:
-            x131 = 2
             x133 = x128.shape
             x133 = len(x133)
             x134 = x133 == x131
@@ -49,18 +48,15 @@ class FcFuser(FuseBase):
             return "x" + str(id)
 
         self.pattern.add_layer(
-            "prim.constant", inputs={}, outputs=[gen_name(0)], value=2)
-        self.pattern.add_layer(
-            "prim.constant", inputs={}, outputs=[gen_name(1)], value=1)
-        self.pattern.add_layer(
-            "prim.shape", inputs={'input': "fc-input-0"},
+            "fluid.layers.shape",
+            inputs={'input': "fc-input-0"},
             outputs=[gen_name(2)])
         self.pattern.add_layer(
             "prim.len", inputs={'input': gen_name(2)}, outputs=[gen_name(2)])
         self.pattern.add_layer(
             "prim.eq",
             inputs={"eq0": gen_name(2),
-                    "eq1": gen_name(0)},
+                    "eq1": "fc-input-1"},
             outputs=[gen_name(3)])
         self.pattern.add_layer("prim.if", {'input': gen_name(3)}, [gen_name(4)])
         self.pattern.outputs.append(gen_name(4))
@@ -106,7 +102,7 @@ class FcFuser(FuseBase):
             outputs=[gen_name(6)],
             perm=[1, 0])
         pattern_block1.add_layer(
-            "fluid.layers.matmul",
+            "paddle.matmul",
             inputs={"x": "fc-input-0",
                     "y": gen_name(6)},
             outputs=[gen_name(9)])
@@ -126,7 +122,9 @@ class FcFuser(FuseBase):
             "prim.equal", inputs={'input': gen_name(13)},
             outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block1)
-        self.pattern.build(inputs={"input-0": "fc-input-0"})
+        self.pattern.build(
+            inputs={"input-0": "fc-input-0",
+                    "input-1": "fc-input-1"})
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)
@@ -136,13 +134,13 @@ class FcFuser(FuseBase):
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
-        layer = matches[layers_id[2]]
+        layer = matches[layers_id[0]]
         input_name = layer.inputs["input"]
-        layer = matches[layers_id[5]]
+        layer = matches[layers_id[3]]
         output_name = layer.outputs[0]
-        layer = matches[layers_id[6]]
+        layer = matches[layers_id[4]]
         weight_name = layer.attrs["value"][8:-2]
-        layer = matches[layers_id[8]]
+        layer = matches[layers_id[6]]
         bias_name = layer.attrs["value"][8:-2]
         attrs = dict()
         attrs["input_dim"] = parameters[weight_name].shape[1]

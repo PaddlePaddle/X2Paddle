@@ -63,6 +63,8 @@ class PatternMatcher(object):
                             pattern_layer_id_in = pattern_layer_in[i]
                             if pattern_layer_id_in != -1:
                                 subgraph_ids = list(subgraph_id2layers.keys())
+                                if layer_id_in not in subgraph_ids:
+                                    return False
                                 if pattern_ids.index(pattern_layer_id_in) == \
                                 subgraph_ids.index(layer_id_in):
                                     # 判断pattern输入在pattern_ids的索引
@@ -76,7 +78,7 @@ class PatternMatcher(object):
                             if not set(pattern_layer.outputs).issubset(
                                     pattern.outputs):
                                 # 若pattern当前layer的输出是pattern的输出，则是正确的
-
+                                print("4--")
                                 return False
                         else:
                             if len(graph.edges_out[layer_id]) != len(
@@ -85,10 +87,12 @@ class PatternMatcher(object):
                                 if not set(pattern_layer.outputs).issubset(
                                         pattern.outputs):
                                     # 若pattern当前layer的输出是pattern的输出，则是正确的
+                                    print("5--")
                                     return False
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
                         if len(pattern_layer.blocks) != len(layer.blocks):
+                            print("6--")
                             return False
                         for i, b in enumerate(pattern_layer.blocks):
                             match_info = get_subgraph(pattern_layer.blocks[i],
@@ -96,13 +100,17 @@ class PatternMatcher(object):
                             if match_info is not False:
                                 subgraph_id2layers.update(match_info)
                             else:
+                                print("7--")
                                 return False
                     pattern_index += 1
                     if pattern_index == len(pattern.layers):
                         return subgraph_id2layers
                 else:
-                    return False
-            return subgraph_id2layers
+                    if pattern_index == 0:
+                        return False
+            if pattern_index == len(pattern.layers):
+                return subgraph_id2layers
+            return False
 
         for i, (layer_id, layer) in enumerate(graph.layers.items()):
             match_info = get_subgraph(self.pattern, graph, i)
@@ -112,10 +120,70 @@ class PatternMatcher(object):
                 if len(block.layers) > 0:
                     self.detect_patterns_by_topo(layer.blocks[j])
 
-    def detect_patterns_by_edge(self, graph):
+    def detect_patterns_by_edge(self, graph, ignore_list_inputs=True):
         """当遇见顺序没有强制规定的pattern时使用该方式
         """
-        pass
+
+        def get_subgraph(pattern, graph, start_index):
+            pattern_id2layers = pattern.get_global_layers()
+            pattern_ids = list(pattern_id2layers.keys())
+            pattern_layer_id = pattern_ids[0]
+            subgraph_id2layers = dict()
+            graph_layers = dict(list(graph.layers.items())[start_index:])
+            layer_id = list(graph_layers.keys())[0]
+
+            def update(layer_id, pattern_layer_id):
+                layer = graph_layers[layer_id]
+                pattern_layer = pattern_id2layers[pattern_layer_id]
+                if layer.kernel != pattern_layer.kernel:
+                    return False
+                subgraph_id2layers[layer_id] = layer
+                for i, pattern_layer_id_in in enumerate(pattern.edges_in[
+                        pattern_layer_id]):
+                    if pattern_layer_id_in == -1 or ignore_list_inputs:
+                        continue
+                    layer_id_in = graph.edges_in[layer_id][i]
+                    subgraph_ids = list(subgraph_id2layers.keys())
+                    if layer_id_in not in subgraph_ids:
+                        return False
+                if pattern.edges_out.get(pattern_layer_id, 0) != 0:
+                    if len(pattern.edges_out[pattern_layer_id]) != \
+                            len(graph.edges_out[layer_id]):
+                        return False
+                    for i, pattern_layer_id_out in enumerate(pattern.edges_out[
+                            pattern_layer_id]):
+                        if pattern_layer_id_out in pattern_ids:
+                            new_layer_id_out = graph.edges_out[layer_id][i]
+                            for j, new_new_layer_id_in in enumerate(
+                                    graph.edges_in[new_layer_id_out]):
+                                if new_new_layer_id_in not in subgraph_id2layers:
+                                    if ignore_list_inputs:
+                                        continue
+                                    new_new_pattern_layer_id_in = pattern.edges_in[
+                                        pattern_layer_id_out][j]
+                                    if new_new_pattern_layer_id_in == -1:
+                                        continue
+                                    update(new_new_layer_id_in,
+                                           new_new_pattern_layer_id_in)
+                            update(new_layer_id_out, pattern_layer_id_out)
+
+            while len(subgraph_id2layers) != len(pattern_id2layers):
+                out = update(layer_id, pattern_layer_id)
+                if out == False:
+                    return False
+                else:
+                    if len(subgraph_id2layers) == len(pattern_id2layers):
+                        return subgraph_id2layers
+                    else:
+                        return False
+
+        for i, (layer_id, layer) in enumerate(graph.layers.items()):
+            match_info = get_subgraph(self.pattern, graph, i)
+            if match_info:
+                self.matches.append(match_info)
+            for j, block in enumerate(layer.blocks):
+                if len(block.layers) > 0:
+                    self.detect_patterns_by_edge(layer.blocks[j])
 
     def remove_overlapped_match(self):
         """ 如果2个子图有重叠，只取前一个子图。

@@ -33,7 +33,18 @@ def prim_Constant(mapper, graph, node):
     if isinstance(value, str):
         value = string(value)
     if str(output_type) == "Tensor":
-        value = "paddle.to_tensor({})".format(value)
+        #         value = "paddle.to_tensor({})".format(value)
+        value = "{}".format(value)
+
+    if "inf" in str(value):
+        t = str(type(value)).split("'")[1]
+        if str(value).startswith("-"):
+            value = "-{}({})".format(t, string(str(value)[1:]))
+        else:
+            value = "{}({})".format(t, string(str(value)))
+    if "9223372036854775807" in str(value):
+        import math
+        value = int(math.pow(2, 31) - 1)
     graph.add_layer(
         "prim.constant", inputs={}, outputs=[output_name], value=value)
     return [], [output_name]
@@ -193,6 +204,7 @@ def prim_ListUnpack(mapper, graph, node):
 
     graph.add_layer(
         "prim.list_unpack", inputs=layer_inputs, outputs=layer_outputs)
+    mapper.split_len[list(layer_inputs.values())[0]] = len(layer_outputs)
     return current_inputs, current_outputs
 
 
@@ -302,19 +314,25 @@ def prim_NumToTensor(mapper, graph, node):
     current_outputs = [output_name]
     # 处理输入0，即%86
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
-    layer_inputs["value"] = inputs_name[0]
-    # 获取当前节点输入的list
-    current_inputs = list(layer_inputs.values())
-    input_type = list(node.inputs())[0].type()
-    layer_attrs["dtype"] = input_type
-    layer_attrs["persistable"] = True
-    layer_attrs["shape"] = [1]
-
-    graph.add_layer(
-        "fluid.layers.create_global_var",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        **layer_attrs)
+    if inputs_node[0].kind() == "aten::size":
+        layer_inputs["input"] = inputs_name[0]
+        # 获取当前节点输入的list
+        current_inputs = list(layer_inputs.values())
+        graph.add_layer(
+            "prim_equal", inputs=layer_inputs, outputs=layer_outputs)
+    else:
+        layer_inputs["value"] = inputs_name[0]
+        # 获取当前节点输入的list
+        current_inputs = list(layer_inputs.values())
+        input_type = list(node.inputs())[0].type()
+        layer_attrs["dtype"] = input_type
+        layer_attrs["persistable"] = True
+        layer_attrs["shape"] = [1]
+        graph.add_layer(
+            "fluid.layers.create_global_var",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            **layer_attrs)
     return current_inputs, current_outputs
 
 
