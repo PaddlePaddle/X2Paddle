@@ -143,8 +143,8 @@ class FcFuser(FuseBase):
         layer = matches[layers_id[6]]
         bias_name = layer.attrs["value"][8:-2]
         attrs = dict()
-        attrs["input_dim"] = parameters[weight_name].shape[1]
-        attrs["output_dim"] = parameters[weight_name].shape[0]
+        attrs["in_features"] = parameters[weight_name].shape[1]
+        attrs["out_features"] = parameters[weight_name].shape[0]
         linear_name = "linear{}".format(self.linear_index)
         self.linear_index += 1
         parameters["{}.weight".format(linear_name)] = parameters[

@@ -21,7 +21,7 @@ class GraphOptimizer(object):
         self.passes = [
             "interpolate_bilinear_fuse_pass", "fc_fuse_pass",
             "adaptive_pool2d_fuse_pass", "batchnorm2d_fuse_pass",
-            "constant_fuse_pass", "reshape_fuse_pass"
+            "constant_fuse_pass", "reshape_fuse_pass", "dropout_fuse_pass"
         ]
 
     def optimize(self, graph):

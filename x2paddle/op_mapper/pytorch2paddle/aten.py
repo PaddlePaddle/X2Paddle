@@ -646,8 +646,8 @@ def aten_conv2d(mapper, graph, node):
     # 处理输入1，即%25
     weights = mapper.pytorch_params[inputs_name[1]]
     mapper.paddle_params[conv2d_name + ".weight"] = weights
-    layer_attrs["num_filters"] = weights.shape[0]
-    layer_attrs["filter_size"] = weights.shape[2:]
+    layer_attrs["out_channels"] = weights.shape[0]
+    layer_attrs["kernel_size"] = weights.shape[2:]
     # 处理输入2，即%27
     if inputs_name[2] in mapper.pytorch_params:
         bias = mapper.pytorch_params[inputs_name[2]]
@@ -665,11 +665,10 @@ def aten_conv2d(mapper, graph, node):
     layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
     # 处理输入6，即%26
     layer_attrs["groups"] = mapper.attrs[inputs_name[6]]
-    layer_attrs['num_channels'] = weights.shape[1] * mapper.attrs[inputs_name[
-        6]]
+    layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[inputs_name[6]]
 
     graph.add_layer(
-        "paddle.nn.Conv2D",
+        "paddle.nn.Conv2d",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)

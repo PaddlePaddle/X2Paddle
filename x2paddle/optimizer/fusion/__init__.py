@@ -18,6 +18,8 @@ from .batchnorm2d_fuser import BatchNorm2dFuser
 from .batchnorm2d_fuse_pass import BatchNorm2dFusePass
 from .constant_fuser import ConstantFuser
 from .constant_fuse_pass import ConstantFusePass
+from .dropout_fuser import DropoutFuser
+from .dropout_fuse_pass import DropoutFusePass
 from .fc_fuser import FcFuser
 from .fc_fuse_pass import FcFusePass
 from .interpolate_bilinear_fuser import InterpolateBilinearFuser

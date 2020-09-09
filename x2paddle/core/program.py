@@ -15,6 +15,8 @@
 from __future__ import print_function
 from __future__ import division
 import paddle.fluid as fluid
+import os.path as osp
+import paddle
 from paddle.fluid.proto import framework_pb2
 from collections import OrderedDict
 import numpy
@@ -204,7 +206,7 @@ class PaddleGraph(object):
             indent=1)
         f.close()
 
-    def gen_model(self, save_dir):
+    def gen_model(self, save_dir, input_shapes):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         if self.graph_type == "static":
@@ -242,6 +244,7 @@ class PaddleGraph(object):
         else:
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
+            self.dygraph2static(save_dir, input_shapes)  #[[None, 3, 224, 224]]
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -342,7 +345,7 @@ class PaddleGraph(object):
                     indent=1))
 
         def write_code(code_dir):
-            f = open(os.path.join(code_dir, 'code.py'), 'w')
+            f = open(os.path.join(code_dir, 'x2paddle_code.py'), 'w')
             for code_line in self.head:
                 f.write(code_line)
             init_writen_codes = []
@@ -441,3 +444,24 @@ class PaddleGraph(object):
         params_output = open(os.path.join(code_dir, 'model.pdparams'), 'wb')
         pickle.dump(self.parameters, params_output)
         params_output.close()
+
+    def dygraph2static(self, save_dir, input_shapes=[]):
+        from paddle.fluid.dygraph.jit import declarative
+        sepc_list = list()
+        for i, name in enumerate(self.inputs):
+            sepc_list.append(
+                paddle.static.InputSpec(
+                    shape=input_shapes[i], name=name))
+        import sys
+        path = osp.abspath(save_dir)
+        sys.path.insert(0, save_dir)
+        import x2paddle_code
+        place = fluid.CPUPlace()
+        with fluid.dygraph.guard(place):
+            restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
+            model = getattr(x2paddle_code, self.name)(restore)
+            model.set_dict(restore)
+            model.eval()
+            model.forward = declarative(model.forward, sepc_list)
+        fluid.dygraph.jit.save(
+            layer=model, model_path=osp.join(save_dir, "inference"))

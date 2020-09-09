@@ -88,6 +88,12 @@ def arg_parser():
         action="store_true",
         default=False,
         help="define whether merge the params")
+    parser.add_argument(
+        "--input_shapes",
+        "-is",
+        action='append',
+        default=[],
+        help="define the inputs' shape")
 
     return parser
 
@@ -174,7 +180,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
-def pytorch2paddle(model_path, save_dir):
+def pytorch2paddle(model_path, save_dir, input_shapes):
     # check pytorch installation and version
     try:
         import torch
@@ -201,7 +207,13 @@ def pytorch2paddle(model_path, save_dir):
     graph_opt = GraphOptimizer()
     graph_opt.optimize(mapper.graph)
     print("Model optimized.")
-    mapper.graph.gen_model(save_dir)
+    real_input_shapes = list()
+    for shape in input_shapes:
+        sp = shape[1:-1].split(",")
+        for i, s in enumerate(sp):
+            sp[i] = int(s)
+        real_input_shapes.append(sp)
+    mapper.graph.gen_model(save_dir, real_input_shapes)
 
 
 def paddle2onnx(model_path, save_dir, opset_version=10):
@@ -275,7 +287,7 @@ def main():
         onnx2paddle(args.model, args.save_dir, params_merge)
     elif args.framework == "pytorch":
         assert args.model is not None, "--model should be defined while translating pytorch model"
-        pytorch2paddle(args.model, args.save_dir)
+        pytorch2paddle(args.model, args.save_dir, args.input_shapes)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
