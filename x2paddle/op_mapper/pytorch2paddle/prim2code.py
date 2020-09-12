@@ -172,10 +172,11 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[]):
     forward_func.extend(b_forward_lines)
     block = layer.blocks[1]
     if len(block.layers) > 0:
-        line = "else:"
-        forward_func.extend(gen_codes([line], indent=indent))
         b_init_lines, b_forward_lines = block.gen_dygraph_code(
             indent=indent + 1)
+        if len(b_forward_lines) != 0:
+            line = "else:"
+            forward_func.extend(gen_codes([line], indent=indent))
         init_func.extend(b_init_lines)
         forward_func.extend(b_forward_lines)
 
@@ -188,6 +189,13 @@ def prim_int(layer, indent=1, init_func=[], forward_func=[]):
 def prim_is(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {} is {}".format(layer.outputs[0],
                                   get_value(layer, "x"), get_value(layer, "y"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_isinstance(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = isinstance({}, {})".format(layer.outputs[0],
+                                            get_value(layer, "input"),
+                                            layer.attrs["cls"])
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -367,6 +375,12 @@ def prim_tuple_unpack(layer, indent=1, init_func=[], forward_func=[]):
 
 def prim_type(layer, indent=1, init_func=[], forward_func=[]):
     line = "{} = {}.dtype".format(layer.outputs[0], get_value(layer, "input"))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
+def prim_var2list(layer, indent=1, init_func=[], forward_func=[]):
+    line = "{} = {}.numpy().tolist()".format(layer.outputs[0],
+                                             get_value(layer, "input"))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

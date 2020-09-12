@@ -128,9 +128,29 @@ class PaddleGraph(object):
             for output in layer.outputs:
                 outputs_from_nodes[output] = layer_id
 
+            # 将block的输出用于父图
+            if inputs is not None and outputs is not None and set(
+                    layer.outputs).issubset(outputs):
+                if layer_id not in self.edges_out:
+                    self.edges_out[layer_id] = list()
+                self.edges_out[layer_id].append(-1)
+
+            # 处理子图
             if len(layer.blocks) > 0:
                 for block in layer.blocks:
                     block.build(layer.inputs, layer.outputs)
+
+        # 删除不必要的节点
+        invalid_list = list()
+        for layer_id, layer in self.layers.items():
+            if len(self.layers) > 1:
+                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
+                        and layer.kernel != "prim.exception" \
+                        and layer.kernel != "prim.warnings":
+                    invalid_list.append(layer_id)
+        for layer_id in invalid_list:
+            self.layers.pop(layer_id)
 
         if self.graph_type == "dygraph":
             self.get_dygraph_inputs()
@@ -244,7 +264,8 @@ class PaddleGraph(object):
         else:
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
-            self.dygraph2static(save_dir, input_shapes)  #[[None, 3, 224, 224]]
+
+#             self.dygraph2static(save_dir, input_shapes)  #[[None, 3, 224, 224]]
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -367,13 +388,8 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
-            if len(self.layers) > 1:
-                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
-                        and layer.kernel != "prim.exception" \
-                        and layer.kernel != "prim.warnings":
-                    continue
-            if "paddle.nn" in layer.kernel or layer.kernel == "fluid.dygraph.base.to_variable":
+            if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
+                ) or layer.kernel == "fluid.dygraph.base.to_variable":
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[

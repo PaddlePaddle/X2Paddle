@@ -3229,17 +3229,35 @@ def aten_upsample_bilinear2d(mapper, graph, node):
     current_outputs = [output_name]
     # 处理输入0，即%x.13
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
-    layer_inputs["input"] = inputs_name[0]
+    layer_inputs["x"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%4963
     if inputs_name[1] in mapper.attrs:
-        layer_attrs["out_shape"] = mapper.attrs[inputs_name[1]]
+        layer_attrs["size"] = mapper.attrs[inputs_name[1]]
     else:
         mapper._check_input(graph, inputs_node[1], inputs_name[1],
                             current_outputs)
-        layer_inputs["out_shape"] = inputs_name[1]
+        layer_inputs["size"] = inputs_name[1]
         current_inputs.append(inputs_name[1])
+        graph.add_layer(
+            "prim.isinstance",
+            inputs={"input": inputs_name[1]},
+            outputs=[inputs_name[1] + "_isinstance"],
+            cls="paddle.fluid.Variable")
+        graph.add_layer(
+            "prim.if", {"input": inputs_name[1] + "_isinstance"},
+            outputs=[inputs_name[0] + "_if1"])
+        if_layer = graph.layers[list(graph.layers.keys())[-1]]
+        block = PaddleGraph(if_layer, graph_type="dygraph")
+        block.add_layer(
+            "prim.var2list",
+            inputs={"input": inputs_name[1]},
+            outputs=[inputs_name[1]])
+        if_layer.add_block(block)
+        block = PaddleGraph(if_layer, graph_type="dygraph")
+        if_layer.add_block(block)
+        if_layer.inputs["input-0"] = inputs_name[1]
     # 处理输入2，即%5421
     if inputs_name[2] in mapper.attrs:
         layer_attrs["align_corners"] = mapper.attrs[inputs_name[2]]
@@ -3261,10 +3279,10 @@ def aten_upsample_bilinear2d(mapper, graph, node):
         inputs=list_layer_inputs,
         outputs=[output_name + "_assert"],
         type="eq")
-    layer_inputs["scale"] = inputs_name[3]
+    layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     graph.add_layer(
-        "fluid.layers.interpolate",
+        "paddle.nn.functional.interpolate",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)

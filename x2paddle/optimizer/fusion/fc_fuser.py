@@ -28,7 +28,7 @@ class FcFuser(FuseBase):
         fc层模式python实现代码示例:
             x133 = x128.shape
             x133 = len(x133)
-            x134 = x133 == x131
+            x134 = x133 == 2
             if x134 :
                 classifier_6_weight = self.classifier_6_weight
                 x136 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
@@ -55,9 +55,9 @@ class FcFuser(FuseBase):
             "prim.len", inputs={'input': gen_name(2)}, outputs=[gen_name(2)])
         self.pattern.add_layer(
             "prim.eq",
-            inputs={"eq0": gen_name(2),
-                    "eq1": "fc-input-1"},
-            outputs=[gen_name(3)])
+            inputs={"eq0": gen_name(2)},
+            outputs=[gen_name(3)],
+            eq1=2)
         self.pattern.add_layer("prim.if", {'input': gen_name(3)}, [gen_name(4)])
         self.pattern.outputs.append(gen_name(4))
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
@@ -122,9 +122,7 @@ class FcFuser(FuseBase):
             "prim.equal", inputs={'input': gen_name(13)},
             outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block1)
-        self.pattern.build(
-            inputs={"input-0": "fc-input-0",
-                    "input-1": "fc-input-1"})
+        self.pattern.build(inputs={"input-0": "fc-input-0"})
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)

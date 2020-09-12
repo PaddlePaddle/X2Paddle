@@ -81,6 +81,7 @@ class PyTorchOpMapper(OpMapper):
                 node = ivalue.node()
                 if str(ivalue.type()) != "Tensor":
                     graph.set_name(str(ivalue.type()).split(".")[-1])
+                    continue
                 inputs, outputs = self.data(graph, node, ivalue.unique())
         # 转换中间节点
         for node in script_graph.nodes():

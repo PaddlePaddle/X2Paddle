@@ -442,7 +442,8 @@ def prim_shape(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.shape", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer(
+        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 

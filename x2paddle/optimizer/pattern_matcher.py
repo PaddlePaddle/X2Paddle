@@ -34,7 +34,7 @@ class PatternMatcher(object):
             并将子图的id以拓扑排序存放到subgraph_id2layers。
         """
 
-        def get_subgraph(pattern, graph, start_index):
+        def get_subgraph(pattern, graph, start_index, is_subblock=False):
             pattern_index = 0
             pattern_id2layers = pattern.get_global_layers()
             pattern_ids = list(pattern_id2layers.keys())
@@ -49,13 +49,19 @@ class PatternMatcher(object):
                     # 判断输入连接是否一致
                     if layer_id in graph.edges_in:
                         if pattern_layer_id not in pattern.edges_in:
-                            print("1--")
-                            return False
+                            if pattern_index == 0 or is_subblock:
+                                return False
+                            else:
+                                subgraph_id2layers.pop(layer_id)
+                                continue
                         else:
                             if len(graph.edges_in[layer_id]) != len(
                                     pattern.edges_in[pattern_layer_id]):
-                                print("2--")
-                                return False
+                                if pattern_index == 0 or is_subblock:
+                                    return False
+                                else:
+                                    subgraph_id2layers.pop(layer_id)
+                                    continue
                         layer_in = graph.edges_in[layer_id]
                         pattern_layer_in = pattern.edges_in[pattern_layer_id]
                         for i in range(len(layer_in)):
@@ -70,16 +76,22 @@ class PatternMatcher(object):
                                     # 判断pattern输入在pattern_ids的索引
                                     # 和graph输入在subgraph_ids的索引一致
                                     continue
-                                print("3--")
-                                return False
+                                if pattern_index == 0 or is_subblock:
+                                    return False
+                                else:
+                                    subgraph_id2layers.pop(layer_id)
+                                    continue
                     # 判断subgraph中的节点是否被外部图使用到(如若被使用到则无效)
                     if layer_id in graph.edges_out:
                         if pattern_layer_id not in pattern.edges_out:
                             if not set(pattern_layer.outputs).issubset(
                                     pattern.outputs):
                                 # 若pattern当前layer的输出是pattern的输出，则是正确的
-                                print("4--")
-                                return False
+                                if pattern_index == 0 or is_subblock:
+                                    return False
+                                else:
+                                    subgraph_id2layers.pop(layer_id)
+                                    continue
                         else:
                             if len(graph.edges_out[layer_id]) != len(
                                     pattern.edges_out[pattern_layer_id]):
@@ -87,27 +99,49 @@ class PatternMatcher(object):
                                 if not set(pattern_layer.outputs).issubset(
                                         pattern.outputs):
                                     # 若pattern当前layer的输出是pattern的输出，则是正确的
-                                    #                                     print("5--")
-                                    return False
+                                    if pattern_index == 0 or is_subblock:
+                                        return False
+                                    else:
+                                        subgraph_id2layers.pop(layer_id)
+                                        continue
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
                         if len(pattern_layer.blocks) != len(layer.blocks):
-                            print("6--")
-                            return False
+                            if pattern_index == 0 or is_subblock:
+                                return False
+                            else:
+                                subgraph_id2layers.pop(layer_id)
+                                continue
+                        is_subblock_match = True
                         for i, b in enumerate(pattern_layer.blocks):
-                            match_info = get_subgraph(pattern_layer.blocks[i],
-                                                      layer.blocks[i], 0)
+                            match_info = get_subgraph(
+                                pattern_layer.blocks[i],
+                                layer.blocks[i],
+                                0,
+                                is_subblock=True)
                             if match_info is not False:
                                 subgraph_id2layers.update(match_info)
                             else:
-                                print("7--")
+                                is_subblock_match = False
+                                break
+                        if not is_subblock_match:
+                            if pattern_index == 0 or is_subblock:
                                 return False
+                            else:
+                                index = list(subgraph_id2layers.keys()).index(
+                                    layer_id)
+                                for key in list(subgraph_id2layers.keys())[
+                                        index:]:
+                                    subgraph_id2layers.pop(key)
+                                continue
                     pattern_index += 1
                     if pattern_index == len(pattern.layers):
                         return subgraph_id2layers
                 else:
-                    if pattern_index == 0:
+                    if pattern_index == 0 or is_subblock:
                         return False
+                    else:
+                        continue
             if pattern_index == len(pattern.layers):
                 return subgraph_id2layers
             return False
