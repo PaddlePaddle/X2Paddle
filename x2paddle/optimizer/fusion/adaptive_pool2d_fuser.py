@@ -25,28 +25,25 @@ class AdaptivePool2dFuser(FuseBase):
     def build_pattern(self):
         """ 描述需要替换的adaptive pool2d图结构。
         adaptive pool2d层模式python实现代码示例:
-            x72 = [6, 6]
-            x73 = fluid.layers.shape(x71)
-            x78 = len(x73)
-            x80 = x78 <= x79
-            if x80 :
-                raise RaiseException(x75)
-            x83 = []
-            x85 = x73[x84: x76: x77]
-            x87 = len(x85)
-            x88 = [x86, x87]
-            x89 = min(x88)
-            for _x91 in range(x89):
-                x92 = x72[_x91]
-                x83.append(x92)
-            x93 = fluid.layers.adaptive_pool2d(input=x71, pool_size=x83, pool_type='avg')
+            x68 = fluid.layers.shape(input=x60)
+            x69 = len(x68)
+            x70 = x69 <= 2
+            if x70 :
+                raise RaiseException('Exception')
+            x73 = []
+            x74 = x68[-2: 2147483647: 1]
+            x75 = len(x74)
+            x76 = [2, x75]
+            x77 = min(x76)
+            for _x79 in range(x77):
+                x80 = [6, 6][_x79]
+                x73.append(x80)
+            x81 = fluid.layers.adaptive_pool2d(input=x60, pool_size=x73, pool_type='avg')
         """
 
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "prim.constant", inputs={}, outputs=[gen_name(0)], value=[6, 6])
         self.pattern.add_layer(
             "fluid.layers.shape",
             inputs={'input': "pool-input-0"},
@@ -54,38 +51,33 @@ class AdaptivePool2dFuser(FuseBase):
         self.pattern.add_layer(
             "prim.len", inputs={"input": gen_name(1)}, outputs=[gen_name(6)])
         self.pattern.add_layer(
-            "prim.le",
-            inputs={"x": gen_name(6),
-                    "y": "pool-input-1"},
-            outputs=[gen_name(8)])
+            "prim.le", inputs={"x": gen_name(6)}, outputs=[gen_name(8)], y=2)
         self.pattern.add_layer("prim.if", {'input': gen_name(8)}, [gen_name(9)])
         if_layer = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(if_layer, graph_type="dygraph")
         pattern_block0.add_layer(
             "prim.exception",
-            inputs={"input": "pool-input-6"},
-            outputs=[gen_name(9)])
-        if_layer.inputs["input-0"] = "pool-input-6"
+            inputs={},
+            outputs=[gen_name(9)],
+            input="Exception")
         if_layer.add_block(pattern_block0)
         pattern_block1 = PaddleGraph(if_layer, graph_type="dygraph")
         if_layer.add_block(pattern_block1)
         self.pattern.add_layer("prim.list", inputs={}, outputs=[gen_name(10)])
         self.pattern.add_layer(
             "prim.slice",
-            inputs={
-                "input": gen_name(1),
-                "start": "pool-input-2",
-                "end": "pool-input-3",
-                "step": "pool-input-4"
-            },
-            outputs=[gen_name(12)])
+            inputs={"input": gen_name(1), },
+            outputs=[gen_name(12)],
+            start=-1,
+            end=100,
+            step=1)
         self.pattern.add_layer(
             "prim.len", inputs={"input": gen_name(12)}, outputs=[gen_name(14)])
         self.pattern.add_layer(
             "prim.list",
-            inputs={"input0": "pool-input-4",
-                    "input1": gen_name(14)},
-            outputs=[gen_name(15)])
+            inputs={"input1": gen_name(14)},
+            outputs=[gen_name(15)],
+            input0=2)
         self.pattern.add_layer(
             "prim.min", inputs={"input": gen_name(15)}, outputs=[gen_name(16)])
         self.pattern.add_layer("prim.loop", {'input': gen_name(16)},
@@ -94,16 +86,15 @@ class AdaptivePool2dFuser(FuseBase):
         pattern_block = PaddleGraph(loop_layer, graph_type="dygraph")
         pattern_block.add_layer(
             "prim.getitem",
-            inputs={"list": gen_name(0),
-                    "index": gen_name(18)},
-            outputs=[gen_name(19)])
+            inputs={"index": gen_name(18)},
+            outputs=[gen_name(19)],
+            list=[6, 6])
         pattern_block.add_layer(
             "prim.append",
             inputs={"list": gen_name(10),
                     "index": gen_name(19)},
             outputs=[gen_name(20)])
-        loop_layer.inputs["input-0"] = gen_name(0)
-        loop_layer.inputs["input-2"] = gen_name(10)
+        loop_layer.inputs["input-0"] = gen_name(10)
         loop_layer.add_block(pattern_block)
         pool_attrs = {'pool_type': string("avg")}
         self.pattern.add_layer(
@@ -112,15 +103,7 @@ class AdaptivePool2dFuser(FuseBase):
                     "pool_size": gen_name(10)},
             outputs=[gen_name(21)],
             **pool_attrs)
-        self.pattern.build(inputs={
-            "input-0": "pool-input-0",
-            "input-1": "pool-input-1",
-            "input-2": "pool-input-2",
-            "input-3": "pool-input-3",
-            "input-4": "pool-input-4",
-            "input-5": "pool-input-5",
-            "input-6": "pool-input-6"
-        })
+        self.pattern.build(inputs={"input-0": "pool-input-0", })
 
     def insert_new_layer(self, graph, parameters, matches):
         parameters = graph.parameters
@@ -131,9 +114,9 @@ class AdaptivePool2dFuser(FuseBase):
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
+        layer = matches[layers_id[11]]
+        pool_size = layer.attrs["list"]
         layer = matches[layers_id[0]]
-        pool_size = layer.attrs["value"]
-        layer = matches[layers_id[1]]
         input_name = layer.inputs["input"]
         layer = matches[layers_id[-1]]
         output_name = layer.outputs[0]

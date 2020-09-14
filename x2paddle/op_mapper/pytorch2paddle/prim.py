@@ -29,7 +29,6 @@ def prim_Constant(mapper, graph, node):
     output = list(node.outputs())[0]
     value = output.toIValue()
     output_type = output.type()
-    mapper.attrs[output_name] = value
     if isinstance(value, str):
         value = string(value)
     if str(output_type) == "Tensor":
@@ -45,6 +44,7 @@ def prim_Constant(mapper, graph, node):
     if "9223372036854775807" in str(value):
         import math
         value = int(math.pow(2, 31) - 1)
+    mapper.attrs[output_name] = value
     graph.add_layer(
         "prim.constant", inputs={}, outputs=[output_name], value=value)
     return [], [output_name]

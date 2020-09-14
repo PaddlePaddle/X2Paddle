@@ -92,7 +92,7 @@ def arg_parser():
         "--input_shapes",
         "-is",
         action='append',
-        default=[],
+        default=None,
         help="define the inputs' shape")
 
     return parser
@@ -207,12 +207,15 @@ def pytorch2paddle(model_path, save_dir, input_shapes):
     graph_opt = GraphOptimizer()
     graph_opt.optimize(mapper.graph)
     print("Model optimized.")
-    real_input_shapes = list()
-    for shape in input_shapes:
-        sp = shape[1:-1].split(",")
-        for i, s in enumerate(sp):
-            sp[i] = int(s)
-        real_input_shapes.append(sp)
+    if input_shapes is not None:
+        real_input_shapes = list()
+        for shape in input_shapes:
+            sp = shape[1:-1].split(",")
+            for i, s in enumerate(sp):
+                sp[i] = int(s)
+            real_input_shapes.append(sp)
+    else:
+        real_input_shapes = None
     mapper.graph.gen_model(save_dir, real_input_shapes)
 
 

@@ -765,6 +765,51 @@ def aten_cos(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_cumsum(mapper, graph, node):
+    """ 构造与前一个元素累加的PaddleLayer。
+
+    TorchScript示例:
+        %56 : Tensor = aten::cumsum(%mask.1, %46, %48)
+        参数含义:
+        %56 (Tensor): 输出，累加后的结果。
+        %mask.1 (Tensor): 输入，需要累加的Tensor。
+        %46 (int): 累加的维度。
+        %48 (int/None): Tensor的类型。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%mask.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%46
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入1，即%48，代表dtype
+    if mapper.attrs[inputs_name[2]] is None:
+        layer_attrs["dtype"] = None
+    else:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[2]]]
+
+    graph.add_layer(
+        "paddle.cumsum",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_detach(mapper, graph, node):
     """ 构造返回一个新的Tensor，从当前计算图中分离下来的，但是仍指向原变量的存放位置的PaddleLayer。
 
@@ -990,6 +1035,8 @@ def aten_embedding(mapper, graph, node):
     # 处理输入0，即%57
     weights = mapper.pytorch_params[inputs_name[0]]
     mapper.paddle_params[embedding_name + ".weight"] = weights
+    #     layer_attrs["num_embeddings"] = weights.shape[0]
+    #     layer_attrs["embedding_dim"] = weights.shape[1]
     layer_attrs["size"] = weights.shape
     # 处理输入1，即%input_ids.1
     mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
@@ -999,10 +1046,11 @@ def aten_embedding(mapper, graph, node):
     # 处理输入2，即%45
     layer_attrs["padding_idx"] = mapper.attrs[inputs_name[2]]
     # 处理输入4，即%46
+    #     layer_attrs["sparse"] = mapper.attrs[inputs_name[4]]
     layer_attrs["is_sparse"] = mapper.attrs[inputs_name[4]]
 
     graph.add_layer(
-        "paddle.nn.Embedding",
+        "paddle.fluid.dygraph.Embedding",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)
@@ -2885,6 +2933,44 @@ def aten_softplus(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_stack(mapper, graph, node):
+    """ 构造堆叠Tensor的PaddleLayer。
+
+    TorchScript示例:
+        %x.222 : Tensor = aten::stack(%32, %7)
+        参数含义:
+        %x.222 (Tensor): 输出，堆叠后的结果。
+        %i.12 (Tensor): 需要堆叠的Tensor组成的Tensor。
+        %7 (int): 堆叠的轴。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%13
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%12
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    graph.add_layer(
+        "paddle.stack",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_sub(mapper, graph, node):
     """ 构造数值相减的PaddleLayer。
 
@@ -3017,44 +3103,6 @@ def aten_split(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-def aten_stack(mapper, graph, node):
-    """ 构造堆叠Tensor的PaddleLayer。
-
-    TorchScript示例:
-        %x.222 : Tensor = aten::stack(%32, %7)
-        参数含义:
-        %x.222 (Tensor): 输出，堆叠后的结果。
-        %i.12 (Tensor): 需要堆叠的Tensor组成的Tensor。
-        %7 (int): 堆叠的轴。
-    """
-    output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [output_name]
-    layer_inputs = {}
-    layer_attrs = {}
-    inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
-    current_outputs = [output_name]
-    # 处理输入0，即%13
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
-    layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入的list
-    current_inputs = list(layer_inputs.values())
-    # 处理输入1，即%12
-    if inputs_name[1] in mapper.attrs:
-        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
-    else:
-        mapper._check_input(graph, inputs_node[1], inputs_name[1],
-                            current_outputs)
-        layer_inputs["axis"] = inputs_name[1]
-        current_inputs.append(inputs_name[1])
-    graph.add_layer(
-        "paddle.stack",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        **layer_attrs)
-    return current_inputs, current_outputs
-
-
 def aten_transpose(mapper, graph, node):
     """ 构造矩阵转置的PaddleLayer。
 
@@ -3152,20 +3200,57 @@ def aten_to(mapper, graph, node):
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
-    assert len(inputs_name) == 5, "Paddle only support converting the dtype!"
     # 处理输入0，即%13
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
     layer_inputs["x"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%12
-    layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
+    if len(inputs_name) == 6:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[2]]]
+    else:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
 
     graph.add_layer(
         "fluid.layers.cast",
         inputs=layer_inputs,
         outputs=layer_outputs,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_type_as(mapper, graph, node):
+    """ 构造转换Tensor类型的PaddleLayer。
+
+    TorchScript示例:
+        %57 : Tensor = aten::type_as(%56, %mask.1)
+        参数含义:
+        %57 (Tensor): 输出，改变类型后的Tensor。
+        %56 (Tensor): 需要改变类型的Tensor。
+        %mask.1 (Tensor): 转换成与该Tensor相一致的类型。
+    """
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%56
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入0，即%mask.1
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs)
+    graph.add_layer(
+        "prim.type",
+        inputs={"input": inputs_name[1]},
+        outputs=[inputs_name[1] + "_type"])
+    layer_inputs["dtype"] = inputs_name[1] + "_type"
+    current_inputs.append(inputs_name[1])
+
+    graph.add_layer(
+        "fluid.layers.cast", inputs=layer_inputs, outputs=layer_outputs)
     return current_inputs, current_outputs
 
 

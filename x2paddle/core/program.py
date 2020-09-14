@@ -226,7 +226,7 @@ class PaddleGraph(object):
             indent=1)
         f.close()
 
-    def gen_model(self, save_dir, input_shapes):
+    def gen_model(self, save_dir, input_shapes=None):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         if self.graph_type == "static":
@@ -264,8 +264,9 @@ class PaddleGraph(object):
         else:
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
-
-#             self.dygraph2static(save_dir, input_shapes)  #[[None, 3, 224, 224]]
+            if input_shapes is not None:
+                # 如果input_shapes非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
+                self.dygraph2static(save_dir, input_shapes)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -318,6 +319,8 @@ class PaddleGraph(object):
 
         update(self.layers)
         self.inputs = list(set(self.inputs))
+        if self.inputs is not None:
+            self.inputs.sort()
 
     def get_dygraph_outputs(self):
         for layer_id, layer in self.layers.items():
@@ -389,7 +392,8 @@ class PaddleGraph(object):
 
         for layer_id, layer in self.layers.items():
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
-                ) or layer.kernel == "fluid.dygraph.base.to_variable":
+                ) or layer.kernel == "fluid.dygraph.base.to_variable" or \
+               "paddle.fluid.dygraph" in layer.kernel:
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
