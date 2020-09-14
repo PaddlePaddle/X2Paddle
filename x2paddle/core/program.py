@@ -15,6 +15,8 @@
 from __future__ import print_function
 from __future__ import division
 import paddle.fluid as fluid
+import os.path as osp
+import paddle
 from paddle.fluid.proto import framework_pb2
 from collections import OrderedDict
 import numpy
@@ -101,11 +103,6 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
-            #             if "x5109" in layer.outputs or "x5110" in layer.outputs:
-            #                 print(layer.kernel)
-            #                 print(layer.inputs)
-            #                 print(layer.outputs)
-            #                 print(layer.attrs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):
@@ -131,13 +128,34 @@ class PaddleGraph(object):
             for output in layer.outputs:
                 outputs_from_nodes[output] = layer_id
 
+            # 将block的输出用于父图
+            if inputs is not None and outputs is not None and set(
+                    layer.outputs).issubset(outputs):
+                if layer_id not in self.edges_out:
+                    self.edges_out[layer_id] = list()
+                self.edges_out[layer_id].append(-1)
+
+            # 处理子图
             if len(layer.blocks) > 0:
                 for block in layer.blocks:
                     block.build(layer.inputs, layer.outputs)
 
+        # 删除不必要的节点
+        invalid_list = list()
+        for layer_id, layer in self.layers.items():
+            if len(self.layers) > 1:
+                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
+                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
+                        and layer.kernel != "prim.exception" \
+                        and layer.kernel != "prim.warnings":
+                    invalid_list.append(layer_id)
+        for layer_id in invalid_list:
+            self.layers.pop(layer_id)
+
         if self.graph_type == "dygraph":
             self.get_dygraph_inputs()
-            self.get_dygraph_outputs()
+            if len(self.outputs) == 0:
+                self.get_dygraph_outputs()
 
     def get_global_layers(self):
         # 该全局layers的信息是按照拓扑排序组成的
@@ -169,8 +187,8 @@ class PaddleGraph(object):
             f, [
                 "from paddle.fluid.initializer import Constant",
                 "from paddle.fluid.param_attr import ParamAttr",
-                "import paddle.fluid as fluid"
-                "", "def x2paddle_net():"
+                "import paddle.fluid as fluid", "import math", "",
+                "def x2paddle_net():"
             ],
             indent=0)
         for layer_id, layer in self.layers.items():
@@ -208,7 +226,9 @@ class PaddleGraph(object):
             indent=1)
         f.close()
 
-    def gen_model(self, save_dir):
+    def gen_model(self, save_dir, input_shapes=None):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         if self.graph_type == "static":
             code_dir = os.path.join(save_dir, 'model_with_code')
             infer_dir = os.path.join(save_dir, 'inference_model')
@@ -244,6 +264,9 @@ class PaddleGraph(object):
         else:
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
+            if input_shapes is not None:
+                # 如果input_shapes非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
+                self.dygraph2static(save_dir, input_shapes)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -296,6 +319,8 @@ class PaddleGraph(object):
 
         update(self.layers)
         self.inputs = list(set(self.inputs))
+        if self.inputs is not None:
+            self.inputs.sort()
 
     def get_dygraph_outputs(self):
         for layer_id, layer in self.layers.items():
@@ -325,6 +350,7 @@ class PaddleGraph(object):
                 [
                     "from paddle.fluid.initializer import Constant",
                     "from paddle.fluid.param_attr import ParamAttr",
+                    "import paddle",
                     "import paddle.fluid as fluid",
                     "",
                     "class {}(fluid.dygraph.Layer):".format(self.name),
@@ -343,7 +369,7 @@ class PaddleGraph(object):
                     indent=1))
 
         def write_code(code_dir):
-            f = open(os.path.join(code_dir, 'code.py'), 'w')
+            f = open(os.path.join(code_dir, 'x2paddle_code.py'), 'w')
             for code_line in self.head:
                 f.write(code_line)
             init_writen_codes = []
@@ -365,13 +391,9 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
-            if len(self.layers) > 1:
-                if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                        layer_id, 0) == 0 and layer.kernel != "prim.assert" \
-                        and layer.kernel != "prim.exception" \
-                        and layer.kernel != "prim.warnings":
-                    continue
-            if "dygraph" in layer.kernel:
+            if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
+                ) or layer.kernel == "fluid.dygraph.base.to_variable" or \
+               "paddle.fluid.dygraph" in layer.kernel:
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
@@ -442,3 +464,24 @@ class PaddleGraph(object):
         params_output = open(os.path.join(code_dir, 'model.pdparams'), 'wb')
         pickle.dump(self.parameters, params_output)
         params_output.close()
+
+    def dygraph2static(self, save_dir, input_shapes=[]):
+        from paddle.fluid.dygraph.jit import declarative
+        sepc_list = list()
+        for i, name in enumerate(self.inputs):
+            sepc_list.append(
+                paddle.static.InputSpec(
+                    shape=input_shapes[i], name=name))
+        import sys
+        path = osp.abspath(save_dir)
+        sys.path.insert(0, save_dir)
+        import x2paddle_code
+        place = fluid.CPUPlace()
+        with fluid.dygraph.guard(place):
+            restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
+            model = getattr(x2paddle_code, self.name)(restore)
+            model.set_dict(restore)
+            model.eval()
+            model.forward = declarative(model.forward, sepc_list)
+        fluid.dygraph.jit.save(
+            layer=model, model_path=osp.join(save_dir, "inference"))

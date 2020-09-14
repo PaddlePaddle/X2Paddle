@@ -28,6 +28,7 @@ class PyTorchDecoder(object):
         torch._C._jit_pass_lint(graph)
         torch._C._jit_pass_dce(graph)
         torch._C._jit_pass_lint(graph)
-        graph = torch._C._jit_pass_canonicalize(graph)
+        torch._C._jit_pass_canonicalize(graph)
         torch._C._jit_pass_lint(graph)
+        torch._C._jit_pass_constant_propagation(graph)
         return graph

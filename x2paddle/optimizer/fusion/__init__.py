@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .fc_fuser import FcFuser
-from .fc_fuse_pass import FcFusePass
-from .nn_adaptive_pool2d_fuser import NnAdaptivePool2dFuser
-from .nn_adaptive_pool2d_fuse_pass import NnAdaptivePool2dFusePass
-from .functional_adaptive_pool2d_fuser import FunctionalAdaptivePool2dFuser
-from .functional_adaptive_pool2d_fuse_pass import FunctionalAdaptivePool2dFusePass
-from .constant_fuser import ConstantFuser
-from .constant_fuse_pass import ConstantFusePass
+from .adaptive_pool2d_fuser import AdaptivePool2dFuser
+from .adaptive_pool2d_fuse_pass import AdaptivePool2dFusePass
 from .batchnorm2d_fuser import BatchNorm2dFuser
 from .batchnorm2d_fuse_pass import BatchNorm2dFusePass
+from .constant_fuser import ConstantFuser
+from .constant_fuse_pass import ConstantFusePass
+from .dropout_fuser import DropoutFuser
+from .dropout_fuse_pass import DropoutFusePass
+from .fc_fuser import FcFuser
+from .fc_fuse_pass import FcFusePass
+from .interpolate_bilinear_fuser import InterpolateBilinearFuser
+from .interpolate_bilinear_fuse_pass import InterpolateBilinearFusePass
+from .reshape_fuser import ReshapeFuser
+from .reshape_fuse_pass import ReshapeFusePass

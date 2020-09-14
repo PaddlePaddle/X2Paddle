@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.optimizer.fusion import *
-from x2paddle.optimizer.pass_manager import PassManager
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.fusion import InterpolateBilinearFuser
+from x2paddle.optimizer.pass_manager import pass_register
 
 
-class GraphOptimizer(object):
+@pass_register
+class InterpolateBilinearFusePass(Pass):
+    name = "interpolate_bilinear_fuse_pass"
+
     def __init__(self):
-        self.passes = [
-            "constant_fuse_pass", "batchnorm2d_fuse_pass",
-            "interpolate_bilinear_fuse_pass", "fc_fuse_pass",
-            "adaptive_pool2d_fuse_pass", "reshape_fuse_pass",
-            "dropout_fuse_pass"
-        ]
+        Pass.__init__(self)
 
-    def optimize(self, graph):
-        for pass_name in self.passes:
-            pass_ = PassManager.lookup(pass_name)()
-            pass_.apply(graph)
-            print("{} done!".format(pass_name))
-        return graph
+    def apply(self, graph):
+        fuser = InterpolateBilinearFuser()
+        fuser.operate(graph, match_kind="topo")
+
+
+# 用于注册
+interpolate_bilinear_fuse_pass = InterpolateBilinearFusePass()

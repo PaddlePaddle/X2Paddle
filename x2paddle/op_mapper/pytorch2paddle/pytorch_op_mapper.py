@@ -31,6 +31,7 @@ class PyTorchOpMapper(OpMapper):
         self.attrs = {}  # key为节点名，value为属性值
         self.output_index = 0
         self.dygraph_name_id = {}  # 动态图__init__输出名字中的id，key为kernel类型，value为id
+        self.split_len = {}  # split的长度
         # 转换
         self.check_op(decoder.graph)
         self.graph, _ = self.traverse(decoder.graph)
@@ -80,6 +81,7 @@ class PyTorchOpMapper(OpMapper):
                 node = ivalue.node()
                 if str(ivalue.type()) != "Tensor":
                     graph.set_name(str(ivalue.type()).split(".")[-1])
+                    continue
                 inputs, outputs = self.data(graph, node, ivalue.unique())
         # 转换中间节点
         for node in script_graph.nodes():
@@ -108,9 +110,19 @@ class PyTorchOpMapper(OpMapper):
                     parent_layer=parent_layer,
                     index=i)
                 _update_graph_inputs("equal", inputs, outputs)
-        # 设置graph的参数
+
+        # 设置graph的参数和输出节点
         if isinstance(script_graph, torch._C.Graph):
             graph.set_parameters(self.paddle_params)
+            if hasattr(script_graph, 'return_node'):
+                inputs_name, inputs_node = self._get_inputs_name(
+                    script_graph.return_node())
+                graph.outputs = inputs_name
+        # 更新split参数
+        for layer in graph.layers.values():
+            if layer.kernel == "fluid.layers.split" and "num_or_sections" in layer.attrs:
+                layer.attrs["num_or_sections"] = self.split_len[layer.outputs[
+                    0]]
         return graph, graph_inputs
 
     def _get_outputs_name(self, node, attr_name=None):
