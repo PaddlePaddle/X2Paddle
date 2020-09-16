@@ -1419,7 +1419,7 @@ class SymbolicShapeInference:
             if self.verbose_ > 2:
                 print(node.op_type + ': ' + node.name)
                 for i, name in enumerate(node.input):
-                    print('  Input {}: {} {}55555'.format(
+                    print('  Input {}: {} {}'.format(
                         i, name, 'initializer'
                         if name in self.initializers_ else ''))
 
@@ -1544,7 +1544,7 @@ class SymbolicShapeInference:
                             continue  # continue the inference after guess, no need to stop as no merge is needed
 
                     if self.verbose_ > 0 or not self.auto_merge_ or out_type_undefined:
-                        print('Stopping at incomplete shape inference at ' +
+                        print('Stopping at incomplete symbolic shape inference at ' +
                               node.op_type + ': ' + node.name)
                         print('node inputs:')
                         for i in node.input:
@@ -1579,6 +1579,7 @@ class SymbolicShapeInference:
         all_shapes_inferred = False
         symbolic_shape_inference._preprocess(
             in_mp, input_shapes=fixed_input_shape)
+
         try:
             while symbolic_shape_inference.run_:
                 all_shapes_inferred = symbolic_shape_inference._infer_impl(
@@ -1588,9 +1589,8 @@ class SymbolicShapeInference:
                 print('!' * 10)
                 symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                     symbolic_shape_inference.out_mp_)
-            #onnx.save(symbolic_shape_inference.out_mp_, 'tmp.onnx')
         except:
-            print('Stopping at incomplete shape inference')
+            print('Stopping at incomplete symbolic shape inference')
             symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
-                symbolic_shape_inference.out_mp_)
+                in_mp)
         return symbolic_shape_inference.out_mp_.graph
