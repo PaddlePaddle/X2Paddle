@@ -57,6 +57,7 @@ def _is_static_shape(shape):
         return False
     return True
 
+
 def _get_same_padding(in_size, kernel_size, stride):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
@@ -348,6 +349,7 @@ class OpSet9():
                 'Warnning: paddle not support op:resize wiht mode: linear, we use bilinear replace linear'
             )
             fluid_op = 'resize_bilinear'
+        attr['align_corners'] = False
         node.fluid_code.add_layer(
             fluid_op, inputs=inputs, output=node, param_attr=attr)
 
@@ -736,53 +738,59 @@ class OpSet9():
                 param_attr=None)
         else:
             input_inner_indices = node.layer_name + '_input_inner_indices'
+            shape = val_x.out_shapes[0]
             node.fluid_code.add_layer(
-                'scatter_nd',
+                'reshape',
+                inputs=indices.layer_name,
+                output=indices.layer_name,
+                param_attr={'shape': indices.out_shapes[0]})
+
+            zeros_like_val_x = val_x.layer_name + '_zeros'
+            node.fluid_code.add_layer(
+                'zeros_like',
+                inputs=val_x,
+                output=zeros_like_val_x,
+                param_attr=None)
+            node.fluid_code.add_layer(
+                'scatter_nd_add',
                 inputs={
-                    'shape': val_x.out_shapes[0],
+                    'ref': zeros_like_val_x,
                     'index': indices,
                     'updates': updates
                 },
                 output=input_inner_indices,
                 param_attr=None)
-
-            constant_minus_one = node.layer_name + '_constant_minus_one'
-            node.fluid_code.add_layer(
-                'fill_constant',
-                inputs=None,
-                output=constant_minus_one,
-                param_attr={
-                    'shape': updates.out_shapes[0],
-                    'dtype': string(updates.dtype),
-                    'value': -1
-                })
-
             indices_mask = node.layer_name + '_indices_mask'
+            constant_minus_one = node.layer_name + '_constant_minus_one'
+            # full_like support create tensor shape like input tensor
             node.fluid_code.add_layer(
-                'scatter_nd',
+                'full_like',
+                inputs=updates,
+                output=constant_minus_one,
+                param_attr={'dtype': string(updates.dtype),
+                            'fill_value': -1})
+            node.fluid_code.add_layer(
+                'scatter_nd_add',
                 inputs={
-                    'shape': val_x.out_shapes[0],
+                    'ref': zeros_like_val_x,
                     'index': indices,
                     'updates': constant_minus_one
                 },
                 output=indices_mask,
                 param_attr=None)
-
-            constant_1 = node.layer_name + '_constant_1'
+            constant_one = node.layer_name + '_constant_1'
+            # full_like support create tensor shape like input tensor
             node.fluid_code.add_layer(
-                'fill_constant',
-                inputs=None,
-                output=constant_1,
-                param_attr={
-                    'shape': val_x.out_shapes[0],
-                    'dtype': string(val_x.dtype),
-                    'value': 1
-                })
+                'full_like',
+                inputs=val_x,
+                output=constant_one,
+                param_attr={'dtype': string(val_x.dtype),
+                            'fill_value': 1})
             input_out_indices_mask = node.layer_name + '_input_out_indices_mask'
             node.fluid_code.add_layer(
                 "elementwise_add",
                 inputs={"x": indices_mask,
-                        "y": constant_1},
+                        "y": constant_one},
                 output=input_out_indices_mask,
                 param_attr=None)
 
@@ -841,11 +849,15 @@ class OpSet9():
                 self.omit_nodes.append(ends.layer_name)
                 starts_value = starts_value.copy()
                 ends_value = ends_value.copy()
+                #for idx in range(len(ends_value)):
+                #    if ends_value[idx] > 2**31 - 1:
+                #        ends_value[idx] = 2**31 - 1
+                #print(val_x.out_shapes)
                 for idx in range(len(ends_value)):
-                    if starts_value[idx] > val_x.out_shapes[0][axes[idx]]:
-                        starts_value[idx] = val_x.out_shapes[0][axes[idx]]-1
+                    if starts_value[idx] >= val_x.out_shapes[0][axes[idx]]:
+                        starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
                         ends_value[idx] = val_x.out_shapes[0][axes[idx]]
-                        starts_value[idx] = val_x.out_shapes[0][axes[idx]]-1
+                        starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
                     elif ends_value[idx] > 2**31 - 1:
                         ends_value[idx] = 2**31 - 1
                 attr = {
@@ -882,10 +894,10 @@ class OpSet9():
         if steps is not None:
             attr['strides'] = steps
             node.fluid_code.add_layer(
-            'strided_slice', inputs=val_x, output=node, param_attr=attr)
+                'strided_slice', inputs=val_x, output=node, param_attr=attr)
         else:
             node.fluid_code.add_layer(
-            'slice', inputs=val_x, output=node, param_attr=attr)
+                'slice', inputs=val_x, output=node, param_attr=attr)
 
     @print_mapping_info
     def ConstantOfShape(self, node):
@@ -928,15 +940,12 @@ class OpSet9():
             min_value = _const_weight_or_none(min_ipt)
             self.omit_nodes.append(max_ipt.layer_name)
             self.omit_nodes.append(min_ipt.layer_name)
-            if max_value.shape == (1,):
+            if max_value.shape == (1, ):
                 max_value = max_value[0]
-            if min_value.shape == (1,):
+            if min_value.shape == (1, ):
                 min_value = min_value[0]
         if max_value is not None and min_value is not None:
-            attr = {
-                'max': max_value,
-                'min': min_value 
-            }
+            attr = {'max': max_value, 'min': min_value}
             node.fluid_code.add_layer(
                 'clip', inputs=val_x, output=node, param_attr=attr)
         else:
