@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from six import text_type as _text_type
+from x2paddle import program
 import argparse
 import sys
 
@@ -66,8 +67,8 @@ def arg_parser():
     parser.add_argument(
         "--without_data_format_optimization",
         "-wo",
-        type=_text_type,
-        default="True",
+        action="store_true",
+        default=False,
         help="tf model conversion without data format optimization")
     parser.add_argument(
         "--define_input_shape",
@@ -87,13 +88,19 @@ def arg_parser():
         action="store_true",
         default=False,
         help="define whether merge the params")
+    parser.add_argument(
+        "--input_shapes",
+        "-is",
+        action='append',
+        default=None,
+        help="define the inputs' shape")
 
     return parser
 
 
 def tf2paddle(model_path,
               save_dir,
-              without_data_format_optimization,
+              without_data_format_optimization=False,
               define_input_shape=False,
               params_merge=False):
     # check tensorflow installation and version
@@ -120,29 +127,10 @@ def tf2paddle(model_path,
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
 
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
-        mapper = TFOpMapperNHWC(model)
-        optimizer = TFOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
-    mapper.save_inference_model(save_dir, params_merge)
+    mapper = TFOpMapperNHWC(model)
+    program.build()
+    program.gen_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):
@@ -170,8 +158,8 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     try:
         import onnx
         version = onnx.version.version
-        if version < '1.6.0':
-            print("[ERROR] onnx>=1.6.0 is required")
+        if version != '1.6.0':
+            print("[ERROR] onnx==1.6.0 is required")
             return
     except:
         print("[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
@@ -192,17 +180,51 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
+def pytorch2paddle(model_path, save_dir, input_shapes):
+    # check pytorch installation and version
+    try:
+        import torch
+        version = torch.__version__
+        ver_part = version.split('.')
+        print(ver_part)
+        if int(ver_part[1]) < 5:
+            print("[ERROR] pytorch>=1.5.0 is required")
+            return
+    except:
+        print(
+            "[ERROR] Pytorch is not installed, use \"pip install torch==1.5.0 torchvision\"."
+        )
+        return
+    print("Now translating model from pytorch to paddle.")
+
+    from x2paddle.decoder.pytorch_decoder import PyTorchDecoder
+    from x2paddle.op_mapper.pytorch2paddle import pytorch_op_mapper
+    model = PyTorchDecoder(model_path)
+    mapper = pytorch_op_mapper.PyTorchOpMapper(model)
+    mapper.graph.build()
+    print("Model optimizing ...")
+    from x2paddle.optimizer.pytorch_optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer()
+    graph_opt.optimize(mapper.graph)
+    print("Model optimized.")
+    if input_shapes is not None:
+        real_input_shapes = list()
+        for shape in input_shapes:
+            sp = shape[1:-1].split(",")
+            for i, s in enumerate(sp):
+                sp[i] = int(s)
+            real_input_shapes.append(sp)
+    else:
+        real_input_shapes = None
+    mapper.graph.gen_model(save_dir, real_input_shapes)
+
+
 def paddle2onnx(model_path, save_dir, opset_version=10):
     from x2paddle.decoder.paddle_decoder import PaddleDecoder
     from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
-    import paddle.fluid as fluid
     model = PaddleDecoder(model_path, '__model__', '__params__')
     mapper = PaddleOpMapper()
-    mapper.convert(
-        model.program,
-        save_dir,
-        scope=fluid.global_scope(),
-        opset_version=opset_version)
+    mapper.convert(model.program, save_dir, opset_number=opset_version)
 
 
 def main():
@@ -240,12 +262,11 @@ def main():
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
-        assert args.without_data_format_optimization in [
-            "True", "False"
-        ], "--the param without_data_format_optimization should be defined True or False"
+        without_data_format_optimization = False
         define_input_shape = False
         params_merge = False
-        without_data_format_optimization = True if args.without_data_format_optimization == "True" else False
+        if args.without_data_format_optimization:
+            without_data_format_optimization = True
         if args.define_input_shape:
             define_input_shape = True
         if args.params_merge:
@@ -267,10 +288,13 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
+    elif args.framework == "pytorch":
+        assert args.model is not None, "--model should be defined while translating pytorch model"
+        pytorch2paddle(args.model, args.save_dir, args.input_shapes)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
+        paddle2onnx(args.model, args.save_dir, args.onnx_opset)
 
     else:
         raise Exception(
