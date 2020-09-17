@@ -32,7 +32,6 @@ def prim_Constant(mapper, graph, node):
     if isinstance(value, str):
         value = string(value)
     if str(output_type) == "Tensor":
-        #         value = "paddle.to_tensor({})".format(value)
         value = "{}".format(value)
 
     if "inf" in str(value):
