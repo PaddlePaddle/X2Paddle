@@ -174,14 +174,15 @@ class OpSet9(object):
                 inputs=[op.input('X')[0], temp_value],
                 outputs=op.output('Out'))
             return [shape_node, y_node, node]
-        elif len(x_shape) == len(y_shape):
+        elif axis == -1 or axis == (len(x_shape) - 1
+                                    ) or len(x_shape) == len(y_shape):
             node = helper.make_node(
                 'Add',
                 inputs=[op.input('X')[0], op.input('Y')[0]],
                 outputs=op.output('Out'))
             return node
         else:
-            raise Excpetion("Unexpected situation happend in elementwise_add")
+            raise Exception("Unexpected situation happend in elementwise_add")
 
     def elementwise_sub(self, op, block):
         axis = op.attr('axis')
@@ -203,14 +204,15 @@ class OpSet9(object):
                 inputs=[op.input('X')[0], temp_value],
                 outputs=op.output('Out'))
             return [shape_node, y_node, node]
-        elif len(x_shape) == len(y_shape):
+        elif axis == -1 or axis == (len(x_shape) - 1
+                                    ) or len(x_shape) == len(y_shape):
             node = helper.make_node(
                 'Sub',
                 inputs=[op.input('X')[0], op.input('Y')[0]],
                 outputs=op.output('Out'))
             return node
         else:
-            raise Excpetion("Unexpected situation happend in elementwise_sub")
+            raise Exception("Unexpected situation happend in elementwise_sub")
 
     def pool2d(self, op, block):
         pool_type = {
@@ -403,6 +405,22 @@ class OpSet9(object):
             'Sum', inputs=op.input('X'), outputs=op.output('Out'))
         return node
 
+    def floor(self, op, block):
+        node = helper.make_node(
+            'Floor', inputs=op.input('X'), outputs=op.output('Out'))
+        return node
+
+    def uniform_random_batch_size_like(self, op, block):
+        node = helper.make_node(
+            'RandomUniformLike',
+            inputs=op.input('Input'),
+            outputs=op.output('Out'),
+            high=op.attr('max'),
+            dtype=self.paddle_onnx_dtype_map[op.attr('dtype')],
+            low=op.attr('min'),
+            seed=float(op.attr('seed')), )
+        return node
+
     def depthwise_conv2d(self, op, block):
         return self.conv2d(op, block)
 
@@ -444,7 +462,7 @@ class OpSet9(object):
         ends = op.attr('ends')
         node = helper.make_node(
             "Slice",
-            inputs=[op.input('Input')[0], starts_name, ends_name, axes_name],
+            inputs=[op.input('Input')[0]],
             outputs=op.output('Out'),
             axes=axes,
             starts=starts,
@@ -565,7 +583,7 @@ class OpSet9(object):
         input_shape = block.vars[op.input('X')[0]].shape
         if op.attr('align_corners') or op.attr('align_mode') == 0:
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opset 11"
             )
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
                 'SizeTensor' in input_names and
@@ -671,14 +689,82 @@ class OpSet9(object):
         input_names = op.input_names
         if op.attr('align_corners'):
             raise Exception(
-                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opest 11"
+                "Resize in onnx(opset<=10) only support coordinate_transformation_mode: 'asymmetric', Try converting with --onnx_opset 11"
             )
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
-            node = helper.make_node(
+            node_list = list()
+            shape_name0 = self.get_name(op.type, 'shape')
+            shape_node0 = helper.make_node(
+                'Shape', inputs=op.input('X'), outputs=[shape_name0])
+            starts_name = self.get_name(op.type, 'slice.starts')
+            starts_node = self.make_constant_node(
+                starts_name, onnx_pb.TensorProto.INT64, [0])
+            ends_name = self.get_name(op.type, 'slice.ends')
+            ends_node = self.make_constant_node(ends_name,
+                                                onnx_pb.TensorProto.INT64, [2])
+            shape_name1 = self.get_name(op.type, 'shape')
+            shape_node1 = helper.make_node(
+                'Slice',
+                inputs=[shape_name0, starts_name, ends_name],
+                outputs=[shape_name1])
+            node_list.extend([shape_node0, starts_node, ends_node, shape_node1])
+            if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=op.input('OutSize'),
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.append(cast_shape_node)
+            else:
+                concat_shape_name = self.get_name(
+                    op.type, op.output('Out')[0] + "shape.concat")
+                concat_shape_node = helper.make_node(
+                    "Concat",
+                    inputs=op.input('SizeTensor'),
+                    outputs=[concat_shape_name],
+                    axis=0)
+                cast_shape_name = self.get_name(op.type, "shape.cast")
+                cast_shape_node = helper.make_node(
+                    'Cast',
+                    inputs=[concat_shape_name],
+                    outputs=[cast_shape_name],
+                    to=onnx_pb.TensorProto.INT64)
+                node_list.extend([concat_shape_node, cast_shape_node])
+            shape_name2 = self.get_name(op.type, "shape.concat")
+            shape_node2 = helper.make_node(
+                'Concat',
+                inputs=[shape_name1, cast_shape_name],
+                outputs=[shape_name2],
+                axis=0)
+            node_list.append(shape_node2)
+            cast_shape_name2 = self.get_name(op.type, "shape.cast")
+            cast_shape_node2 = helper.make_node(
+                'Cast',
+                inputs=[shape_name2],
+                outputs=[cast_shape_name2],
+                to=onnx_pb.TensorProto.FLOAT)
+            node_list.append(cast_shape_node2)
+            cast_shape_name0 = self.get_name(op.type, "shape.cast")
+            cast_shape_node0 = helper.make_node(
+                'Cast',
+                inputs=[shape_name0],
+                outputs=[cast_shape_name0],
+                to=onnx_pb.TensorProto.FLOAT)
+            node_list.append(cast_shape_node0)
+            outputs_h_w_scales = op.output('Out')[0] + "@out_hw_scales"
+            node_h_w_scales = helper.make_node(
+                'Div',
+                inputs=[cast_shape_name2, cast_shape_name0],
+                outputs=[outputs_h_w_scales])
+            node_list.append(node_h_w_scales)
+            result_node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], op.input('OutSize')[0]],
+                inputs=[op.input('X')[0], outputs_h_w_scales],
                 outputs=op.output('Out'),
-                mode='nearest')
+                mode='linear')
+            node_list.extend([result_node])
+            return node_list
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
@@ -714,6 +800,38 @@ class OpSet9(object):
             beta=offset)
         return node
 
+    def swish(self, op, block):
+        beta = op.attr('beta')
+        beta_name = self.get_name(op.type, 'beta')
+        beta_node = onnx.helper.make_node(
+            'Constant',
+            name=beta_name,
+            inputs=[],
+            outputs=[beta_name],
+            value=onnx.helper.make_tensor(
+                name=beta_name,
+                data_type=onnx.TensorProto.FLOAT,
+                dims=(),
+                vals=[beta]))
+
+        beta_x_name = self.get_name(op.type, 'beta_x')
+        beta_x_node = onnx.helper.make_node(
+            'Mul',
+            name=beta_x_name,
+            inputs=[op.input('X')[0], beta_name],
+            outputs=[beta_x_name])
+        sigmoid_name = self.get_name(op.type, 'sigmoid')
+        sigmoid_node = onnx.helper.make_node(
+            'Sigmoid',
+            name=sigmoid_name,
+            inputs=[beta_x_name],
+            outputs=[sigmoid_name])
+        swish_node = onnx.helper.make_node(
+            'Mul',
+            inputs=[op.input('X')[0], sigmoid_name],
+            outputs=op.output('Out'))
+        return [beta_node, beta_x_node, sigmoid_node, swish_node]
+
     def hard_swish(self, op, block):
         scale_name = self.get_name(op.type, 'scale')
         offset_name = self.get_name(op.type, 'offset')
@@ -728,8 +846,8 @@ class OpSet9(object):
         node0 = helper.make_node(
             'Add', inputs=[op.input('X')[0], offset_name], outputs=[name0])
         name1 = self.get_name(op.type, 'relu')
-        min_value = op.attr('min')
-        max_value = op.attr('max')
+        min_value = 0.0
+        max_value = op.attr('threshold')
         node1 = helper.make_node(
             'Clip',
             inputs=[name0],
@@ -763,14 +881,15 @@ class OpSet9(object):
                 inputs=[op.input('X')[0], temp_value],
                 outputs=op.output('Out'))
             return [shape_node, y_node, node]
-        elif len(x_shape) == len(y_shape):
+        elif axis == -1 or axis == (len(x_shape) - 1
+                                    ) or len(x_shape) == len(y_shape):
             node = helper.make_node(
                 'Mul',
                 inputs=[op.input('X')[0], op.input('Y')[0]],
                 outputs=op.output('Out'))
             return node
         else:
-            raise Excpetion("Unexpected situation happend in elementwise_add")
+            raise Exception("Unexpected situation happend in elementwise_mul")
         return node
 
     def feed(self, op, block):
@@ -797,6 +916,14 @@ class OpSet9(object):
             inputs=op.input('X'),
             outputs=op.output('Out'),
             axes=op.attr('axes'))
+        return node
+
+    def cast(self, op, block):
+        node = helper.make_node(
+            'Cast',
+            inputs=op.input('X'),
+            outputs=op.output('Out'),
+            to=self.paddle_onnx_dtype_map[op.attr('out_dtype')])
         return node
 
     def arg_max(self, op, block):

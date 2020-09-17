@@ -93,16 +93,13 @@ class OpSet11(OpSet10):
         else:
             coordinate_transformation_mode = 'half_pixel'
 
+        roi_name = self.get_name(op.type, 'roi')
+        roi_node = self.make_constant_node(roi_name, onnx_pb.TensorProto.FLOAT,
+                                           [1, 1, 1, 1, 1, 1, 1, 1])
         if ('OutSize' in input_names and len(op.input('OutSize')) > 0) or (
                 'SizeTensor' in input_names and
                 len(op.input('SizeTensor')) > 0):
             node_list = list()
-            roi_node = self.make_constant_node(
-                self.get_name(op.type, 'roi'), onnx_pb.TensorProto.FLOAT,
-                [1, 1, 1, 1, 1, 1, 1, 1])
-            roi_name = self.get_name(op.type, 'roi')
-            roi_node = self.make_constant_node(
-                roi_name, onnx_pb.TensorProto.FLOAT, [1, 1, 1, 1, 1, 1, 1, 1])
             empty_name = self.get_name(op.type, 'empty')
             empty_tensor = helper.make_tensor(
                 empty_name,
@@ -168,7 +165,7 @@ class OpSet11(OpSet10):
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], op.input('Scale')[0]],
+                inputs=[op.input('X')[0], roi_name, op.input('Scale')[0]],
                 outputs=op.output('Out'),
                 mode='linear',
                 coordinate_transformation_mode=coordinate_transformation_mode)
@@ -180,10 +177,6 @@ class OpSet11(OpSet10):
                 scale_node = self.make_constant_node(scale_name,
                                                      onnx_pb.TensorProto.FLOAT,
                                                      [1, 1, scale, scale])
-                roi_name = self.get_name(op.type, 'roi')
-                roi_node = self.make_constant_node(roi_name,
-                                                   onnx_pb.TensorProto.FLOAT,
-                                                   [1, 1, 1, 1, 1, 1, 1, 1])
                 node = helper.make_node(
                     'Resize',
                     inputs=[op.input('X')[0], roi_name, scale_name],
@@ -194,7 +187,7 @@ class OpSet11(OpSet10):
                 return [scale_node, roi_node, node]
             else:
                 raise Exception("Unexpected situation happend")
-        return node
+        return [roi_node, node]
 
     def nearest_interp(self, op, block):
         input_names = op.input_names
@@ -203,18 +196,21 @@ class OpSet11(OpSet10):
         if align_corners:
             coordinate_transformation_mode = 'align_corners'
         else:
-            coordinate_transformation_mode = 'asymmetric'
+            coordinate_transformation_mode = 'half_pixel'
+        roi_name = self.get_name(op.type, 'roi')
+        roi_node = self.make_constant_node(roi_name, onnx_pb.TensorProto.FLOAT,
+                                           [1, 1, 1, 1, 1, 1, 1, 1])
         if 'OutSize' in input_names and len(op.input('OutSize')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], '', op.input('OutSize')[0]],
+                inputs=[op.input('X')[0], roi_name, op.input('OutSize')[0]],
                 outputs=op.output('Out'),
                 mode='nearest',
                 coordinate_transformation_mode=coordinate_transformation_mode)
         elif 'Scale' in input_names and len(op.input('Scale')) > 0:
             node = helper.make_node(
                 'Resize',
-                inputs=[op.input('X')[0], op.input('Scale')[0]],
+                inputs=[op.input('X')[0], roi_name, op.input('Scale')[0]],
                 outputs=op.output('Out'),
                 mode='nearest',
                 coordinate_transformation_mode=coordinate_transformation_mode)
@@ -226,10 +222,6 @@ class OpSet11(OpSet10):
                 scale_node = self.make_constant_node(scale_name,
                                                      onnx_pb.TensorProto.FLOAT,
                                                      [1, 1, scale, scale])
-                roi_name = self.get_name(op.type, 'roi')
-                roi_node = self.make_constant_node(roi_name,
-                                                   onnx_pb.TensorProto.FLOAT,
-                                                   [1, 1, 1, 1, 1, 1, 1, 1])
                 node = helper.make_node(
                     'Resize',
                     inputs=[op.input('X')[0], roi_name, scale_name],
@@ -240,7 +232,7 @@ class OpSet11(OpSet10):
                 return [scale_node, roi_node, node]
             else:
                 raise Exception("Unexpected situation happend")
-        return node
+        return [roi_node, node]
 
     def hard_swish(self, op, block):
         min_name = self.get_name(op.type, 'min')
