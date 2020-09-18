@@ -3912,6 +3912,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
         type="eq")
     layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
+    layer_attrs["mode"] = "bilinear"
     graph.add_layer(
         "paddle.nn.functional.interpolate",
         inputs=layer_inputs,
