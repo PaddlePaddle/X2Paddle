@@ -423,7 +423,7 @@ def aten_avg_pool2d(mapper, graph, node):
     graph.add_layer(
         "prim.assert",
         inputs={},
-        outputs=[inputs_name[6]],
+        outputs=[inputs_name[6] + "_assert"],
         type="eq",
         key=mapper.attrs[inputs_name[6]],
         value=None)
@@ -1473,7 +1473,7 @@ def aten_flatten(mapper, graph, node):
     graph.add_layer(
         "prim.assert",
         inputs={},
-        outputs=[inputs_name[1]],
+        outputs=[inputs_name[1] + "_assert"],
         type='eq',
         key=mapper.attrs[inputs_name[1]],
         value=1)
@@ -1481,7 +1481,7 @@ def aten_flatten(mapper, graph, node):
     graph.add_layer(
         "prim.assert",
         inputs={},
-        outputs=[inputs_name[2]],
+        outputs=[inputs_name[2] + "_assert"],
         type='eq',
         key=mapper.attrs[inputs_name[2]],
         value=-1)
@@ -2378,7 +2378,7 @@ def aten_max_pool2d(mapper, graph, node):
     graph.add_layer(
         "prim.assert",
         inputs={},
-        outputs=[inputs_name[4]],
+        outputs=[inputs_name[4] + "_assert"],
         type="eq",
         key=mapper.attrs[inputs_name[4]],
         value=[1, [1, 1]])
@@ -3912,6 +3912,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
         type="eq")
     layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
+    layer_attrs["mode"] = string("bilinear")
     graph.add_layer(
         "paddle.nn.functional.interpolate",
         inputs=layer_inputs,
