@@ -346,8 +346,12 @@ class ONNXGraph(Graph):
                     #if len(value_info['shape']) == 0 or value_info[
                     #        'dtype'] is None or 0 in value_info['shape']:
                     #    #TODO add node shape inference
+                    shape = value_info['shape']
+                    for idx in range(len(shape)):
+                        if shape[idx] == 0:
+                            shape[idx] = -1
+                    node.out_shapes.append(shape)
                     node.dtype = value_info['dtype']
-                    node.out_shapes.append(value_info['shape'])
                 else:
                     node.out_shapes.append([])
 
