@@ -89,6 +89,12 @@ class TFGraphNode(GraphNode):
         field = getattr(attr, attr.WhichOneof('value'))
         return tensor_util.MakeNdarray(field)
 
+    @property
+    def name(self):
+        if hasattr(self, 'index'):
+            return self.layer_name + "_p{}".format(self.index)
+        return self.layer_name
+
     def get_attr(self, name):
         if name not in self.layer.attr:
             return None

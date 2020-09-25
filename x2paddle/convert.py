@@ -98,7 +98,7 @@ def arg_parser():
 
 def tf2paddle(model_path,
               save_dir,
-              without_data_format_optimization,
+              without_data_format_optimization=False,
               define_input_shape=False,
               params_merge=False):
     # check tensorflow installation and version
@@ -117,37 +117,24 @@ def tf2paddle(model_path,
             "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
         )
         return
-
+    from x2paddle import program
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
-    from x2paddle.op_mapper.tf_op_mapper_nhwc import TFOpMapperNHWC
-    from x2paddle.optimizer.tf_optimizer import TFOptimizer
+    from x2paddle.optimizer.tensorflow.bias import BiasOpt
+    from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
+    from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
-
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
-        mapper = TFOpMapperNHWC(model)
-        optimizer = TFOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
-    mapper.save_inference_model(save_dir, params_merge)
+    mapper = TFOpMapper(model)
+    program.build()
+    bias_opt = BiasOpt()
+    transpose_opt = TransposeOpt()
+    batch_norm_opt = BatchNormOpt()
+    bias_opt.run(program)
+    batch_norm_opt.run(program)
+    transpose_opt.run(program)
+    program.gen_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):

@@ -99,6 +99,53 @@ class PaddleGraph(object):
         self.layers[layer_id] = layer
         return layer_id
 
+    def del_layer(self, layer_id):
+        layer = self.layers[layer_id]
+        outputs = self.edges_out.get(layer_id, [])
+        inputs = self.edges_in.get(layer_id, [])
+
+        assert len(
+            inputs) <= 1, "There should be 0 or 1 input for deleted layer."
+
+        if len(inputs) == 0:
+            for out in outputs:
+                while layer_id in self.edges_in[out]:
+                    index = self.edges_in[out].index(layer_id)
+                    del self.edges_in[out][index]
+
+                input_keys = list(self.layers[out].inputs.keys())
+                for k in input_keys:
+                    if self.layers[out].inputs[k] == layer.outputs[0]:
+                        del self.layers[out].inputs[k]
+
+            del self.layers[layer_id]
+            if layer_id in self.edges_in:
+                del self.edges_in[layer_id]
+            if layer_id in self.edges_out:
+                del self.edges_out[layer_id]
+            return
+
+        # 将所有输出layer的输入layer进行替换
+        for out in outputs:
+            for i in range(len(self.edges_in[out])):
+                if self.edges_in[out][i] == layer_id:
+                    self.edges_in[out][i] = inputs[0]
+
+        # 将输出layer赋给输入layer的输出
+        replace_index = self.edges_out[inputs[0]].index(layer_id)
+        del self.edges_out[inputs[0]][replace_index]
+        for i, out in enumerate(outputs):
+            self.edges_out[inputs[0]].insert(replace_index + i, out)
+            for k, v in self.layers[out].inputs.items():
+                if v == layer.outputs[0]:
+                    self.layers[out].inputs[k] = list(layer.inputs.values())[0]
+
+        del self.layers[layer_id]
+        if layer_id in self.edges_out:
+            del self.edges_out[layer_id]
+        if layer_id in self.edges_in:
+            del self.edges_in[layer_id]
+
     def build(self, inputs=None, outputs=None):
         self.clear_edges()
         outputs_from_nodes = dict()
