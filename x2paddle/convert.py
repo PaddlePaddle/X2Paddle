@@ -239,12 +239,16 @@ def pytorch2paddle(model_path, save_dir, input_shapes):
 def paddle2onnx(model_path, save_dir, opset_version=10):
     import paddle.fluid as fluid
     try:
-        import paddle2onnx as p2o
+        import paddle2onnx
     except:
         print(
             "[ERROR] paddle2onnx not installed, use \"pip install paddle2onnx\"")
-    p2o.convert(
-        model_path,
+
+    import paddle2onnx as p2o
+    model = p2o.PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = p2o.PaddleOpMapper()
+    mapper.convert(
+        model.program,
         save_dir,
         scope=fluid.global_scope(),
         opset_version=opset_version)
