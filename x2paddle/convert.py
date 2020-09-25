@@ -95,6 +95,7 @@ def arg_parser():
         help="define the inputs' shape")
     return parser
 
+
 def tf2paddle(model_path,
               save_dir,
               without_data_format_optimization,
@@ -194,8 +195,8 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generating ...")
     mapper.save_inference_model(save_dir, params_merge)
     print("Paddle model and code generated.")
-    
-    
+
+
 def pytorch2paddle(model_path, save_dir, input_shapes):
     # check pytorch installation and version
     try:
@@ -236,11 +237,16 @@ def pytorch2paddle(model_path, save_dir, input_shapes):
 
 
 def paddle2onnx(model_path, save_dir, opset_version=10):
-    from x2paddle.decoder.paddle_decoder import PaddleDecoder
-    from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
     import paddle.fluid as fluid
-    model = PaddleDecoder(model_path, '__model__', '__params__')
-    mapper = PaddleOpMapper()
+    try:
+        import paddle2onnx
+    except:
+        print(
+            "[ERROR] paddle2onnx not installed, use \"pip install paddle2onnx\"")
+
+    import paddle2onnx as p2o
+    model = p2o.PaddleDecoder(model_path, '__model__', '__params__')
+    mapper = p2o.PaddleOpMapper()
     mapper.convert(
         model.program,
         save_dir,
@@ -310,7 +316,7 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
-        
+
     elif args.framework == "pytorch":
         assert args.model is not None, "--model should be defined while translating pytorch model"
         pytorch2paddle(args.model, args.save_dir, args.input_shapes)
