@@ -303,11 +303,7 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
-
-    elif args.framework == "pytorch":
-        assert args.model is not None, "--model should be defined while translating pytorch model"
-        pytorch2paddle(args.model, args.save_dir, args.input_shapes)
-
+        
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
         paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
