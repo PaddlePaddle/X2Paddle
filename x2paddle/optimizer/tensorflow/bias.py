@@ -13,6 +13,7 @@ class BiasOpt:
         ]
 
     def run(self, graph):
+        print("Optimize: BiasOpt...")
         layers = copy.deepcopy(graph.layers)
         for layer_id, layer in layers.items():
             if layer.kernel in self.conv_layers or layer.kernel == "fluid.layers.transpose":

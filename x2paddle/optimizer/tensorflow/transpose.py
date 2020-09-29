@@ -36,6 +36,7 @@ class TransposeOpt:
         return count
 
     def run(self, graph):
+        print("Optimize: TransposeOpt...")
         total_layer_num = len(graph.layers)
         scanned_layers = set()
         optimized_transpose_layers = list()

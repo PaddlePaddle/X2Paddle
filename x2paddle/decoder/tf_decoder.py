@@ -60,7 +60,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        keys = ['dtype', 'Tidx', 'T', 'DstT']
+        keys = ['dtype', 'T', 'DstT']
         for k in keys:
             dtype = self.layer.attr[k].type
             if dtype > 0:

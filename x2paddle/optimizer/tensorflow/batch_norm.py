@@ -8,6 +8,7 @@ class BatchNormOpt:
         pass
 
     def run(self, graph):
+        print("Optimize: BatchNormOpt...")
         layers = copy.deepcopy(graph.layers)
         for layer_id, layer in layers.items():
             if layer.kernel != "fluid.layers.elementwise_add":

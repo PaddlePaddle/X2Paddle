@@ -744,7 +744,7 @@ class TFOpMapper(OpMapper):
 
         input_names = [i.name for i in inputs]
         for i, ipt in enumerate(inputs):
-            if node.dtype == 'bool':
+            if ipt.dtype == 'bool':
                 cast_name = gen_name('concat', 'cast')
                 program.add_layer(
                     kernel="fluid.layers.cast",
@@ -1213,9 +1213,17 @@ class TFOpMapper(OpMapper):
         attr["dim"] = reduce_idx.value.tolist()
         attr["keep_dim"] = node.get_attr("keep_dims")
 
+        input_name = input.name
+        if input.dtype != "bool":
+            input_name = gen_name("all", "cast")
+            program.add_layer(
+                "fluid.layers.cast",
+                inputs={"x": input.name},
+                outputs=[input_name],
+                dtype=string("bool"))
         program.add_layer(
             "fluid.layers.reduce_all",
-            inputs={"input": input.name},
+            inputs={"input": input_name},
             outputs=[node.name],
             **attr)
 
