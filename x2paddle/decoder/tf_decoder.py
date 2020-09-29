@@ -72,6 +72,15 @@ class TFGraphNode(GraphNode):
                 dtype, self.layer.name))
         return self.dtype_map[dtype]
 
+    def set_dtype(self, dtype):
+        dtype_idx = 0
+        for k, v in self.dtype_map.items():
+            if v == dtype:
+                dtype_idx = k
+        if dtype_idx == 0:
+            raise Exception("Cannot set dtype of node to '{}'".format(dtype))
+        self.layer.attr['dtype'].type = dtype_idx
+
     @property
     def raw_dtype(self):
         keys = ['dtype', 'Tidx', 'T', 'DstT']

@@ -1133,18 +1133,26 @@ class TFOpMapper(OpMapper):
         inputs = dict()
         attr = dict()
 
+        dtype = 'int32'
+        if start.dtype.startswith('float'):
+            dtype = start.dtype
         if start.layer_type == "Const":
             attr["start"] = start.value
         else:
             inputs["start"] = start.name
+        if limit.dtype.startswith('float'):
+            dtype = limit.dtype
         if limit.layer_type == "Const":
             attr["end"] = limit.value
         else:
             inputs["end"] = limit.name
+        if delta.dtype.startswith('float'):
+            dtype = delta.dtype
         if delta.layer_type == "Const":
             attr["step"] = delta.value
         else:
             inputs["step"] = delta.name
+        node.set_dtype(dtype)
         attr["dtype"] = string(node.dtype)
 
         program.add_layer(
