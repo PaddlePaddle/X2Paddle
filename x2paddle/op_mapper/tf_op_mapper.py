@@ -199,7 +199,14 @@ class TFOpMapper(OpMapper):
             shape = [1]
             if value == float('inf'):
                 value = "float('inf')"
-            initializer = "Constant({})".format(value)
+            program.add_layer(
+                kernel="fluid.layers.fill_constant",
+                inputs={},
+                outputs=[node.name],
+                dtype=string(dtype),
+                shape=[1],
+                value=value)
+            return
 
         program.parameters[node.name] = node.value
         program.add_layer(
