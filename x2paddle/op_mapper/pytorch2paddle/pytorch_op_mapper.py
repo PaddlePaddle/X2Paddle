@@ -247,3 +247,17 @@ class PyTorchOpMapper(OpMapper):
                 inputs={'input': input_node_name},
                 outputs=[output_node_name])
             return [input_node_name], current_outputs
+
+    def normalize_scope_name(self, node):
+        """ 对scope的名字进行标准化。
+        """
+        scope_name = node.scopeName()
+        if scope_name == "":
+            return scope_name
+        name_segments = scope_name.split("/")
+        scopes = list()
+        for i, segment in enumerate(name_segments):
+            scopes.append(segment.split(".")[-1])
+        return "/".join(scopes)
+        
+                

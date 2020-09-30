@@ -28,7 +28,7 @@ import pickle
 
 
 class PaddleLayer(object):
-    def __init__(self, id, kernel, inputs, outputs, **kwargs):
+    def __init__(self, id, kernel, inputs, outputs, scope_name="", **kwargs):
         assert isinstance(
             inputs,
             dict), "parameter 'inputs' for PaddleLayer should be type of dict"
@@ -52,9 +52,11 @@ class PaddleLayer(object):
         self.kernel = kernel
         self.inputs = inputs
         self.outputs = outputs
+        self.scope_name = scope_name
         self.attrs = kwargs
         self.id = id
         self.blocks = list()
+        
 
     def add_block(self, block):
         self.blocks.append(block)
@@ -89,13 +91,13 @@ class PaddleGraph(object):
         self.edges_out = dict()
         self.edges_in = dict()
 
-    def add_layer(self, kernel, inputs, outputs, **kwargs):
+    def add_layer(self, kernel, inputs, outputs, scope_name="", **kwargs):
         layer_id = str(len(self.layers))
         if self.parent_layer is not None:
             layer_id = "{}.{}.{}".format(self.parent_layer.id,
                                          len(self.parent_layer.blocks),
                                          layer_id)
-        layer = PaddleLayer(layer_id, kernel, inputs, outputs, **kwargs)
+        layer = PaddleLayer(layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
         self.layers[layer_id] = layer
         return layer_id
 
@@ -309,11 +311,19 @@ class PaddleGraph(object):
                         target_vars=outputs,
                         executor=exe)
         else:
+            from x2paddle.optimizer.code_optimizer import HierarchicalTree
+            hierarchical_tree = HierarchicalTree(self)
+            for layer_id , layer in self.layers.items():
+                hierarchical_tree.insert(layer)
+            hierarchical_tree.save_source_files(save_dir)
+
+            '''
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
             if input_shapes is not None:
                 # 如果input_shapes非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
                 self.dygraph2static(save_dir, input_shapes)
+            '''
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):

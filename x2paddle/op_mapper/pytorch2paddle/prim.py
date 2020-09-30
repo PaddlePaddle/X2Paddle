@@ -25,6 +25,7 @@ def prim_Constant(mapper, graph, node):
         参数含义:
         %2 (常量类型由赋值类型定义，该示例中为int型): 常量赋值结果输出。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     output = list(node.outputs())[0]
     value = output.toIValue()
@@ -45,7 +46,7 @@ def prim_Constant(mapper, graph, node):
         value = int(math.pow(2, 31) - 1)
     mapper.attrs[output_name] = value
     graph.add_layer(
-        "prim.constant", inputs={}, outputs=[output_name], value=value)
+        "prim.constant", inputs={}, outputs=[output_name], scope_name=scope_name, value=value)
     return [], [output_name]
 
 
@@ -60,6 +61,7 @@ def prim_data(mapper, graph, node):
 
     【注意】Paddle中无此用法，所以此处翻译成赋值。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -73,7 +75,7 @@ def prim_data(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -86,6 +88,7 @@ def prim_GetAttr(mapper, graph, node):
         %7 (Tensor): 输入Tensor。
         %27 (Tensor): 输入Tensor。
     """
+    scope_name = mapper.normalize_scope_name(node)
     current_node = node
     field_name_list = [node.s('name')]
     while True:
@@ -129,6 +132,7 @@ def prim_If(mapper, graph, node):
         %107 (bool): if判断条件。
         %input.5 (Tensor): if控制流的输出，与%output.4对应。
     """
+    scope_name = mapper.normalize_scope_name(node)
     outputs_name = mapper._get_outputs_name(node)
     node_outputs = outputs_name.copy()
     current_outputs = outputs_name.copy()
@@ -136,7 +140,7 @@ def prim_If(mapper, graph, node):
     script_input_unique_id = list(node.inputs())[0].unique()
     input_node_name = mapper.outputs_info[script_input_unique_id]
     mapper._check_input(graph, input_node, input_node_name, current_outputs)
-    graph.add_layer("prim.if", {'input': input_node_name}, node_outputs)
+    graph.add_layer("prim.if", inputs={'input': input_node_name}, outputs=node_outputs, scope_name=scope_name)
     current_layer = list(graph.layers.values())[-1]
     block0 = list(node.blocks())[0]
     block0_graph, graph_inputs0 = mapper.traverse(block0, current_layer)
@@ -163,6 +167,7 @@ def prim_ListConstruct(mapper, graph, node):
         %84 (int/其他): list第一个元素信息。
         %85 (int/其他): list第二个元素信息。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -175,7 +180,7 @@ def prim_ListConstruct(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -189,6 +194,7 @@ def prim_ListUnpack(mapper, graph, node):
         %x2.4 (Tensor): 输出，list的第二个元素。
         %4354 (list): 列表。
     """
+    scope_name = mapper.normalize_scope_name(node)
     outputs_name = mapper._get_outputs_name(node)
     layer_outputs = outputs_name.copy()
     layer_inputs = {}
@@ -202,7 +208,7 @@ def prim_ListUnpack(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.list_unpack", inputs=layer_inputs, outputs=layer_outputs)
+        "prim.list_unpack", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     mapper.split_len[list(layer_inputs.values())[0]] = len(layer_outputs)
     return current_inputs, current_outputs
 
@@ -223,6 +229,7 @@ def prim_Loop(mapper, graph, node):
        %x.3 (Tensor): 循环中修改的Tensor。
        %x (Tensor): loop循环的输出，与%x.5对应。
     """
+    scope_name = mapper.normalize_scope_name(node)
     node_outputs = mapper._get_outputs_name(node)
     loop_inputs = {}
     block = list(node.blocks())[0]
@@ -256,10 +263,11 @@ def prim_Loop(mapper, graph, node):
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': loop_input_node_name},
-                outputs=[block_input_node_name])
+                outputs=[block_input_node_name],
+                scope_name=scope_name)
             node_outputs.append(block_input_node_name)
 
-    graph.add_layer("prim.loop", inputs=loop_inputs, outputs=loop_outputs)
+    graph.add_layer("prim.loop", inputs=loop_inputs, outputs=loop_outputs, scope_name=scope_name)
     current_layer = list(graph.layers.values())[-1]
     block_graph, graph_inputs = mapper.traverse(block, current_layer)
     for i, input_name in enumerate(graph_inputs):
@@ -279,6 +287,7 @@ def prim_min(mapper, graph, node):
         %86 (list): 输入。
         %87 (int): 输出。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -291,7 +300,7 @@ def prim_min(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.min", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer("prim.min", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -304,6 +313,7 @@ def prim_NumToTensor(mapper, graph, node):
         %other.2 (Tensor): 输出。
         %1736 (-): 输入。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -318,7 +328,7 @@ def prim_NumToTensor(mapper, graph, node):
         # 获取当前节点输入的list
         current_inputs = list(layer_inputs.values())
         graph.add_layer(
-            "prim_equal", inputs=layer_inputs, outputs=layer_outputs)
+            "prim_equal", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     else:
         layer_inputs["value"] = inputs_name[0]
         # 获取当前节点输入的list
@@ -331,6 +341,7 @@ def prim_NumToTensor(mapper, graph, node):
             "fluid.layers.create_global_var",
             inputs=layer_inputs,
             outputs=layer_outputs,
+            scope_name=scope_name,
             **layer_attrs)
     return current_inputs, current_outputs
 
@@ -343,6 +354,7 @@ def prim_RaiseException(mapper, graph, node):
         参数含义:
         %76 (str): 异常信息。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -356,7 +368,7 @@ def prim_RaiseException(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.exception", inputs=layer_inputs, outputs=layer_outputs)
+        "prim.exception", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -369,6 +381,7 @@ def prim_requires_grad(mapper, graph, node):
         %356 (bool): 输出，当前Tensor是否计算梯度。
         %tensor.31 (Tensor): 输入的Tensor。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -382,7 +395,7 @@ def prim_requires_grad(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.requires_grad", inputs=layer_inputs, outputs=layer_outputs)
+        "prim.requires_grad", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -395,6 +408,7 @@ def prim_SetAttr(mapper, graph, node):
         %260 (-): 属性名前缀。
         %277 (-): 需要设置的值。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     field_name_list = []
     tmp_node = node
@@ -416,7 +430,8 @@ def prim_SetAttr(mapper, graph, node):
     graph.add_layer(
         "prim.set_attr",
         inputs={"input": inputs_name[1]},
-        outputs=["self." + ".".join(field_name_list).replace(".", "_")])
+        outputs=["self." + ".".join(field_name_list).replace(".", "_")],
+        scope_name=scope_name)
     return [], [output_name]
 
 
@@ -429,6 +444,7 @@ def prim_shape(mapper, graph, node):
         %4701 (list): 输出，shape信息。
         %result.1 (Tensor): 需要获取shape的值。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -442,7 +458,7 @@ def prim_shape(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs)
+        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -456,6 +472,7 @@ def prim_TupleConstruct(mapper, graph, node):
         %x.46 (Tensor/其他): tuple第一个元素信息。
         %aux (Tensor/其他): tuple第二个元素信息。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -468,7 +485,7 @@ def prim_TupleConstruct(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.tuple", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer("prim.tuple", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -482,6 +499,7 @@ def prim_TupleUnpack(mapper, graph, node):
         %aux.3 (Tensor/其他): 输出，tuple第二个元素信息。
         %4492 (tuple): 需要获取元素的tuple。
     """
+    scope_name = mapper.normalize_scope_name(node)
     outputs_name = mapper._get_outputs_name(node)
     layer_outputs = outputs_name
     layer_inputs = {}
@@ -493,7 +511,7 @@ def prim_TupleUnpack(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs)
+        "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -508,6 +526,7 @@ def prim_unchecked_cast(mapper, graph, node):
 
     【注意】Paddle中无此用法，所以此处翻译成赋值。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
@@ -521,7 +540,7 @@ def prim_unchecked_cast(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs)
+    graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -533,9 +552,10 @@ def prim_Uninitialized(mapper, graph, node):
         参数含义:
         %345 (bool): 输出，为赋值的bool。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     output = list(node.outputs())[0]
     mapper.attrs[output_name] = None
     graph.add_layer(
-        "prim.constant", inputs={}, outputs=[output_name], value=None)
+        "prim.constant", inputs={}, outputs=[output_name], scope_name=scope_name, value=None)
     return [], [output_name]
