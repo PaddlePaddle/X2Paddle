@@ -190,6 +190,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     mapper = ONNXOpMapper(model)
     print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
+    optimizer.delete_redundance_code()
     print("Model optimized.")
 
     print("Paddle model and code generating ...")

@@ -1256,10 +1256,19 @@ class OpSet9():
 
         mode = 'channel'
         shape_slope = val_slope.out_shapes[0]
-        if len(shape_slope) == 1:
+
+        if shape_slope == [1]:
             mode = 'all'
         elif len(shape_slope) > 2:
             mode = 'element'
+
+        if mode == 'channel' and len(shape_slope) == 1:
+            # paddle params shape need be [1, channel]
+            slope_data = _const_weight_or_none(val_slope)
+            slope_data = np.reshape(slope_data, [1] + shape_slope)
+            self.weights[val_slope.layer_name] = slope_data
+
+        self.omit_nodes.append(val_slope.layer_name)
         attr = {
             "param_attr": string(val_slope.layer_name),
             'mode': string(mode)
