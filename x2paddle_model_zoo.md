@@ -21,7 +21,7 @@
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |-|
 | UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |-|
 | MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |-|
-| YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 转换需要关闭NHWC->NCHW的优化，见[文档Q2](FAQ.md) |
+| YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | -|
 | FALSR | [code](https://github.com/xiaomi-automl/FALSR) | 需使用参数without_data_format_optimization |
 | DCSCN | [code](https://modelzoo.co/model/dcscn-super-resolution) | 需使用参数without_data_format_optimization |
 | Bert（albert） | [code](https://github.com/google-research/albert#pre-trained-models) | 需使用参数without_data_format_optimization |
