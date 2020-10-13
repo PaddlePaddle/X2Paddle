@@ -550,8 +550,6 @@ class OpSet9():
     def Expand(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
-        if len(val_shape.outputs) == 1:
-            self.omit_nodes.append(val_shape.layer_name)
         val_x_dtype = val_x.dtype
         name_ones = node.layer_name + '_ones'
         attr_ones = {
