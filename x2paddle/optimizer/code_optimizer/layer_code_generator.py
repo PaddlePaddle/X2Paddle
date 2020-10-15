@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-
+from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode
 
 NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.LayerNorm": "layernorm",
@@ -35,13 +35,14 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
 NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:5]
 
-def rename_layers(layers):
+def rename_layers(layers, param_tree=None):
     layers_cp = copy.deepcopy(layers)
     name_dict = dict()
-    nn_name_dict = dict()
+    nn_param_nodes = list()
     count = 0
     nn_count_dict = dict()
     module_count_dict = dict()
+    new_names = list()
     for kernel in NN_KERNEL_NAME.keys():
         nn_count_dict[kernel] = 0
     for layer_id, layer in layers_cp.items():
@@ -56,30 +57,41 @@ def rename_layers(layers):
         for i, output_v in enumerate(layer.outputs):
             if output_v in name_dict:
                 layer.outputs[i] = name_dict[output_v]
+                if i == 0:
+                    new_names.append(name_dict[output_v])
             else:
                 if i == 0 and layer.kernel in NN_KERNEL_NAME.keys():
                     new_name = NN_KERNEL_NAME[layer.kernel] + str(nn_count_dict[layer.kernel])
-                    nn_name_dict[new_name] = layer.outputs[0]
+                    param_node = PamareterNode(old_name=layer.outputs[0],
+                                               new_name=new_name)
+                    nn_param_nodes.append(param_node)
+                    if param_tree is not None:
+                        param_tree.add_node(param_node)
                     layer.outputs[0] = new_name
                     nn_count_dict[layer.kernel] += 1
                 elif i == 0 and layer.kernel == "module":
-                    continue
-#                     segs = layer.outputs[0].split("_")
-#                     layer_output_0_prefix = "_".join(segs[:-1])
-#                     if layer_output_0_prefix not in module_count_dict:
-#                         module_count_dict[layer_output_0_prefix] = 0
-#                     else:
-#                         module_count_dict[layer_output_0_prefix] += 1
-#                     layer.outputs[0] = layer_output_0_prefix + "_" + str(module_count_dict[layer_output_0_prefix])
+                    old_name = layer.outputs[0].split("/")[0]
+                    if old_name not in nn_count_dict:
+                        nn_count_dict[old_name] = 0
+                    else:
+                        nn_count_dict[old_name] += 1
+                    new_name = old_name + str(nn_count_dict[old_name])
+                    if param_tree is not None:
+                        param_node = param_tree.get_node(layer.outputs[0])
+                        nn_param_nodes.append(param_node)
+                        param_node.new_name = new_name
+                    layer.outputs[0] = new_name
                 else:
                     new_name = "x{}".format(count)
                     count += 1
                     layer.outputs[i] = new_name
                     name_dict[output_v] = new_name
-    return layers_cp, nn_name_dict
+                if i == 0:
+                    new_names.append(new_name)
+    return layers_cp, nn_param_nodes, new_names
 
 
-def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_params=False):
+def gen_layer_code(graph, sub_layers, layer_name, different_attrs=list(), use_params=False):
     def gen_codes(code_list, indent=0):
         """ 根据code_list生成代码段。
         
@@ -103,10 +115,7 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
         # 生成Layer的头部代码
         head = gen_codes(["class {}(fluid.dygraph.Layer):".format(layer_name)], indent=0)
         # 生成init函数的头部代码
-        attrs = list()
-        for attr in different_attrs.values():
-            attrs.extend(attr)
-        attrs_str = ", ".join(attrs)
+        attrs_str = ", ".join(different_attrs)
         if use_params:
             init_func_head = \
                 gen_codes(["def __init__(self, params):"], indent=1) + \
@@ -134,7 +143,7 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
                 if not output_name.startswith("x") or output_name in outputs \
                         or layer.kernel == "prim.assert":
                     continue
-                else:
+                elif output_name not in outputs:
                     outputs.append(output_name)
             continue
         for out_layer_id in graph.edges_out[layer_id]:
@@ -145,21 +154,12 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
                     else:
                         outputs.append(output_name)
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
-        if i in different_attrs:
-            df_attrs = different_attrs[i]
-        else:
-            df_attrs = list()
-        if layer.kernel in NN_KERNEL_WITH_PARAMS:
-            param_prefix_list.append(layer.outputs[0])
-        else:
-            param_prefix_list.append(None)
-
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
             ) or "paddle.fluid.dygraph" in layer.kernel or layer.kernel == "fluid.dygraph.base.to_variable":
             line = "self.{} = {}(".format(layer.outputs[0], layer.kernel)
             for k, v in layer.attrs.items():
-                key_name = "attr{}_{}".format(i, k)
-                if key_name in df_attrs:
+                key_name = "{}_{}".format(layer.outputs[0], k)
+                if key_name in different_attrs:
                     line += "{}={}, ".format(k, key_name)
                 else:
                     line += "{}={}, ".format(k, v)
@@ -185,7 +185,7 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
             else:
                 line += " = self.{}(".format(layer.outputs[0])
                 for k, v in layer.inputs.items():
-                    if v not in cur_outputs:
+                    if v not in cur_outputs and v not in inputs:
                         inputs.append(v)
                     line += "{}, ".format(v)
                 line = line.strip(", ")
@@ -200,7 +200,7 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
             from x2paddle.op_mapper.pytorch2paddle import prim2code
             if hasattr(prim2code, func_name):
                 for k, v in layer.inputs.items():
-                    if v not in cur_outputs:
+                    if v not in cur_outputs and v not in inputs:
                         inputs.append(v)
                 func = getattr(prim2code, func_name)
                 func(
@@ -217,8 +217,8 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
             line = "self.{} = {}(".format(layer.outputs[0], layer.attrs["module"])
             layer.attrs.pop("module")
             for k, v in layer.attrs.items():
-                key_name = "attr{}_{}".format(i, k)
-                if key_name in df_attrs:
+                key_name = "{}_{}".format(layer.outputs[0], k)
+                if key_name in different_attrs:
                     line += "{}={}, ".format(k, key_name)
                 else:
                     line += "{}={}, ".format(k, v)
@@ -231,7 +231,7 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
                 line = ','.join(layer.outputs[1:])
             line += " = self.{}(".format(layer.outputs[0])
             for k, v in layer.inputs.items():
-                if v not in cur_outputs:
+                if v not in cur_outputs and v not in inputs:
                     inputs.append(v)
                 line += "{}, ".format(v)
             line = line.strip(", ")
@@ -245,14 +245,14 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
                 line = ','.join(layer.outputs)
             line += " = {}(".format(layer.kernel)
             for k, v in layer.inputs.items():
-                if v not in cur_outputs:
+                if v not in cur_outputs and v not in inputs:
                     inputs.append(v)
                 line += "{}={}, ".format(k, v)
             for k, v in layer.attrs.items():
-                key_name = "attr{}_{}".format(i, k)
-                if key_name in df_attrs:
-                    inputs.append(key_name)
-                    line += "{}={}, ".format(k, key_name)
+                key_name = "{}_{}".format(layer.outputs[0], k)
+                if key_name in different_attrs:
+                    line += "{}=self.{}, ".format(k, key_name)
+                    init_func.extend(gen_codes(["self.{} = {}".format(key_name, key_name)], indent=2))
                 else:
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
@@ -266,5 +266,4 @@ def gen_layer_code(graph, sub_layers, layer_name, different_attrs=dict(), use_pa
                 forward_func_head + forward_func + \
                 gen_codes(["return {}".format(output_data_name)], indent=2)
     code_str = "".join(code_list)
-    print(param_prefix_list)
-    return code_str, param_prefix_list
+    return code_str
