@@ -1190,8 +1190,22 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         perm = node.get_attr('perm')
         attr = {'perm': perm, "name": string(node.layer_name)}
-        node.fluid_code.add_layer(
-            "transpose", inputs=val_x, output=node, param_attr=attr)
+        if val_x.dtype == 'int64':
+            node.fluid_code.add_layer(
+                "cast",
+                inputs=val_x,
+                output=val_x,
+                param_attr={'dtype': string('float32')})
+            node.fluid_code.add_layer(
+                "transpose", inputs=val_x, output=val_x, param_attr=attr)
+            node.fluid_code.add_layer(
+                "cast",
+                inputs=val_x,
+                output=node,
+                param_attr={'dtype': string(val_x.dtype)})
+        else:
+            node.fluid_code.add_layer(
+                "transpose", inputs=val_x, output=node, param_attr=attr)
 
     @print_mapping_info
     def Relu(self, node):
@@ -1307,11 +1321,23 @@ class OpSet9():
         val_x_dim = len(val_x.out_shapes[0])
         if val_x_dim == 1:
             node.fluid_code.add_layer("nonzero", inputs=val_x, output=val_x)
-            node.fluid_code.add_layer(
-                "transpose",
-                inputs=val_x,
-                output=node,
-                param_attr={'perm': [1, 0]})
+            attr={'perm': [1, 0]}
+            if val_x.dtype == 'int64':
+                node.fluid_code.add_layer(
+                    "cast",
+                    inputs=val_x,
+                    output=val_x,
+                    param_attr={'dtype': string('float32')})
+                node.fluid_code.add_layer(
+                    "transpose", inputs=val_x, output=val_x, param_attr=attr)
+                node.fluid_code.add_layer(
+                    "cast",
+                    inputs=val_x,
+                    output=node,
+                    param_attr={'dtype': string(val_x.dtype)})
+            else:
+                node.fluid_code.add_layer(
+                    "transpose", inputs=val_x, output=node, param_attr=attr)
         if val_x_dim > 1:
             node.fluid_code.add_layer("nonzero", inputs=val_x, output=val_x)
             node.fluid_code.add_layer(
