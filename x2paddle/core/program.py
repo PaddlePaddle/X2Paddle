@@ -25,6 +25,7 @@ import sys
 import os
 import six
 import pickle
+import numpy as np
 
 
 class PaddleLayer(object):
@@ -78,6 +79,9 @@ class PaddleGraph(object):
 
     def set_parameters(self, parameters):
         self.parameters = parameters
+        
+    def set_script(self, script):
+        self.script = script
 
     def clear(self):
         self.layers = OrderedDict()
@@ -152,6 +156,9 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
+#             if layer.kernel == "module":
+#                 print(layer.inputs)
+#                 print(layer.outputs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):
@@ -275,7 +282,7 @@ class PaddleGraph(object):
             indent=1)
         f.close()
 
-    def gen_model(self, save_dir, input_shapes=None):
+    def gen_model(self, save_dir, jit_type="script", input_files=None):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         if self.graph_type == "static":
@@ -311,19 +318,22 @@ class PaddleGraph(object):
                         target_vars=outputs,
                         executor=exe)
         else:
-            from x2paddle.optimizer.code_optimizer import HierarchicalTree
-            hierarchical_tree = HierarchicalTree(self)
-            for layer_id , layer in self.layers.items():
-                hierarchical_tree.insert(layer)
-            hierarchical_tree.save_source_files(save_dir)
-
-            '''
-            self.gen_dygraph_code(save_dir)
-            self.dump_dygraph_parameter(save_dir)
-            if input_shapes is not None:
-                # 如果input_shapes非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
-                self.dygraph2static(save_dir, input_shapes)
-            '''
+            if jit_type == "trace":
+                from x2paddle.optimizer.code_optimizer import HierarchicalTree
+                hierarchical_tree = HierarchicalTree(self)
+                for layer_id, layer in self.layers.items():
+                    hierarchical_tree.insert(layer)
+                hierarchical_tree.save_source_files(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+            else:
+                self.gen_dygraph_code(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+#             if input_files is not None:
+#                 input_shapes = list()
+#                 for npy_file in input_files:
+#                     input_shapes.append(np.load(npy_file).shape)
+#                 # 如果input_files非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
+#                 self.dygraph2static(save_dir, input_shapes)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):

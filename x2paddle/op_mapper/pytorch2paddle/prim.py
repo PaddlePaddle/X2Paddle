@@ -33,7 +33,10 @@ def prim_Constant(mapper, graph, node):
     if isinstance(value, str):
         value = string(value)
     if str(output_type) == "Tensor":
+        tensor_value = value
         value = "{}".format(value)
+        if "tensor" in value:
+            mapper.pytorch_params[output_name] = tensor_value.detach().numpy()
 
     if "inf" in str(value):
         t = str(type(value)).split("'")[1]
@@ -70,13 +73,51 @@ def prim_data(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%4336
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer("prim.equal", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
+
+
+def prim_DictConstruct(mapper, graph, node):
+    """ 构建dict。
+    
+    TorchScript示例:
+        %32 : Dict(str, Tensor) = prim::DictConstruct(%30, %23, %31, %29)
+        参数含义:
+        %32 (dict): 组成的字典。
+        %30 (str): key。
+        %23 (-): value。
+        %31 (str): key。
+        %29 (-): value。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理每个输入
+    for i, input_name in enumerate(inputs_name):
+        if i%2 == 0:
+            layer_attrs["key{}".format(int(i/2))] = mapper.attrs[input_name]
+        else:
+            layer_inputs["value{}".format(int(i/2))] = input_name
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.dict_construct", 
+                    inputs=layer_inputs, 
+                    outputs=layer_outputs, 
+                    scope_name=scope_name,
+                    **layer_attrs)
+    return current_inputs, current_outputs
+
 
 
 def prim_GetAttr(mapper, graph, node):
@@ -139,7 +180,7 @@ def prim_If(mapper, graph, node):
     input_node = list(node.inputs())[0].node()
     script_input_unique_id = list(node.inputs())[0].unique()
     input_node_name = mapper.outputs_info[script_input_unique_id]
-    mapper._check_input(graph, input_node, input_node_name, current_outputs)
+    mapper._check_input(graph, input_node, input_node_name, current_outputs, scope_name)
     graph.add_layer("prim.if", inputs={'input': input_node_name}, outputs=node_outputs, scope_name=scope_name)
     current_layer = list(graph.layers.values())[-1]
     block0 = list(node.blocks())[0]
@@ -202,7 +243,7 @@ def prim_ListUnpack(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = layer_outputs.copy()
     # 处理输入0，即%4354
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
@@ -249,7 +290,7 @@ def prim_Loop(mapper, graph, node):
             loop_input_node_name = mapper.outputs_info[
                 script_loop_input_unique_id]
             mapper._check_input(graph, loop_input_node, loop_input_node_name,
-                                node_outputs)
+                                node_outputs, scope_name)
             loop_inputs['input'] = loop_input_node_name
             loop_outputs.append(block_input_node_name)
             node_outputs.append(block_input_node_name)
@@ -259,7 +300,7 @@ def prim_Loop(mapper, graph, node):
             loop_input_node_name = mapper.outputs_info[
                 script_loop_input_unique_id]
             mapper._check_input(graph, loop_input_node, loop_input_node_name,
-                                node_outputs)
+                                node_outputs, scope_name)
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': loop_input_node_name},
@@ -295,7 +336,7 @@ def prim_min(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%86
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
@@ -322,7 +363,7 @@ def prim_NumToTensor(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%86
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     if inputs_node[0].kind() == "aten::size":
         layer_inputs["input"] = inputs_name[0]
         # 获取当前节点输入的list
@@ -362,7 +403,7 @@ def prim_RaiseException(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%76
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
@@ -389,7 +430,7 @@ def prim_requires_grad(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%86
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
@@ -452,7 +493,7 @@ def prim_shape(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%input.8
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
@@ -535,7 +576,7 @@ def prim_unchecked_cast(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%size.63
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs)
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())

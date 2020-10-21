@@ -13,11 +13,12 @@
 # limitations under the License.
 
 
+import copy
 import os.path as osp
 from treelib import Tree
 from queue import Queue
 from x2paddle.optimizer.code_optimizer.layer_code_generator import gen_layer_code, rename_layers, NN_KERNEL_WITH_PARAMS
-from x2paddle.optimizer.code_optimizer.sugbraphs_union import  distinguish_sequential
+from x2paddle.optimizer.code_optimizer.sugbraphs_union import  distinguish_sequential, get_inputs_outputs
 from x2paddle.core.program import PaddleLayer
 from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode, PamareterTree
 
@@ -46,15 +47,29 @@ class HierarchicalTree(Tree):
         """
         scope_name = layer.scope_name
         if scope_name == "":
-            self.create_node(tag=layer.id, 
-                             identifier="no_scope_" + layer.id, 
-                             parent=self.pd_graph.name,
-                             data=layer)
-            return 
+            if layer.kernel == "prim.tuple" or layer.kernel == "prim.tuple_unpack":
+                layer_id = layer.id
+                layer_id_list = list()
+                for input_layer_id in self.pd_graph.edges_in[layer_id]:
+                    layer_id_list.append(int(input_layer_id))
+                layer_id_list = list(set(layer_id_list))
+                layer_id_list.sort(reverse=True) 
+                for input_layer_id in layer_id_list:
+                    input_layer_id_str = str(input_layer_id)
+                    if self.pd_graph.layers[input_layer_id_str].scope_name != "":
+                        scope_name = self.pd_graph.layers[input_layer_id_str].scope_name
+                        break
+                layer.scope_name = scope_name
+            else:
+                self.create_node(tag=layer.id, 
+                                 identifier="no_scope_" + layer.id, 
+                                 parent=self.pd_graph.name,
+                                 data=layer)
+                return 
         scopes = scope_name.split(SEPARATOR_IN_SCOPE)
         for idx, scope in enumerate(scopes):
-            parent = SEPARATOR_IN_SCOPE.join(scopes[:idx])
-            identifier = SEPARATOR_IN_SCOPE.join(scopes[:idx + 1]).lower()
+            parent = SEPARATOR_IN_SCOPE.join(scopes[:idx])#.lower()
+            identifier = SEPARATOR_IN_SCOPE.join(scopes[:idx + 1])#.lower()
             if self.contains(identifier):
                 if idx != len(scopes) - 1:
                     parent_node = self.parent(identifier)
@@ -116,14 +131,17 @@ class HierarchicalTree(Tree):
                     if len(identifiers) == 0:
                         identifier = prefix + "_0"
                     else:
-                        identifiers.sort()
-                        last_idx = int(identifiers[-1].split("_")[-1])
-                        identifier = prefix + "_{}".format(last_idx + 1)
+                        identifier_ids = list()
+                        for id_obj in identifiers:
+                            identifier_ids.append(int(id_obj.split("_")[-1]))
+                        identifier_ids.sort()
+                        identifier = prefix + "_{}".format(identifier_ids[-1] + 1)
                 data = layer if idx == len(scopes) - 1 else None
                 self.create_node(tag=scopes[idx], 
                                  identifier=identifier, 
                                  parent=parent,
                                  data=data)
+                
                 
     def update_hierarchical_order(self):
         """ 更新层次排序，使用一个字典存储该信息，
@@ -143,11 +161,15 @@ class HierarchicalTree(Tree):
         self._hierarchical_order = hierarchical_order
 
     def analyze_attrs_table(self, attrs_table):
+        """ 分析属性表格，哪些属性取值不一致。
+        """
         diff_attrs_column = list()
         for column in list(attrs_table.columns):
             elements = list(attrs_table.get(column))
             base = elements[0]
             for element in elements[1:]:
+                if isinstance(base, str) and "'" not in base:
+                    break
                 if element != base:
                     diff_attrs_column.append(column)
                     break
@@ -157,38 +179,6 @@ class HierarchicalTree(Tree):
         """ 将一个scope的节点合成一个Module（Class），并将对应的Class代码
             放到code字符串中。
         """
-        def get_inputs_outputs(layers):
-            inputs = list()
-            outputs = list()
-            cur_outputs = list()
-            layer_ids = list(layers.keys())
-            for layer_id, layer in layers.items():
-                # 获取输出节点名字
-                if layer_id not in self.pd_graph.edges_out:
-                    for output_name in layer.outputs:
-                        if not output_name.startswith("x") or output_name in outputs \
-                                or layer.kernel == "prim.assert":
-                            continue
-                        elif output_name not in outputs:
-                            outputs.append(output_name)
-                else:
-                    for out_layer_id in self.pd_graph.edges_out[layer_id]:
-                        if out_layer_id not in layer_ids:
-                            for output_name in layer.outputs:
-                                if not output_name.startswith("x") or output_name in outputs:
-                                    continue
-                                else:
-                                    outputs.append(output_name)
-                # 获取输入节点名字
-                for k, v in layer.inputs.items():
-                    if v not in cur_outputs and v not in inputs:
-                        inputs.append(v)
-                if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
-                    ) or "paddle.fluid.dygraph" in layer.kernel:
-                    cur_outputs.extend(layer.outputs[1:])
-                else:
-                    cur_outputs.extend(layer.outputs)
-            return inputs, outputs
         
         def get_node_name(sub_layers):
             for k, v in node_name2sub_layers.items():
@@ -201,18 +191,18 @@ class HierarchicalTree(Tree):
         node_name = get_node_name(sub_layers)
 
         sub_layers, _, _ = rename_layers(sub_layers)
-        use_params = False
         diff_attrs_column = self.analyze_attrs_table(attrs_table)
         if module_name is None:
             module_name = node_name.split("/")[-1]
             module_name = module_name[0].upper() + module_name[1:]
-        if node_name.split("/")[-1].lower() == self.pd_graph.name.lower():
-            use_params = True
+        if module_name in self.module_name2count:
+            module_name = module_name + "_0"
         code_str = gen_layer_code(self.pd_graph, sub_layers, module_name, 
-                                                     different_attrs=diff_attrs_column, use_params=use_params)
+                                                     different_attrs=diff_attrs_column)
+#         print(code_str)
         self.codes.append(code_str)
         for sub_layers in sub_layers_list:
-            inputs, outputs = get_inputs_outputs(sub_layers)
+            inputs, outputs = get_inputs_outputs(self.pd_graph, sub_layers)
             inputs_dict = dict()
             for i, input in enumerate(inputs):
                 inputs_dict["input_{}".format(i)] = input
@@ -225,6 +215,7 @@ class HierarchicalTree(Tree):
             diff_attrs = dict() 
             for column in diff_attrs_column:
                 diff_attrs[column] = attrs_table.get(column).loc[node_name]
+            diff_attrs["params"] = "params"
             
             node_name_seg = node_name.split(SEPARATOR_IN_SCOPE)
             node_name_seg[-1] = module_name.lower()
@@ -242,9 +233,7 @@ class HierarchicalTree(Tree):
             for node in nn_param_nodes:
                 param_node.add_child(node)
             self.param_tree.add_node(param_node)
-            
-            
-            
+
             for i, (layer_id, layer) in enumerate(sub_layers.items()):
                 if i == len(sub_layers) - 1:
                     self.pd_graph.layers[layer_id] = new_layer
@@ -256,16 +245,14 @@ class HierarchicalTree(Tree):
     
     
     def find_subgraph_diff(self, module_name2sub_layers, module_name2sub_identifiers, node_name2sub_layers, name):
+        """ 查找子图的diff，主要是输入参数的diff。
+        """
         sub_layers = module_name2sub_layers[name]
         sub_identifiers = module_name2sub_identifiers[name]
-        identifiers_list = list()
-        for identifiers in sub_identifiers:
-            identifiers_list.append(list(identifiers.values()))
-            
-        new_sub_layers, new_sub_sequentials, sequentials2attrs_table = distinguish_sequential(name,
+        new_sub_layers, new_sub_sequentials, sequentials2attrs_table = distinguish_sequential(self.pd_graph,
+                                                                                              name,
                                                                                               sub_layers, 
                                                                                               sub_identifiers, 
-                                                                                              identifiers_list, 
                                                                                               node_name2sub_layers)
         module_name2sub_layers.pop(name)
         module_name2sub_identifiers.pop(name)
@@ -286,7 +273,7 @@ class HierarchicalTree(Tree):
         for depth in depths[1:]:
             # Module的名字与子图的对应关系
             module_name2sub_layers = dict()
-            
+            # Module的名字与子图中layer命名的对应关系
             module_name2sub_identifiers = dict()
             # 层次树中包含子树的节点，其节点名与子图对用关系
             node_name2sub_layers = dict()
@@ -298,23 +285,24 @@ class HierarchicalTree(Tree):
                     for successor_name in node_inst.successors(self.identifier):
                         sub_layers[self[successor_name].data.id] = self[successor_name].data
                         sub_identifiers[self[successor_name].data.id] = self[successor_name].data.scope_name.split("/")[-1]
-                        
                     node_name2sub_layers[node_name] = sub_layers
                     node_name_segs = node_name.split("/")
                     
                     # 获取Module的名字
                     module = self.script
                     is_largest_module = False # 当前module是否是最外层的Module
-                    for name in node_name_segs:
+                    for name_id, name in enumerate(node_name_segs):
                         if not hasattr(module, name):
                             is_largest_module = True
                             break
                         module = getattr(module, name)
                     if is_largest_module:
-                        module_name = name
+                        if name_id == 0:
+                            module_name = name
+                        else:
+                            module_name = "_".join(node_name_segs)
                     else:
                         module_name = module._get_name()
-                        
                     if module_name in module_name2sub_layers:
                         module_name2sub_layers[module_name].append(sub_layers)
                         module_name2sub_identifiers[module_name].append(sub_identifiers)
@@ -329,6 +317,7 @@ class HierarchicalTree(Tree):
                                                                   module_name)
                 for name in sequentials2attrs_table.keys():
                     if name.startswith("Sequential"):
+                        # 若Module的名字为Sequential，则以scope_name的名字来命名，在merge_node中实现
                         module_name = None
                     else:
                         module_name = name
@@ -339,9 +328,12 @@ class HierarchicalTree(Tree):
 
 
     def update_parameters(self):
+        """ 更新参数。
+        """
         self.param_tree.traverse()
+        full_old_name_list = copy.deepcopy(list(self.pd_graph.parameters.keys()))
         for old_name, new_name in self.param_tree.old2new.items():
-            for full_old_name in self.pd_graph.parameters.keys():
+            for full_old_name in full_old_name_list:
                 if full_old_name.startswith("{}.".format(old_name)):
                     full_new_name = full_old_name.replace("{}.".format(old_name), "{}.".format(new_name))
                     params = self.pd_graph.parameters.pop(full_old_name)

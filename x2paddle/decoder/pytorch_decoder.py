@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import sys
 import torch
 import numpy as np
 
@@ -39,15 +41,8 @@ class ScriptDecoder(Decoder):
             script_path (str): ScriptModule保存路径。
             model_path (str): PyTorchModule保存路径。
     """
-    def __init__(self, script_path=None, model_path=None):
-        if script_path is not None:
-            self.script = torch.jit.load(script_path)
-        else:
-            if model_path is not None:
-                model = torch.load(model_path)
-                self.script = torch.jit.script(model)
-            else:
-                raise Exception("The script_path or model_path must be defined!")
+    def __init__(self, script_path=None):
+        self.script = torch.jit.load(script_path)
         self.graph = self._optimize_graph(self.script.inlined_graph)
             
 class TraceDecoder(Decoder):
@@ -55,14 +50,17 @@ class TraceDecoder(Decoder):
         
         Args:
             model_path (str): PyTorchModule保存路径。
-            input_file_list (list): 输入网络的numpy，每个numpy保存成.npy文件, 
-                                    文件路径存储在input_file_list中。
+            input_files (list): 输入网络的numpy，每个numpy保存成.npy文件, 
+                                文件路径存储在input_files中。
     """
-    def __init__(self, model_path, input_file_list=list()):
+    def __init__(self, model_path, input_files=list()):
+        # TODO(syf): 传入pytorch的Module(即import)，否则出错
         model = torch.load(model_path)
+        model.eval()
         input_list = list()
-        for npy_file in input_file_list:
-            input_list.append(torch.Tensor(np.load(npy_file)))
-        self.script = torch.jit.trace(model, input_list)
+        for npy_file in input_files:
+            input_list.append(torch.tensor(np.load(npy_file)))
+        self.script = torch.jit.trace(model, input_list, strict=False)
         self.graph = self._optimize_graph(self.script.inlined_graph)
-            
+#         print(self.graph)
+#         print(getattr(getattr(self.script.decoder.block, "5").layer, "2"))

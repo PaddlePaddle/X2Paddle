@@ -24,5 +24,9 @@ from .fc_fuser import FcFuser
 from .fc_fuse_pass import FcFusePass
 from .interpolate_bilinear_fuser import InterpolateBilinearFuser
 from .interpolate_bilinear_fuse_pass import InterpolateBilinearFusePass
+from .list_fuser import ListFuser
+from .list_fuse_pass import ListFusePass
 from .reshape_fuser import ReshapeFuser
 from .reshape_fuse_pass import ReshapeFusePass
+from .trace_fc_fuser import TraceFcFuser
+from .trace_fc_fuse_pass import TraceFcFusePass

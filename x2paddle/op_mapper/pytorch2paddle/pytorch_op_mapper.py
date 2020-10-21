@@ -73,6 +73,8 @@ class PyTorchOpMapper(OpMapper):
 
         # 初始化
         graph = PaddleGraph(parent_layer, graph_type="dygraph")
+        if str(type(self.script))=="<class 'torch.jit.TopLevelTracedModule'>":
+            graph.set_script(self.script)
         current_node_outputs = []
         graph_inputs = []
         # 转换输入节点
@@ -151,6 +153,7 @@ class PyTorchOpMapper(OpMapper):
                      node,
                      output_name,
                      node_outputs,
+                     scope_name,
                      add_dim=False):
         if node.kind() == "prim::GetAttr":
             param = self.pytorch_params[output_name]
@@ -162,6 +165,7 @@ class PyTorchOpMapper(OpMapper):
                     "fluid.dygraph.base.to_variable",
                     inputs={},
                     outputs=[output_name],
+                    scope_name=scope_name,
                     value="params[{}]".format(string(output_name)))
             else:
                 if isinstance(param, dict) and "Tensor" in param and \
@@ -186,6 +190,7 @@ class PyTorchOpMapper(OpMapper):
                                             "fluid.dygraph.base.to_variable",
                                             inputs={},
                                             outputs=[output_name],
+                                            scope_name=scope_name,
                                             value="params[{}]".format(
                                                 string(output_name)))
                                         node_outputs.append(output_name)
@@ -195,16 +200,28 @@ class PyTorchOpMapper(OpMapper):
                         "prim.constant",
                         inputs={},
                         outputs=[output_name],
+                        scope_name=scope_name,
                         value=param["Tensor"])
                 else:
                     graph.add_layer(
                         "prim.constant",
                         inputs={},
                         outputs=[output_name],
+                        scope_name=scope_name,
                         value=string(param)
                         if isinstance(param, str) else param)
             node_outputs.append(output_name)
+        elif node.kind() == "prim::Constant" and output_name in self.pytorch_params:
+            param = self.pytorch_params[output_name]
+            self.paddle_params[output_name] = param
+            graph.add_layer(
+                "fluid.dygraph.base.to_variable",
+                inputs={},
+                outputs=[output_name],
+                scope_name=scope_name,
+                value="params[{}]".format(string(output_name)))     
 
+            
     def _get_inputs_name(self, node):
         inputs_name = []
         inputs_node = []
@@ -215,8 +232,10 @@ class PyTorchOpMapper(OpMapper):
             inputs_node.append(script_input_node)
             inputs_name.append(input_name)
         return inputs_name, inputs_node
+    
 
     def data(self, graph, node, uid):
+        scope_name = self.normalize_scope_name(node)
         for output_ivalue in node.outputs():
             script_unique_id = output_ivalue.unique()
             if script_unique_id in self.outputs_info or script_unique_id != uid:
@@ -229,10 +248,12 @@ class PyTorchOpMapper(OpMapper):
             "fluid.dygraph.base.to_variable",
             inputs={},
             outputs=[node_name],
+            scope_name=scope_name,
             value=output_name)
         return [], [output_name]
 
     def equal(self, graph, node, uid=None, parent_layer=None, index=None):
+        scope_name = self.normalize_scope_name(node)
         if parent_layer is not None and index is not None:
             # block的输出
             input_node_name = self.outputs_info[uid]
@@ -245,7 +266,8 @@ class PyTorchOpMapper(OpMapper):
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},
-                outputs=[output_node_name])
+                outputs=[output_node_name],
+                scope_name=scope_name)
             return [input_node_name], current_outputs
 
     def normalize_scope_name(self, node):
@@ -254,10 +276,16 @@ class PyTorchOpMapper(OpMapper):
         scope_name = node.scopeName()
         if scope_name == "":
             return scope_name
-        name_segments = scope_name.split("/")
-        scopes = list()
-        for i, segment in enumerate(name_segments):
-            scopes.append(segment.split(".")[-1])
-        return "/".join(scopes)
-        
+        scope_name_part = scope_name.split("/")
+        for index in range(len(scope_name_part) - 1):
+            if scope_name_part[index] in scope_name_part[index + 1]:
+                continue
+            last_name_segments = scope_name_part[index].split(".")
+            name_segments = scope_name_part[index + 1].split(".")
+            for j, name in enumerate(last_name_segments):
+                name_segments[j] = name
+            scope_name_part[index + 1] = ".".join(name_segments)
+        last_name = scope_name_part[-1]
+        name_segments = last_name.split(".")
+        return "/".join(name_segments[1:])
                 

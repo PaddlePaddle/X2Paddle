@@ -88,7 +88,19 @@ def arg_parser():
         action="store_true",
         default=False,
         help="define whether merge the params")
-
+    parser.add_argument(
+        "--jit_type",
+        "-jt",
+        type=_text_type,
+        default="script",
+        help="define the jit type of pytorch Module.")
+    parser.add_argument(
+        "--input_files",
+        "-if",
+        action='append',
+        default=None,
+        help="define the inputs' file path")
+    
     return parser
 
 
@@ -174,7 +186,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
-def pytorch2paddle(model_path, save_dir):
+def pytorch2paddle(model_path, save_dir, jit_type, input_files):
     # check pytorch installation and version
     try:
         import torch
@@ -191,9 +203,12 @@ def pytorch2paddle(model_path, save_dir):
         return
     print("Now translating model from pytorch to paddle.")
 
-    from x2paddle.decoder.pytorch_decoder import PyTorchDecoder
+    from x2paddle.decoder.pytorch_decoder import ScriptDecoder, TraceDecoder
     from x2paddle.op_mapper.pytorch2paddle import pytorch_op_mapper
-    model = PyTorchDecoder(model_path)
+    if jit_type == "trace":
+        model = TraceDecoder(model_path, input_files)
+    else:
+        model = ScriptDecoder(model_path)
     mapper = pytorch_op_mapper.PyTorchOpMapper(model)
     mapper.graph.build()
     print("Model optimizing ...")
@@ -201,7 +216,7 @@ def pytorch2paddle(model_path, save_dir):
     graph_opt = GraphOptimizer()
     graph_opt.optimize(mapper.graph)
     print("Model optimized.")
-    mapper.graph.gen_model(save_dir)
+    mapper.graph.gen_model(save_dir, jit_type, input_files)
 
 
 def paddle2onnx(model_path, save_dir, opset_version=10):
@@ -275,7 +290,7 @@ def main():
         onnx2paddle(args.model, args.save_dir, params_merge)
     elif args.framework == "pytorch":
         assert args.model is not None, "--model should be defined while translating pytorch model"
-        pytorch2paddle(args.model, args.save_dir)
+        pytorch2paddle(args.model, args.save_dir, args.jit_type, args.input_files)
 
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
