@@ -1138,7 +1138,13 @@ class OpSet9():
         x_shape = val_x.out_shapes[0]
         y_shape = val_y.out_shapes[0]
         inputs = {"x": val_x, "y": val_y}
-        if y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
+        #if x_shape[-1] == y_shape[0] and len(x_shape) == 3:
+        if x_shape[-1] == y_shape[0]:
+            print(x_shape)
+            print(node.layer_name)
+            node.fluid_code.add_layer(
+                "mul", inputs=inputs, output=node, param_attr={'x_num_col_dims':2})
+        elif y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
             y_squeeze = val_y.layer_name + '_squeeze'
             node.fluid_code.add_layer(
                 "squeeze",
