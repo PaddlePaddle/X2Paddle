@@ -675,7 +675,7 @@ def aten_constant_pad_nd(mapper, graph, node):
     layer_attrs["value"] = mapper.attrs[inputs_name[2]]
 
     graph.add_layer(
-        "fluid.layers.shape",
+        "prim.shape",
         inputs={"input": inputs_name[0]},
         outputs=[inputs_name[0] + "_shape"],
         scope_name=scope_name)
@@ -1068,7 +1068,7 @@ def aten_dim(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+        "prim.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     graph.add_layer(
         "prim.len", inputs={"input": output_name}, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
@@ -1479,7 +1479,7 @@ def aten_expand_as(mapper, graph, node):
     block.add_layer(
         "fluid.layers.cast",
         inputs={"x": layer_outputs[0]},
-        outputs=layer_outputs,
+        outputs=copy.deepcopy(layer_outputs),
         scope_name=scope_name,
         dtype=string("bool"))
     if_layer.add_block(block)
@@ -3384,7 +3384,7 @@ def aten_size(mapper, graph, node):
         return current_inputs, current_outputs
 
     graph.add_layer(
-        "fluid.layers.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+        "prim.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -3884,7 +3884,7 @@ def aten_transpose(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     graph.add_layer(
-        "fluid.layers.shape",
+        "prim.shape",
         inputs={"input": inputs_name[0]},
         outputs=[output_name + "_shape"],
         scope_name=scope_name)

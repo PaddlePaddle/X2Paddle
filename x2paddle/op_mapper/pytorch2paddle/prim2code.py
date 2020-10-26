@@ -370,12 +370,19 @@ def prim_set_item(layer, indent=1, init_func=[], forward_func=[], layer_id=None,
         get_value(layer, "dict", different_attrs),
         get_value(layer, "key", different_attrs), get_value(layer, "value", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
+    
+    
+def prim_shape(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+    line = "{} = {}.shape".format(layer.outputs[0],
+                                  get_value(layer, "input", different_attrs))
+    forward_func.extend(gen_codes([line], indent=indent))
+
 
 
 def prim_shape_dim(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = fluid.layers.shape({})[{}]".format(layer.outputs[0],
-                                                    get_value(layer, "input", different_attrs),
-                                                    get_value(layer, "dim", different_attrs))
+    line = "{} = {}.shape[{}]".format(layer.outputs[0],
+                                    get_value(layer, "input", different_attrs),
+                                    get_value(layer, "dim", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
