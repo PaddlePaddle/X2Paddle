@@ -14,30 +14,18 @@ def detectionoutput_layer(inputs,
                           confidence_threshold=0.1,
                           input_shape=None,
                           name=None):
-    nms_param_str = nms_param
-    nms_param = {}
-    part = nms_param_str.split(',')
-    for s in part:
-        if s == '':
-            break
-        else:
-            name, obj = s.split(': ')
-            if name == 'top_k':
-                nms_param[name] = int(obj)
-            else:
-                nms_param[name] = float(obj)
     if nms_param is None:
         nms_param = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
     mbox_conf_flatten = inputs[1]
     mbox_priorbox = inputs[2]
-    mbox_priorbox_list = fluid.layers.split(mbox_priorbox, 2, dim=1)
+    mbox_priorbox_list = paddle.split(mbox_priorbox, 2, dim=1)
     pb = mbox_priorbox_list[0]
     pbv = mbox_priorbox_list[1]
-    pb = fluid.layers.reshape(x=pb, shape=[-1, 4])
-    pbv = fluid.layers.reshape(x=pbv, shape=[-1, 4])
+    pb = paddle.reshape(x=pb, shape=[-1, 4])
+    pbv = paddle.reshape(x=pbv, shape=[-1, 4])
     mbox_loc = inputs[0]
-    mbox_loc = fluid.layers.reshape(x=mbox_loc, shape=[-1, pb.shape[0], 4])
-    mbox_conf_flatten = fluid.layers.reshape(
+    mbox_loc = paddle.reshape(x=mbox_loc, shape=[-1, pb.shape[0], 4])
+    mbox_conf_flatten = paddle.reshape(
         x=mbox_conf_flatten, shape=[0, pb.shape[0], -1])
 
     default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}

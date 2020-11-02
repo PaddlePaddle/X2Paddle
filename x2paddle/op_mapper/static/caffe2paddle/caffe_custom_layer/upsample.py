@@ -42,8 +42,8 @@ def upsample_layer(inputs, scale, input_shape=None, name=None):
     :return:
     """
     x = inputs[0]
-    out = fluid.layers.resize_nearest(
-        x, align_corners=False, scale=scale, name=name)
+    out = paddle.nn.functioanl.interpolate(
+        x, align_corners=False, scale_factor=scale, name=name)
 
     return out
 

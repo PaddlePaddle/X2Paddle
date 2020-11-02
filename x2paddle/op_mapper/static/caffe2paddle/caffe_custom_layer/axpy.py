@@ -16,8 +16,8 @@ def axpy_layer(inputs, input_shape=None, name=None):
     alpha = inputs[0]
     x = inputs[1]
     y = inputs[2]
-    out = fluid.layers.elementwise_mul(x, alpha, axis=0)
-    out = fluid.layers.elementwise_add(out, y, name=name)
+    out = paddle.multiply(x, alpha, axis=0)
+    out = paddle.add(out, y, name=name)
     return out
 
 

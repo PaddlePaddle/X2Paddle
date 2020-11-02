@@ -30,7 +30,7 @@ def select_layer(inputs,
     out = []
     for i in range(len(slice_point)):
         out.append(
-            fluid.layers.slice(
+            paddle.slice(
                 input,
                 axes=[axis],
                 starts=[slice_point[i]],

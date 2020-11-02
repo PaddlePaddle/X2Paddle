@@ -18,7 +18,6 @@ from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
-from x2paddle.op_mapper import caffe_shape
 
 
 class CaffeResolver(object):
@@ -50,10 +49,10 @@ class CaffeGraphNode(GraphNode):
     def __init__(self, layer, type_str, layer_name=None):
         if layer_name is None:
             super(CaffeGraphNode, self).__init__(
-                layer, layer.name.replace('/', '_').replace('-', '_'))
+                layer, layer.name.replace('/', '_').replace('-', '_').lower())
         else:
             super(CaffeGraphNode, self).__init__(
-                layer, layer_name.replace('/', '_').replace('-', '_'))
+                layer, layer_name.replace('/', '_').replace('-', '_').lower())
         self.layer_type = type_str
         self.fluid_code = FluidCode()
         self.data = None
@@ -66,6 +65,13 @@ class CaffeGraph(Graph):
     def __init__(self, model, params, caffe_pb):
         self.params = params
         self.caffe_pb = caffe_pb
+        if hasattr(model, "name"):
+            if model.name == "":
+                self.graph_name = "CaffeModel"
+            else:
+                self.graph_name = model.name
+        else:
+            self.graph_name = "CaffeModel"
         super(CaffeGraph, self).__init__(model)
 
     def filter_layers(self, layers):
@@ -242,7 +248,7 @@ class CaffeDecoder(object):
         with open(proto_path, 'rb') as proto_file:
             proto_str = proto_file.read()
             text_format.Merge(proto_str, self.net)
-
+        
         self.load_using_pb()
 
         self.caffe_graph = CaffeGraph(self.net, self.params,

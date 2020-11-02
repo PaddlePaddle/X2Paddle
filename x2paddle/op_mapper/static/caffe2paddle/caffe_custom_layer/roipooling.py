@@ -20,7 +20,7 @@ def roipooling_layer(inputs,
                      name=None):
     input = inputs[0]
     roi = inputs[1]
-    roi = fluid.layers.slice(roi, axes=[1], starts=[1], ends=[5])
+    roi = paddle.slice(roi, axes=[1], starts=[1], ends=[5])
     out = fluid.layers.roi_pool(
         input,
         roi,

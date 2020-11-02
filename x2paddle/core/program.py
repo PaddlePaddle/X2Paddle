@@ -1,4 +1,3 @@
-# -*- coding:UTF-8 -*-
 #   Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
@@ -21,15 +20,15 @@ import paddle
 from paddle.fluid.proto import framework_pb2
 from collections import OrderedDict
 import numpy
-import collections
 import sys
 import os
 import six
 import pickle
+import numpy as np
 
 
 class PaddleLayer(object):
-    def __init__(self, id, kernel, inputs, outputs, **kwargs):
+    def __init__(self, id, kernel, inputs, outputs, scope_name="", **kwargs):
         assert isinstance(
             inputs,
             dict), "parameter 'inputs' for PaddleLayer should be type of dict"
@@ -53,9 +52,11 @@ class PaddleLayer(object):
         self.kernel = kernel
         self.inputs = inputs
         self.outputs = outputs
+        self.scope_name = scope_name
         self.attrs = kwargs
         self.id = id
         self.blocks = list()
+        
 
     def add_block(self, block):
         self.blocks.append(block)
@@ -71,12 +72,23 @@ class PaddleGraph(object):
         self.parameters = dict()
         self.parent_layer = parent_layer
         self.graph_type = graph_type
+        self.custom_func = None
+        self.inputs_info = None
 
     def set_name(self, name):
-        self.name = name
+        self.name = name.replace("-", "_").replace("/", "_")
 
     def set_parameters(self, parameters):
         self.parameters = parameters
+        
+    def set_custom_func(self, custom_func):
+        self.custom_func = custom_func
+        
+    def set_inputs_info(self, inputs_info):
+        self.inputs_info = inputs_info
+        
+    def set_script(self, script):
+        self.script = script
 
     def clear(self):
         self.layers = OrderedDict()
@@ -90,13 +102,13 @@ class PaddleGraph(object):
         self.edges_out = dict()
         self.edges_in = dict()
 
-    def add_layer(self, kernel, inputs, outputs, **kwargs):
+    def add_layer(self, kernel, inputs, outputs, scope_name="", **kwargs):
         layer_id = str(len(self.layers))
         if self.parent_layer is not None:
             layer_id = "{}.{}.{}".format(self.parent_layer.id,
                                          len(self.parent_layer.blocks),
                                          layer_id)
-        layer = PaddleLayer(layer_id, kernel, inputs, outputs, **kwargs)
+        layer = PaddleLayer(layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
         self.layers[layer_id] = layer
         return layer_id
 
@@ -156,6 +168,10 @@ class PaddleGraph(object):
                 if not isinstance(vs, list):
                     vs = [vs]
                 for v in vs:
+                    if "[" in v:
+                        remove_index = v.index("[")
+                        v_part = v[remove_index:]
+                        v = v.replace(v_part, "")
                     assert v in outputs_from_nodes or (
                         inputs is not None and v in list(inputs.values())
                     ) or (
@@ -215,8 +231,59 @@ class PaddleGraph(object):
                     block_global_layers = update(block.layers)
                     global_layers.update(block_global_layers)
             return global_layers
-
         return update(self.layers)
+    
+    def gen_model(self, save_dir, jit_type=None):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        if self.graph_type == "static":
+            code_dir = os.path.join(save_dir, 'model_with_code')
+            infer_dir = os.path.join(save_dir, 'inference_model')
+            self.gen_code(code_dir)
+            sys.path.append(code_dir)
+            import x2paddle_model
+            paddle.enable_static()
+            scope = paddle.static.Scope()
+            startup_program = paddle.static.Program()
+            main_program = paddle.static.Program()
+            with paddle.static.scope_guard(scope):
+                with paddle.static.program_guard(main_program, startup_program):
+                    inputs, outputs = x2paddle_model.x2paddle_net()
+                    exe = fluid.Executor(fluid.CPUPlace())
+                    exe.run(startup_program)
+                    param_dir = os.path.join(code_dir, 'weights')
+                    for k, v in self.parameters.items():
+                        if scope.find_var(k):
+                            self.dump_parameter(k, v, param_dir)
+                    def if_exist(var):
+                        b = os.path.exists(
+                            os.path.join(os.path.join(param_dir, var.name)))
+                        return b
+                    fluid.io.load_vars(
+                        exe, param_dir, main_program, predicate=if_exist)
+                    fluid.io.save_inference_model(
+                        dirname=infer_dir,
+                        feeded_var_names=[i.name for i in inputs],
+                        target_vars=outputs,
+                        executor=exe)
+        else:
+            if jit_type == "trace":
+                from x2paddle.optimizer.code_optimizer import HierarchicalTree
+                hierarchical_tree = HierarchicalTree(self)
+                for layer_id, layer in self.layers.items():
+                    hierarchical_tree.insert(layer)
+                hierarchical_tree.save_source_files(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+            else:
+                self.gen_dygraph_code(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+            input_shapes = list()
+            input_types = list()
+            for input_name in self.inputs:
+                input_shapes.append(self.inputs_info[input_name][0])
+                input_types.append(self.inputs_info[input_name][1])
+                # 如果input_files非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
+                self.dygraph2static(save_dir, input_shapes, input_types)
 
     def gen_code(self, code_dir):
         def write_code(f, code_list, indent=0):
@@ -235,10 +302,24 @@ class PaddleGraph(object):
             f, [
                 "from paddle.fluid.initializer import Constant",
                 "from paddle.fluid.param_attr import ParamAttr",
-                "import paddle.fluid as fluid", "import math", "",
-                "def x2paddle_net():"
+                "import paddle.fluid as fluid", 
+                "import paddle", "import math", "",
+                
             ],
             indent=0)
+        if self.custom_func is not None:
+            write_code(
+                f, 
+                list(self.custom_func.values()),
+                indent=0)
+        write_code(f, 
+            ["", "def x2paddle_net():"],
+            indent=0)
+        write_code(
+            f, [
+                "paddle.enable_static()"
+            ],
+            indent=1)
         for layer_id, layer in self.layers.items():
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
@@ -253,8 +334,10 @@ class PaddleGraph(object):
                 for output in layer.outputs:
                     line += "{}, ".format(output)
                 line = line.strip(", ")
-
-            line += " = {}(".format(layer.kernel)
+            if layer.kernel.startswith("combination_layer"):
+                line += " = {}(".format(layer.kernel.split(":")[-1].lower() + "_layer")
+            else:
+                line += " = {}(".format(layer.kernel)
             for k, v in layer.inputs.items():
                 if isinstance(v, list):
                     line += "{}=[{}], ".format(k, ", ".join(v))
@@ -274,47 +357,6 @@ class PaddleGraph(object):
             indent=1)
         f.close()
 
-    def gen_model(self, save_dir, input_shapes=None):
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        if self.graph_type == "static":
-            code_dir = os.path.join(save_dir, 'model_with_code')
-            infer_dir = os.path.join(save_dir, 'inference_model')
-            self.gen_code(code_dir)
-            sys.path.append(code_dir)
-            import x2paddle_model
-            scope = fluid.Scope()
-            startup_program = fluid.Program()
-            main_program = fluid.Program()
-            with fluid.scope_guard(scope):
-                with fluid.program_guard(main_program, startup_program):
-                    inputs, outputs = x2paddle_model.x2paddle_net()
-                    exe = fluid.Executor(fluid.CPUPlace())
-                    exe.run(startup_program)
-
-                    param_dir = os.path.join(code_dir, 'weights')
-                    for k, v in self.parameters.items():
-                        if scope.find_var(k):
-                            self.dump_parameter(k, v, param_dir)
-
-                    def if_exist(var):
-                        b = os.path.exists(
-                            os.path.join(os.path.join(param_dir, var.name)))
-                        return b
-
-                    fluid.io.load_vars(
-                        exe, param_dir, main_program, predicate=if_exist)
-                    fluid.io.save_inference_model(
-                        dirname=infer_dir,
-                        feeded_var_names=[i.name for i in inputs],
-                        target_vars=outputs,
-                        executor=exe)
-        else:
-            self.gen_dygraph_code(save_dir)
-            self.dump_dygraph_parameter(save_dir)
-            if input_shapes is not None:
-                # 如果input_shapes非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
-                self.dygraph2static(save_dir, input_shapes)
 
     def dump_parameter(self, param_name, param, save_dir):
         if not os.path.exists(save_dir):
@@ -356,10 +398,10 @@ class PaddleGraph(object):
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
                         layer_id, 0) == 0:
                     continue
-                if layer.kernel == "fluid.dygraph.base.to_variable":
-                    value = layer.attrs["value"]
-                    if not value.startswith("params["):
-                        self.inputs.append(value)
+                if layer.kernel == "paddle.to_tensor":
+                    data = layer.attrs["data"]
+                    if not data.startswith("params["):
+                        self.inputs.append(data)
                 if len(layer.blocks) > 0:
                     for block in layer.blocks:
                         block.get_dygraph_inputs()
@@ -376,11 +418,15 @@ class PaddleGraph(object):
                     layer_id, 0) == 0:
                 continue
             if self.edges_out.get(layer_id, 0) == 0:
-                for output_name in layer.outputs:
-                    if not output_name.startswith("x"):
-                        continue
-                    self.outputs.append(output_name)
-        self.outputs = list(set(self.outputs))
+                
+                for i, output_name in enumerate(layer.outputs):
+                    if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
+                            (layer.kernel == "paddle.to_tensor" and layer.attrs["data"].startswith("params["))or \
+                            "paddle.fluid.dygraph" in layer.kernel:
+                        if i == 0:
+                            continue
+                    if output_name not in self.outputs:
+                        self.outputs.append(output_name)
 
     def gen_dygraph_code(self, code_dir=None, indent=2):
         def gen_codes(code_list, indent=0):
@@ -415,6 +461,23 @@ class PaddleGraph(object):
                 gen_codes(
                     ["def forward(self, {}):".format(input_data_name)],
                     indent=1))
+            
+        def gen_run_net_code(code_dir):
+            input_data_name = ', '.join(self.inputs)
+            self.run_func = gen_codes(
+                [
+                    "",
+                    "def run_net({}):".format(input_data_name),
+                ],
+                indent=0)
+            self.run_func.extend(
+                gen_codes(["paddle.disable_static()",
+                           "params, _ = fluid.load_dygraph('{}/model')".format(code_dir),
+                           "model = {}(params)".format(self.name),
+                           "model.set_dict(params)",
+                           "model.eval()",
+                           "out = model({})".format(input_data_name),
+                           "return out"], indent=1))
 
         def write_code(code_dir):
             f = open(os.path.join(code_dir, 'x2paddle_code.py'), 'w')
@@ -431,6 +494,8 @@ class PaddleGraph(object):
             self.forward_func.extend(gen_codes([return_code], indent=2))
             for code_line in self.forward_func:
                 f.write(code_line)
+            for code_line in self.run_func:
+                f.write(code_line)
             f.close()
 
         self.init_func = []
@@ -440,12 +505,12 @@ class PaddleGraph(object):
 
         for layer_id, layer in self.layers.items():
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
-                ) or layer.kernel == "fluid.dygraph.base.to_variable" or \
+                ) or layer.kernel == "paddle.to_tensor" or \
                "paddle.fluid.dygraph" in layer.kernel:
                 line = "{}".format(
                     layer.outputs[0]
-                ) if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
-                    "value"].startswith("params[") else "self.{}".format(
+                ) if layer.kernel == "paddle.to_tensor" and not layer.attrs[
+                    "data"].startswith("params[") else "self.{}".format(
                         layer.outputs[0])
                 line += " = {}(".format(layer.kernel)
                 for k, v in layer.attrs.items():
@@ -453,8 +518,8 @@ class PaddleGraph(object):
                 line = line.strip(", ")
                 line += ")"
 
-                if layer.kernel == "fluid.dygraph.base.to_variable" and not layer.attrs[
-                        "value"].startswith("params["):
+                if layer.kernel == "paddle.to_tensor" and not layer.attrs[
+                        "data"].startswith("params["):
                     self.forward_func.extend(gen_codes([line], indent=indent))
                     continue
                 else:
@@ -466,8 +531,8 @@ class PaddleGraph(object):
                     line = layer.outputs[1]
                 else:
                     line = ','.join(layer.outputs[1:])
-                if layer.kernel == "fluid.dygraph.base.to_variable" and layer.attrs[
-                        "value"].startswith("params["):
+                if layer.kernel == "paddle.to_tensor" and layer.attrs[
+                        "data"].startswith("params["):
                     line += " = self.{}".format(layer.outputs[0])
                 else:
                     line += " = self.{}(".format(layer.outputs[0])
@@ -478,7 +543,7 @@ class PaddleGraph(object):
                 self.forward_func.extend(gen_codes([line], indent=indent))
             elif "prim" in layer.kernel:
                 func_name = layer.kernel.replace(".", "_")
-                from x2paddle.op_mapper.pytorch2paddle import prim2code
+                from x2paddle.op_mapper.dygraph import prim2code
                 if hasattr(prim2code, func_name):
                     func = getattr(prim2code, func_name)
                     func(
@@ -504,6 +569,7 @@ class PaddleGraph(object):
                 line += ")"
                 self.forward_func.extend(gen_codes([line], indent=indent))
         if indent == 2:
+            gen_run_net_code(code_dir)
             write_code(code_dir)
         else:
             return self.init_func, self.forward_func
@@ -513,23 +579,22 @@ class PaddleGraph(object):
         pickle.dump(self.parameters, params_output)
         params_output.close()
 
-    def dygraph2static(self, save_dir, input_shapes=[]):
+    def dygraph2static(self, save_dir, input_shapes=[], input_types=[]):
         from paddle.fluid.dygraph.jit import declarative
         sepc_list = list()
         for i, name in enumerate(self.inputs):
+            input_shapes[i][0] = -1
             sepc_list.append(
                 paddle.static.InputSpec(
-                    shape=input_shapes[i], name=name))
+                    shape=input_shapes[i], name=name, dtype=input_types[i]))
         import sys
         path = osp.abspath(save_dir)
         sys.path.insert(0, save_dir)
         import x2paddle_code
-        place = fluid.CPUPlace()
-        with fluid.dygraph.guard(place):
-            restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
-            model = getattr(x2paddle_code, self.name)(restore)
-            model.set_dict(restore)
-            model.eval()
-            model.forward = declarative(model.forward, sepc_list)
-        fluid.dygraph.jit.save(
-            layer=model, model_path=osp.join(save_dir, "inference"))
+        paddle.disable_static()
+        restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
+        model = getattr(x2paddle_code, self.name)(restore)
+        model.set_dict(restore)
+        model.eval()
+        static_model = paddle.jit.to_static(model, input_spec=sepc_list)
+        paddle.jit.save(static_model, osp.join(save_dir, "inference_model/model"))

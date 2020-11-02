@@ -1,0 +1,1313 @@
+#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import numbers
+import numpy as np
+from x2paddle.core.op_mapper import OpMapper
+from x2paddle.core.util import *
+from x2paddle.op_mapper.dygraph.caffe2paddle import caffe_shape
+from x2paddle.core.program import PaddleGraph 
+
+
+class CaffeOpMapper(OpMapper):
+    directly_map_ops = {
+        'Sigmoid': 'paddle.nn.layer.Sigmoid',
+        'TanH': 'paddle.nn.Tanh',
+    }
+
+    def __init__(self, decoder):
+        super(CaffeOpMapper, self).__init__()
+        self.graph = decoder.caffe_graph
+        self.params = dict()
+        self.pd_graph = PaddleGraph(parent_layer=None, graph_type="dygraph")
+        self.pd_graph.outputs = self.graph.output_nodes
+        self.input_index = 0 
+        self.inputs_info = {}
+        self.nn_name2id = {}
+        print("Total nodes: {}".format(len(self.graph.topo_sort)))
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            if node.layer_type == 'DepthwiseConvolution':
+                node.layer_type = 'ConvolutionDepthwise'
+            op = node.layer_type
+            if hasattr(self, op):
+                self.set_node_shape(node)
+                func = getattr(self, op)
+                func(node)
+            elif op in self.directly_map_ops:
+                self.set_node_shape(node)
+                self.directly_map(node)
+            else:
+                raise Exception(
+                    "The op {} in model is not supported yet.".format(op))
+        self.pd_graph.set_name(self.graph.graph_name)
+        self.pd_graph.set_parameters(self.params)
+        self.pd_graph.set_inputs_info(self.inputs_info)
+                
+    def op_checker(self):
+        unsupported_ops = set()
+        for node_name in self.graph.topo_sort:
+            node = self.graph.get_node(node_name)
+            op = node.layer_type
+            if not hasattr(self, op) and op not in custom_layers:
+                unsupported_ops.add(op)
+        if len(unsupported_ops) == 0:
+            return True
+        else:
+            print("There are {} ops not supported yet, list as below".format(
+                len(unsupported_ops)))
+            for op in unsupported_ops:
+                print(op)
+            return False
+
+    def set_node_shape(self, node):
+        inputs = node.inputs
+        input_shape = []
+        for i, nm in enumerate(inputs):
+            last_node = self.graph.get_node(nm)
+            tmp = node.layer.bottom[i]
+            idx = list(last_node.layer.top).index(tmp)
+            input_shape.append(last_node.output_shape[idx])
+
+        node.input_shape = input_shape
+
+        func_name = 'shape_' + node.layer_type.lower()
+        if node.layer_type.lower() == "permute":
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape,
+                                                                node.layer.permute_param.order)
+        elif node.layer_type.lower() == "priorbox":
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape,
+                                                                node.layer.prior_box_param.max_size,
+                                                                node.layer.prior_box_param.aspect_ratio)
+        elif node.layer_type.lower() =="roipooling":
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape,
+                                                                node.layer.roi_pooling_param.pooled_w,
+                                                                node.layer.roi_pooling_param.pooled_h)
+        elif node.layer_type.lower() =="upsample":
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape,
+                                                                node.layer.upsample_param.scale)
+        elif node.layer_type.lower() =="select":
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape,
+                                                                node.layer.select_param.slice_point,
+                                                                node.layer.select_param.axis)
+        else:
+            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
+                                                                input_shape)
+
+    def adjust_parameters(self, node):
+        data = node.data
+        # When using the protobuf-backend, each parameter initially has four dimensions.
+        # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
+        # This implementation takes care of the common cases. However, it does leave the
+        # potential for future issues.
+        # The Caffe-backend does not suffer from this problem.
+        data = list(data)
+
+        squeeze_indices = [1]  # Squeeze biases.
+        if node.layer_type == 'InnerProduct':
+            squeeze_indices.append(0)  # Squeeze FC.
+
+        for idx in squeeze_indices:
+            if idx >= len(data):
+                continue
+
+            d = data[idx]
+            assert len(
+                d.shape
+            ) == 4, 'invalid shape[%s] from caffe when adjust_parameters' % (
+                str(d.shape))
+
+            shape_old = d.shape
+            sq_axis = None
+            if idx == 0:
+                sq_axis = (0, 1)
+            elif idx == 1:
+                sq_axis = (0, 1, 2)
+            else:
+                continue
+
+            data[idx] = np.squeeze(d, axis=sq_axis)
+            shape_new = data[idx].shape
+        return data
+
+    def get_kernel_parameters(self, kind, params):
+        assert kind in ["Convolution", "Pooling", "Deconvolution", "ConvolutionDepthwise"]
+        [k_h, k_w] = [1, 1]
+        if isinstance(params.kernel_size, numbers.Number):
+            [k_h, k_w] = [params.kernel_size] * 2
+        elif len(params.kernel_size) > 0:
+            k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[
+                0]
+            k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
+                len(params.kernel_size) - 1]
+        elif params.kernel_h > 0 or params.kernel_w > 0:
+            k_h = params.kernel_h
+            k_w = params.kernel_w
+        [s_h, s_w] = [1, 1]
+        if isinstance(params.stride, numbers.Number):
+            [s_h, s_w] = [params.stride] * 2
+        elif len(params.stride) > 0:
+            s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
+            s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
+                params.stride) - 1]
+        elif params.stride_h > 0 or params.stride_w > 0:
+            s_h = params.stride_h
+            s_w = params.stride_w
+        [p_h, p_w] = [0, 0]
+        if isinstance(params.pad, numbers.Number):
+            [p_h, p_w] = [params.pad] * 2
+        elif len(params.pad) > 0:
+            p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
+            p_w = params.pad_w if params.pad_w > 0 else params.pad[len(
+                params.pad) - 1]
+        elif params.pad_h > 0 or params.pad_w > 0:
+            p_h = params.pad_h
+            p_w = params.pad_w
+        dila_h = dila_w = 1
+        group = 1
+        c_o = 1
+        if kind in ["Convolution", "Deconvolution", "ConvolutionDepthwise"]:
+            if kind in ["Convolution", "Deconvolution"]:
+                c_o = params.num_output
+            dila_len = len(params.dilation)
+            if dila_len == 2:
+                dila_h = params.dilation[0]
+                dila_w = params.dilation[1]
+            elif dila_len == 1:
+                dila_h = dila_w = params.dilation[0]
+            else:
+                assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
+                    dila_len)
+        if kind in ['Convolution', 'Deconvolution']:
+            group = params.group
+        kernel = [k_h, k_w]
+        stride = [s_h, s_w]
+        pad = [p_h, p_w]
+        dilation = [dila_h, dila_w]
+        return c_o, kernel, stride, pad, dilation, group
+
+    def get_input_name(self, node):
+        if hasattr(node, "index"):
+            return node.layer_name + "[{}]".format(node.index)
+        else:
+            return node.layer_name
+
+    def Input(self, node):
+        self.pd_graph.add_layer(
+            "paddle.to_tensor",
+            inputs={},
+            outputs=[node.layer_name],
+            data="x{}".format(self.input_index))
+        shape = list(node.layer.input_param.shape[0].dim)[1:]
+        self.inputs_info["x{}".format(self.input_index)] = [[-1] + shape, "float32"]
+        self.input_index += 1
+
+    def Convolution(self, node):
+        if "conv" in self.nn_name2id:
+            self.nn_name2id["conv"] += 1
+        else:
+            self.nn_name2id["conv"] = 0
+        conv2d_name = "conv" + str(self.nn_name2id["conv"])
+        output_name = node.layer_name
+        layer_outputs = [conv2d_name, output_name]
+        data = node.data
+        params = node.layer.convolution_param
+        out_channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+            node.layer_type, params)
+        if data is None:
+            data = []
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            data.append(
+                np.zeros([out_channel, node.input_shape[0][1], kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([out_channel, ]).astype('float32'))
+        else:
+            data = self.adjust_parameters(node)
+        self.params[conv2d_name + ".weight"] = data[0]
+        if len(data) == 2:
+            self.params[conv2d_name + ".bias"] = data[1]
+        assert len(node.inputs
+                   ) == 1, "The count of Convolution node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        layer_attrs = {
+            "in_channels": node.input_shape[0][1],
+            "out_channels": out_channel,
+            "kernel_size": kernel,
+            "stride": stride,
+            "padding": pad,
+            "dilation": dilation,
+            "groups": group
+        }
+        if len(data) == 1:
+            layer_attrs["bias_attr"] = False
+        self.pd_graph.add_layer(
+            "paddle.nn.Conv2D",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+    def Deconvolution(self, node):
+        if "conv" in self.nn_name2id:
+            self.nn_name2id["conv"] += 1
+        else:
+            self.nn_name2id["conv"] = 0
+        conv2d_name = "conv" + str(self.nn_name2id["conv"])
+        output_name = node.layer_name
+        layer_outputs = [conv2d_name, output_name]
+        data = node.data
+        params = node.layer.convolution_param
+        out_channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+            node.layer_type, params)
+        if data is None:
+            data = []
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            data.append(
+                np.zeros([out_channel, node.input_shape[0][1], kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([out_channel, ]).astype('float32'))
+        else:
+            data = self.adjust_parameters(node)
+        self.params[conv2d_name + ".weight"] = data[0]
+        if len(data) == 2:
+            self.params[conv2d_name + ".bias"] = data[1]
+        assert len(node.inputs
+                   ) == 1, "The count of Deconvolution node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        layer_attrs = {
+            "in_channels": node.input_shape[0][1],
+            "out_channels": out_channel,
+            "kernel_size": kernel,
+            "stride": stride,
+            "padding": pad,
+            "dilation": dilation,
+            "groups": group
+        }
+        if len(data) == 1:
+            layer_attrs["bias_attr"] = False
+        self.pd_graph.add_layer(
+            "paddle.nn.Conv2DTranspose",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            **layer_attrs)
+        
+    def ConvolutionDepthwise(self, node):
+        if "conv" in self.nn_name2id:
+            self.nn_name2id["conv"] += 1
+        else:
+            self.nn_name2id["conv"] = 0
+        conv2d_name = "conv" + str(self.nn_name2id["conv"])
+        output_name = node.layer_name
+        layer_outputs = [conv2d_name, output_name]
+        data = node.data
+        params = node.layer.convolution_param
+        out_channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+            node.layer_type, params)
+        out_channel = params.num_output if params.num_output is not None else node.input_shape[0][1]
+        in_channel = node.input_shape[0][1]
+        group = int(in_channel / (in_channel / out_channel)) if in_channel > out_channel else int(in_channel /
+                                                                (out_channel / in_channel))
+        if data is None:
+            data = []
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            data.append(
+                np.zeros([out_channel, node.input_shape[0][1], kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([out_channel, ]).astype('float32'))
+        else:
+            data = self.adjust_parameters(node)
+        self.params[conv2d_name + ".weight"] = data[0]
+        if len(data) == 2:
+            self.params[conv2d_name + ".bias"] = data[1]
+        assert len(node.inputs
+                   ) == 1, "The count of Deconvolution node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        layer_attrs = {
+            "in_channels": in_channel,
+            "out_channels": out_channel,
+            "kernel_size": kernel,
+            "stride": stride,
+            "padding": pad,
+            "dilation": dilation,
+            "groups": group
+        }
+        if len(data) == 1:
+            layer_attrs["bias_attr"] = False
+        self.pd_graph.add_layer(
+            "paddle.nn.Conv2D",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+    def Pooling(self, node):
+        if "pool" in self.nn_name2id:
+            self.nn_name2id["pool"] += 1
+        else:
+            self.nn_name2id["pool"] = 0
+        pool2d_name = "pool" + str(self.nn_name2id["pool"])
+        output_name = node.layer_name
+        layer_outputs = [pool2d_name, output_name]
+        params = node.layer.pooling_param
+        ceil_mode = getattr(params, "ceil_mod", True)
+        global_pool = getattr(params, "global_pooling", False)
+        assert not global_pool, "The global_pool must be False!"
+        kernel_default = [1, 1]
+        channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+            node.layer_type, params)
+        if params.pool == 0:
+            pool_type = "max"
+        else:
+            pool_type = "avg"
+        assert len(
+            node.inputs) == 1, "The count of Pooling node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        layer_attrs = {
+            'kernel_size': kernel,
+            'stride': stride,
+            'padding': pad,
+            'ceil_mode': ceil_mode,
+        }
+        if params.pool == 0:
+            self.pd_graph.add_layer(
+                "paddle.nn.MaxPool2D",
+                inputs={"input": self.get_input_name(input)},
+                outputs=layer_outputs,
+                **layer_attrs)
+        else:
+            layer_attrs["count_include_pad"] = True
+            self.pd_graph.add_layer(
+                "paddle.nn.AvgPool2D",
+                inputs={"input": self.get_input_name(input)},
+                outputs=layer_outputs,
+                **layer_attrs)
+
+    def LRN(self, node):
+        assert len(node.inputs) == 1, "The count of LRN node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.lrn_param
+        assert params.local_size % 2 == 1
+        alpha = params.alpha / float(params.local_size)
+        layer_attrs = {
+            "n": params.local_size,
+            "k": params.k,
+            "alpha": alpha,
+            "beta": params.beta,
+        }
+        self.pd_graph.add_layer(
+            "fluid.layers.lrn", 
+            inputs={"input": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)
+
+    def InnerProduct(self, node):
+        if "linear" in self.nn_name2id:
+            self.nn_name2id["linear"] += 1
+        else:
+            self.nn_name2id["linear"] = 0
+        linear_name = "linear" + str(self.nn_name2id["linear"])
+        output_name = node.layer_name
+        layer_outputs = [linear_name, output_name]
+        data = node.data
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.inner_product_param
+        if data is None:
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0."
+                .format(node.layer_name, node.layer_type))
+            data = []
+            data.append(
+                np.zeros([node.input_shape[0][1], params.num_output]).astype("float32").astype(
+                    "float32"))
+            data.append(
+                np.zeros([params.num_output]).astype("float32").astype("float32"))
+        else:
+            data = self.adjust_parameters(node)
+            # Reshape the parameters to Paddle's ordering
+            transpose_order = (1, 0)
+            w = data[0]
+            fc_shape = w.shape
+            output_channels = fc_shape[0]
+            w = w.reshape((output_channels, -1))
+            w = w.transpose(transpose_order)
+            data[0] = w
+
+        self.params[linear_name + ".weight"] = data[0]
+        if len(data) == 2:
+            self.params[linear_name + ".bias"] = data[1]
+        assert len(node.inputs
+                   ) == 1, "The count of InnerProduct node\'s input is not 1."
+        assert params.axis == 1
+        assert params.bias_term == True
+        layer_attrs = {
+            "in_features": data[0].shape[0],
+            "out_features": params.num_output           
+        }
+        if len(data) == 1:
+            layer_attrs["bias"] = False
+        if node.input_shape[0][-1] != data[0].shape[0]:
+            self.pd_graph.add_layer(
+                "paddle.reshape",
+                inputs={"x": self.get_input_name(input)},
+                outputs=[output_name],
+                shape=[-1, data[0].shape[0]])
+            self.pd_graph.add_layer(
+                "paddle.nn.Linear",
+                inputs={"input": output_name},
+                outputs=layer_outputs,
+                **layer_attrs)
+        else:
+            self.pd_graph.add_layer(
+                "paddle.nn.Linear",
+                inputs={"input": self.get_input_name(input)},
+                outputs=layer_outputs,
+                **layer_attrs)
+        
+    def AbsVal(self, node):
+        assert len(
+            node.inputs
+        ) >= 1, "The count of AbsVal node\'s input is not more than 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        self.pd_graph.add_layer(
+            "paddle.abs",
+            inputs={"input": self.get_input_name(input)},
+            outputs=[node.layer_name])
+
+    def Softmax(self, node):
+        if "softmax" in self.nn_name2id:
+            self.nn_name2id["softmax"] += 1
+        else:
+            self.nn_name2id["softmax"] = 0
+        softmax_name = "softmax" + str(self.nn_name2id["softmax"])
+        output_name = node.layer_name
+        layer_outputs = [softmax_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of Softmax node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.softmax_param
+        axis = params.axis
+        shape = node.input_shape[0]
+        dims = len(shape)
+        axis = axis + dims if axis < 0 else axis
+        layer_attrs = {'axis': axis}
+        self.pd_graph.add_layer(
+            "paddle.nn.Softmax",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+    def Slice(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Slice node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        top_len = len(node.layer.top)
+        params = node.layer.slice_param
+        axis = params.axis
+        slice_dim = params.slice_dim
+        if slice_dim != 1 and axis == 1:
+            axis = slice_dim
+        output_shape = node.output_shape
+        sections_list = []
+        for s in output_shape:
+            sections_list.append(s[axis])
+        layer_attrs = {
+            'num_or_sections': sections_list,
+            'dim': axis,
+        }
+        self.pd_graph.add_layer(
+            "paddle.split",
+            inputs={"input": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)
+
+    def Concat(self, node):
+        assert len(
+            node.inputs
+        ) >= 1, "The count of Concat node\'s input is not more than 1."
+        inputs_dict = dict()
+        for i in range(len(node.inputs)):
+            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            inputs_dict["input{}".format(i)] = self.get_input_name(input)
+        params = node.layer.concat_param
+        axis = params.axis
+        layer_attrs = {'axis': axis}
+        self.pd_graph.add_layer(
+            "prim.list",
+            inputs=inputs_dict,
+            outputs=[node.layer_name + "_list"])
+        self.pd_graph.add_layer(
+            "paddle.concat",
+            inputs={"x": node.layer_name + "_list"},
+            outputs=[node.layer_name],
+            **layer_attrs)
+
+    def ReLU(self, node):
+        if "relu" in self.nn_name2id:
+            self.nn_name2id["relu"] += 1
+        else:
+            self.nn_name2id["relu"] = 0
+        relu_name = "relu" + str(self.nn_name2id["relu"])
+        output_name = node.layer_name
+        layer_outputs = [relu_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of RelU node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.relu_param
+        if params.HasField('negative_slope') and params.negative_slope != 0:
+            negative_slope = float(params.negative_slope)
+
+            layer_attrs = {'alpha': negative_slope}
+            self.pd_graph.add_layer(
+                "paddle.nn.LeakyReLU",
+                inputs={"input": self.get_input_name(input)},
+                outputs=layer_outputs,
+                **layer_attrs)
+        else:
+            self.pd_graph.add_layer(
+                "paddle.nn.ReLU",
+                inputs={"input": self.get_input_name(input)},
+                outputs=layer_outputs)
+
+    def PReLU(self, node):
+        if "prelu" in self.nn_name2id:
+            self.nn_name2id["prelu"] += 1
+        else:
+            self.nn_name2id["prelu"] = 0
+        prelu_name = "prelu" + str(self.nn_name2id["prelu"])
+        output_name = node.layer_name
+        layer_outputs = [prelu_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of PReLU node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.prelu_param
+        mode_bool = params.channel_shared
+        output_shape = node.output_shape[0]
+        if mode_bool:
+            num_parameters = 1
+        else:
+            num_parameters = output_shape[1]
+        data = node.data
+        self.params[prelu_name + '._weight'] = np.squeeze(data[0])
+        assert data is not None, "The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.".format(
+            node.layer_name, node.layer_type)
+        self.pd_graph.add_layer(
+            "paddle.nn.PReLU",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            num_parameters=num_parameters)
+
+    def Accuracy(self, node):
+        assert len(
+            node.inputs) == 2, "The count of Accuracy node\'s input is not 2."
+        inputs_dict = dict()
+        for i, shape in enumerate(node.input_shape):
+            if shape[1] == 1:
+                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                inputs_dict[y] = self.get_input_name(input)
+            else:
+                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                inputs_dict[x] = self.get_input_name(input)
+        params = node.layer.accuracy_param
+        top_k = params.top_k
+        axis = params.axis
+        ignore_label = params.ignore_label
+        assert axis == 1, "PaddlePaddle can not support the situation when the axis is not 1."
+        assert not ignore_label >= 0, "PaddlePaddle can not support the situation when the model has ignore label."
+        self.pd_graph.add_layer(
+            "prim.accuracy",
+            inputs=inputs_dict,
+            outputs=[node.layer_name],
+            topk=top_k)
+
+    def Eltwise(self, node):
+        assert len(
+            node.inputs) == 2, "The count of Eltwise node\'s input is not 2."
+        params = node.layer.eltwise_param
+        mode = params.operation
+        inputs = []
+        input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+        input0_name = self.get_input_name(input0)
+        input1_name = self.get_input_name(input1)
+        if mode == 0:
+            inputs_dict = {}
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
+            self.pd_graph.add_layer(
+                "paddle.multiply",
+                inputs=inputs_dict,
+                outputs=[node.layer_name])
+        elif mode == 1:
+            if hasattr(params, 'coeff') and len(params.coeff) == 2:
+                coeff = params.coeff
+                self.pd_graph.add_layer(
+                    "prim.mul",
+                    inputs={"x": input0_name},
+                    outputs=[node.layer_name + '_mul0'],
+                    y=coeff[0])
+                self.pd_graph.add_layer(
+                    "prim.mul",
+                    inputs={"x": input1_name},
+                    outputs=[node.layer_name + '_mul1'],
+                    y=coeff[2])
+                inputs_dict = {}
+                inputs_dict['x'] = node.layer_name + '_mul0'
+                inputs_dict['y'] = node.layer_name + '_mul1'
+                self.pd_graph.add_layer(
+                    "paddle.add",
+                    inputs=inputs_dict,
+                    outputs=[node.layer_name])
+            else:
+                inputs_dict = {}
+                inputs_dict['x'] = input0_name
+                inputs_dict['y'] = input1_name
+                self.pd_graph.add_layer(
+                    "paddle.add",
+                    inputs=inputs_dict,
+                    outputs=[node.layer_name])
+        else:
+            inputs_dict = {}
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
+            self.pd_graph.add_layer(
+                "paddle.max",
+                inputs=inputs_dict,
+                outputs=[node.layer_name])
+
+    def BatchNorm(self, node):
+        if "batchnorm" in self.nn_name2id:
+            self.nn_name2id["batchnorm"] += 1
+        else:
+            self.nn_name2id["batchnorm"] = 0
+        batchnorm_name = "batchnorm" + str(self.nn_name2id["batchnorm"])
+        output_name = node.layer_name
+        layer_outputs = [batchnorm_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of BatchNorm node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.batch_norm_param
+        if hasattr(params, "eps"):
+            eps = params.eps
+        else:
+            eps = 1e-5
+        if node.data is None or len(node.data) != 3:
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            mean = np.zeros([node.input_shape[0][1], ]).astype("float32")
+            variance = np.zeros([node.input_shape[0][1], ]).astype("float32")
+            scale = 0
+        else:
+
+            node.data = [np.squeeze(i).astype("float32") for i in node.data]
+            mean, variance, scale = node.data
+        # Prescale the stats
+        scaling_factor = 1.0 / scale if scale != 0 else 0
+        mean *= scaling_factor
+        variance *= scaling_factor
+        self.params[batchnorm_name + "._mean"] = mean
+        self.params[batchnorm_name + '._variance'] = variance
+        layer_attrs = {
+            "num_features": node.input_shape[0][1],
+            "epsilon": eps,
+            "weight_attr": False,
+            "bias_attr": False,
+        }
+        self.pd_graph.add_layer(
+            "paddle.nn.BatchNorm2D",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs,
+            **layer_attrs)
+   
+    def Scale(self, node):
+        if node.data is None:
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            self.params[node.layer_name + ".weight"] = np.zeros([
+                node.input_shape[0][1],
+            ]).astype("float32")
+            self.params[node.layer_name + ".bias"] = np.zeros([
+                node.input_shape[0][1],
+            ]).astype("float32")
+        else:
+            self.params[node.layer_name + ".weight"] = np.squeeze(node.data[
+                0]).astype("float32")
+            self.params[node.layer_name + ".bias"] = np.squeeze(node.data[
+                1]).astype("float32")
+        params = node.layer.scale_param
+        axis = params.axis
+        inputs = []
+        if len(node.inputs) == 2:
+            input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+            input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+            input0_name = self.get_input_name(input0)
+            input1_name = self.get_input_name(input1)
+            inputs_dict = {}
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
+            self.pd_graph.add_layer(
+                "paddle.multiply",
+                inputs=inputs_dict,
+                outputs=[node.layer_name + "_mul"],
+                axis=1)
+        else:
+            self.pd_graph.add_layer(
+                "paddle.to_tensor",
+                inputs={},
+                outputs=[node.layer_name + "_cparam1"],
+                data="params[{}]".format(string(node.layer_name + ".weight")))
+            input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+            input0_name = self.get_input_name(input0)
+            inputs_dict = {}
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = node.layer_name + "_cparam1"
+            self.pd_graph.add_layer(
+                "paddle.multiply",
+                inputs=inputs_dict,
+                outputs=[node.layer_name + "_mul"],
+                axis=axis)
+        self.pd_graph.add_layer(
+                "paddle.to_tensor",
+                inputs={},
+                outputs=[node.layer_name + "_cparam2"],
+                data="params[{}]".format(string(node.layer_name + ".bias")))
+        inputs_dict = {}
+        inputs_dict['x'] = node.layer_name + "_mul"
+        inputs_dict['y'] = node.layer_name + "_cparam2"
+        self.pd_graph.add_layer(
+            "paddle.add",
+            inputs=inputs_dict,
+            outputs=[node.layer_name],
+            axis=axis)
+
+    def Reshape(self, node):
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        top_count = len(input.layer.top)
+        is_inplace = False if top_count == 1 else True
+        output_shape = node.output_shape[0]
+        print(output_shape)
+        layer_attrs = {
+            'shape': output_shape,
+            'inplace': is_inplace,
+        }
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)
+
+
+    def ArgMax(self, node):
+        assert len(node.inputs) == 1 and len(
+            node.outputs
+        ) == 1, "The count of ArgMax node\'s input and output is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input_shape = node.input_shape[0]
+        params = node.layer.argmax_param
+        out_max_val = params.out_max_val if hasattr(params,
+                                                    out_max_val) else False
+        top_k = params.top_k if hasattr(params, top_k) else 1
+        axis = parmas.axis if hasattr(params, axis) else -1
+        if axis < 0:
+            axis += len(input_shape)
+        if out_max_val is True:
+            self.pd_graph.add_layer(
+                "paddle.topk",
+                inputs={"x": self.get_input_name(input)},
+                outputs=[node.layer_name + "_topk_var", node.layer_name + "_index_var"],
+                k=top_k)
+            self.pd_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": node.layer_name + "_index_var"},
+                outputs=[node.layer_name + "_index_var"],
+                dtype="{}_topk_var.dtype".format(node.layer_name))
+            self.pd_graph.add_layer(
+                "prim.list",
+                inputs={"input0": node.layer_name + "_topk_var",
+                        "input1": node.layer_name + "_index_var"},
+                outputs=[node.layer_name + "_list"])
+            self.pd_graph.add_layer(
+                "paddle.concat",
+                inputs={"x": node.layer_name + "_list"},
+                outputs=[node.layer_name],
+                axis=axis)
+        else:
+            self.pd_graph.add_layer(
+                "paddle.topk",
+                inputs={"x": self.get_input_name(input)},
+                outputs=["_", node.layer_name],
+                k=top_k)
+            
+    def Axpy(self, node):
+        assert len(node.inputs) == 1 and len(
+            node.outputs
+        ) == 1, "The count of Axpy node\'s input and output is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.axpy_param
+        input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+        input2 = self.graph.get_bottom_node(node, idx=2, copy=True)
+        input0_name = self.get_input_name(input0)
+        input1_name = self.get_input_name(input1)
+        input2_name = self.get_input_name(input2)
+        inputs_dict = {}
+        inputs_dict['x'] = input1_name
+        inputs_dict['y'] = input0_name
+        self.pd_graph.add_layer(
+            "paddle.multiply",
+            inputs=inputs_dict,
+            outputs=[node.layer_name + "_mul"],
+            axis=0)
+        inputs_dict = {}
+        inputs_dict['x'] = node.layer_name + "_mul"
+        inputs_dict['y'] = input2_name
+        self.pd_graph.add_layer(
+            "paddle.add",
+            inputs=inputs_dict,
+            outputs=[node.layer_name + "_mul"])
+        
+
+    def Crop(self, node):
+        assert len(
+            node.inputs) == 2, "The count of Crop node\'s input is not 2."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        example = self.graph.get_bottom_node(node, idx=1, copy=True)
+        params = node.layer.crop_param
+        axis = params.axis
+        input_shape = node.input_shape[0]
+        if axis < 0:
+            axis += len(input_shape)
+        offset_real = [0] * len(input_shape)
+        if hasattr(params, "offset") and len(params.offset) > 0:
+            offset = list(params.offset)
+            assert (len(input_shape) - axis
+                    ) == len(offset), "invalid offset[%s] in crop layer" % (
+                        str(offset))
+            offset_real = [0] * axis + offset
+        self.pd_graph.add_layer(
+                "paddle.crop",
+                inputs={"x": self.get_input_name(input)},
+                outputs=[node.layer_name],
+                shape=node.input_shape[1],
+                offsets=list(offset_real))
+
+    def Flatten(self, node):
+        assert len(
+            node.
+            inputs) == 1, "The count of DetectionOutput node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            shape=node.output_shape[0])
+
+    def Power(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Permute node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.power_param
+        layer_attrs = {
+            'scale': params.scale,
+            'bias': params.shift,
+            'bias_after_scale': True
+        }
+        self.pd_graph.add_layer(
+            "paddle.scale",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)
+        self.pd_graph.add_layer(
+            "paddle.pow",
+            inputs={"x": node.layer_name},
+            outputs=[node.layer_name],
+            exponent=params.power)
+
+    def Reduction(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Reduction node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.reduction_param
+        operation = params.operation
+        axis = params.axis
+        coeff = params.coeff
+        assert operation >= 1 and operation <= 4, "reduction reduction [%s] error" % (
+            operation)
+        input_len = len(node.input_shape[0])
+        if axis < 0:
+            axis += input_len + 1
+        dim = list(range(input_len))
+        # operation = SUM
+        if operation == 1:  
+            layer_attrs = {
+                "dim": dim[axis:],
+                "keep_dim": False,
+            }
+            self.pd_graph.add_layer(
+                "paddle.sum",
+                inputs={"input": self.get_input_name(input)},
+                outputs=[node.layer_name],
+                **layer_attrs)
+        # operation = ASUM
+        elif operation == 2:  
+            self.pd_graph.add_layer(
+                "paddle.abs",
+                inputs={"x": self.get_input_name(input)},
+                outputs=[node.layer_name])
+            layer_attrs = {
+                "dim": dim[axis:],
+                "keep_dim": False,
+            }
+            self.pd_graph.add_layer(
+                "paddle.sum",
+                inputs={"input": node.layer_name},
+                outputs=[node.layer_name],
+                **layer_attrs)
+        # operation = SUMSQ
+        elif operation == 3: 
+            self.pd_graph.add_layer(
+                "paddle.pow",
+                inputs={"x": self.get_input_name(input)},
+                outputs=[node.layer_name],
+                exponent=2.0)
+            layer_attrs = {
+                "dim": dim[axis:],
+                "keep_dim": False,
+            }
+            self.pd_graph.add_layer(
+                "paddle.sum",
+                inputs={"input": node.layer_name},
+                outputs=[node.layer_name],
+                **layer_attrs)
+        # operation = MEAN
+        else: 
+            layer_attrs = {
+                "dim": dim[axis:],
+                "keep_dim": False,
+            }
+            self.pd_graph.add_layer(
+                "paddle.mean",
+                inputs={"input": self.get_input_name(input)},
+                outputs=[node.layer_name],
+                **layer_attrs)
+        self.pd_graph.add_layer(
+            "paddle.scale",
+            inputs={"x": node.layer_name},
+            outputs=[node.layer_name],
+            scale=coeff)
+        
+    def DetectionOutput(self, node):
+        assert len(
+            node.inputs) == 3, "The count of DetectionOutput node\'s input is not 3."
+        inputs_list = list()
+        for i in range(len(node.inputs)):
+            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            if i == 1:
+                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                while input is not None \
+                      and input.layer_type != 'Softmax' \
+                      and input.layer_type != 'Sigmoid':
+                    input = self.graph.get_bottom_node(input, idx=0, copy=True)
+                assert input is not None, 'This kind of DetectionOutput is not supported!'
+                input = self.graph.get_bottom_node(input, idx=0, copy=True)
+            inputs_list.append(self.get_input_name(input))
+        params = node.layer.detection_output_param
+        nms_param = params.nms_param
+        nms_param_dict = dict()
+        nms_param_dict["nms_threshold"] = nms_param.nms_threshold
+        nms_param_dict["top_k"] = nms_param.top_k
+        nms_param_dict["eta"] = nms_param.eta
+        if nms_param is None:
+            nms_param_dict = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
+        self.pd_graph.add_layer(
+            "paddle.split",
+            inputs={"input": inputs_list[2]},
+            outputs=[node.layer_name + "_priorbox_list"],
+            num_or_sections=2,
+            dim=1)
+        self.pd_graph.add_layer(
+            "prim.getitem",
+            inputs={"list": node.layer_name + "_priorbox_list"},
+            outputs=[node.layer_name + "_pb"],
+            index=0)
+        self.pd_graph.add_layer(
+            "prim.getitem",
+            inputs={"list": node.layer_name + "_priorbox_list"},
+            outputs=[node.layer_name + "_pbv"],
+            index=1)
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": node.layer_name + "_pb"},
+            outputs=[node.layer_name + "_pb"],
+            shape=[-1, 4])
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": node.layer_name + "_pbv"},
+            outputs=[node.layer_name + "_pbv"],
+            shape=[-1, 4])
+        self.pd_graph.add_layer(
+            "prim.shape_dim",
+            inputs={"input": node.layer_name + "_pb"},
+            outputs=[node.layer_name + "_pb_dim"],
+            dim=0)
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": inputs_list[0]},
+            outputs=[node.layer_name + "_loc"],
+            shape="[-1, {}_pb_dim, 4]".format(node.layer_name))
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": inputs_list[1]},
+            outputs=[node.layer_name + "_conf_flatten"],
+            shape="[0, {}_pb_dim, -1]".format(node.layer_name))
+        default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
+        fields = ["eta", "top_k", "nms_threshold"]
+        for f in default.keys():
+            if f not in nms_param_dict:
+                nms_param_dict[f] = default[f]
+        inputs_dict = {}
+        inputs_dict["loc"] = node.layer_name + "_loc"
+        inputs_dict["scores"] = node.layer_name + "_conf_flatten"
+        inputs_dict["prior_box"] = node.layer_name + "_pb"
+        inputs_dict["prior_box_var"] = node.layer_name + "_pbv"
+        layer_attrs = {
+            "background_label": params.background_label_id,
+            "nms_threshold": nms_param_dict["nms_threshold"],
+            "nms_top_k": nms_param_dict["top_k"],
+            "keep_top_k": params.keep_top_k,
+            "score_threshold": params.confidence_threshold,
+            "nms_eta": nms_param_dict["eta"]}
+        self.pd_graph.add_layer(
+            "fluid.layers.detection_output",
+            inputs=inputs_dict,
+            outputs=[node.layer_name],
+            **layer_attrs)
+                    
+    def Normalize(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Normalize node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.norm_param
+        if node.data is None or len(node.data) != 1:
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            self.parmas[node.layer_name + ".scale"] = \
+                np.zeros([1] if params.channel_shared else [1, 1, 1, node.input_shape[0][1]]).astype("float32")
+        else:
+            self.parmas[node.layer_name + ".scale"] = self.adjust_parameters(node)[0]
+        self.pd_graph.add_layer(
+            "paddle.nn.functional.normalize",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name + "_l2"],
+            p=2,
+            axis=1)
+        graph.add_layer(
+            "paddle.to_tensor",
+            inputs={},
+            outputs=[node.layer_name + "_param"],
+            data="params[{}]".format(string(node.layer_name + ".scale")))
+        inputs_dict = {}
+        inputs_dict["x"] = node.layer_name + "_l2"
+        inputs_dict["y"] = node.layer_name + "_param"
+        self.pd_graph.add_layer(
+            "paddle.multiply",
+            inputs=inputs_dict,
+            outputs=[node.layer_name],
+            axis=-1 if params.channel_shared else 1)
+        
+    def Permute(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Permute node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.permute_param
+        order = list(params.order)    
+        self.pd_graph.add_layer(
+            "paddle.transpose",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            perm=order)
+        
+    def PriorBox(self, node):
+        assert len(
+            node.inputs) == 2, "The count of PriorBox node\'s input is not 2."
+        input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+        inputs_dict = {}
+        inputs_dict["input"] = self.get_input_name(input0)
+        inputs_dict["image"] = self.get_input_name(input1)
+        params = node.layer.prior_box_param
+        steps = tuple(params.step) if type(params.step) \
+                is list or type(params.step) is tuple \
+                else (params.step, params.step)
+        layer_attrs = {
+            "min_sizes": params.min_size,
+            "max_sizes": params.max_size,
+            "aspect_ratios": params.aspect_ratio,
+            "variance": params.variance,
+            "flip": params.flip,
+            "clip": params.clip,
+            "steps": steps,
+            "offset": params.offset,
+            "min_max_aspect_ratios_order": True}
+        self.pd_graph.add_layer(
+            "fluid.layers.prior_box",
+            inputs=inputs_dict,
+            outputs=[node.layer_name + "_box", node.layer_name + "_var"],
+            **layer_attrs)
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": node.layer_name + "_box"},
+            outputs=[node.layer_name + "_box"],
+            shape=[1, 1, -1])
+        self.pd_graph.add_layer(
+            "paddle.reshape",
+            inputs={"x": node.layer_name + "_var"},
+            outputs=[node.layer_name + "_var"],
+            shape=[1, 1, -1])
+        self.pd_graph.add_layer(
+            "prim.list",
+            inputs={"input0": node.layer_name + "_box",
+                    "input1": node.layer_name + "_var"},
+            outputs=[node.layer_name + "_list"])
+        self.pd_graph.add_layer(
+            "paddle.concat",
+            inputs={"x": node.layer_name + "_list"},
+            outputs=[node.layer_name],
+            axis=1)
+
+    def ReLU6(self, node):
+        if "relu6" in self.nn_name2id:
+            self.nn_name2id["relu6"] += 1
+        else:
+            self.nn_name2id["relu6"] = 0
+        relu6_name = "relu6" + str(self.nn_name2id["relu6"])
+        output_name = node.layer_name
+        layer_outputs = [relu6_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of RelU6 node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        self.pd_graph.add_layer(
+            "paddle.nn.ReLU6",
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs)
+        
+    def ROIPooling(self, node):
+        assert len(
+            node.inputs) == 2, "The count of ROIPooling node\'s input is not 2."
+        input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+        inputs_dict = {}
+        inputs_dict["input"] = self.get_input_name(input0)
+        inputs_dict["roi"] = self.get_input_name(input1)
+        params = node.layer.roi_pooling_param
+        self.pd_graph.add_layer(
+            "paddle.slice",
+            inputs={"input": self.get_input_name(input1)},
+            outputs=[self.get_input_name(input1)],
+            axes=[1], 
+            starts=[1], 
+            ends=[5])
+        layer_attrs = {
+            "pooled_height": params.pooled_h,
+            "pooled_width": params.pooled_w,
+            "spatial_scale": params.spatial_scale}
+        self.pd_graph.add_layer(
+            "fluid.layers.roi_pool",
+            inputs=inputs_dict,
+            outputs=[node.layer_name],
+            **layer_attrs)
+        
+    def ShuffleChannel(self, node):
+        assert len(
+            node.inputs) == 1, "The count of ShuffleChannel node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.shuffle_channel_param
+        self.pd_graph.add_layer(
+            "fluid.layers.shuffle_channel",
+            inputs={"x": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            group=params.group)
+        
+    def Upsample(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Upsample node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        params = node.layer.upsample_param
+        layer_attrs = {
+            "align_corners": False,
+            "scale_factor": params.scale,
+            "mode": "nearest"}
+        self.pd_graph.add_layer(
+            "paddle.nn.functioanl.interpolate",
+            inputs={"input": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)
+    
+    def Select(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Select node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input_shape = node.input_shape[0]
+        params = node.layer.select_param
+        layer_attrs = {
+            "input_shape": input_shape,
+            "point": params.slice_point,
+            "axis": params.axis}
+        self.pd_graph.add_layer(
+            "prim.update_end",
+            inputs={},
+            outputs=[node.layer_name + "_end"],
+            **layer_attrs)
+        layer_attrs = {
+            "axes": [params.axis],
+            "starts": [params.slice_point[0]]}
+        self.pd_graph.add_layer(
+            "paddle.split",
+            inputs={"input": self.get_input_name(input),
+                    "end": node.layer_name + "_end"},
+            outputs=[node.layer_name],
+            **layer_attrs)
+        
+
+    def directly_map(self, node):
+        assert node.layer_type in self.directly_map_ops
+        op_info = self.directly_map_ops[node.layer_type]
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        prefix_name = node.layer_type.lower()
+        if prefix_name in self.nn_name2id:
+            self.nn_name2id[prefix_name] += 1
+        else:
+            self.nn_name2id[prefix_name] = 0
+        first_output_name = prefix_name + str(self.nn_name2id[prefix_name])
+        output_name = node.layer_name
+        layer_outputs = [relu_name, output_name]
+        assert len(
+            node.inputs) == 1, "The count of Activate node\'s input is not 1."
+        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        self.pd_graph.add_layer(
+            op_info,
+            inputs={"input": self.get_input_name(input)},
+            outputs=layer_outputs)
+
