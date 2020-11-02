@@ -14,7 +14,7 @@ def permute_shape(input_shape, order=None):
 def permute_layer(inputs, order=None, input_shape=None, name=None):
     input = inputs[0]
     order = list(order)
-    out = paddle.transpose(input, perm=order, name=name)
+    out = fluid.layers.transpose(input, perm=order, name=name)
     return out
 
 

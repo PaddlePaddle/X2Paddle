@@ -8,7 +8,7 @@ def relu6_shape(input_shape):
 
 def relu6_layer(inputs, input_shape=None, name=None):
     input = inputs[0]
-    out = paddle.nn.functional.relu6(x=input)
+    out = fluid.layers.relu6(x=input)
     return out
 
 

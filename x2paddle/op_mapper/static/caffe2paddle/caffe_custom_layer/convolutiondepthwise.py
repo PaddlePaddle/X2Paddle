@@ -15,6 +15,15 @@ def convolutiondepthwise_shape(input_shape,
                                kernel_w=None,
                                stride_h=None,
                                stride_w=None):
+    [k_h, k_w] = [1, 1]
+    if isinstance(kernel_size, numbers.Number):
+        [k_h, k_w] = [kernel_size] * 2
+    elif len(kernel_size) > 0:
+        k_h = kernel_h if kernel_h > 0 else kernel_size[0]
+        k_w = kernel_w if kernel_w > 0 else kernel_size[len(kernel_size) - 1]
+    elif kernel_h > 0 or kernel_w > 0:
+        k_h = kernel_h
+        k_w = kernel_w
     [s_h, s_w] = [1, 1]
     if isinstance(stride, numbers.Number):
         [s_h, s_w] = [stride] * 2
@@ -70,6 +79,15 @@ def convolutiondepthwise_layer(inputs,
                                input_shape=None,
                                name=None):
     import numbers
+    [k_h, k_w] = [1, 1]
+    if isinstance(kernel_size, numbers.Number):
+        [k_h, k_w] = [kernel_size] * 2
+    elif len(kernel_size) > 0:
+        k_h = kernel_h if kernel_h > 0 else kernel_size[0]
+        k_w = kernel_w if kernel_w > 0 else kernel_size[len(kernel_size) - 1]
+    elif kernel_h > 0 or kernel_w > 0:
+        k_h = kernel_h
+        k_w = kernel_w
     [s_h, s_w] = [1, 1]
     if isinstance(stride, numbers.Number):
         [s_h, s_w] = [stride] * 2
@@ -104,14 +122,16 @@ def convolutiondepthwise_layer(inputs,
     c_out = num_output if num_output is not None else input_shape[0][1]
     group = int(c_in / (c_in / c_out)) if c_in > c_out else int(c_in /
                                                                 (c_out / c_in))
-    out = paddle.nn.functional.conv2d(
+    out = fluid.layers.conv2d(
         input,
         dilation=[dila_h, dila_w],
+        filter_size=[k_h, k_w],
         stride=[s_h, s_w],
         padding=[p_h, p_w],
         groups=group,
-        weight=name + '_weights',
-        bias=name + '_bias',
+        num_filters=c_out,
+        param_attr=name + '_weights',
+        bias_attr=name + '_bias',
         name=name)
     return out
 

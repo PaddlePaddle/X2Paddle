@@ -26,7 +26,7 @@ from x2paddle.core.program import PaddleGraph
 class CaffeOpMapper(OpMapper):
     directly_map_ops = {
         'AbsVal': 'paddle.abs',
-        'Sigmoid': 'paddle.nn.functional.sigmoid',
+        'Sigmoid': 'fluid.layers.sigmoid',
         'TanH': 'paddle.tanh',
     }
 
@@ -51,7 +51,7 @@ class CaffeOpMapper(OpMapper):
                 func = getattr(self, op)
                 func(node)
             elif op in custom_layers:
-                self.set_node_shape(node, is_custom_op=True)
+                self.set_node_shape(node, is_fluid_op=False)
                 self.deal_custom_layer(node)
             elif op in self.directly_map_ops:
                 self.set_node_shape(node)
@@ -79,7 +79,7 @@ class CaffeOpMapper(OpMapper):
                 print(op)
             return False
 
-    def set_node_shape(self, node, is_custom_op=False):
+    def set_node_shape(self, node, is_fluid_op=True):
         inputs = node.inputs
         input_shape = []
         for i, nm in enumerate(inputs):
@@ -91,11 +91,11 @@ class CaffeOpMapper(OpMapper):
         node.input_shape = input_shape
 
         func_name = 'shape_' + node.layer_type.lower()
-        if is_custom_op:
-            node.output_shape = compute_output_shape(node)
-        else:
+        if is_fluid_op:
             node.output_shape = getattr(caffe_shape, func_name)(node.layer,
                                                                 input_shape)
+        else:
+            node.output_shape = compute_output_shape(node)
 
     def adjust_parameters(self, node):
         data = node.data
@@ -203,7 +203,7 @@ class CaffeOpMapper(OpMapper):
             "name": string(node.layer_name)
         }
         self.pd_graph.add_layer(
-            kernel="paddle.static.data",
+            kernel="fluid.data",
             inputs={},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -226,50 +226,27 @@ class CaffeOpMapper(OpMapper):
             data.append(np.zeros([output_c, ]).astype('float32'))
         else:
             data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_weight_attr'] = data[0]
+        self.weights[node.layer_name + '_weights'] = data[0]
         if len(data) == 2:
-            self.weights[node.layer_name + '_bias_attr'] = data[1]
+            self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of Convolution node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         layer_attrs = {
-            "dtype": string("float32"),
-            "shape": data[0].shape,
-            "name": string("{}_weight".format(node.layer_name))
-        }
-        self.pd_graph.add_layer(
-            kernel="paddle.static.data",
-            inputs={},
-            outputs=["{}_weight".format(node.layer_name)],
-            **layer_attrs)
-        self.pd_graph.add_layer(
-            kernel="paddle.ParamAttr",
-            inputs={},
-            outputs=["{}_weight_attr".format(node.layer_name)],
-            name = string("{}_weight_attr".format(node.layer_name)))
-        
-        layer_attrs = {
+            'filter_size': kernel,
+            'num_filters': channel,
             'stride': stride,
             'padding': pad,
             'dilation': dilation,
             'groups': group,
             'name': string(node.layer_name),
+            'param_attr': string(node.layer_name + '_weights'),
+            'bias_attr': False
+            if len(data) == 1 else string(node.layer_name + '_bias'),
         }
-        inputs_dict = {"x": self.get_input_name(input),
-                       "weight": "{}_weight".format(node.layer_name),
-                       "weight_attr": "{}_weight_attr".format(node.layer_name)}
-        if len(data) == 1:
-            layer_attrs["bias_attr"] = False
-        else:
-            self.pd_graph.add_layer(
-                kernel="paddle.ParamAttr",
-                inputs={},
-                outputs=["{}_bias_attr".format(node.layer_name)],
-                name = string("{}_bias_attr".format(node.layer_name)))
-            inputs_dict["bias_attr"] = "{}_bias_attr".format(node.layer_name) 
         self.pd_graph.add_layer(
-            kernel="paddle.nn.functional.conv2d",
-            inputs=inputs_dict,
+            kernel="fluid.layers.conv2d",
+            inputs={"input": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)        
         
@@ -299,18 +276,20 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         layer_attrs = {
             'output_size': None,
+            'filter_size': kernel,
+            'num_filters': channel,
             'stride': stride,
             'padding': pad,
             'dilation': dilation,
             'groups': group,
             'name': string(node.layer_name),
-            'weight': string(node.layer_name + '_weights'),
-            'bias': False
+            'param_attr': string(node.layer_name + '_weights'),
+            'bias_attr': False
             if len(data) == 1 else string(node.layer_name + '_bias')
         }
         self.pd_graph.add_layer(
-            kernel="paddle.nn.functional.conv_transpose2d",
-            inputs={"x": self.get_input_name(input)},
+            kernel="fluid.layers.conv2d_transpose",
+            inputs={"input": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)    
 
@@ -318,31 +297,31 @@ class CaffeOpMapper(OpMapper):
         params = node.layer.pooling_param
         ceil_mode = getattr(params, 'ceil_mode', True)
         global_pool = getattr(params, 'global_pooling', False)
-        assert not global_pool, "The global_pool must be False!"
         kernel_default = [1, 1]
         channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
             node.layer_type, params)
+        if params.pool == 0:
+            pool_type = 'max'
+        else:
+            pool_type = 'avg'
         assert len(
             node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         layer_attrs = {
-            'kernel_size': kernel,
-            'stride': stride,
-            'padding': pad,
+            'pool_size': kernel,
+            'pool_stride': stride,
+            'pool_padding': pad,
             'ceil_mode': ceil_mode,
+            'pool_type': string(pool_type),
+            'exclusive': False,
+            'global_pooling': global_pool,
+            'name': string(node.layer_name)
         }
-        if params.pool == 0:
-            self.pd_graph.add_layer(
-                kernel="paddle.nn.functional.max_pool2d",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name],
-                **layer_attrs)    
-        else:
-            self.pd_graph.add_layer(
-                kernel="paddle.nn.functional.avg_pool2d",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name],
-                **layer_attrs)    
+        self.pd_graph.add_layer(
+            kernel="fluid.layers.pool2d",
+            inputs={"input": self.get_input_name(input)},
+            outputs=[node.layer_name],
+            **layer_attrs)    
 
     def LRN(self, node):
         assert len(node.inputs) == 1, 'The count of LRN node\'s input is not 1.'
@@ -412,7 +391,7 @@ class CaffeOpMapper(OpMapper):
             if len(data) == 1 else string(node.layer_name + '_bias')
         }
         self.pd_graph.add_layer(
-            kernel="paddle.static.nn.fc",
+            kernel="fluid.layers.fc",
             inputs={"input": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -453,7 +432,7 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
         self.pd_graph.add_layer(
-            kernel="paddle.split",
+            kernel="fluid.layers.split",
             inputs={"input": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -489,13 +468,13 @@ class CaffeOpMapper(OpMapper):
         if params.HasField('negative_slope') and params.negative_slope != 0:
             negative_slope = float(params.negative_slope)
             self.pd_graph.add_layer(
-                kernel="paddle.nn.functional.leaky_relu",
+                kernel="fluid.layers.leaky_relu",
                 inputs={"x": self.get_input_name(input)},
                 outputs=[node.layer_name],
-                negative_slope=negative_slope)
+                alpha=negative_slope)
         else:
             self.pd_graph.add_layer(
-                kernel="paddle.nn.functional.relu",
+                kernel="fluid.layers.relu",
                 inputs={"x": self.get_input_name(input)},
                 outputs=[node.layer_name])
 
@@ -519,7 +498,7 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
         self.pd_graph.add_layer(
-            kernel="paddle.nn.functional.prelu",
+            kernel="fluid.layers.prelu",
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -542,7 +521,7 @@ class CaffeOpMapper(OpMapper):
         assert axis == 1, 'PaddlePaddle can not support the situation when the axis is not 1.'
         assert not ignore_label >= 0, 'PaddlePaddle can not support the situation when the model has ignore label.'
         self.pd_graph.add_layer(
-            kernel="paddle.metric.accuracy",
+            kernel="fluid.layers.accuracy",
             inputs=inputs_dict,
             outputs=[node.layer_name],
             k=top_k)
@@ -562,7 +541,7 @@ class CaffeOpMapper(OpMapper):
             inputs_dict['x'] = self.get_input_name(inputs[0])
             inputs_dict['y'] = self.get_input_name(inputs[1])
             self.pd_graph.add_layer(
-                kernel="paddle.multiply",
+                kernel="fluid.layers.elementwise_mul",
                 inputs=inputs_dict,
                 outputs=[node.layer_name])
         elif mode == 1:
@@ -571,37 +550,37 @@ class CaffeOpMapper(OpMapper):
                 input1_name = self.get_input_name(inputs[0])
                 layer_attrs = {
                     'shape': [1],
-                    'fill_value': coeff[0],
+                    'value': coeff[0],
                     'dtype': '{}.dtype'.format(input1_name)
                 }
                 self.pd_graph.add_layer(
-                    kernel="paddle.full",
+                    kernel="fluid.layers.fill_constant",
                     inputs={},
                     outputs=["{}_const1".format(node.layer_name)],
                     **layer_attrs)
                 self.pd_graph.add_layer(
-                    kernel="paddle.multiply",
+                    kernel="fluid.layers.elementwise_mul",
                     inputs={"x": input1_name,
                             "y": "{}_const1".format(node.layer_name)},
                     outputs=["{}_mul1".format(node.layer_name)])
                 input2_name = self.get_input_name(inputs[1])
                 layer_attrs = {
                     'shape': [1],
-                    'fill_value': coeff[1],
+                    'value': coeff[1],
                     'dtype': '{}.dtype'.format(input2_name)
                 }
                 self.pd_graph.add_layer(
-                    kernel="paddle.full",
+                    kernel="fluid.layers.fill_constant",
                     inputs={},
                     outputs=["{}_const2".format(node.layer_name)],
                     **layer_attrs)
                 self.pd_graph.add_layer(
-                    kernel="paddle.multiply",
+                    kernel="fluid.layers.elementwise_mul",
                     inputs={"x": input2_name,
                             "y": "{}_const2".format(node.layer_name)},
                     outputs=["{}_mul2".format(node.layer_name)])
                 self.pd_graph.add_layer(
-                    kernel="paddle.add",
+                    kernel="fluid.layers.elementwise_add",
                     inputs={"x": "{}_mul1".format(node.layer_name),
                             "y": "{}_mul2".format(node.layer_name)},
                     outputs=[node.layer_name])
@@ -610,7 +589,7 @@ class CaffeOpMapper(OpMapper):
                 inputs_dict['x'] = self.get_input_name(inputs[0])
                 inputs_dict['y'] = self.get_input_name(inputs[1])
                 self.pd_graph.add_layer(
-                    kernel="paddle.add",
+                    kernel="fluid.layers.elementwise_add",
                     inputs=inputs_dict,
                     outputs=[node.layer_name])
         else:
@@ -618,7 +597,7 @@ class CaffeOpMapper(OpMapper):
             inputs_dict['x'] = self.get_input_name(inputs[0])
             inputs_dict['y'] = self.get_input_name(inputs[1])
             self.pd_graph.add_layer(
-                    kernel="paddle.add",
+                    kernel="fluid.layers.elementwise_max",
                     inputs=inputs_dict,
                     outputs=[node.layer_name])
 
@@ -659,7 +638,7 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
         self.pd_graph.add_layer(
-            kernel="paddle.nn.functional.batch_norm",
+            kernel="fluid.layers.batch_norm",
             inputs={"input": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -695,7 +674,7 @@ class CaffeOpMapper(OpMapper):
             inputs_dict['x'] = self.get_input_name(input0)
             inputs_dict['y'] = self.get_input_name(input1)
             self.pd_graph.add_layer(
-                kernel="paddle.multiply",
+                kernel="fluid.layers.elementwise_mul",
                 inputs=inputs_dict,
                 outputs=["{}_mul".format(node.layer_name)],
                 axis=axis)
@@ -704,7 +683,7 @@ class CaffeOpMapper(OpMapper):
             input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
             input0_name = self.get_input_name(input0)
             self.pd_graph.add_layer(
-                kernel="paddle.ParamAttr",
+                kernel="fluid.ParamAttr",
                 inputs={},
                 outputs=["{}_scale".format(node.layer_name)],
                 name = string("{}_scale".format(node.layer_name)))
@@ -716,7 +695,7 @@ class CaffeOpMapper(OpMapper):
                 'default_initializer': 'Constant(value=1.0)'
             }
             self.pd_graph.add_layer(
-                kernel="paddle.static.create_parameter",
+                kernel="fluid.layers.create_parameter",
                 inputs={"attr": node.layer_name + '_scale',},
                 outputs=["{}_cparam1".format(node.layer_name)],
                 **layer_attrs)
@@ -724,14 +703,14 @@ class CaffeOpMapper(OpMapper):
             inputs_dict['x'] = self.get_input_name(input0)
             inputs_dict['y'] = "{}_cparam1".format(node.layer_name)
             self.pd_graph.add_layer(
-                kernel="paddle.multiply",
+                kernel="fluid.layers.elementwise_mul",
                 inputs=inputs_dict,
                 outputs=["{}_mul".format(node.layer_name)],
                 axis=axis)
         scale_shape = bias_shape
         input0_name = self.get_input_name(input0)
         self.pd_graph.add_layer(
-            kernel="paddle.ParamAttr",
+            kernel="fluid.ParamAttr",
             inputs={},
             outputs=["{}_offset".format(node.layer_name)],
             name = string("{}_offset".format(node.layer_name)))
@@ -743,7 +722,7 @@ class CaffeOpMapper(OpMapper):
             'default_initializer': 'Constant(value=1.0)'
         }
         self.pd_graph.add_layer(
-            kernel="paddle.static.create_parameter",
+            kernel="fluid.layers.create_parameter",
             inputs={"attr": node.layer_name + '_offset'},
             outputs=["{}_cparam2".format(node.layer_name)],
             **layer_attrs)
@@ -751,7 +730,7 @@ class CaffeOpMapper(OpMapper):
         inputs_dict['x'] = "{}_mul".format(node.layer_name)
         inputs_dict['y'] = "{}_cparam2".format(node.layer_name)
         self.pd_graph.add_layer(
-            kernel="paddle.add",
+            kernel="fluid.layers.elementwise_add",
             inputs=inputs_dict,
             outputs=[node.layer_name],
             axis=axis)
@@ -769,7 +748,7 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.layer_name)
         }
         self.pd_graph.add_layer(
-            kernel="paddle.reshape",
+            kernel="fluid.layers.reshape",
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -789,7 +768,7 @@ class CaffeOpMapper(OpMapper):
             axis += len(input_shape)
         if out_max_val is True:
             self.pd_graph.add_layer(
-                kernel="paddle.topk",
+                kernel="fluid.layers.topk",
                 inputs={"input": self.get_input_name(input)},
                 outputs=["{}_topk_var".format(node.layer_name),
                          "{}_index_var".format(node.layer_name)],
@@ -807,7 +786,7 @@ class CaffeOpMapper(OpMapper):
                 axis=axis)
         else:
             self.pd_graph.add_layer(
-                kernel="paddle.topk",
+                kernel="fluid.layers.topk",
                 inputs={"input": self.get_input_name(input)},
                 outputs=["_", node.layer_name],
                 k=top_k)
@@ -832,7 +811,7 @@ class CaffeOpMapper(OpMapper):
         layer_attrs = {"offsets": list(offset_real), 
                        "shape": node.input_shape[1]}
         self.pd_graph.add_layer(
-            kernel="paddle.crop",
+            kernel="fluid.layers.crop_tensor",
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -843,7 +822,7 @@ class CaffeOpMapper(OpMapper):
             inputs) == 1, 'The count of DetectionOutput node\'s input is not 1.'
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         self.pd_graph.add_layer(
-            kernel="paddle.reshape",
+            kernel="fluid.layers.reshape",
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
             shape = node.output_shape[0])
@@ -894,7 +873,7 @@ class CaffeOpMapper(OpMapper):
                 'name': string(node.layer_name)
             }
             self.pd_graph.add_layer(
-                kernel="paddle.sum",
+                kernel="fluid.layers.reduce_sum",
                 inputs={"input": self.get_input_name(input)},
                 outputs=[node.layer_name],
                 **layer_attrs)
@@ -909,7 +888,7 @@ class CaffeOpMapper(OpMapper):
                 'name': string(node.layer_name)
             }
             self.pd_graph.add_layer(
-                kernel="paddle.sum",
+                kernel="fluid.layers.reduce_sum",
                 inputs={"input": node.layer_name},
                 outputs=[node.layer_name],
                 **layer_attrs)
@@ -925,7 +904,7 @@ class CaffeOpMapper(OpMapper):
                 'name': string(node.layer_name)
             }
             self.pd_graph.add_layer(
-                kernel="paddle.sum",
+                kernel="fluid.layers.reduce_sum",
                 inputs={"input": node.layer_name},
                 outputs=[node.layer_name],
                 **layer_attrs)
@@ -936,7 +915,7 @@ class CaffeOpMapper(OpMapper):
                 'name': string(node.layer_name)
             }
             self.pd_graph.add_layer(
-                kernel="paddle.mean",
+                kernel="fluid.layers.reduce_mean",
                 inputs={"input": node.layer_name},
                 outputs=[node.layer_name],
                 **layer_attrs)

@@ -371,7 +371,6 @@ class CaffeOpMapper(OpMapper):
         params = node.layer.pooling_param
         ceil_mode = getattr(params, "ceil_mod", True)
         global_pool = getattr(params, "global_pooling", False)
-        assert not global_pool, "The global_pool must be False!"
         kernel_default = [1, 1]
         channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
             node.layer_type, params)
@@ -382,25 +381,55 @@ class CaffeOpMapper(OpMapper):
         assert len(
             node.inputs) == 1, "The count of Pooling node\'s input is not 1."
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        layer_attrs = {
-            'kernel_size': kernel,
-            'stride': stride,
-            'padding': pad,
-            'ceil_mode': ceil_mode,
-        }
-        if params.pool == 0:
-            self.pd_graph.add_layer(
-                "paddle.nn.MaxPool2D",
-                inputs={"input": self.get_input_name(input)},
-                outputs=layer_outputs,
-                **layer_attrs)
+        if global_pool:
+            if kernel[0] == 0:
+                kernel = [1, 1]
+            if params.pool == 0:
+                self.pd_graph.add_layer(
+                    "paddle.nn.AdaptiveMaxPool2D",
+                    inputs={"input": self.get_input_name(input)},
+                    outputs=layer_outputs,
+                    output_size=kernel)
+            else:
+                self.pd_graph.add_layer(
+                    "paddle.nn.AdaptiveAvgPool2D",
+                    inputs={"input": self.get_input_name(input)},
+                    outputs=layer_outputs,
+                    output_size=kernel)
         else:
-            layer_attrs["count_include_pad"] = True
+            layer_attrs = {
+                'pool_size': kernel,
+                'pool_stride': stride,
+                'pool_padding': pad,
+                'ceil_mode': ceil_mode,
+                'pool_type': string(pool_type),
+                'exclusive': False,
+                'global_pooling': global_pool,
+            }
             self.pd_graph.add_layer(
-                "paddle.nn.AvgPool2D",
+                "paddle.fluid.dygraph.Pool2D",
                 inputs={"input": self.get_input_name(input)},
                 outputs=layer_outputs,
                 **layer_attrs)
+#             layer_attrs = {
+#                 'kernel_size': kernel,
+#                 'stride': stride,
+#                 'padding': pad,
+#                 'ceil_mode': ceil_mode,
+#             }
+#             if params.pool == 0:
+#                 self.pd_graph.add_layer(
+#                     "paddle.nn.MaxPool2D",
+#                     inputs={"input": self.get_input_name(input)},
+#                     outputs=layer_outputs,
+#                     **layer_attrs)
+#             else:
+#                 layer_attrs["count_include_pad"] = True
+#                 self.pd_graph.add_layer(
+#                     "paddle.nn.AvgPool2D",
+#                     inputs={"input": self.get_input_name(input)},
+#                     outputs=layer_outputs,
+#                     **layer_attrs)
 
     def LRN(self, node):
         assert len(node.inputs) == 1, "The count of LRN node\'s input is not 1."
@@ -532,11 +561,11 @@ class CaffeOpMapper(OpMapper):
             sections_list.append(s[axis])
         layer_attrs = {
             'num_or_sections': sections_list,
-            'dim': axis,
+            'axis': axis,
         }
         self.pd_graph.add_layer(
             "paddle.split",
-            inputs={"input": self.get_input_name(input)},
+            inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
             **layer_attrs)
 
@@ -796,26 +825,19 @@ class CaffeOpMapper(OpMapper):
         inputs_dict['x'] = node.layer_name + "_mul"
         inputs_dict['y'] = node.layer_name + "_cparam2"
         self.pd_graph.add_layer(
-            "paddle.add",
+            "fluid.layers.elementwise_add",
             inputs=inputs_dict,
             outputs=[node.layer_name],
             axis=axis)
 
     def Reshape(self, node):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        top_count = len(input.layer.top)
-        is_inplace = False if top_count == 1 else True
         output_shape = node.output_shape[0]
-        print(output_shape)
-        layer_attrs = {
-            'shape': output_shape,
-            'inplace': is_inplace,
-        }
         self.pd_graph.add_layer(
             "paddle.reshape",
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name],
-            **layer_attrs)
+            shape=output_shape)
 
 
     def ArgMax(self, node):
@@ -1042,10 +1064,10 @@ class CaffeOpMapper(OpMapper):
             nms_param_dict = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
         self.pd_graph.add_layer(
             "paddle.split",
-            inputs={"input": inputs_list[2]},
+            inputs={"x": inputs_list[2]},
             outputs=[node.layer_name + "_priorbox_list"],
             num_or_sections=2,
-            dim=1)
+            axis=1)
         self.pd_graph.add_layer(
             "prim.getitem",
             inputs={"list": node.layer_name + "_priorbox_list"},
@@ -1284,8 +1306,8 @@ class CaffeOpMapper(OpMapper):
             "axes": [params.axis],
             "starts": [params.slice_point[0]]}
         self.pd_graph.add_layer(
-            "paddle.split",
-            inputs={"input": self.get_input_name(input),
+            "paddle.slice",
+            inputs={"x": self.get_input_name(input),
                     "end": node.layer_name + "_end"},
             outputs=[node.layer_name],
             **layer_attrs)
