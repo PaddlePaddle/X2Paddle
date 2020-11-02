@@ -289,11 +289,12 @@ def main():
 
     if args.framework == "tensorflow":
         assert args.model is not None, "--model should be defined while translating tensorflow model"
-        without_data_format_optimization = False
+        assert args.without_data_format_optimization in [
+            "True", "False"
+        ], "--the param without_data_format_optimization should be defined True or False"
         define_input_shape = False
         params_merge = False
-        if args.without_data_format_optimization:
-            without_data_format_optimization = True
+        without_data_format_optimization = True if args.without_data_format_optimization == "True" else False
         if args.define_input_shape:
             define_input_shape = True
         if args.params_merge:
