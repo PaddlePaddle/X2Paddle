@@ -1,4 +1,4 @@
-#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -10,7 +10,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+# limitations under the License. 
 
 import math
 import numbers
@@ -383,7 +383,8 @@ def shape_detectionoutput(layer, input_shape):
 def shape_normalize(layer, input_shape):
     return input_shape
 
-def shape_permute(layer, input_shape, order=None):
+def shape_permute(layer, input_shape):
+    order = layer.permute_param.order
     inshape = input_shape[0]
     output_shape = []
     order = list(order)
@@ -392,7 +393,9 @@ def shape_permute(layer, input_shape, order=None):
         output_shape.append(inshape[ii])
     return [output_shape]
 
-def shape_priorbox(layer, input_shape, max_size=None, aspect_ratio=None):
+def shape_priorbox(layer, input_shape):
+    max_size = layer.prior_box_param.max_size
+    aspect_ratio = layer.prior_box_param.aspect_ratio
     fc_shape = input_shape[0]
     N = 1
     if not max_size == None:
@@ -406,7 +409,9 @@ def shape_priorbox(layer, input_shape, max_size=None, aspect_ratio=None):
 def shape_relu6(layer, input_shape):
     return input_shape
 
-def shape_roipooling(layer, input_shape, pooled_w=None, pooled_h=None):
+def shape_roipooling(layer, input_shape):
+    pooled_w = layer.roi_pooling_param.pooled_w
+    pooled_h = layer.roi_pooling_param.pooled_h
     base_fea_shape = input_shapes[0]
     rois_shape = input_shapes[1]
     output_shape = base_fea_shape
@@ -418,7 +423,8 @@ def shape_roipooling(layer, input_shape, pooled_w=None, pooled_h=None):
 def shape_shufflechannel(layer, input_shape):
     return input_shape
 
-def shape_upsample(layer, input_shape, scale):
+def shape_upsample(layer, input_shape):
+    scale = layer.upsample_param.scale
     assert len(input_shapes) == 1, "not valid input shape for upsample layer"
     assert type(scale) is int
     input_shape = input_shapes[0]
@@ -428,7 +434,9 @@ def shape_upsample(layer, input_shape, scale):
     output_shape = [input_shape[0], input_shape[1], new_h, new_w]
     return [output_shape]
 
-def shape_select(layer, input_shape, slice_point, axis):
+def shape_select(layer, input_shape):
+    slice_point = layer.select_param.slice_point
+    axis = layer.select_param.axis
     input_shape = input_shapes[0]
     start = slice_point[0]
     if len(slice_point) == 2:

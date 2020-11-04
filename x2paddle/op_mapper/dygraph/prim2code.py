@@ -419,18 +419,6 @@ def prim_tuple_unpack(layer, indent=1, init_func=[], forward_func=[], layer_id=N
 def prim_type(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
     line = "{} = {}.dtype".format(layer.outputs[0], get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
-                        
-                        
-def prim_update_end(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    lines = []
-    input_shape = get_value(layer, "input_shape", different_attrs)
-    point = get_value(layer, "point", different_attrs)
-    axis = get_value(layer, "axis", different_attrs)
-    lines.append("if len{} == 2:".format(point))
-    lines.append("    {} = {}[1]".format(layer.outputs[0], point))
-    lines.append("else:")
-    lines.append("    {} = {}[]".format(layer.outputs[0], dim))
-    forward_func.extend(gen_codes(lines, indent=indent))
 
 
 def prim_var2list(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):

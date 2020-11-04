@@ -89,18 +89,6 @@ def arg_parser():
         default=False,
         help="define whether merge the params")
     parser.add_argument(
-        "--jit_type",
-        "-jt",
-        type=_text_type,
-        default="script",
-        help="define the jit type of pytorch Module.")
-    parser.add_argument(
-        "--input_files",
-        "-if",
-        action='append',
-        default=None,
-        help="define the inputs' file path")
-    parser.add_argument(
         "--paddle_type",
         "-pt",
         type=_text_type,
@@ -155,11 +143,11 @@ def tf2paddle(model_path,
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, 
                  paddle_type, params_merge=False):
-    from x2paddle.caffe_convert import Decoder
+    from x2paddle.decoder.caffe_decoder import CaffeDecoder
     if paddle_type == "dygraph":
-        from x2paddle.caffe_convert import DygraphOpMapper as OpMapper
+        from x2paddle.op_mapper.dygraph.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     else:
-        from x2paddle.caffe_convert import StaticOpMapper as OpMapper
+        from x2paddle.op_mapper.static.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
     ver_part = gpb.__version__.split('.')
     version_satisfy = False
@@ -168,10 +156,15 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto,
         version_satisfy = True
     assert version_satisfy, '[ERROR] google.protobuf >= 3.6.0 is required'
     print("Now translating model from caffe to paddle.")
-    model = Decoder(proto, weight, caffe_proto)
-    mapper = OpMapper(model)
-    mapper.pd_graph.build()
-    mapper.pd_graph.gen_model(save_dir)
+    model = CaffeDecoder(proto, weight, caffe_proto)
+    mapper = CaffeOpMapper(model)
+    mapper.paddle_graph.build()
+    print("Model optimizing ...")
+    from x2paddle.optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer(source_frame="caffe", paddle_type=paddle_type)
+    graph_opt.optimize(mapper.paddle_graph)
+    print("Model optimized.")
+    mapper.paddle_graph.gen_model(save_dir)
 
 
 def onnx2paddle(model_path, save_dir, params_merge=False):
