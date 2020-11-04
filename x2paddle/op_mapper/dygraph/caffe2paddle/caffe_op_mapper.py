@@ -1030,25 +1030,6 @@ class CaffeOpMapper(OpMapper):
             inputs={"x": self.get_input_name(input)},
             outputs=layer_outputs,
             **layer_attrs)
-#         self.paddle_graph.add_layer(
-#             "paddle.nn.functional.normalize",
-#             inputs={"x": self.get_input_name(input)},
-#             outputs=[node.layer_name + "_l2"],
-#             p=2,
-#             axis=1)
-#         graph.add_layer(
-#             "paddle.to_tensor",
-#             inputs={},
-#             outputs=[node.layer_name + "_param"],
-#             data="params[{}]".format(string(node.layer_name + ".scale")))
-#         inputs_dict = {}
-#         inputs_dict["x"] = node.layer_name + "_l2"
-#         inputs_dict["y"] = node.layer_name + "_param"
-#         self.paddle_graph.add_layer(
-#             "paddle.multiply",
-#             inputs=inputs_dict,
-#             outputs=[node.layer_name],
-#             axis=-1 if params.channel_shared else 1)
         
     def Permute(self, node):
         assert len(
