@@ -545,7 +545,7 @@ class TFOpMapper(OpMapper):
 
         program.add_layer(
             kernel="fluid.layers.pad",
-            inputs={"input": input.name},
+            inputs={"x": input.name},
             outputs=[node.name],
             paddings=paddings)
 
