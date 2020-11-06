@@ -76,12 +76,6 @@ def arg_parser():
         default=False,
         help="define input shape for tf model")
     parser.add_argument(
-        "--onnx_opset",
-        "-oo",
-        type=int,
-        default=10,
-        help="when paddle2onnx set onnx opset version to export")
-    parser.add_argument(
         "--params_merge",
         "-pm",
         action="store_true",
@@ -224,24 +218,6 @@ def pytorch2paddle(model_path, save_dir, input_shapes):
     mapper.graph.gen_model(save_dir, real_input_shapes)
 
 
-def paddle2onnx(model_path, save_dir, opset_version=10):
-    import paddle.fluid as fluid
-    try:
-        import paddle2onnx
-    except:
-        print(
-            "[ERROR] paddle2onnx not installed, use \"pip install paddle2onnx\"")
-
-    import paddle2onnx as p2o
-    model = p2o.PaddleDecoder(model_path, '__model__', '__params__')
-    mapper = p2o.PaddleOpMapper()
-    mapper.convert(
-        model.program,
-        save_dir,
-        scope=fluid.global_scope(),
-        opset_version=opset_version)
-
-
 def main():
     if len(sys.argv) < 2:
         print("Use \"x2paddle -h\" to print the help information")
@@ -306,12 +282,11 @@ def main():
         onnx2paddle(args.model, args.save_dir, params_merge)
         
     elif args.framework == "paddle2onnx":
-        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
+        print("Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx")
 
     else:
         raise Exception(
-            "--framework only support tensorflow/caffe/onnx/paddle2onnx now")
+            "--framework only support tensorflow/caffe/onnx/ now")
 
 
 if __name__ == "__main__":
