@@ -132,6 +132,7 @@ class TFGraph(Graph):
         self.identity_map = dict()
         self.multi_out_ops = ['Split', 'SplitV', 'IteratorV2']
         self.tf_data_format = data_format
+        self.graph_name = "TFModel"
 
     def build(self):
         for layer in self.model.node:

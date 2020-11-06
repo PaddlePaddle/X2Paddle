@@ -76,6 +76,7 @@ class PaddleGraph(object):
         self.custom_code = None
         self.inputs_info = None
 
+
     def set_name(self, name):
         self.name = name.replace("-", "_").replace("/", "_")
 
@@ -285,8 +286,8 @@ class PaddleGraph(object):
         for input_name in self.inputs:
             input_shapes.append(self.inputs_info[input_name][0])
             input_types.append(self.inputs_info[input_name][1])
-            # 如果input_files非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
-            self.dygraph2static(save_dir, input_shapes, input_types)
+        # 如果input_files非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
+        self.dygraph2static(save_dir, input_shapes, input_types)
 
     def gen_static_code(self, code_dir):
         def write_code(f, code_list, indent=0):
@@ -446,6 +447,8 @@ class PaddleGraph(object):
             if self.source_type == "caffe":
                 custom_import = "from x2paddle.op_mapper.dygraph.caffe2paddle " + \
                                  "import caffe_custom_layer as x2paddle_nn"
+            else:
+                custom_import = ""
             self.head = gen_codes(
                 [
                     "from paddle.fluid.initializer import Constant",
@@ -618,7 +621,10 @@ class PaddleGraph(object):
         paddle.disable_static()
         restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
         model = getattr(x2paddle_code, self.name)()
-        model.set_dict(restore)
+        if self.source_type == "tf":
+            model.set_dict(restore, use_structured_name=False)
+        else:
+            model.set_dict(restore)
         model.eval()
         static_model = paddle.jit.to_static(model, input_spec=sepc_list)
         paddle.jit.save(static_model, osp.join(save_dir, "inference_model/model"))

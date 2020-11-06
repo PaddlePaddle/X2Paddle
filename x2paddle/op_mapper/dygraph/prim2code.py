@@ -277,7 +277,11 @@ def prim_list(layer, indent=1, init_func=[], forward_func=[], layer_id=None, dif
     inputs_str = ', '.join(inputs_list)
     line = "{} = [{}]".format(layer.outputs[0], inputs_str)
     forward_func.extend(gen_codes([line], indent=indent))
-
+    
+def prim_list_mul(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+    line = "{} = [a*b for a,b in zip({}, {})]".format(layer.outputs[0],
+                                                      get_value(layer, "list0", different_attrs),
+                                                      get_value(layer, "list1", different_attrs))
 
 def prim_list_unpack(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
     line = "{} = {}".format(", ".join(layer.outputs), get_value(layer, "input", different_attrs))
