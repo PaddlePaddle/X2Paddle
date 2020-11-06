@@ -11,18 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy
-import math
-import os
 
 
-def string(param):
-    return "\'{}\'".format(param)
-
-def name_generator(nn_name, nn_name2id):
-    if nn_name in nn_name2id:
-        nn_name2id[nn_name] += 1
-    else:
-        nn_name2id[nn_name] = 0
-    real_nn_name = nn_name + str(nn_name2id[nn_name])
-    return real_nn_name
+from .detectionoutput import DetectionOutput
+from .normalize import Normalize
+from .priorbox import PriorBox
+from .roipooling import ROIPooling
+from .select import Select

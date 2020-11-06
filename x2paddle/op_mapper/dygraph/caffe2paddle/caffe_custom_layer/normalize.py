@@ -11,18 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy
-import math
-import os
 
+import paddle
+import paddle.fluid as fluid
 
-def string(param):
-    return "\'{}\'".format(param)
-
-def name_generator(nn_name, nn_name2id):
-    if nn_name in nn_name2id:
-        nn_name2id[nn_name] += 1
-    else:
-        nn_name2id[nn_name] = 0
-    real_nn_name = nn_name + str(nn_name2id[nn_name])
-    return real_nn_name
+class Normalize(object):
+    def __init__(self, axis, param_name, param_shape):
+        self.axis = axis
+        self.param_name = param_name
+        self.param_shape = param_shape
+        
+    def __call__(self, x):
+        l2 = fluid.layers.prior_box(x=x, p=2, axis=1)
+        attr = fluid.ParamAttr(name=self.param_name, trainable=False)
+        param = paddle.nn.Layer.create_parameter(shape=self.param_shape,
+                                                 attr=atr)
+        out = paddle.multiply(x=l2, y=param, axis=self.axis)
+        return out
+        
+    

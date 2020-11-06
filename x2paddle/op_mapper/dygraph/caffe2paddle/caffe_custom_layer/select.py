@@ -11,18 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy
-import math
-import os
 
+import paddle
+import paddle.fluid as fluid
 
-def string(param):
-    return "\'{}\'".format(param)
-
-def name_generator(nn_name, nn_name2id):
-    if nn_name in nn_name2id:
-        nn_name2id[nn_name] += 1
-    else:
-        nn_name2id[nn_name] = 0
-    real_nn_name = nn_name + str(nn_name2id[nn_name])
-    return real_nn_name
+class Select(object):
+    def __init__(self, input_shape, point, axis):
+        self.point = point
+        self.input_shape = input_shape
+        self.axis = axis
+        
+    def __call__(self, x):
+        start = self.point[0]
+        if len(self.point) == 2:
+            end = self.point[1]
+        else:
+            end = self.input_shape[self.axis]
+        out = paddle.slice(x=x,
+                           start=start,
+                           end=end,
+                           axes=[self.axis])
+        return out
+    
