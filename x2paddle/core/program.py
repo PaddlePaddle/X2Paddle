@@ -584,7 +584,10 @@ class PaddleGraph(object):
                     line = ','.join(layer.outputs)
                 line += " = {}(".format(layer.kernel)
                 for k, v in layer.inputs.items():
-                    line += "{}={}, ".format(k, v)
+                    if isinstance(v, list):
+                        line += "{}=[{}], ".format(k, ", ".join(v))
+                    else:
+                        line += "{}={}, ".format(k, v)
                 for k, v in layer.attrs.items():
                     line += "{}={}, ".format(k, v)
                 line = line.strip(", ")
