@@ -1,4 +1,4 @@
-#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -403,8 +403,6 @@ class TFOpMapper(OpMapper):
 
         if c == -1:
             attr = {"shape": [0, k_size[2], 0, 0]}
-            node.fluid_code.add_layer(
-                "reshape", inputs=input, output=input, param_attr=attr)
             self.paddle_graph.add_layer(
                 kernel="paddle.reshape",
                 inputs={"x": input_name},
@@ -721,7 +719,8 @@ class TFOpMapper(OpMapper):
         op_name = name_generator("pool", self.nn_name2id)
         output_name = node.name
         layer_outputs = [op_name, output_name]
-
+        
+        # TODO(syf): The op has diff.
 #         self.paddle_graph.add_layer(
 #             kernel="paddle.nn.AvgPool2D",
 #             inputs={"input": input_name},
@@ -1148,6 +1147,7 @@ class TFOpMapper(OpMapper):
                 perm=[0, 3, 1, 2])
             input_name = transpose_name
 
+        # TODO(syf): The output_size is not set.
 #         self.paddle_graph.add_layer(
 #             kernel="paddle.nn.Conv2DTranspose",
 #             inputs={"input": input_name},
