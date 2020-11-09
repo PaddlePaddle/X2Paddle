@@ -103,6 +103,7 @@ def tf2paddle(model_path,
               save_dir,
               without_data_format_optimization=False,
               define_input_shape=False,
+              paddle_type="dygraph",
               params_merge=False):
     # check tensorflow installation and version
     try:
@@ -120,25 +121,28 @@ def tf2paddle(model_path,
             "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
         )
         return
-
+    
     from x2paddle.decoder.tf_decoder import TFDecoder
-    from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
+    if paddle_type == "dygraph":
+        from x2paddle.op_mapper.dygraph.tf2paddle.tf_op_mapper import TFOpMapper
+    else:
+        from x2paddle.op_mapper.static.tf2paddle.tf_op_mapper import TFOpMapper
+        
     from x2paddle.optimizer.tensorflow.bias import BiasOpt
     from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
     from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
-
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-
     mapper = TFOpMapper(model)
-    program.build()
+    mapper.paddle_graph.build()
     bias_opt = BiasOpt()
     transpose_opt = TransposeOpt()
     batch_norm_opt = BatchNormOpt()
     bias_opt.run(program)
     batch_norm_opt.run(program)
     transpose_opt.run(program)
-    program.gen_model(save_dir)
+    mapper.paddle_graph.gen_model(save_dir)
+        
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, 
@@ -293,7 +297,7 @@ def main():
         if args.params_merge:
             params_merge = True
         tf2paddle(args.model, args.save_dir, without_data_format_optimization,
-                  define_input_shape, params_merge)
+                  define_input_shape, args.paddle_type, params_merge)
 
     elif args.framework == "caffe":
         assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
