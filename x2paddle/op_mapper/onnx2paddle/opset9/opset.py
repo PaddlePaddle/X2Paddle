@@ -339,11 +339,7 @@ class OpSet9():
                 inputs['out_shape'] = var_hw
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            value = _const_weight_or_none(val_scales)
-            if value is not None and value[-1] == value[-2]:
-                inputs['scale'] = value.tolist()[-1] 
-            else:
-                inputs['scale'] = val_scales 
+            inputs['scale'] = val_scales
 
         attr = {'name': string(node.layer_name)}
         mode = node.get_attr('mode', 'nearest')
