@@ -1588,7 +1588,7 @@ class SymbolicShapeInference:
         assert version.parse(onnx.__version__) >= version.parse("1.5.0")
         onnx_opset = get_opset(in_mp)
         if not onnx_opset or onnx_opset < 7:
-            print('Only support models of onnx opset 7 and above.')
+            print('[WARNING] Symbolic shape inference only support models of onnx opset 7 and above.')
             return
         symbolic_shape_inference = SymbolicShapeInference(
             int_max, auto_merge, guess_output_rank, verbose)
@@ -1601,11 +1601,11 @@ class SymbolicShapeInference:
                     in_mp)
             symbolic_shape_inference._update_output_from_vi()
             if not all_shapes_inferred:
-                print('!' * 10)
                 symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                     symbolic_shape_inference.out_mp_)
+            print('[INFO] Complete symbolic shape inference.')
         except:
-            print('Stopping at incomplete symbolic shape inference')
+            print('[WARNING] Incomplete symbolic shape inference.')
             symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                 symbolic_shape_inference.out_mp_)
         return symbolic_shape_inference.out_mp_.graph
