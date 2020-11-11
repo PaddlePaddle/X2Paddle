@@ -93,7 +93,7 @@ class Dygraph_TransposeElimination(FuseBase):
                         if _graph.layers[out].outputs[0] in _graph.outputs:
                             can_be_optimized = False
                             break
-                        if not _graph.layers[out].attrs.get('keepdim', False):
+                        if _graph.layers[out].attrs.get('keepdim', False):
                             can_be_optimized = False
                             break
                         propagate_layers.append(out)
@@ -206,7 +206,7 @@ class Dygraph_TransposeElimination(FuseBase):
                             if _graph.layers[ipt].outputs[0] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if not _graph.layers[ipt].attrs.get('keepdim',
+                            if _graph.layers[ipt].attrs.get('keepdim',
                                                                 False):
                                 can_be_optimized = False
                                 break
