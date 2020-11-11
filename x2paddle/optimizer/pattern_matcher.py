@@ -173,12 +173,7 @@ class PatternMatcher(object):
                 if layer.kernel != pattern_layer.kernel:
                     return False
                 subgraph_id2layers[layer_id] = layer
-#                 for k, v in subgraph_id2layers.items():
-#                     print(k)
-#                     print(v.kernel)
-#                     print(v.outputs)
-#                 print("=========")
-                
+
                 if pattern.edges_in.get(pattern_layer_id, 0) != 0:
                     if len(pattern.edges_in[pattern_layer_id]) != \
                             len(graph.edges_in[layer_id]):
