@@ -33,9 +33,9 @@ class GraphOptimizer(object):
                 self.passes = ["static_bn_scale_fuse_pass"]
         elif source_frame == "tf":
             self.passes = [
-#                 "dygraph_conv2d_add_fuse_pass",
-#                 "dygraph_tf_batchnorm_fuse_pass",
-#                 "transpose_eliminate_pass"
+                "dygraph_conv2d_add_fuse_pass",
+                "dygraph_tf_batchnorm_fuse_pass",
+                "transpose_eliminate_pass"
             ]
         else:
             # TODO
