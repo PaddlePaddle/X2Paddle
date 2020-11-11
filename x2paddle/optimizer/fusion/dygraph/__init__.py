@@ -20,6 +20,8 @@ from .bn_scale_fuser import Dygraph_BNScaleFuser
 from .bn_scale_fuse_pass import Dygraph_BNScaleFusePass
 from .constant_fuser import Dygraph_ConstantFuser
 from .constant_fuse_pass import Dygraph_ConstantFusePass
+from .conv2d_add_fuser import Dygraph_Conv2D_AddFuser
+from .conv2d_add_fuse_pass import Dygraph_Conv2D_AddFusePass
 from .dropout_fuser import Dygraph_DropoutFuser
 from .dropout_fuse_pass import Dygraph_DropoutFusePass
 from .fc_fuser import Dygraph_FcFuser
@@ -28,3 +30,5 @@ from .interpolate_bilinear_fuser import Dygraph_InterpolateBilinearFuser
 from .interpolate_bilinear_fuse_pass import Dygraph_InterpolateBilinearFusePass
 from .reshape_fuser import Dygraph_ReshapeFuser
 from .reshape_fuse_pass import Dygraph_ReshapeFusePass
+from .tf_batchnorm_fuser import Dygraph_TF_BatchNormFuser
+from .tf_batchnorm_fuse_pass import Dygraph_TF_BatchNormFusePass

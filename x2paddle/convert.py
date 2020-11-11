@@ -128,19 +128,25 @@ def tf2paddle(model_path,
     else:
         from x2paddle.op_mapper.static.tf2paddle.tf_op_mapper import TFOpMapper
         
-    from x2paddle.optimizer.tensorflow.bias import BiasOpt
-    from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
-    from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
+    
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
     mapper = TFOpMapper(model)
     mapper.paddle_graph.build()
-    bias_opt = BiasOpt()
-    transpose_opt = TransposeOpt()
-    batch_norm_opt = BatchNormOpt()
-    bias_opt.run(program)
-    batch_norm_opt.run(program)
-    transpose_opt.run(program)
+    if paddle_type == "dygraph":
+        from x2paddle.optimizer.optimizer import GraphOptimizer
+        graph_opt = GraphOptimizer(source_frame="tf", paddle_type=paddle_type)
+        graph_opt.optimize(mapper.paddle_graph)
+    else:
+        from x2paddle.optimizer.tensorflow.bias import BiasOpt
+        from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
+        from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
+        bias_opt = BiasOpt()
+        transpose_opt = TransposeOpt()
+        batch_norm_opt = BatchNormOpt()
+        bias_opt.run(program)
+        batch_norm_opt.run(program)
+        transpose_opt.run(program)
     mapper.paddle_graph.gen_model(save_dir)
         
 

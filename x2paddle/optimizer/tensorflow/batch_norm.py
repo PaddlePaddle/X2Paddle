@@ -178,3 +178,4 @@ class BatchNormOpt:
                 graph.layers[bn.id] = bn
                 graph.layers[transpose1.id] = transpose1
         graph.build()
+        print("=============")

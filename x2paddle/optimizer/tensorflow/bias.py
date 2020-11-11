@@ -6,11 +6,6 @@ class BiasOpt:
         self.conv_layers = [
             'fluid.layers.conv2d', 'fluid.layers.conv2d_transpose'
         ]
-        self.act_layers = [
-            'fluid.layers.relu', 'fluid.layers.relu6', 'fluid.layers.sigmoid',
-            'fluid.layers.exp', 'fluid.layers.tanh', 'fluid.layers.softplus',
-            'fluid.layers.leaky_relu'
-        ]
 
     def run(self, graph):
         print("Optimize: BiasOpt...")
