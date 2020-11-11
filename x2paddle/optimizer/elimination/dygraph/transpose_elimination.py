@@ -27,13 +27,12 @@ class Dygraph_TransposeElimination(FuseBase):
             'paddle.nn.Sigmoid', 'paddle.exp', 'paddle.rsqrt',
             'paddle.nn.Swish', 'paddle.nn.Tanh',
             'paddle.nn.Softplus', 'paddle.nn.LeakyReLU',
-            'paddle.nn.Softmax', 'paddle.erf', 'paddle.square'
+            'paddle.floor', 'paddle.erf', 'paddle.square'
         ]
         self.elementwise_layers = [
             'paddle.add', 'fluid.layers.elementwise_sub',
             'paddle.multiply', 'paddle.divide'
         ]
-        #        self.reduce_layers = []
         self.reduce_layers = [
             'paddle.mean', 'paddle.all',
             'paddle.max', 'paddle.any',
@@ -138,7 +137,7 @@ class Dygraph_TransposeElimination(FuseBase):
                             if _graph.layers[out].outputs[0] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if not _graph.layers[out].attrs.get('keepdim',
+                            if _graph.layers[out].attrs.get('keepdim',
                                                                 False):
                                 can_be_optimized = False
                                 break
