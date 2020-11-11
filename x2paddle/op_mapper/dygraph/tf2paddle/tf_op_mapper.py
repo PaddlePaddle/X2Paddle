@@ -262,7 +262,7 @@ class TFOpMapper(OpMapper):
         else:
             inputs["shape"] = dims.name
         layer_attrs["dtype"] = string(input_value.dtype)
-        layer_attrs["value"] = input_value.value
+        layer_attrs["fill_value"] = input_value.value
 
         self.paddle_graph.add_layer(
             "paddle.full",
@@ -1246,14 +1246,12 @@ class TFOpMapper(OpMapper):
         y_shape = y.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
             "paddle.fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
-#         program.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}
         x_shape = node.out_shapes[0]
         y_shape = node.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
             "paddle.multiply", inputs=inputs, outputs=[node.name])
-#         program.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def OneHot(self, node):
         input = self.graph.get_node(node.layer.input[0])
