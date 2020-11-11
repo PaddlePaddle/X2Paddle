@@ -104,6 +104,8 @@ class CaffeGraph(Graph):
             if not exclude:
                 filtered_layers.append(layer)
                 # Guard against dupes.
+                if layer.name in filtered_layer_names:
+                    layer.name += "_0"
                 assert layer.name not in filtered_layer_names
                 filtered_layer_names.add(layer.name)
             else:
@@ -224,7 +226,7 @@ class CaffeGraph(Graph):
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
         input_node = self.node_map[input_node_name]
-        if len(input_node.layer.top) > 1:
+        if len(input_node.layer.top) > 1 and input_node.layer_type != "Input":
             need_idx = list(input_node.layer.top).index(node.layer.bottom[idx])
             name = input_node_name + ':' + str(need_idx)
         else:
