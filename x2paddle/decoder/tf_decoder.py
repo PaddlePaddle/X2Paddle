@@ -60,7 +60,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        keys = ['dtype', 'Tidx', 'T', 'DstT']
+        keys = ['dtype', 'T', 'DstT']
         for k in keys:
             dtype = self.layer.attr[k].type
             if dtype > 0:
@@ -71,6 +71,15 @@ class TFGraphNode(GraphNode):
             raise Exception("Dtype[{}] of node({}) not in dtype_map".format(
                 dtype, self.layer.name))
         return self.dtype_map[dtype]
+
+    def set_dtype(self, dtype):
+        dtype_idx = 0
+        for k, v in self.dtype_map.items():
+            if v == dtype:
+                dtype_idx = k
+        if dtype_idx == 0:
+            raise Exception("Cannot set dtype of node to '{}'".format(dtype))
+        self.layer.attr['dtype'].type = dtype_idx
 
     @property
     def raw_dtype(self):
@@ -88,6 +97,12 @@ class TFGraphNode(GraphNode):
         attr = self.layer.attr['value']
         field = getattr(attr, attr.WhichOneof('value'))
         return tensor_util.MakeNdarray(field)
+
+    @property
+    def name(self):
+        if hasattr(self, 'index'):
+            return self.layer_name + "_p{}".format(self.index)
+        return self.layer_name
 
     def get_attr(self, name):
         if name not in self.layer.attr:

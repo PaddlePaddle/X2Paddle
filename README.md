@@ -44,24 +44,22 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 ```
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 ```
+
 ### Paddle2ONNX
 ```
-# 注意：paddle_infer_model_dir下需包含__model__和__params__两个文件
-x2paddle --framework=paddle2onnx --model=paddle_infer_model_dir --save_dir=onnx_model
+Paddle2ONNX功能已迁移至新的github: https://github.com/PaddlePaddle/paddle2onnx, 欢迎大家去新的代码仓库查看详细介绍以及新功能。
 ```
 ### 参数选项
 | 参数 | |
 |----------|--------------|
-|--framework | 源模型类型 (tensorflow、caffe、onnx、paddle2onnx) |
+|--framework | 源模型类型 (tensorflow、caffe、onnx) |
 |--prototxt | 当framework为caffe时，该参数指定caffe模型的proto文件路径 |
 |--weight | 当framework为caffe时，该参数指定caffe模型的参数文件路径 |
 |--save_dir | 指定转换后的模型保存目录路径 |
 |--model | 当framework为tensorflow/onnx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
 |--caffe_proto | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
-|--without_data_format_optimization | **[可选]** For TensorFlow, 当指定该参数为False时，打开NHWC->NCHW的优化，见[文档Q2](FAQ.md)，默认为True|
 |--define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](FAQ.md) |
 |--params_merge | **[可选]** 当指定该参数时，转换完成后，inference_model中的所有模型参数将合并保存为一个文件__params__ |
-|--onnx_opset | **[可选]** 当framework为paddle2onnx时，该参数可设置转换为ONNX的OpSet版本，目前支持9、10、11，默认为10 |
 
 
 

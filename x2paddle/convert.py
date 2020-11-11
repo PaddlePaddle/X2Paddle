@@ -76,24 +76,23 @@ def arg_parser():
         default=False,
         help="define input shape for tf model")
     parser.add_argument(
-        "--onnx_opset",
-        "-oo",
-        type=int,
-        default=10,
-        help="when paddle2onnx set onnx opset version to export")
-    parser.add_argument(
         "--params_merge",
         "-pm",
         action="store_true",
         default=False,
         help="define whether merge the params")
-
+    parser.add_argument(
+        "--input_shapes",
+        "-is",
+        action='append',
+        default=None,
+        help="define the inputs' shape")
     return parser
 
 
 def tf2paddle(model_path,
               save_dir,
-              without_data_format_optimization,
+              without_data_format_optimization=False,
               define_input_shape=False,
               params_merge=False):
     # check tensorflow installation and version
@@ -112,37 +111,24 @@ def tf2paddle(model_path,
             "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
         )
         return
-
+    from x2paddle import program
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
-    from x2paddle.op_mapper.tf_op_mapper_nhwc import TFOpMapperNHWC
-    from x2paddle.optimizer.tf_optimizer import TFOptimizer
+    from x2paddle.optimizer.tensorflow.bias import BiasOpt
+    from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
+    from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    if not without_data_format_optimization:
-        mapper = TFOpMapper(model)
-        optimizer = TFOptimizer(mapper)
-        # neccesary optimization
-        optimizer.delete_redundance_code()
-        # optimizer below is experimental
-        optimizer.optimize_elementwise_op()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.optimize_sub_graph()
-
-#        optimizer.merge_batch_norm()
-#        optimizer.merge_prelu()
-    else:
-        mapper = TFOpMapperNHWC(model)
-        optimizer = TFOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        optimizer.strip_graph()
-        optimizer.merge_activation()
-        optimizer.merge_bias()
-        optimizer.make_nchw_input_output()
-        optimizer.remove_transpose()
-    mapper.save_inference_model(save_dir, params_merge)
+    mapper = TFOpMapper(model)
+    program.build()
+    bias_opt = BiasOpt()
+    transpose_opt = TransposeOpt()
+    batch_norm_opt = BatchNormOpt()
+    bias_opt.run(program)
+    batch_norm_opt.run(program)
+    transpose_opt.run(program)
+    program.gen_model(save_dir)
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, params_merge=False):
@@ -185,6 +171,7 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     mapper = ONNXOpMapper(model)
     print("Model optimizing ...")
     optimizer = ONNXOptimizer(mapper)
+    optimizer.delete_redundance_code()
     print("Model optimized.")
 
     print("Paddle model and code generating ...")
@@ -192,17 +179,43 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
     print("Paddle model and code generated.")
 
 
-def paddle2onnx(model_path, save_dir, opset_version=10):
-    from x2paddle.decoder.paddle_decoder import PaddleDecoder
-    from x2paddle.op_mapper.paddle2onnx.paddle_op_mapper import PaddleOpMapper
-    import paddle.fluid as fluid
-    model = PaddleDecoder(model_path, '__model__', '__params__')
-    mapper = PaddleOpMapper()
-    mapper.convert(
-        model.program,
-        save_dir,
-        scope=fluid.global_scope(),
-        opset_version=opset_version)
+def pytorch2paddle(model_path, save_dir, input_shapes):
+    # check pytorch installation and version
+    try:
+        import torch
+        version = torch.__version__
+        ver_part = version.split('.')
+        print(ver_part)
+        if int(ver_part[1]) < 5:
+            print("[ERROR] pytorch>=1.5.0 is required")
+            return
+    except:
+        print(
+            "[ERROR] Pytorch is not installed, use \"pip install torch==1.5.0 torchvision\"."
+        )
+        return
+    print("Now translating model from pytorch to paddle.")
+
+    from x2paddle.decoder.pytorch_decoder import PyTorchDecoder
+    from x2paddle.op_mapper.pytorch2paddle import pytorch_op_mapper
+    model = PyTorchDecoder(model_path)
+    mapper = pytorch_op_mapper.PyTorchOpMapper(model)
+    mapper.graph.build()
+    print("Model optimizing ...")
+    from x2paddle.optimizer.pytorch_optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer()
+    graph_opt.optimize(mapper.graph)
+    print("Model optimized.")
+    if input_shapes is not None:
+        real_input_shapes = list()
+        for shape in input_shapes:
+            sp = shape[1:-1].split(",")
+            for i, s in enumerate(sp):
+                sp[i] = int(s)
+            real_input_shapes.append(sp)
+    else:
+        real_input_shapes = None
+    mapper.graph.gen_model(save_dir, real_input_shapes)
 
 
 def main():
@@ -267,14 +280,13 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, params_merge)
-
+        
     elif args.framework == "paddle2onnx":
-        assert args.model is not None, "--model should be defined while translating paddle model to onnx"
-        paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
+        print("Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx")
 
     else:
         raise Exception(
-            "--framework only support tensorflow/caffe/onnx/paddle2onnx now")
+            "--framework only support tensorflow/caffe/onnx/ now")
 
 
 if __name__ == "__main__":

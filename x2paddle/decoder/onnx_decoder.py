@@ -18,7 +18,7 @@ from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx.utils import polish_model
-from onnx import helper
+from onnx import helper, shape_inference
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
 from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
@@ -141,6 +141,10 @@ class ONNXGraph(Graph):
         print("shape inferencing ...")
         self.graph = SymbolicShapeInference.infer_shapes(
             onnx_model, fixed_input_shape=self.fixed_input_shape)
+        if self.graph is None:
+            print('[WARNING] Shape inference by ONNX offical interface.')
+            onnx_model = shape_inference.infer_shapes(onnx_model)
+            self.graph = onnx_model.graph 
         print("shape inferenced.")
         self.build()
         self.collect_value_infos()
@@ -346,8 +350,12 @@ class ONNXGraph(Graph):
                     #if len(value_info['shape']) == 0 or value_info[
                     #        'dtype'] is None or 0 in value_info['shape']:
                     #    #TODO add node shape inference
+                    shape = value_info['shape']
+                    for idx in range(len(shape)):
+                        if shape[idx] == 0:
+                            shape[idx] = -1
+                    node.out_shapes.append(shape)
                     node.dtype = value_info['dtype']
-                    node.out_shapes.append(value_info['shape'])
                 else:
                     node.out_shapes.append([])
 
