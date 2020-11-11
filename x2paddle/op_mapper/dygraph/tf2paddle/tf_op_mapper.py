@@ -224,20 +224,21 @@ class TFOpMapper(OpMapper):
             return
         self.params[node.name] = node.value
         
-        if dtype != "float32":
-            self.params[node.name] = node.value.astype("float32")
-        self.paddle_graph.add_layer(
-            "self.create_parameter",
-            inputs={},
-            outputs=[node.name],
-            shape=shape,
-            attr=string(node.name))
-        if dtype != "float32":
+        if 0 not in shape:
+            if dtype != "float32":
+                self.params[node.name] = node.value.astype("float32")
             self.paddle_graph.add_layer(
-                    kernel="paddle.cast",
-                    inputs={"x": node.name},
-                    outputs=[node.name],
-                    dtype=string(dtype))
+                "self.create_parameter",
+                inputs={},
+                outputs=[node.name],
+                shape=shape,
+                attr=string(node.name))
+            if dtype != "float32":
+                self.paddle_graph.add_layer(
+                        kernel="paddle.cast",
+                        inputs={"x": node.name},
+                        outputs=[node.name],
+                        dtype=string(dtype))
       
     def Transpose(self, node):
         input = self.graph.get_node(node.layer.input[0])

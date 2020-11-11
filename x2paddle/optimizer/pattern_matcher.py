@@ -193,6 +193,8 @@ class PatternMatcher(object):
                                 continue
                             update(new_layer_id_in, pattern_layer_id_in)
                 if pattern.edges_out.get(pattern_layer_id, 0) != 0:
+                    if layer_id not in graph.edges_out:
+                        return False
                     if len(pattern.edges_out[pattern_layer_id]) != \
                             len(graph.edges_out[layer_id]):
                         return False
