@@ -263,6 +263,7 @@ class TFOpMapper(OpMapper):
             inputs["shape"] = dims.name
         layer_attrs["dtype"] = string(input_value.dtype)
         layer_attrs["fill_value"] = input_value.value
+        
 
         self.paddle_graph.add_layer(
             "paddle.full",
