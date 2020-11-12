@@ -76,7 +76,7 @@ class TFOpMapper(OpMapper):
         'LessEqual': 'paddle.less_equal',
         'GreaterEqual': 'paddle.greater_equal',
         'Mul': 'paddle.multiply',
-        'FloorDiv': 'fluid.layers.elementwise_floordiv'
+        'FloorDiv': 'paddle.floor_divide'
     }
 
     def __init__(self, decoder):
@@ -1039,7 +1039,7 @@ class TFOpMapper(OpMapper):
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.transpose",
+                kernel="paddle.transpose",
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
