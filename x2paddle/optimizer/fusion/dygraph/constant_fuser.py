@@ -18,9 +18,9 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_ConstantFuser(FuseBase):
+class DygraphConstantFuser(FuseBase):
     def __init__(self):
-        super(Dygraph_ConstantFuser, self).__init__(graph_type="dygraph")
+        super(DygraphConstantFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的constant图结构。

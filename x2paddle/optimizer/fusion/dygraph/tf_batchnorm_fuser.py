@@ -20,10 +20,10 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_TF_BatchNormFuser(FuseBase):
+class DygraphTFBatchNormFuser(FuseBase):
     def __init__(self):
         self.bn_index = 0
-        super(Dygraph_TF_BatchNormFuser, self).__init__(graph_type="dygraph")
+        super(DygraphTFBatchNormFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm图结构。

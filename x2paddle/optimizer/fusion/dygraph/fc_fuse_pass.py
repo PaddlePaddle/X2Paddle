@@ -13,21 +13,21 @@
 # limitations under the License.
 
 from x2paddle.optimizer.pass_ import Pass
-from x2paddle.optimizer.fusion.dygraph import Dygraph_FcFuser
+from x2paddle.optimizer.fusion.dygraph import DygraphFcFuser
 from x2paddle.optimizer.pass_manager import pass_register
 
 
 @pass_register
-class Dygraph_FcFusePass(Pass):
+class DygraphFcFusePass(Pass):
     name = "dygraph_fc_fuse_pass"
 
     def __init__(self):
         Pass.__init__(self)
 
     def apply(self, graph):
-        fuser = Dygraph_FcFuser()
+        fuser = DygraphFcFuser()
         fuser.operate(graph, match_kind="topo")
 
 
 # 用于注册
-fc_fuse_pass = Dygraph_FcFusePass()
+fc_fuse_pass = DygraphFcFusePass()

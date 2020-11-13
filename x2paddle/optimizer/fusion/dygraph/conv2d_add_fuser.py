@@ -19,9 +19,9 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_Conv2D_AddFuser(FuseBase):
+class DygraphConv2DAddFuser(FuseBase):
     def __init__(self):
-        super(Dygraph_Conv2D_AddFuser, self).__init__(graph_type="dygraph")
+        super(DygraphConv2DAddFuser, self).__init__(graph_type="dygraph")
         self.patterns = list()
 
     def build_pattern(self):

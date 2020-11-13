@@ -13,21 +13,21 @@
 # limitations under the License.
 
 from x2paddle.optimizer.pass_ import Pass
-from x2paddle.optimizer.fusion.dygraph import Dygraph_BatchNorm2dFuser
+from x2paddle.optimizer.fusion.dygraph import DygraphBatchNorm2dFuser
 from x2paddle.optimizer.pass_manager import pass_register
 
 
 @pass_register
-class Dygraph_BatchNorm2dFusePass(Pass):
+class DygraphBatchNorm2dFusePass(Pass):
     name = "dygraph_batchnorm2d_fuse_pass"
 
     def __init__(self):
         Pass.__init__(self)
 
     def apply(self, graph):
-        fuser = Dygraph_BatchNorm2dFuser()
+        fuser = DygraphBatchNorm2dFuser()
         fuser.operate(graph, match_kind="topo")
 
 
 # 用于注册
-batchnorm2d_fuse_pass = Dygraph_BatchNorm2dFusePass()
+batchnorm2d_fuse_pass = DygraphBatchNorm2dFusePass()

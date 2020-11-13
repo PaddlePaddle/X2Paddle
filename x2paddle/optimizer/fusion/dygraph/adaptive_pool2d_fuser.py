@@ -18,9 +18,9 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_AdaptivePool2dFuser(FuseBase):
+class DygraphAdaptivePool2dFuser(FuseBase):
     def __init__(self):
-        super(Dygraph_AdaptivePool2dFuser, self).__init__(graph_type="dygraph")
+        super(DygraphAdaptivePool2dFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的adaptive pool2d图结构。
