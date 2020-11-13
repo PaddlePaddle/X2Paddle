@@ -144,9 +144,9 @@ def tf2paddle(model_path,
         bias_opt = BiasOpt()
         transpose_opt = TransposeOpt()
         batch_norm_opt = BatchNormOpt()
-        bias_opt.run(program)
-        batch_norm_opt.run(program)
-        transpose_opt.run(program)
+        bias_opt.run(mapper.paddle_graph)
+        batch_norm_opt.run(mapper.paddle_graph)
+        transpose_opt.run(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
         
 

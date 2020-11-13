@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .transpose_elimination import Dygraph_TransposeElimination
-from .transpose_eliminate_pass import Dygraph_TransposeEliminatePass
+from .transpose_elimination import DygraphTransposeElimination
+from .transpose_eliminate_pass import DygraphTransposeEliminatePass

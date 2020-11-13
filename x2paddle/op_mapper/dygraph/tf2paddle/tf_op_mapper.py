@@ -176,11 +176,12 @@ class TFOpMapper(OpMapper):
         x_shape = x.out_shapes[0]
         y_shape = y.out_shapes[0]
         
-        self.paddle_graph.add_layer(
+        layer_id = self.paddle_graph.add_layer(
             kernel=op_type,
             inputs={"x": x.name,
                     "y": y.name},
             outputs=[node.name])
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def NotEqual(self, node):
         x = self.graph.get_node(node.layer.input[0])
@@ -1241,13 +1242,15 @@ class TFOpMapper(OpMapper):
         x_shape = x.out_shapes[0]
         y_shape = y.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
-            "paddle.fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+            "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}
         x_shape = node.out_shapes[0]
         y_shape = node.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
             "paddle.multiply", inputs=inputs, outputs=[node.name])
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def OneHot(self, node):
         input = self.graph.get_node(node.layer.input[0])
