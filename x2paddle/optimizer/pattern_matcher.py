@@ -19,6 +19,7 @@ class PatternMatcher(object):
     def __init__(self, pattern):
         self.pattern = pattern
         # matches的每个match是按照拓扑排序组成layer的dict
+
         self.matches = list()
 
     def operate(self, graph, match_kind="topo"):
@@ -154,7 +155,7 @@ class PatternMatcher(object):
                 if len(block.layers) > 0:
                     self.detect_patterns_by_topo(layer.blocks[j])
 
-    def detect_patterns_by_edge(self, graph, ignore_list_inputs=True):
+    def detect_patterns_by_edge(self, graph):
         """当遇见顺序没有强制规定的pattern时使用该方式
         """
 
@@ -163,8 +164,8 @@ class PatternMatcher(object):
             pattern_ids = list(pattern_id2layers.keys())
             pattern_layer_id = pattern_ids[0]
             subgraph_id2layers = dict()
-            graph_layers = dict(list(graph.layers.items())[start_index:])
-            layer_id = list(graph_layers.keys())[0]
+            layer_id = list(graph.layers.keys())[start_index]
+            graph_layers = graph.layers
 
             def update(layer_id, pattern_layer_id):
                 layer = graph_layers[layer_id]
@@ -172,15 +173,23 @@ class PatternMatcher(object):
                 if layer.kernel != pattern_layer.kernel:
                     return False
                 subgraph_id2layers[layer_id] = layer
-                for i, pattern_layer_id_in in enumerate(pattern.edges_in[
-                        pattern_layer_id]):
-                    if pattern_layer_id_in == -1 or ignore_list_inputs:
-                        continue
-                    layer_id_in = graph.edges_in[layer_id][i]
-                    subgraph_ids = list(subgraph_id2layers.keys())
-                    if layer_id_in not in subgraph_ids:
+
+                if pattern.edges_in.get(pattern_layer_id, 0) != 0:
+                    if len(pattern.edges_in[pattern_layer_id]) != \
+                            len(graph.edges_in[layer_id]):
                         return False
+                    for i, pattern_layer_id_in in enumerate(pattern.edges_in[
+                            pattern_layer_id]):
+                        if pattern_layer_id_in == -1:
+                            continue
+                        if pattern_layer_id_in in pattern_ids:
+                            new_layer_id_in = graph.edges_in[layer_id][i]
+                            if new_layer_id_in in subgraph_id2layers:
+                                continue
+                            update(new_layer_id_in, pattern_layer_id_in)
                 if pattern.edges_out.get(pattern_layer_id, 0) != 0:
+                    if layer_id not in graph.edges_out:
+                        return False
                     if len(pattern.edges_out[pattern_layer_id]) != \
                             len(graph.edges_out[layer_id]):
                         return False
@@ -188,17 +197,8 @@ class PatternMatcher(object):
                             pattern_layer_id]):
                         if pattern_layer_id_out in pattern_ids:
                             new_layer_id_out = graph.edges_out[layer_id][i]
-                            for j, new_new_layer_id_in in enumerate(
-                                    graph.edges_in[new_layer_id_out]):
-                                if new_new_layer_id_in not in subgraph_id2layers:
-                                    if ignore_list_inputs:
-                                        continue
-                                    new_new_pattern_layer_id_in = pattern.edges_in[
-                                        pattern_layer_id_out][j]
-                                    if new_new_pattern_layer_id_in == -1:
-                                        continue
-                                    update(new_new_layer_id_in,
-                                           new_new_pattern_layer_id_in)
+                            if new_layer_id_out in subgraph_id2layers:
+                                continue
                             update(new_layer_id_out, pattern_layer_id_out)
 
             while len(subgraph_id2layers) != len(pattern_id2layers):
@@ -258,6 +258,7 @@ def get_subgraph(prefix_layer_id, suffix_layer_id, graph):
 class FuseBase(object):
     def __init__(self, graph_type):
         self.pattern = PaddleGraph(graph_type=graph_type)
+        self.patterns = list()
 
     def operate(self, graph, match_kind="topo"):
         parameters = graph.parameters
@@ -267,16 +268,22 @@ class FuseBase(object):
             first_layer_id = list(match.keys())[0]
             subgraph = get_subgraph("", first_layer_id, graph)
             self.insert_new_layer(subgraph, parameters, match)
-        self.delete_inter_layer(graph)
+        self.delete_match(graph)
         graph.build()
 
     def perform_pattern_matcher(self, graph, match_kind="topo"):
         """ 执行模式匹配，找到匹配的子图。
         """
-        pattern_matcher = PatternMatcher(self.pattern)
-        self.matches = pattern_matcher.operate(graph, match_kind)
+        if len(self.patterns) > 0:
+            self.matches = list()
+            for pattern in self.patterns:
+                pattern_matcher = PatternMatcher(pattern)
+                self.matches.extend(pattern_matcher.operate(graph, match_kind))
+        else:
+            pattern_matcher = PatternMatcher(self.pattern)
+            self.matches = pattern_matcher.operate(graph, match_kind)
 
-    def delete_inter_layer(self, graph):
+    def delete_match(self, graph):
         """ 删除不需要的中间layer及其对应参数。
         """
         for match in self.matches:
@@ -291,3 +298,4 @@ class FuseBase(object):
                 if layer_id in subgraph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
                     subgraph.layers.pop(layer_id)
+                    

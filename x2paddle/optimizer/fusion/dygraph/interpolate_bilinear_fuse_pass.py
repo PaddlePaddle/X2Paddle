@@ -13,21 +13,21 @@
 # limitations under the License.
 
 from x2paddle.optimizer.pass_ import Pass
-from x2paddle.optimizer.fusion.dygraph import Dygraph_InterpolateBilinearFuser
+from x2paddle.optimizer.fusion.dygraph import DygraphInterpolateBilinearFuser
 from x2paddle.optimizer.pass_manager import pass_register
 
 
 @pass_register
-class Dygraph_InterpolateBilinearFusePass(Pass):
+class DygraphInterpolateBilinearFusePass(Pass):
     name = "dygraph_interpolate_bilinear_fuse_pass"
 
     def __init__(self):
         Pass.__init__(self)
 
     def apply(self, graph):
-        fuser = Dygraph_InterpolateBilinearFuser()
+        fuser = DygraphInterpolateBilinearFuser()
         fuser.operate(graph, match_kind="topo")
 
 
 # 用于注册
-interpolate_bilinear_fuse_pass = Dygraph_InterpolateBilinearFusePass()
+interpolate_bilinear_fuse_pass = DygraphInterpolateBilinearFusePass()

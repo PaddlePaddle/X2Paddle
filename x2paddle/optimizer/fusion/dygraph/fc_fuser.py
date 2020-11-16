@@ -18,10 +18,10 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_FcFuser(FuseBase):
+class DygraphFcFuser(FuseBase):
     def __init__(self):
         self.linear_index = 0
-        super(Dygraph_FcFuser, self).__init__(graph_type="dygraph")
+        super(DygraphFcFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的fc图结构。

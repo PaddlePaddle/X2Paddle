@@ -12,22 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.optimizer.pass_ import Pass
-from x2paddle.optimizer.fusion.dygraph import DygraphReshapeFuser
-from x2paddle.optimizer.pass_manager import pass_register
-
-
-@pass_register
-class DygraphReshapeFusePass(Pass):
-    name = "dygraph_reshape_fuse_pass"
-
-    def __init__(self):
-        Pass.__init__(self)
-
-    def apply(self, graph):
-        fuser = DygraphReshapeFuser()
-        fuser.operate(graph, match_kind="edge")
-
-
-# 用于注册
-reshape_fuse_pass = DygraphReshapeFusePass()
+from .transpose_elimination import DygraphTransposeElimination
+from .transpose_eliminate_pass import DygraphTransposeEliminatePass

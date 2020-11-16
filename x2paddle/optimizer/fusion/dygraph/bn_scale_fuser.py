@@ -18,9 +18,9 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_BNScaleFuser(FuseBase):
+class DygraphBNScaleFuser(FuseBase):
     def __init__(self):
-        super(Dygraph_BNScaleFuser, self).__init__(graph_type="dygraph")
+        super(DygraphBNScaleFuser, self).__init__(graph_type="dygraph")
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm2d图结构。

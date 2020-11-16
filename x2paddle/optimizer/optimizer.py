@@ -15,6 +15,7 @@
 from x2paddle.optimizer.pass_manager import PassManager
 from x2paddle.optimizer.fusion.dygraph import *
 from x2paddle.optimizer.fusion.static import *
+from x2paddle.optimizer.elimination.dygraph import *
 
 class GraphOptimizer(object):
     def __init__(self, source_frame, paddle_type="dygraph"):
@@ -30,6 +31,12 @@ class GraphOptimizer(object):
                 self.passes = ["dygraph_bn_scale_fuse_pass"]
             else:
                 self.passes = ["static_bn_scale_fuse_pass"]
+        elif source_frame == "tf":
+            self.passes = [
+                "dygraph_conv2d_add_fuse_pass",
+                "dygraph_tf_batchnorm_fuse_pass",
+                "transpose_eliminate_pass"
+            ]
         else:
             # TODO
             pass
@@ -37,11 +44,14 @@ class GraphOptimizer(object):
     def optimize(self, graph):
         for pass_name in self.passes:
             pass_ = PassManager.lookup(pass_name)()
-            while True:
-                before_len = len(graph.layers)
+            if pass_name.endswith("_eliminate_pass"):
                 pass_.apply(graph)
-                after_len = len(graph.layers)
-                if before_len == after_len:
-                    break
+            else:
+                while True:
+                    before_len = len(graph.layers)
+                    pass_.apply(graph)
+                    after_len = len(graph.layers)
+                    if before_len == after_len:
+                        break
             print("{} done!".format(pass_name))
         return graph

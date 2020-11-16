@@ -18,9 +18,9 @@ from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
 
 
-class Dygraph_InterpolateBilinearFuser(FuseBase):
+class DygraphInterpolateBilinearFuser(FuseBase):
     def __init__(self):
-        super(Dygraph_InterpolateBilinearFuser, self).__init__(graph_type="dygraph")
+        super(DygraphInterpolateBilinearFuser, self).__init__(graph_type="dygraph")
         import torch
         torch_version = torch.__version__
         torch_version_part = torch_version.split(".")

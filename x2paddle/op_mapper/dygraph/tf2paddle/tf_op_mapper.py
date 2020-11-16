@@ -76,7 +76,7 @@ class TFOpMapper(OpMapper):
         'LessEqual': 'paddle.less_equal',
         'GreaterEqual': 'paddle.greater_equal',
         'Mul': 'paddle.multiply',
-        'FloorDiv': 'fluid.layers.elementwise_floordiv'
+        'FloorDiv': 'paddle.floor_divide'
     }
 
     def __init__(self, decoder):
@@ -176,11 +176,12 @@ class TFOpMapper(OpMapper):
         x_shape = x.out_shapes[0]
         y_shape = y.out_shapes[0]
         
-        self.paddle_graph.add_layer(
+        layer_id = self.paddle_graph.add_layer(
             kernel=op_type,
             inputs={"x": x.name,
                     "y": y.name},
             outputs=[node.name])
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def NotEqual(self, node):
         x = self.graph.get_node(node.layer.input[0])
@@ -224,20 +225,15 @@ class TFOpMapper(OpMapper):
             return
         self.params[node.name] = node.value
         
-        if dtype != "float32":
-            self.params[node.name] = node.value.astype("float32")
-        self.paddle_graph.add_layer(
-            "self.create_parameter",
-            inputs={},
-            outputs=[node.name],
-            shape=shape,
-            attr=string(node.name))
-        if dtype != "float32":
+        if 0 not in shape:
             self.paddle_graph.add_layer(
-                    kernel="paddle.cast",
-                    inputs={"x": node.name},
-                    outputs=[node.name],
-                    dtype=string(dtype))
+                "self.create_parameter",
+                inputs={},
+                outputs=[node.name],
+                shape=shape,
+                attr=string(node.name),
+                dtype=string(dtype),
+                default_initializer="paddle.nn.initializer.Constant(value=0.0)")
       
     def Transpose(self, node):
         input = self.graph.get_node(node.layer.input[0])
@@ -262,7 +258,8 @@ class TFOpMapper(OpMapper):
         else:
             inputs["shape"] = dims.name
         layer_attrs["dtype"] = string(input_value.dtype)
-        layer_attrs["value"] = input_value.value
+        layer_attrs["fill_value"] = input_value.value
+        
 
         self.paddle_graph.add_layer(
             "paddle.full",
@@ -1043,7 +1040,7 @@ class TFOpMapper(OpMapper):
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.transpose",
+                kernel="paddle.transpose",
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
@@ -1245,15 +1242,15 @@ class TFOpMapper(OpMapper):
         x_shape = x.out_shapes[0]
         y_shape = y.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
-            "paddle.fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
-#         program.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
+            "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}
         x_shape = node.out_shapes[0]
         y_shape = node.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
             "paddle.multiply", inputs=inputs, outputs=[node.name])
-#         program.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def OneHot(self, node):
         input = self.graph.get_node(node.layer.input[0])
