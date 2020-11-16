@@ -177,7 +177,7 @@ def caffe2paddle(proto, weight, save_dir, caffe_proto,
     mapper.paddle_graph.gen_model(save_dir)
 
 
-def onnx2paddle(model_path, save_dir, params_merge=False):
+def onnx2paddle(model_path, save_dir, paddle_type, params_merge=False):
     # check onnx installation and version
     try:
         import onnx
@@ -190,19 +190,23 @@ def onnx2paddle(model_path, save_dir, params_merge=False):
         return
     print("Now translating model from onnx to paddle.")
 
-    from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
-    from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
+    if paddle_type == "dygraph":
+        from x2paddle.op_mapper.dygraph.onnx2paddle.onnx_op_mapper import ONNXOpMapper
+    else:
+        from x2paddle.op_mapper.static.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     model = ONNXDecoder(model_path)
     mapper = ONNXOpMapper(model)
-    print("Model optimizing ...")
-    optimizer = ONNXOptimizer(mapper)
-    optimizer.delete_redundance_code()
-    print("Model optimized.")
-
-    print("Paddle model and code generating ...")
-    mapper.save_inference_model(save_dir, params_merge)
-    print("Paddle model and code generated.")
+    if paddle_type == "dygraph":
+        mapper.paddle_graph.build()
+        mapper.paddle_graph.gen_model(save_dir)
+    else:
+        from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
+        print("Model optimizing ...")
+        optimizer = ONNXOptimizer(mapper)
+        optimizer.delete_redundance_code()
+        print("Model optimized.")
+        mapper.save_inference_model(save_dir, params_merge)
 
 
 def pytorch2paddle(model_path, save_dir, jit_type, input_files):
@@ -318,7 +322,7 @@ def main():
 
         if args.params_merge:
             params_merge = True
-        onnx2paddle(args.model, args.save_dir, params_merge)
+        onnx2paddle(args.model, args.save_dir, args.paddle_type, params_merge)
     elif args.framework == "pytorch":
         assert args.model is not None, "--model should be defined while translating pytorch model"
         pytorch2paddle(args.model, args.save_dir, args.jit_type, args.input_files)
