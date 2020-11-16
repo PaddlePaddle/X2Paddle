@@ -252,7 +252,7 @@ class DygraphTransposeElimination(FuseBase):
                     continue
 
                 for l in transpose_layers:
-                    self.delete_layer_with_associated(_graph, l)
+                    _graph.delete_layer(l)
 
                 optimized_transpose_layers.extend(transpose_layers)
                 optimized_reduce_layers.extend(reduce_layers)
