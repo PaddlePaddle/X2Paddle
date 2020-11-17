@@ -294,7 +294,18 @@ class OpSet9():
                     inputs={"x": var_hw},
                     outputs=[var_hw],
                     dtype=string('int32'))
-                inputs['size'] = var_hw
+#                 inputs['size'] = var_hw
+                
+                # TODO(syf): all use 
+                inputs['out_shape'] = var_hw
+                mode = node.get_attr('mode', 'nearest')
+                attrs = {"align_corners": False}
+                self.paddle_graph.add_layer(
+                    kernel="fluid.layers.resize_nearest",
+                    inputs=inputs,
+                    outputs=[node.layer_name],
+                    **attrs)
+                return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
             inputs['scale'] = val_scales
