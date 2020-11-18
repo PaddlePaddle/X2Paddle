@@ -524,7 +524,7 @@ def aten_avg_pool3d(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-def aten_avg_poold(mapper, graph, node):
+def aten_avg_pool1d(mapper, graph, node):
     """ 构造最大池化的PaddleLayer。
 
     TorchScript示例:
