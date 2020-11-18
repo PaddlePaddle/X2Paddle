@@ -272,8 +272,6 @@ class PaddleGraph(object):
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
         if jit_type == "trace":
-#             self.gen_dygraph_code(save_dir)
-#             self.dump_dygraph_parameter(save_dir)
             from x2paddle.optimizer.code_optimizer import HierarchicalTree
             hierarchical_tree = HierarchicalTree(self)
             for layer_id, layer in self.layers.items():
