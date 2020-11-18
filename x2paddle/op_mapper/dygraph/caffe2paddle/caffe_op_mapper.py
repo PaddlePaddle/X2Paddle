@@ -578,9 +578,11 @@ class CaffeOpMapper(OpMapper):
         mode_bool = params.channel_shared
         output_shape = node.output_shape[0]
         if mode_bool:
-            num_parameters = 1
+            mode = 'all'
+            channel = None
         else:
-            num_parameters = output_shape[1]
+            mode = 'channel'
+            channel = output_shape[1]
         data = node.data
         self.params[prelu_name + '._weight'] = np.squeeze(data[0])
         assert data is not None, "The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.".format(
@@ -589,7 +591,8 @@ class CaffeOpMapper(OpMapper):
             "paddle.nn.PReLU",
             inputs={"input": self.get_input_name(input)},
             outputs=layer_outputs,
-            num_parameters=num_parameters)
+            channel=channel,
+            mode=string(mode))
 
     def Eltwise(self, node):
         assert len(
@@ -745,12 +748,29 @@ class CaffeOpMapper(OpMapper):
         inputs_dict = {}
         inputs_dict['x'] = node.layer_name + "_mul"
         inputs_dict['y'] = node.layer_name + "_cparam2"
-        self.paddle_graph.add_layer(
-            "fluid.layers.elementwise_add",
-            inputs=inputs_dict,
-            outputs=[node.layer_name],
-            axis=axis)
-
+        output_shape = node.output_shape[0]
+        if axis == -1:
+            self.paddle_graph.add_layer(
+                "paddle.add",
+                inputs=inputs_dict,
+                outputs=[node.layer_name])
+        else:
+            if axis < 0:
+                axis = axis + len(output_shape)
+            param2_shape = self.params[node.layer_name + "_cparam2"].shape
+            param2_shape_len = len(param2_shape)
+            diff_len = len(output_shape) - axis - param2_shape_len
+            new_shape = param2_shape + [1] * diff_len
+            self.paddle_graph.add_layer(
+                "paddle.reshape",
+                inputs={"x": node.layer_name + "_cparam2"},
+                outputs=[node.layer_name + "_cparam2"],
+                shape=new_shape)
+            self.paddle_graph.add_layer(
+                "paddle.add",
+                inputs=inputs_dict,
+                outputs=[node.layer_name])
+            
     def Reshape(self, node):
         input = self.graph.get_bottom_node(node, idx=0, copy=True)
         output_shape = node.output_shape[0]

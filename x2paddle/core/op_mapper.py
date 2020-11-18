@@ -128,6 +128,7 @@ class OpMapper(object):
         self.add_codes("from paddle.fluid.initializer import Constant")
         self.add_codes("from paddle.fluid.param_attr import ParamAttr")
         self.add_codes("import paddle.fluid as fluid")
+        self.add_codes("import paddle")
         self.add_codes("")
 
     def save_inference_model(self, save_dir, params_merge):
@@ -214,6 +215,7 @@ class OpMapper(object):
                 self.add_codes("", 0)
 
         self.add_codes("\ndef x2paddle_net():", 0)
+        self.add_codes("paddle.enable_static()", 1)
         for i in range(len(self.graph.topo_sort)):
             node_name = self.graph.topo_sort[i]
             node = self.graph.get_node(node_name)

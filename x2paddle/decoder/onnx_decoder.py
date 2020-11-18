@@ -145,6 +145,7 @@ class ONNXGraph(Graph):
         self.build()
         self.collect_value_infos()
         self.allocate_shapes()
+        self.graph_name = "ONNXModel"
 
     def get_inner_nodes(self):
         """
