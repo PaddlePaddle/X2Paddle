@@ -638,3 +638,4 @@ class PaddleGraph(object):
                 print("[DyGraph2StaticGraph Error] Can not convert the dygraph to static! The output of PyTorch mustbe Variable or a list of Variable.")
             else:
                 print(e)
+                exit(0)
