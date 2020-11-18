@@ -32,3 +32,5 @@ from .reshape_fuser import DygraphReshapeFuser
 from .reshape_fuse_pass import DygraphReshapeFusePass
 from .tf_batchnorm_fuser import DygraphTFBatchNormFuser
 from .tf_batchnorm_fuse_pass import DygraphTFBatchNormFusePass
+from .trace_fc_fuser import TraceFcFuser
+from .trace_fc_fuse_pass import TraceFcFusePass

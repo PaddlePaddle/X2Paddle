@@ -41,9 +41,10 @@ class ScriptDecoder(Decoder):
             script_path (str): ScriptModule保存路径。
             model_path (str): PyTorchModule保存路径。
     """
-    def __init__(self, script_path=None):
-        self.script = torch.jit.load(script_path)
+    def __init__(self, module):
+        self.script = torch.jit.script(module)
         self.graph = self._optimize_graph(self.script.inlined_graph)
+        self.input_examples = None
             
 class TraceDecoder(Decoder):
     """ PyTorchModule后使用trace方式转换为ScriptModule。
@@ -53,14 +54,15 @@ class TraceDecoder(Decoder):
             input_files (list): 输入网络的numpy，每个numpy保存成.npy文件, 
                                 文件路径存储在input_files中。
     """
-    def __init__(self, model_path, input_files=list()):
-        # TODO(syf): 传入pytorch的Module(即import)，否则出错
-        model = torch.load(model_path)
-        model.eval()
-        input_list = list()
-        for npy_file in input_files:
-            input_list.append(torch.tensor(np.load(npy_file)))
-        self.script = torch.jit.trace(model, input_list, strict=False)
+    def __init__(self, module, input_examples):
+        try:
+            self.script = torch.jit.trace(module, input_examples)
+        except RuntimeError as e:
+            if "strict" in str(e):
+                self.script = torch.jit.trace(module, input_examples, strict=False)
+            else:
+                print(e)
+                exit(0)
         self.graph = self._optimize_graph(self.script.inlined_graph)
-#         print(self.graph)
-#         print(getattr(getattr(self.script.decoder.block, "5").layer, "2"))
+        self.input_examples = input_examples
+            

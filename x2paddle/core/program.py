@@ -272,6 +272,8 @@ class PaddleGraph(object):
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
         if jit_type == "trace":
+#             self.gen_dygraph_code(save_dir)
+#             self.dump_dygraph_parameter(save_dir)
             from x2paddle.optimizer.code_optimizer import HierarchicalTree
             hierarchical_tree = HierarchicalTree(self)
             for layer_id, layer in self.layers.items():
@@ -488,12 +490,11 @@ class PaddleGraph(object):
                 gen_codes(
                     comment_list,
                     indent=1))
-            use_structured_name = False if self.source_type in ["tf", "onnx"] else True
             self.run_func.extend(
                 gen_codes(["paddle.disable_static()",
                            "params, _ = fluid.load_dygraph('{}/model')".format(code_dir),
                            "model = {}()".format(self.name),
-                           "model.set_dict(params, use_structured_name={})".format(use_structured_name),
+                           "model.set_dict(params)",
                            "model.eval()",
                            "out = model({})".format(input_data_name),
                            "return out"], indent=1))
@@ -525,7 +526,6 @@ class PaddleGraph(object):
         for layer_id, layer in self.layers.items():
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
-               "paddle.fluid.dygraph" in layer.kernel or \
                 layer.kernel.startswith("custom_layer"):
                 line = "{}".format(
                     layer.outputs[0]
@@ -566,7 +566,7 @@ class PaddleGraph(object):
                 self.forward_func.extend(gen_codes([line], indent=indent))                
             elif "prim" in layer.kernel:
                 func_name = layer.kernel.replace(".", "_")
-                from x2paddle.op_mapper.dygraph import prim2code
+                from x2paddle.op_mapper.dygraph.pytorch2paddle import prim2code
                 if hasattr(prim2code, func_name):
                     func = getattr(prim2code, func_name)
                     func(
@@ -614,7 +614,6 @@ class PaddleGraph(object):
         from paddle.fluid.dygraph.jit import declarative
         sepc_list = list()
         for i, name in enumerate(self.inputs):
-            input_shapes[i][0] = -1
             sepc_list.append(
                 paddle.static.InputSpec(
                     shape=input_shapes[i], name=name, dtype=input_types[i]))
@@ -625,10 +624,16 @@ class PaddleGraph(object):
         paddle.disable_static()
         restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
         model = getattr(x2paddle_code, self.name)()
-        if self.source_type in ["tf", "onnx"]:
+        if self.source_type == "tf":
             model.set_dict(restore, use_structured_name=False)
         else:
             model.set_dict(restore)
         model.eval()
         static_model = paddle.jit.to_static(model, input_spec=sepc_list)
-        paddle.jit.save(static_model, osp.join(save_dir, "inference_model/model"))
+        try:
+            paddle.jit.save(static_model, osp.join(save_dir, "inference_model/model"))
+        except ValueError as e:
+            if str(e) == "'target_vars' should be a list of Variable.":
+                print("[DyGraph2StaticGraph Error] Can not convert the dygraph to static! The output of PyTorch mustbe Variable or a list of Variable.")
+            else:
+                print(e)

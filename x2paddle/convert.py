@@ -209,7 +209,7 @@ def onnx2paddle(model_path, save_dir, paddle_type, params_merge=False):
         mapper.save_inference_model(save_dir, params_merge)
 
 
-def pytorch2paddle(model_path, save_dir, jit_type, input_files):
+def pytorch2paddle(module, save_dir, jit_type, input_examples):
     # check pytorch installation and version
     try:
         import torch
@@ -225,21 +225,22 @@ def pytorch2paddle(model_path, save_dir, jit_type, input_files):
         )
         return
     print("Now translating model from pytorch to paddle.")
-
+    
     from x2paddle.decoder.pytorch_decoder import ScriptDecoder, TraceDecoder
-    from x2paddle.op_mapper.pytorch2paddle import pytorch_op_mapper
+    from x2paddle.op_mapper.dygraph.pytorch2paddle.pytorch_op_mapper import PyTorchOpMapper
+
     if jit_type == "trace":
-        model = TraceDecoder(model_path, input_files)
+        model = TraceDecoder(module, input_examples)
     else:
-        model = ScriptDecoder(model_path)
-    mapper = pytorch_op_mapper.PyTorchOpMapper(model)
-    mapper.graph.build()
+        model = ScriptDecoder(module)
+    mapper = PyTorchOpMapper(model)
+    mapper.paddle_graph.build()
     print("Model optimizing ...")
-    from x2paddle.optimizer.pytorch_optimizer.optimizer import GraphOptimizer
-    graph_opt = GraphOptimizer()
-    graph_opt.optimize(mapper.graph)
+    from x2paddle.optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer(source_frame="pytorch", paddle_type="dygraph", jit_type=jit_type)
+    graph_opt.optimize(mapper.paddle_graph)
     print("Model optimized.")
-    mapper.graph.gen_model(save_dir, jit_type, input_files)
+    mapper.paddle_graph.gen_model(save_dir, jit_type=jit_type)
 
 
 def paddle2onnx(model_path, save_dir, opset_version=10):
