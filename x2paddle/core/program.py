@@ -493,7 +493,7 @@ class PaddleGraph(object):
                 gen_codes(["paddle.disable_static()",
                            "params, _ = fluid.load_dygraph('{}/model')".format(code_dir),
                            "model = {}()".format(self.name),
-                           "model.set_dict(params, use_structured_name={})".format(use_structured_name),,
+                           "model.set_dict(params, use_structured_name={})".format(use_structured_name),
                            "model.eval()",
                            "out = model({})".format(input_data_name),
                            "return out"], indent=1))
