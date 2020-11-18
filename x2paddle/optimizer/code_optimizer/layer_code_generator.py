@@ -304,32 +304,6 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
             else:
                 forward_func.extend(gen_codes([line], indent=2))
             cur_outputs.extend(layer.outputs)
-                    
-                    
-                    
-                    
-                    
-                    
-#             if len(layer.outputs) == 1:
-#                 line = layer.outputs[0]
-#             else:
-#                 line = ','.join(layer.outputs)
-#             line += " = {}(".format(layer.kernel)
-#             for k, v in layer.inputs.items():
-#                 if v not in cur_outputs and v not in inputs:
-#                     inputs.append(v)
-#                 line += "{}={}, ".format(k, v)
-#             for k, v in layer.attrs.items():
-#                 key_name = "{}_{}".format(layer.outputs[0], k)
-#                 if key_name in different_attrs:
-#                     line += "{}=self.{}, ".format(k, key_name)
-#                     init_func.extend(gen_codes(["self.{} = {}".format(key_name, key_name)], indent=2))
-#                 else:
-#                     line += "{}={}, ".format(k, v)
-#             line = line.strip(", ")
-#             line += ")"
-#             forward_func.extend(gen_codes([line], indent=2))
-#             cur_outputs.extend(layer.outputs)
 
     head, init_func_head, forward_func_head = gen_head(inputs, different_attrs)
     output_data_name  = ", ".join(outputs)
