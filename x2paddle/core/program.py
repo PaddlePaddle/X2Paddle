@@ -488,11 +488,12 @@ class PaddleGraph(object):
                 gen_codes(
                     comment_list,
                     indent=1))
+            use_structured_name = False if self.source_type in ["tf", "onnx"] else True
             self.run_func.extend(
                 gen_codes(["paddle.disable_static()",
                            "params, _ = fluid.load_dygraph('{}/model')".format(code_dir),
                            "model = {}()".format(self.name),
-                           "model.set_dict(params)",
+                           "model.set_dict(params, use_structured_name={})".format(use_structured_name),
                            "model.eval()",
                            "out = model({})".format(input_data_name),
                            "return out"], indent=1))
@@ -624,7 +625,7 @@ class PaddleGraph(object):
         paddle.disable_static()
         restore, _ = fluid.load_dygraph(osp.join(save_dir, "model"))
         model = getattr(x2paddle_code, self.name)()
-        if self.source_type == "tf":
+        if self.source_type in ["tf", "onnx"]:
             model.set_dict(restore, use_structured_name=False)
         else:
             model.set_dict(restore)

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from x2paddle.op_mapper.static.onnx2paddle.opset9 import OpSet9, custom_layers
+from x2paddle.op_mapper.dygraph.onnx2paddle.opset9 import OpSet9
 from x2paddle.core.op_mapper import OpMapper
-from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
+from x2paddle.decoder.onnx_decoder import ONNXGraphNode
+from x2paddle.core.program import PaddleGraph
 
 
 class ONNXOpMapper(OpMapper):
@@ -23,6 +24,7 @@ class ONNXOpMapper(OpMapper):
         self.support_op_sets = [9, ]
         self.default_op_set = 9
         self.graph = decoder.graph
+        self.paddle_graph = PaddleGraph(parent_layer=None, graph_type="dygraph", source_type="onnx")
         self.opset = self.create_opset(decoder)
         if not self.op_checker():
             raise Exception("Model are not supported yet.")
@@ -42,14 +44,15 @@ class ONNXOpMapper(OpMapper):
                 func(node)
             elif op in self.opset.default_op_mapping:
                 self.opset.directly_map(node)
-            elif op in custom_layers:
-                self.opset.deal_custom_layer(node)
             elif op in self.opset.elementwise_ops:
                 self.opset.elementwise_map(node)
         print("Nodes converted.")
         self.weights = self.opset.weights
-        self.omit_nodes = self.opset.omit_nodes
-        self.used_custom_layers = self.opset.used_custom_layers
+        self.inputs_info = self.opset.inputs_info
+        self.paddle_graph.set_name(self.graph.graph_name)
+        self.paddle_graph.set_parameters(self.weights)
+        self.paddle_graph.set_inputs_info(self.inputs_info)
+        self.paddle_graph.outputs = self.graph.output_nodes
 
     def op_checker(self):
         unsupported_ops = set()
@@ -58,7 +61,6 @@ class ONNXOpMapper(OpMapper):
             op = node.layer_type
             if not hasattr(self.opset, op) and \
                 op not in self.opset.default_op_mapping and \
-                op not in custom_layers and \
                 op not in self.opset.elementwise_ops:
                 unsupported_ops.add(op)
         if len(unsupported_ops) == 0:
@@ -88,4 +90,4 @@ class ONNXOpMapper(OpMapper):
             'Now, onnx2paddle support convert onnx model opset_verison {},'
             'opset_verison of your onnx model is {}, automatically treated as op_set: {}.'
             .format(self.support_op_sets, decoder.op_set, run_op_set))
-        return eval(opset)(decoder)
+        return eval(opset)(decoder, self.paddle_graph)

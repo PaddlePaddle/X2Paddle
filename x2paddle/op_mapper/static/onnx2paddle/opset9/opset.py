@@ -17,7 +17,7 @@ from x2paddle.core.graph import GraphNode
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
 from x2paddle.core.util import string
-from x2paddle.op_mapper.onnx2paddle.opset9.custom_layer import *
+from x2paddle.op_mapper.static.onnx2paddle.opset9.custom_layer import *
 from functools import reduce
 import numpy as np
 import onnx
