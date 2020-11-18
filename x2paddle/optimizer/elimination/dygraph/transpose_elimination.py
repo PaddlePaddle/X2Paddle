@@ -101,7 +101,7 @@ class DygraphTransposeElimination(FuseBase):
                         if _graph.layers[out].outputs[ouput_index] in _graph.outputs:
                             can_be_optimized = False
                             break
-                        if _graph.layers[out].attrs.get('keepdim', False):
+                        if not _graph.layers[out].attrs.get('keepdim', False):
                             can_be_optimized = False
                             break
                         propagate_layers.append(out)
@@ -148,7 +148,7 @@ class DygraphTransposeElimination(FuseBase):
                             if _graph.layers[out].outputs[output_index] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if _graph.layers[out].attrs.get('keepdim',
+                            if not _graph.layers[out].attrs.get('keepdim',
                                                                 False):
                                 can_be_optimized = False
                                 break
@@ -219,7 +219,7 @@ class DygraphTransposeElimination(FuseBase):
                             if _graph.layers[ipt].outputs[output_index] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if _graph.layers[ipt].attrs.get('keepdim',
+                            if not _graph.layers[ipt].attrs.get('keepdim',
                                                                 False):
                                 can_be_optimized = False
                                 break
@@ -252,7 +252,7 @@ class DygraphTransposeElimination(FuseBase):
                     continue
 
                 for l in transpose_layers:
-                    _graph.delete_layer(l)
+                    _graph.del_layer(l)
 
                 optimized_transpose_layers.extend(transpose_layers)
                 optimized_reduce_layers.extend(reduce_layers)
@@ -268,21 +268,22 @@ class DygraphTransposeElimination(FuseBase):
         while strip_transpose(opt_graph):
             pass
 
-        
         for layer_id in list(set(optimized_transpose_layers)):
-            self.delete_layer_with_associated(graph, layer_id)
+            graph.del_layer(layer_id)
         for layer_id in list(set(optimized_reduce_layers)):
-            dim = graph.layers[layer_id].attrs.get('dim', None)
+            dim = graph.layers[layer_id].attrs.get('axis', None)
             if dim is not None:
                 for i in range(len(dim)):
                     dim[i] = [0, 2, 3, 1][dim[i]]
-                graph.layers[layer_id].attrs['dim'] = dim
+                graph.layers[layer_id].attrs['axis'] = dim
         for layer_id in list(set(optimized_concat_layers)):
             axis = graph.layers[layer_id].attrs.get('axis', 0)
             graph.layers[layer_id].attrs['axis'] = [0, 2, 3, 1][axis]
         for layer_id in list(set(optimized_elementwise_layers)):
             axis = graph.layers[layer_id].attrs.get('axis', -1)
             graph.layers[layer_id].attrs['axis'] = [0, 2, 3, 1][axis]
+            if graph.layers[layer_id].kernel == "paddle.add":
+                graph.layers[layer_id].kernel = "fluid.layers.elementwise_add"
 
         current_transpose_num = self.get_transpose_num(graph)
         print(
