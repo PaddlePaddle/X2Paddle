@@ -209,7 +209,7 @@ def onnx2paddle(model_path, save_dir, paddle_type, params_merge=False):
         mapper.save_inference_model(save_dir, params_merge)
 
 
-def pytorch2paddle(module, save_dir, jit_type, input_examples=None):
+def pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None):
     # check pytorch installation and version
     try:
         import torch
