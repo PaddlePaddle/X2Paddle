@@ -877,7 +877,7 @@ class TFOpMapper(OpMapper):
             num_or_sections=num_split,
             dim=dim)
 
-def Slice(self, node):
+    def Slice(self, node):
         input = self.graph.get_node(node.layer.input[0])
         begin = self.graph.get_node(node.layer.input[1])
         size = self.graph.get_node(node.layer.input[2])
