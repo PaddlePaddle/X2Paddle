@@ -117,6 +117,7 @@ def tf2paddle(model_path,
     from x2paddle.optimizer.tensorflow.bias import BiasOpt
     from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
     from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
+    from x2paddle.optimizer.tensorflow.prelu import PReLUOpt
 
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
@@ -125,8 +126,10 @@ def tf2paddle(model_path,
     bias_opt = BiasOpt()
     transpose_opt = TransposeOpt()
     batch_norm_opt = BatchNormOpt()
+    prelu_opt = PReLUOpt()
     bias_opt.run(program)
     batch_norm_opt.run(program)
+    prelu_opt.run(program)
     transpose_opt.run(program)
     program.gen_model(save_dir)
 
