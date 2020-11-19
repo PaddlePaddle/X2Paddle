@@ -912,7 +912,9 @@ class TFOpMapper(OpMapper):
 #                 shape=shape)
 #             inputs['shape'] = reshape_name
         
-#         inputs.pop('shape')
+        for i, s in enumerate(shape):
+            if s < 0:
+                shape[i] = 32767
         program.add_layer(
             kernel="fluid.layers.slice",
             inputs=inputs,
