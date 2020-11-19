@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+import copy 
 from x2paddle.optimizer.pattern_matcher import FuseBase
 from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
@@ -21,11 +22,13 @@ from x2paddle.core.util import *
 class DygraphAdaptivePool2dFuser(FuseBase):
     def __init__(self):
         super(DygraphAdaptivePool2dFuser, self).__init__(graph_type="dygraph")
+        self.patterns = list()
 
     def build_pattern(self):
         """ 描述需要替换的adaptive pool2d图结构。
         adaptive pool2d层模式python实现代码示例:
-            x68 = fluid.layers.shape(input=x60)
+            模式一：
+            x68 = prim.shape(input=x60)
             x69 = len(x68)
             x70 = x69 <= 2
             if x70 :
@@ -38,57 +41,64 @@ class DygraphAdaptivePool2dFuser(FuseBase):
             for _x79 in range(x77):
                 x80 = [6, 6][_x79]
                 x73.append(x80)
-            x81 = fluid.layers.adaptive_pool2d(input=x60, pool_size=x73, pool_type='avg')
+            x81 = paddle.nn.functional.adaptive_avg_pool2d(input=x60, pool_size=x73, pool_type='avg')
+            
+            模式二：
+            x64 = x60.shape
+            x65 = len(x64)
+            x66 = x65 > 2
+            if x66 :
+                pass
+            else:
+                raise RaiseException('AssertionError: ')
+            x69 = self.pool2d3(x60)
         """
 
         def gen_name(id):
             return "x" + str(id)
-
-        self.pattern.add_layer(
-            "fluid.layers.shape",
+        
+        # 模式一：
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "prim.shape",
             inputs={'input': "pool-input-0"},
             outputs=[gen_name(1)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "prim.len", inputs={"input": gen_name(1)}, outputs=[gen_name(6)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "prim.le", inputs={"x": gen_name(6)}, outputs=[gen_name(8)], y=2)
-        self.pattern.add_layer("prim.if", {'input': gen_name(8)}, [gen_name(9)])
-        if_layer = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(if_layer, graph_type="dygraph")
+        pattern.add_layer("prim.if", {'input': gen_name(8)}, [gen_name(9)])
+        if_layer = pattern.layers[list(pattern.layers.keys())[-1]]
+        pattern_block0 = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
         pattern_block0.add_layer(
             "prim.exception",
             inputs={},
             outputs=[gen_name(9)],
             input="Exception")
         if_layer.add_block(pattern_block0)
-        pattern_block1 = PaddleGraph(if_layer, graph_type="dygraph")
+        pattern_block1 = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
         if_layer.add_block(pattern_block1)
-        self.pattern.add_layer("prim.list", inputs={}, outputs=[gen_name(10)])
-        self.pattern.add_layer(
+        pattern.add_layer("prim.list", inputs={}, outputs=[gen_name(10)])
+        pattern.add_layer(
             "prim.slice",
             inputs={"input": gen_name(1), },
-            outputs=[gen_name(12)],
-            start=-1,
-            end=100,
-            step=1)
-        self.pattern.add_layer(
+            outputs=[gen_name(12)])
+        pattern.add_layer(
             "prim.len", inputs={"input": gen_name(12)}, outputs=[gen_name(14)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "prim.list",
             inputs={"input1": gen_name(14)},
-            outputs=[gen_name(15)],
-            input0=2)
-        self.pattern.add_layer(
+            outputs=[gen_name(15)])
+        pattern.add_layer(
             "prim.min", inputs={"input": gen_name(15)}, outputs=[gen_name(16)])
-        self.pattern.add_layer("prim.loop", {'input': gen_name(16)},
+        pattern.add_layer("prim.loop", {'input': gen_name(16)},
                                [gen_name(17), gen_name(18)])
-        loop_layer = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
+        loop_layer = pattern.layers[list(pattern.layers.keys())[-1]]
         pattern_block = PaddleGraph(loop_layer, graph_type="dygraph")
         pattern_block.add_layer(
             "prim.getitem",
             inputs={"index": gen_name(18)},
-            outputs=[gen_name(19)],
-            list=[6, 6])
+            outputs=[gen_name(19)])
         pattern_block.add_layer(
             "prim.append",
             inputs={"list": gen_name(10),
@@ -97,14 +107,45 @@ class DygraphAdaptivePool2dFuser(FuseBase):
         loop_layer.inputs["input-0"] = gen_name(10)
         loop_layer.add_block(pattern_block)
         pool_attrs = {'pool_type': string("avg")}
-        self.pattern.add_layer(
-            "fluid.layers.adaptive_pool2d",
+        pattern.add_layer(
+            "paddle.nn.functional.adaptive_avg_pool2d",
             inputs={'input': "pool-input-0",
                     "pool_size": gen_name(10)},
             outputs=[gen_name(21)],
             **pool_attrs)
-        self.pattern.build(inputs={"input-0": "pool-input-0", })
-
+        pattern.build(inputs={"input-0": "pool-input-0", })
+        self.patterns.append(pattern)
+        
+        # 模式二：
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "prim.shape",
+            inputs={'input': "pool-input-0"},
+            outputs=[gen_name(0)])
+        pattern.add_layer(
+            "prim.len", inputs={"input": gen_name(0)}, outputs=[gen_name(1)])
+        pattern.add_layer(
+            "prim.gt", inputs={"x": gen_name(1)}, outputs=[gen_name(2)], y=2)
+        pattern.add_layer("prim.if", {'input': gen_name(2)}, [gen_name(3)])
+        if_layer = pattern.layers[list(pattern.layers.keys())[-1]]
+        pattern_block0 = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        if_layer.add_block(pattern_block0)
+        pattern_block1 = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        pattern_block1.add_layer(
+            "prim.exception",
+            inputs={},
+            outputs=[gen_name(4)],
+            input="Exception")
+        if_layer.add_block(pattern_block1)
+        pattern.add_layer(
+            "paddle.nn.AdaptiveAvgPool2D", 
+            inputs={"input": "pool-input-0"}, 
+            outputs=["pool1", gen_name(5)])
+        pattern.build(inputs={"input-0": "pool-input-0", 
+                              "input-1": "pool-input-0",})
+        self.patterns.append(pattern)
+        
+        
     def insert_new_layer(self, graph, parameters, matches):
         parameters = graph.parameters
         new_layer = self.gen_new_layer(parameters, matches)
@@ -114,20 +155,21 @@ class DygraphAdaptivePool2dFuser(FuseBase):
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
-        layer = matches[layers_id[11]]
-        pool_size = layer.attrs["list"]
-        layer = matches[layers_id[0]]
-        input_name = layer.inputs["input"]
-        layer = matches[layers_id[-1]]
-        output_name = layer.outputs[0]
-        pool_type = layer.attrs["pool_type"]
-        attrs = dict()
-        attrs["pool_size"] = pool_size
-        attrs["pool_type"] = pool_type
-        new_layer = PaddleLayer(
-            layers_id[0],
-            "fluid.layers.adaptive_pool2d",
-            inputs={"input": input_name},
-            outputs=[output_name],
-            **attrs)
+        if matches[layers_id[-1]].kernel == "paddle.nn.functional.adaptive_avg_pool2d":
+            layer = matches[layers_id[11]]
+            pool_size = layer.attrs["list"]
+            layer = matches[layers_id[0]]
+            input_name = layer.inputs["input"]
+            layer = matches[layers_id[-1]]
+            output_name = layer.outputs[0]
+            attrs = dict()
+            attrs["output_size"] = pool_size
+            new_layer = PaddleLayer(
+                layers_id[0],
+                "paddle.nn.functional.adaptive_avg_pool2d",
+                inputs={"input": input_name},
+                outputs=[output_name],
+                **attrs)
+        else:
+            new_layer = copy.deepcopy(matches[layers_id[-1]])
         return new_layer

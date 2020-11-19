@@ -77,7 +77,7 @@ class PyTorchOpMapper(OpMapper):
                 current_node_outputs.extend(outputs)
 
         # 初始化
-        graph = PaddleGraph(parent_layer, graph_type="dygraph")
+        graph = PaddleGraph(parent_layer=parent_layer, graph_type="dygraph")
         if "TopLevelTracedModule" in str(type(self.script)):
             graph.set_script(self.script)
         current_node_outputs = []
@@ -277,7 +277,7 @@ class PyTorchOpMapper(OpMapper):
                 control_output_id = index - 1
             output_node_name = parent_layer.outputs[control_output_id]
             current_outputs = [output_node_name]
-            self._check_input(graph, node, input_node_name, current_outputs)
+            self._check_input(graph, node, input_node_name, current_outputs, scope_name)
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},

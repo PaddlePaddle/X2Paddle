@@ -208,9 +208,13 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[], layer_id=None, diffe
     line = "if {} :".format(get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
     block = layer.blocks[0]
-    b_init_lines, b_forward_lines = block.gen_dygraph_code(indent=indent + 1)
-    init_func.extend(b_init_lines)
-    forward_func.extend(b_forward_lines)
+    if len(block.layers) == 0:
+        line = "pass"
+        forward_func.extend(gen_codes([line], indent=indent + 1))
+    else:
+        b_init_lines, b_forward_lines = block.gen_dygraph_code(indent=indent + 1)
+        init_func.extend(b_init_lines)
+        forward_func.extend(b_forward_lines)
     block = layer.blocks[1]
     if len(block.layers) > 0:
         b_init_lines, b_forward_lines = block.gen_dygraph_code(

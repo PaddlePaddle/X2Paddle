@@ -281,13 +281,14 @@ class PaddleGraph(object):
         else:
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
-        input_shapes = list()
-        input_types = list()
-        for input_name in self.inputs:
-            input_shapes.append(self.inputs_info[input_name][0])
-            input_types.append(self.inputs_info[input_name][1])
-        # 如果input_files非空，则导出推理模型；其值类似[[None, 3, 224, 224]]
-        self.dygraph2static(save_dir, input_shapes, input_types)
+        # 动转静
+        if len(self.inputs_info) > 0:
+            input_shapes = list()
+            input_types = list()
+            for input_name in self.inputs:
+                input_shapes.append(self.inputs_info[input_name][0])
+                input_types.append(self.inputs_info[input_name][1])
+            self.dygraph2static(save_dir, input_shapes, input_types)
 
     def gen_static_code(self, code_dir):
         def write_code(f, code_list, indent=0):
@@ -424,9 +425,7 @@ class PaddleGraph(object):
             if self.edges_out.get(layer_id, 0) == 0:
                 
                 for i, output_name in enumerate(layer.outputs):
-                    if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
-                            (layer.kernel == "paddle.to_tensor" and layer.attrs["data"].startswith("params["))or \
-                            "paddle.fluid.dygraph" in layer.kernel:
+                    if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel):
                         if i == 0:
                             continue
                     if output_name not in self.outputs:
@@ -512,6 +511,8 @@ class PaddleGraph(object):
             return_code = "return {}".format(", ".join(self.outputs))
             self.forward_func.extend(gen_codes([return_code], indent=2))
             for code_line in self.forward_func:
+                if "assert [1, 1] == 1 or [1, 1] == [1, 1], 'The [1, 1] must be [1, [1, 1]]!'" in code_line:
+                    continue
                 f.write(code_line)
             for code_line in self.run_func:
                 f.write(code_line)
@@ -593,7 +594,7 @@ class PaddleGraph(object):
                 line = line.strip(", ")
                 line += ")"
                 if layer.kernel == "self.create_parameter":
-                    self.init_func.extend(gen_codes(["self." + line], indent=indent))
+                    self.init_func.extend(gen_codes(["self." + line], indent=2))
                     self.forward_func.extend(gen_codes(["{} = self.{}".format(layer.outputs[0], 
                                                                               layer.outputs[0])], indent=indent))
                 else:

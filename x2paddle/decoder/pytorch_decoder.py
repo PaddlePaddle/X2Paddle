@@ -41,10 +41,10 @@ class ScriptDecoder(Decoder):
             script_path (str): ScriptModule保存路径。
             model_path (str): PyTorchModule保存路径。
     """
-    def __init__(self, module):
+    def __init__(self, module, input_examples=None):
         self.script = torch.jit.script(module)
         self.graph = self._optimize_graph(self.script.inlined_graph)
-        self.input_examples = None
+        self.input_examples = input_examples
             
 class TraceDecoder(Decoder):
     """ PyTorchModule后使用trace方式转换为ScriptModule。
@@ -65,4 +65,5 @@ class TraceDecoder(Decoder):
                 exit(0)
         self.graph = self._optimize_graph(self.script.inlined_graph)
         self.input_examples = input_examples
+        
             

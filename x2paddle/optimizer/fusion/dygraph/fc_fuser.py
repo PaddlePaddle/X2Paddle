@@ -31,14 +31,14 @@ class DygraphFcFuser(FuseBase):
             x134 = x133 == 2
             if x134 :
                 classifier_6_weight = self.classifier_6_weight
-                x136 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
+                x136 = paddle.transpose(x=classifier_6_weight, perm=[1, 0])
                 classifier_6_bias = self.classifier_6_bias
                 x137 = paddle.addmm(input=classifier_6_bias, x=x128, y=x136, beta=1, alpha=1)
                 x135 = x137
             else:
                 classifier_6_weight = self.classifier_6_weight
-                x138 = fluid.layers.transpose(x=classifier_6_weight, perm=[1, 0])
-                x139 = fluid.layers.matmul(x=x128, y=x138)
+                x138 = paddle.transpose(x=classifier_6_weight, perm=[1, 0])
+                x139 = paddle.matmul(x=x128, y=x138)
                 classifier_6_bias = self.classifier_6_bias
                 x140 = x139 + 1 * classifier_6_bias
                 x135 = x140
@@ -48,7 +48,7 @@ class DygraphFcFuser(FuseBase):
             return "x" + str(id)
 
         self.pattern.add_layer(
-            "fluid.layers.shape",
+            "prim.shape",
             inputs={'input': "fc-input-0"},
             outputs=[gen_name(2)])
         self.pattern.add_layer(
@@ -61,22 +61,20 @@ class DygraphFcFuser(FuseBase):
         self.pattern.add_layer("prim.if", {'input': gen_name(3)}, [gen_name(4)])
         self.pattern.outputs.append(gen_name(4))
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(if_layer1, graph_type="dygraph")
+        pattern_block0 = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
         pattern_block0.add_layer(
-            "fluid.dygraph.base.to_variable",
+            "self.create_parameter",
             inputs={},
-            outputs=[gen_name(5)],
-            value="params[{}]".format(string(gen_name(5))))
+            outputs=[gen_name(5)])
         pattern_block0.add_layer(
-            "fluid.layers.transpose",
+            "paddle.transpose",
             inputs={"x": gen_name(5)},
             outputs=[gen_name(6)],
             perm=[1, 0])
         pattern_block0.add_layer(
-            "fluid.dygraph.base.to_variable",
+            "self.create_parameter",
             inputs={},
-            outputs=[gen_name(7)],
-            value="params[{}]".format(string(gen_name(7))))
+            outputs=[gen_name(7)])
         pattern_block0.add_layer(
             "paddle.addmm",
             inputs={"input": gen_name(7),
@@ -90,14 +88,13 @@ class DygraphFcFuser(FuseBase):
         pattern_block0.add_layer(
             "prim.equal", inputs={'input': gen_name(8)}, outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block0)
-        pattern_block1 = PaddleGraph(if_layer1, graph_type="dygraph")
+        pattern_block1 = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
         pattern_block1.add_layer(
-            "fluid.dygraph.base.to_variable",
+            "self.create_parameter",
             inputs={},
-            outputs=[gen_name(5)],
-            value="params[{}]".format(string(gen_name(5))))
+            outputs=[gen_name(5)])
         pattern_block1.add_layer(
-            "fluid.layers.transpose",
+            "paddle.transpose",
             inputs={"x": gen_name(5)},
             outputs=[gen_name(6)],
             perm=[1, 0])
@@ -108,10 +105,9 @@ class DygraphFcFuser(FuseBase):
             outputs=[gen_name(9)])
         if_layer1.inputs["input-1"] = "fc-input-0"
         pattern_block1.add_layer(
-            "fluid.dygraph.base.to_variable",
+            "self.create_parameter",
             inputs={},
-            outputs=[gen_name(12)],
-            value="params[{}]".format(string(gen_name(12))))
+            outputs=[gen_name(12)])
         pattern_block1.add_layer(
             "prim.add_",
             inputs={"x": gen_name(9),
@@ -137,9 +133,9 @@ class DygraphFcFuser(FuseBase):
         layer = matches[layers_id[3]]
         output_name = layer.outputs[0]
         layer = matches[layers_id[4]]
-        weight_name = layer.attrs["value"][8:-2]
+        weight_name = layer.outputs[0]
         layer = matches[layers_id[6]]
-        bias_name = layer.attrs["value"][8:-2]
+        bias_name = layer.outputs[0]
         attrs = dict()
         attrs["in_features"] = parameters[weight_name].shape[1]
         attrs["out_features"] = parameters[weight_name].shape[0]

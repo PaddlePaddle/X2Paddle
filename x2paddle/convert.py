@@ -209,7 +209,7 @@ def onnx2paddle(model_path, save_dir, paddle_type, params_merge=False):
         mapper.save_inference_model(save_dir, params_merge)
 
 
-def pytorch2paddle(module, save_dir, jit_type, input_examples):
+def pytorch2paddle(module, save_dir, jit_type, input_examples=None):
     # check pytorch installation and version
     try:
         import torch
@@ -232,7 +232,7 @@ def pytorch2paddle(module, save_dir, jit_type, input_examples):
     if jit_type == "trace":
         model = TraceDecoder(module, input_examples)
     else:
-        model = ScriptDecoder(module)
+        model = ScriptDecoder(module, input_examples)
     mapper = PyTorchOpMapper(model)
     mapper.paddle_graph.build()
     print("Model optimizing ...")
@@ -324,10 +324,6 @@ def main():
         if args.params_merge:
             params_merge = True
         onnx2paddle(args.model, args.save_dir, args.paddle_type, params_merge)
-    elif args.framework == "pytorch":
-        assert args.model is not None, "--model should be defined while translating pytorch model"
-        pytorch2paddle(args.model, args.save_dir, args.jit_type, args.input_files)
-
     elif args.framework == "paddle2onnx":
         assert args.model is not None, "--model should be defined while translating paddle model to onnx"
         paddle2onnx(args.model, args.save_dir, opset_version=args.onnx_opset)
