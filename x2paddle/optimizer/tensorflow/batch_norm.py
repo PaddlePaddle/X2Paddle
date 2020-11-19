@@ -20,10 +20,12 @@ class BatchNormOpt:
             input_ids0 = graph.edges_in[layer_id]
             mul_layer0 = graph.layers[input_ids0[0]]
             sub_layer0 = graph.layers[input_ids0[1]]
+            
             if mul_layer0.kernel != "fluid.layers.elementwise_mul":
                 continue
             if sub_layer0.kernel != "fluid.layers.elementwise_sub":
                 continue
+            
             axis = mul_layer0.attrs.get('axis', -1)
             if axis != -1 and axis != 3:
                 continue
@@ -116,7 +118,7 @@ class BatchNormOpt:
             other = graph.layers[input_ids6[1]]
             if variance.kernel != "fluid.layers.create_parameter":
                 continue
-            if other.kernel != "fluid.layers.create_parameter":
+            if other.kernel != "fluid.layers.fill_constant":
                 continue
             if len(graph.edges_out.get(input_ids6[0], [])) != 1:
                 continue
@@ -126,10 +128,6 @@ class BatchNormOpt:
                 continue
             variance_shape = graph.parameters[variance.outputs[0]].shape
             if variance_shape != beta_shape:
-                continue
-            if other.outputs[0] not in graph.parameters:
-                continue
-            if graph.parameters[other.outputs[0]].size != 1:
                 continue
 
             ids = set([
@@ -163,7 +161,7 @@ class BatchNormOpt:
                     kernel="fluid.layers.batch_norm",
                     inputs={"input": "transpose_for_bn"},
                     outputs=layer.outputs,
-                    epsilon=graph.parameters[other.outputs[0]],
+                    epsilon=other.attrs["value"],
                     param_attr="'{}'".format(gamma.outputs[0]),
                     bias_attr="'{}'".format(beta.outputs[0]),
                     moving_mean_name="'{}'".format(mean.outputs[0]),
