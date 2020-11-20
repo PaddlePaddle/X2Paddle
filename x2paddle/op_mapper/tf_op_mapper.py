@@ -882,7 +882,7 @@ class TFOpMapper(OpMapper):
         begin = self.graph.get_node(node.layer.input[1])
         size = self.graph.get_node(node.layer.input[2])
 
-        inputs = {"input": input.name}
+        inputs = {"x": input.name}
         attrs = {}
         if begin.layer_type == "Const":
             begin = begin.value.tolist()
@@ -890,7 +890,7 @@ class TFOpMapper(OpMapper):
         else:
             #             shape = begin.out_shapes[0]
             #             reshape_name = gen_name("slice", "reshape")
-            #             program.add_layer(
+            #             self.paddle_graph.add_layer(
             #                 kernel="fluid.layers.reshape",
             #                 inputs={"x": begin.name},
             #                 outputs=[reshape_name],
@@ -901,30 +901,20 @@ class TFOpMapper(OpMapper):
         if size.layer_type == "Const":
             size = size.value.tolist()
             attrs['shape'] = size
-            shape = size
         else:
             shape = size.out_shapes[0]
-#             reshape_name = gen_name("slice", "reshape")
-#             program.add_layer(
-#                 kernel="fluid.layers.reshape",
-#                 inputs={"x": size.name},
-#                 outputs=[reshape_name],
-#                 shape=shape)
-#             inputs['shape'] = reshape_name
-        
-#         inputs.pop('shape')
-        program.add_layer(
-            kernel="fluid.layers.slice",
+            reshape_name = gen_name("slice", "reshape")
+            self.paddle_graph.add_layer(
+                kernel="fluid.layers.reshape",
+                inputs={"x": size.name},
+                outputs=[reshape_name],
+                shape=shape)
+            inputs['shape'] = reshape_name
+        self.paddle_graph.add_layer(
+            kernel="fluid.layers.crop_tensor",
             inputs=inputs,
             outputs=[node.name],
-            axes=list(range(len(attrs['offsets']))),
-            starts=attrs['offsets'],
-            ends=[attrs['offsets'][i] + shape[i] for i in range(len(shape))])
-#         program.add_layer(
-#             kernel="fluid.layers.crop_tensor",
-#             inputs=inputs,
-#             outputs=[node.name],
-#             **attrs)
+            **attrs)
 
     def ResizeNearestNeighbor(self, node):
         input = self.graph.get_node(node.layer.input[0])
