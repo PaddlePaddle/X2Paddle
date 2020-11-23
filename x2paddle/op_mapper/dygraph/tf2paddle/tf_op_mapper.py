@@ -561,7 +561,7 @@ class TFOpMapper(OpMapper):
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.pad",
-            inputs={"input": input.name},
+            inputs={"x": input.name},
             outputs=[node.name],
             pad=paddings)
 

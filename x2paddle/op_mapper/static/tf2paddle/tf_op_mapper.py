@@ -546,7 +546,7 @@ class TFOpMapper(OpMapper):
 
         self.paddle_graph.add_layer(
             kernel="fluid.layers.pad",
-            inputs={"input": input.name},
+            inputs={"x": input.name},
             outputs=[node.name],
             paddings=paddings)
 
