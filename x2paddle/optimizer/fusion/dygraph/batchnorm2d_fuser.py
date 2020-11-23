@@ -25,33 +25,33 @@ class DygraphBatchNorm2dFuser(FuseBase):
     def build_pattern(self):
         """ 描述需要替换的batchnorm2d图结构。
         batchnorm2d层模式python实现代码示例:
-            x336 = fluid.layers.shape(input=x334)
-            x336 = len(x336)
-            x337 = x336 != 4
-            if x337 :
+            x2011 = x2009.shape
+            x2011 = len(x2011)
+            x2012 = x2011 != 4
+            if x2012 :
                 raise RaiseException('Exception')
             if False :
-                x351 = fluid.layers.shape(input=x334)
-                x352 = x351[0]
-                x353 = len(x351)
-                x354 = x353 - 2
-                x357 = x352
-                for _x356 in range(x354):
-                    x358 = _x356 + 2
-                    x359 = x351[x358]
-                    x360 = x357 * x359
-                    x355 = x360
-                x361 = x355 == 1
-                if x361 :
+                x2026 = x2009.shape
+                x2027 = x2026[0]
+                x2028 = len(x2026)
+                x2029 = x2028 - 2
+                x2032 = x2027
+                for _x2031 in range(x2029):
+                    x2033 = _x2031 + 2
+                    x2034 = x2026[x2033]
+                    x2035 = x2032 * x2034
+                    x2030 = x2035
+                x2036 = x2030 == 1
+                if x2036 :
                     raise RaiseException('Exception')
-            x364 = self.batchnorm7(x334)
+            x2039 = self.batchnorm50(x2009)
         """
 
         def gen_name(id):
             return "x" + str(id)
 
         self.pattern.add_layer(
-            "fluid.layers.shape",
+            "prim.shape",
             inputs={'input': "bn-input-0"},
             outputs=[gen_name(0)])
         self.pattern.add_layer(
@@ -60,20 +60,20 @@ class DygraphBatchNorm2dFuser(FuseBase):
             "prim.ne", inputs={"x": gen_name(0)}, outputs=[gen_name(1)], y=4)
         self.pattern.add_layer("prim.if", {'input': gen_name(1)}, [gen_name(2)])
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(if_layer1, graph_type="dygraph")
+        pattern_block0 = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
         pattern_block0.add_layer(
             "prim.exception",
             inputs={},
             outputs=[gen_name(3)],
             input="Exception")
         if_layer1.add_block(pattern_block0)
-        pattern_block1 = PaddleGraph(if_layer1, graph_type="dygraph")
+        pattern_block1 = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
         if_layer1.add_block(pattern_block1)
         self.pattern.add_layer("prim.if", {}, [gen_name(4)], input=False)
         if_layer2 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(if_layer2, graph_type="dygraph")
+        pattern_block0 = PaddleGraph(parent_layer=if_layer2, graph_type="dygraph")
         pattern_block0.add_layer(
-            "fluid.layers.shape",
+            "prim.shape",
             inputs={'input': "bn-input-0"},
             outputs=[gen_name(5)])
         pattern_block0.add_layer(
@@ -93,7 +93,7 @@ class DygraphBatchNorm2dFuser(FuseBase):
             outputs=[gen_name(8.1), gen_name(10)])
         loop_layer = pattern_block0.layers[list(pattern_block0.layers.keys())[
             -1]]
-        pattern_block0_block0 = PaddleGraph(loop_layer, graph_type="dygraph")
+        pattern_block0_block0 = PaddleGraph(parent_layer=loop_layer, graph_type="dygraph")
         pattern_block0_block0.add_layer(
             "prim.add", inputs={"x": gen_name(10)}, outputs=[gen_name(11)], y=2)
         pattern_block0_block0.add_layer(
@@ -119,27 +119,24 @@ class DygraphBatchNorm2dFuser(FuseBase):
             "prim.if", inputs={"input": gen_name(14)}, outputs=[gen_name(15)])
         if_layer21 = pattern_block0.layers[list(pattern_block0.layers.keys())[
             -1]]
-        pattern_block0_block0 = PaddleGraph(if_layer21, graph_type="dygraph")
+        pattern_block0_block0 = PaddleGraph(parent_layer=if_layer21, graph_type="dygraph")
         pattern_block0_block0.add_layer(
             "prim.exception",
             inputs={},
             outputs=[gen_name(15)],
             input="Exception")
         if_layer21.add_block(pattern_block0_block0)
-        pattern_block0_block1 = PaddleGraph(if_layer21, graph_type="dygraph")
+        pattern_block0_block1 = PaddleGraph(parent_layer=if_layer21, graph_type="dygraph")
         if_layer21.add_block(pattern_block0_block1)
         if_layer2.add_block(pattern_block0)
-        pattern_block1 = PaddleGraph(if_layer2, graph_type="dygraph")
+        pattern_block1 = PaddleGraph(parent_layer=if_layer2, graph_type="dygraph")
         if_layer2.add_block(pattern_block1)
         if_layer2.inputs["input-0"] = "bn-input-0"
         self.pattern.add_layer(
             "paddle.nn.BatchNorm",
             inputs={"input": "bn-input-0"},
             outputs=[gen_name(16), gen_name(17)],
-            is_test=True,
-            num_channels=160,
-            momentum=0.1,
-            epsilon=0.001)
+            is_test=True)
         self.pattern.build(inputs={"input-0": "bn-input-0"})
 
     def insert_new_layer(self, graph, parameters, matches):
@@ -148,9 +145,6 @@ class DygraphBatchNorm2dFuser(FuseBase):
         graph.layers[new_layer_id] = new_layer
         matches.pop(new_layer_id)
 
-#         for layer in matches.values():
-#             print(layer.outputs)
-#         print("-------")
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())

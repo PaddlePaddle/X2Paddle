@@ -1180,7 +1180,7 @@ class OpSet9():
                     scale=beta)
                 add_inputs = {"x": val_mm, "y": var_beta}
                 self.paddle_graph.add_layer(
-                    "paddle.addd",
+                    "paddle.add",
                     inputs=add_inputs,
                     outputs=[node.layer_name])
 

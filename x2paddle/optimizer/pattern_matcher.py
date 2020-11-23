@@ -85,7 +85,11 @@ class PatternMatcher(object):
                     # 判断subgraph中的节点是否被外部图使用到(如若被使用到则无效)
                     if layer_id in graph.edges_out:
                         if pattern_layer_id not in pattern.edges_out:
-                            if not set(pattern_layer.outputs).issubset(
+                            if "paddle.nn" in layer.kernel and "functional" not in layer.kernel:
+                                pattern_layer_opt = pattern_layer.outputs[1:]
+                            else:
+                                pattern_layer_opt = pattern_layer.outputs
+                            if not set(pattern_layer_opt).issubset(
                                     pattern.outputs):
                                 # 若pattern当前layer的输出是pattern的输出，则是正确的
                                 if pattern_index == 0 or is_subblock:
@@ -97,7 +101,11 @@ class PatternMatcher(object):
                             if len(graph.edges_out[layer_id]) != len(
                                     pattern.edges_out[pattern_layer_id]):
                                 # 如果在每个节点edges_in相同的情况下，edges_out数目相同则说明无节点在subgraph外被用到
-                                if not set(pattern_layer.outputs).issubset(
+                                if "paddle.nn" in layer.kernel and "functional" not in layer.kernel:
+                                    pattern_layer_opt = pattern_layer.outputs[1:]
+                                else:
+                                    pattern_layer_opt = pattern_layer.outputs
+                                if not set(pattern_layer_opt).issubset(
                                         pattern.outputs):
                                     # 若pattern当前layer的输出是pattern的输出，则是正确的
                                     if pattern_index == 0 or is_subblock:
@@ -105,6 +113,7 @@ class PatternMatcher(object):
                                     else:
                                         subgraph_id2layers.pop(layer_id)
                                         continue
+                                        
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
                         if len(pattern_layer.blocks) != len(layer.blocks):

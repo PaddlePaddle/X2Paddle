@@ -18,14 +18,20 @@ from x2paddle.optimizer.fusion.static import *
 from x2paddle.optimizer.elimination.dygraph import *
 
 class GraphOptimizer(object):
-    def __init__(self, source_frame, paddle_type="dygraph"):
+    def __init__(self, source_frame, paddle_type="dygraph", jit_type="trace"):
         if source_frame == "pytorch":
-            self.passes = [
-                "dygraph_constant_fuse_pass", "dygraph_batchnorm2d_fuse_pass",
-                "dygraph_interpolate_bilinear_fuse_pass", "dygraph_fc_fuse_pass",
-                "dygraph_adaptive_pool2d_fuse_pass", "dygraph_reshape_fuse_pass",
-                "dygraph_dropout_fuse_pass"
-            ]
+            if jit_type == "trace":
+                self.passes = ["trace_fc_fuse_pass"]
+            else:
+                self.passes = [
+                    "dygraph_constant_fuse_pass", 
+                    "dygraph_batchnorm2d_fuse_pass",
+                    "dygraph_interpolate_bilinear_fuse_pass", 
+                    "dygraph_fc_fuse_pass",
+                    "dygraph_adaptive_pool2d_fuse_pass", 
+                    "dygraph_reshape_fuse_pass",
+                    "dygraph_dropout_fuse_pass"
+                ]
         elif source_frame == "caffe":
             if paddle_type == "dygraph":
                 self.passes = ["dygraph_bn_scale_fuse_pass"]
@@ -38,8 +44,7 @@ class GraphOptimizer(object):
                 "transpose_eliminate_pass"
             ]
         else:
-            # TODO
-            pass
+            self.passes = []
 
     def optimize(self, graph):
         for pass_name in self.passes:

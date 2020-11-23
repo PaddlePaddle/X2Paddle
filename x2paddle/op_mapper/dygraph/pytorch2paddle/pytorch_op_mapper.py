@@ -17,24 +17,29 @@ import numpy as np
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 from x2paddle.core.program import PaddleGraph
-from x2paddle.op_mapper.pytorch2paddle import prim
-from x2paddle.op_mapper.pytorch2paddle import aten
+from x2paddle.op_mapper.dygraph.pytorch2paddle import prim
+from x2paddle.op_mapper.dygraph.pytorch2paddle import aten
 
 
 class PyTorchOpMapper(OpMapper):
     def __init__(self, decoder):
         super(PyTorchOpMapper, self).__init__()
         self.script = decoder.script
+        self.input_examples = decoder.input_examples
         self.paddle_params = dict()
         self.outputs_info = {}  # key为output unique id，value为当前节点的输出名字
         self.pytorch_params = {}  # key为节点名，value为参数
         self.attrs = {}  # key为节点名，value为属性值
         self.output_index = 0
-        self.dygraph_name_id = {}  # 动态图__init__输出名字中的id，key为kernel类型，value为id
+        self.nn_name2id = {}  # 动态图__init__输出名字中的id，key为kernel类型，value为id
         self.split_len = {}  # split的长度
+        self.scope_name_list = list()
+        self.scope_name2id = dict()
+        self.inputs_info = dict()
         # 转换
         self.check_op(decoder.graph)
-        self.graph, _ = self.traverse(decoder.graph)
+        self.paddle_graph, _ = self.traverse(decoder.graph)
+        self.paddle_graph.set_inputs_info(self.inputs_info)
 
     def check_op(self, script_graph):
         def _update_op_list(graph):
@@ -72,17 +77,21 @@ class PyTorchOpMapper(OpMapper):
                 current_node_outputs.extend(outputs)
 
         # 初始化
-        graph = PaddleGraph(parent_layer, graph_type="dygraph")
+        graph = PaddleGraph(parent_layer=parent_layer, graph_type="dygraph")
+        if "TopLevelTracedModule" in str(type(self.script)):
+            graph.set_script(self.script)
         current_node_outputs = []
         graph_inputs = []
         # 转换输入节点
         if isinstance(script_graph, torch._C.Graph):
+            input_ct = 0 
             for i, ivalue in enumerate(script_graph.inputs()):
                 node = ivalue.node()
-                if str(ivalue.type()) != "Tensor":
+                if str(ivalue.type()) not in ["Tensor", "Dict[str, Tensor]"]:
                     graph.set_name(str(ivalue.type()).split(".")[-1])
                     continue
-                inputs, outputs = self.data(graph, node, ivalue.unique())
+                inputs, outputs = self.data(graph, node, ivalue.unique(), input_ct)
+                input_ct += 1
         # 转换中间节点
         for node in script_graph.nodes():
             kind = node.kind()
@@ -120,7 +129,7 @@ class PyTorchOpMapper(OpMapper):
                 graph.outputs = inputs_name
         # 更新split参数
         for layer in graph.layers.values():
-            if layer.kernel == "fluid.layers.split" and "num_or_sections" in layer.attrs:
+            if layer.kernel == "paddle.split" and "num_or_sections" in layer.attrs:
                 layer.attrs["num_or_sections"] = self.split_len[layer.outputs[
                     0]]
         return graph, graph_inputs
@@ -151,6 +160,7 @@ class PyTorchOpMapper(OpMapper):
                      node,
                      output_name,
                      node_outputs,
+                     scope_name,
                      add_dim=False):
         if node.kind() == "prim::GetAttr":
             param = self.pytorch_params[output_name]
@@ -159,10 +169,13 @@ class PyTorchOpMapper(OpMapper):
                     param = param[np.newaxis, :]
                 self.paddle_params[output_name] = param
                 graph.add_layer(
-                    "fluid.dygraph.base.to_variable",
+                    "self.create_parameter",
                     inputs={},
                     outputs=[output_name],
-                    value="params[{}]".format(string(output_name)))
+                    scope_name=scope_name,
+                    dtype=string(str(param.dtype)),
+                    shape = param.shape,
+                    default_initializer="paddle.nn.initializer.Constant(value=0.0)")
             else:
                 if isinstance(param, dict) and "Tensor" in param and \
                 "parent_layer_id" in param:
@@ -183,11 +196,13 @@ class PyTorchOpMapper(OpMapper):
                                             param = param[np.newaxis, :]
                                         self.paddle_params[output_name] = param
                                         graph.add_layer(
-                                            "fluid.dygraph.base.to_variable",
+                                            "self.create_parameter",
                                             inputs={},
                                             outputs=[output_name],
-                                            value="params[{}]".format(
-                                                string(output_name)))
+                                            scope_name=scope_name,
+                                            dtype=string(str(param.dtype)),
+                                            shape = param.shape,
+                                          default_initializer="paddle.nn.initializer.Constant(value=0.0)")
                                         node_outputs.append(output_name)
                                         return
                     # 若if-else外，则可直接引用if-else中的赋值结果
@@ -195,16 +210,30 @@ class PyTorchOpMapper(OpMapper):
                         "prim.constant",
                         inputs={},
                         outputs=[output_name],
+                        scope_name=scope_name,
                         value=param["Tensor"])
                 else:
                     graph.add_layer(
                         "prim.constant",
                         inputs={},
                         outputs=[output_name],
+                        scope_name=scope_name,
                         value=string(param)
                         if isinstance(param, str) else param)
             node_outputs.append(output_name)
+        elif node.kind() == "prim::Constant" and output_name in self.pytorch_params:
+            param = self.pytorch_params[output_name]
+            self.paddle_params[output_name] = param
+            graph.add_layer(
+                "self.create_parameter",
+                inputs={},
+                outputs=[output_name],
+                scope_name=scope_name,
+                dtype=string(str(param.dtype)),
+                shape = param.shape,
+                default_initializer="paddle.nn.initializer.Constant(value=0.0)")     
 
+            
     def _get_inputs_name(self, node):
         inputs_name = []
         inputs_node = []
@@ -215,8 +244,10 @@ class PyTorchOpMapper(OpMapper):
             inputs_node.append(script_input_node)
             inputs_name.append(input_name)
         return inputs_name, inputs_node
+    
 
-    def data(self, graph, node, uid):
+    def data(self, graph, node, uid, input_ct):
+        scope_name = self.normalize_scope_name(node)
         for output_ivalue in node.outputs():
             script_unique_id = output_ivalue.unique()
             if script_unique_id in self.outputs_info or script_unique_id != uid:
@@ -226,13 +257,18 @@ class PyTorchOpMapper(OpMapper):
             self.output_index += 1
         output_name = self.outputs_info[uid]
         graph.add_layer(
-            "fluid.dygraph.base.to_variable",
+            "paddle.to_tensor",
             inputs={},
             outputs=[node_name],
-            value=output_name)
+            scope_name=scope_name,
+            data=output_name)
+        if self.input_examples is not None:
+            input_np = self.input_examples[input_ct].detach().numpy()
+            self.inputs_info[output_name] = [list(input_np.shape), str(input_np.dtype)]
         return [], [output_name]
 
     def equal(self, graph, node, uid=None, parent_layer=None, index=None):
+        scope_name = self.normalize_scope_name(node)
         if parent_layer is not None and index is not None:
             # block的输出
             input_node_name = self.outputs_info[uid]
@@ -241,9 +277,61 @@ class PyTorchOpMapper(OpMapper):
                 control_output_id = index - 1
             output_node_name = parent_layer.outputs[control_output_id]
             current_outputs = [output_node_name]
-            self._check_input(graph, node, input_node_name, current_outputs)
+            self._check_input(graph, node, input_node_name, current_outputs, scope_name)
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},
-                outputs=[output_node_name])
+                outputs=[output_node_name],
+                scope_name=scope_name)
             return [input_node_name], current_outputs
+
+    def normalize_scope_name(self, node):
+        """ 对scope的名字进行标准化。
+        """
+        scope_name = node.scopeName()
+        if scope_name == "":
+            return scope_name
+        scope_name_part = scope_name.split("/")
+        for index in range(len(scope_name_part) - 1):
+            if scope_name_part[index] in scope_name_part[index + 1]:
+                continue
+            last_name_segments = scope_name_part[index].split(".")
+            name_segments = scope_name_part[index + 1].split(".")
+            for j, name in enumerate(last_name_segments):
+                name_segments[j] = name
+            scope_name_part[index + 1] = ".".join(name_segments)
+        last_name = scope_name_part[-1]
+        name_segments = last_name.split(".")
+        for i, ns in enumerate(name_segments):
+            if i not in self.scope_name2id:
+                self.scope_name2id[i] = dict()
+            if ns not in self.scope_name2id[i]:
+                self.scope_name2id[i][ns] = 0
+        real_scope_name = "/".join(name_segments[1:])
+        real_father_scope_name = "/".join(name_segments[1:-1])
+        
+        for i, ns in enumerate(name_segments):
+            if i == 0:
+                continue
+            if self.scope_name2id[i][ns] != 0:
+                name_segments[i] = name_segments[i] + \
+                "__{}".format(self.scope_name2id[i][ns])
+            prefix_scope_name = "/".join(name_segments[1 :i + 1])
+            is_found = False
+            for j in range(len(self.scope_name_list)):
+                last_scope_name = self.scope_name_list[-1-j]
+                if last_scope_name.startswith(prefix_scope_name + "/") \
+                        or last_scope_name == prefix_scope_name:
+                    if j != 0: # and i != len(name_segments) - 1:                        
+                        is_found = True
+                        origin_name_segment_i = name_segments[i].split("__")[0]
+                        self.scope_name2id[i][origin_name_segment_i] += 1
+                        name_segments[i] = origin_name_segment_i + \
+                            "__" + str(self.scope_name2id[i][origin_name_segment_i])
+                    break
+            if is_found:
+                break
+        real_scope_name = "/".join(name_segments[1:])
+        self.scope_name_list.append(real_scope_name)
+        return real_scope_name
+                
