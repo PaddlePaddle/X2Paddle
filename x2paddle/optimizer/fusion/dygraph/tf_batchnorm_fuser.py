@@ -24,6 +24,7 @@ class DygraphTFBatchNormFuser(FuseBase):
     def __init__(self):
         self.bn_index = 0
         super(DygraphTFBatchNormFuser, self).__init__(graph_type="dygraph")
+        self.patterns = list()
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm图结构。
@@ -34,57 +35,111 @@ class DygraphTFBatchNormFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(0)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.full",
             inputs={},
             outputs=[gen_name(1)],
             shape=[1])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.add",
             inputs={"x": gen_name(0), "y": gen_name(1)},
             outputs=[gen_name(2)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.rsqrt",
             inputs={"x": gen_name(2)},
             outputs=[gen_name(3)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(4)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.multiply",
             inputs={"x": gen_name(3), "y": gen_name(4)},
             outputs=[gen_name(5)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(6)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.multiply",
             inputs={"x": gen_name(6), "y": gen_name(5)},
             outputs=[gen_name(7)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(8)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "fluid.layers.elementwise_sub",
             inputs={"x": gen_name(8), "y": gen_name(7)},
             outputs=[gen_name(9)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.multiply",
             inputs={"x": "bn-input-0", "y": gen_name(5)},
             outputs=[gen_name(10)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.add",
             inputs={"x": gen_name(10), "y": gen_name(9)},
             outputs=[gen_name(11)])
-        self.pattern.build(inputs={"input-0": "bn-input-0", })
+        pattern.build(inputs={"input-0": "bn-input-0", })
+        self.patterns.append(pattern)
         
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(0)])
+        pattern.add_layer(
+            "paddle.full",
+            inputs={},
+            outputs=[gen_name(1)],
+            shape=[1])
+        pattern.add_layer(
+            "paddle.add",
+            inputs={"x": gen_name(0), "y": gen_name(1)},
+            outputs=[gen_name(2)])
+        pattern.add_layer(
+            "paddle.rsqrt",
+            inputs={"x": gen_name(2)},
+            outputs=[gen_name(3)])
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(4)])
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs={"x": gen_name(3), "y": gen_name(4)},
+            outputs=[gen_name(5)])
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs={"x": "bn-input-0", "y": gen_name(5)},
+            outputs=[gen_name(10)])
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(6)])
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs={"x": gen_name(6), "y": gen_name(5)},
+            outputs=[gen_name(7)])
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(8)])
+        pattern.add_layer(
+            "fluid.layers.elementwise_sub",
+            inputs={"x": gen_name(8), "y": gen_name(7)},
+            outputs=[gen_name(9)])
+        pattern.add_layer(
+            "paddle.add",
+            inputs={"x": gen_name(10), "y": gen_name(9)},
+            outputs=[gen_name(11)])
+        pattern.build(inputs={"input-0": "bn-input-0", })
+        self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layers, last_layer_id = self.gen_new_layer(matches, parameters, graph)
