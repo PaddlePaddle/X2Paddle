@@ -4,7 +4,7 @@
 ```
 python tools/check_for_lite.py paddle_model/inference_model/__model__
 ```
-
+> 附：check_for_lite工具并不能完全判断模型是否被支持，PaddleLite详细支持的算子请参考[PaddleLite支持算子集](https://github.com/PaddlePaddle/Paddle-Lite/blob/develop/docs/introduction/support_operation_list.md)
 
 ### 二、模型参数合并
 X2Paddle转换后产出的路径下包括两个目录，  
