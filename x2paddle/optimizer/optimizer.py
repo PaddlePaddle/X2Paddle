@@ -41,6 +41,7 @@ class GraphOptimizer(object):
             self.passes = [
                 "dygraph_conv2d_add_fuse_pass",
                 "dygraph_tf_batchnorm_fuse_pass",
+                "dygraph_prelu_fuse_pass",
                 "transpose_eliminate_pass"
             ]
         else:

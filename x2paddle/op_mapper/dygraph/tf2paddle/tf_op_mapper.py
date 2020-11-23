@@ -508,14 +508,6 @@ class TFOpMapper(OpMapper):
         param = self.graph.get_node(node.layer.input[1])
 
         input_name = input.name
-        if input.dtype == 'bool':
-            cast_name = gen_name('reshape', 'cast')
-            self.paddle_graph.add_layer(
-                kernel="paddle.cast",
-                inputs={"x": input_name},
-                outputs=[cast_name],
-                dtype="'int32'")
-            input_name = cast_name
 
         if param.layer_type == "Const":
             shape = param.value.tolist()
@@ -539,13 +531,6 @@ class TFOpMapper(OpMapper):
                     inputs={"x": node.name},
                     outputs=[node.name],
                     shape=out_shape.tolist())
-
-        if input.dtype == 'bool':
-            self.paddle_graph.add_layer(
-                kernel="paddle.cast",
-                inputs={"x": node.name},
-                outputs=[node.name],
-                dtype="'bool'")
 
     def Pad(self, node):
         input = self.graph.get_node(node.layer.input[0])
@@ -592,14 +577,6 @@ class TFOpMapper(OpMapper):
     def Shape(self, node):
         input = self.graph.get_node(node.layer.input[0])
         input_name = input.name
-        if input.dtype == 'bool':
-            cast_name = gen_name('shape', 'cast')
-            self.paddle_graph.add_layer(
-                kernel="paddle.cast",
-                inputs={"x": input.name},
-                outputs=[cast_name],
-                dtype=string("int32"))
-            input_name = cast_name
         self.paddle_graph.add_layer(
             kernel="paddle.shape",
             inputs={"input": input_name},
@@ -791,26 +768,11 @@ class TFOpMapper(OpMapper):
             axis += len(inputs[0].out_shapes[0])
 
         input_names = [i.name for i in inputs]
-        for i, ipt in enumerate(inputs):
-            if ipt.dtype == 'bool':
-                cast_name = gen_name('concat', 'cast')
-                self.paddle_graph.add_layer(
-                    kernel="paddle.cast",
-                    inputs={"x": ipt.name},
-                    outputs=[cast_name],
-                    dtype="'int32'")
-                input_names[i] = cast_name
         self.paddle_graph.add_layer(
             kernel="paddle.concat",
             inputs={"x": input_names},
             outputs=[node.name],
             axis=axis)
-        if node.dtype == 'bool':
-            self.paddle_graph.add_layer(
-                kernel="paddle.cast",
-                inputs={"x": node.name},
-                outputs=[node.name],
-                dtype="'bool'")
 
     def StridedSlice(self, node):
         input = self.graph.get_node(node.layer.input[0])

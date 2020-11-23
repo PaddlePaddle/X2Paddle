@@ -28,6 +28,8 @@ from .fc_fuser import DygraphFcFuser
 from .fc_fuse_pass import DygraphFcFusePass
 from .interpolate_bilinear_fuser import DygraphInterpolateBilinearFuser
 from .interpolate_bilinear_fuse_pass import DygraphInterpolateBilinearFusePass
+from .prelu_fuser import DygraphPReLUFuser
+from .prelu_fuse_pass import DygraphPReLUFusePass
 from .reshape_fuser import DygraphReshapeFuser
 from .reshape_fuse_pass import DygraphReshapeFusePass
 from .tf_batchnorm_fuser import DygraphTFBatchNormFuser
