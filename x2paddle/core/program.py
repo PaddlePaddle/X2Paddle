@@ -526,7 +526,8 @@ class PaddleGraph(object):
         for layer_id, layer in self.layers.items():
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
-                layer.kernel.startswith("custom_layer"):
+                layer.kernel.startswith("custom_layer") or \
+                layer.kernel.startswith("paddle.fluid.dygraph"):
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "paddle.to_tensor" and not layer.attrs[

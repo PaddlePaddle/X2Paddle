@@ -527,20 +527,16 @@ class CaffeOpMapper(OpMapper):
         assert len(
             node.inputs
         ) >= 1, "The count of Concat node\'s input is not more than 1."
-        inputs_dict = dict()
+        inputs_list = dict()
         for i in range(len(node.inputs)):
             input = self.graph.get_bottom_node(node, idx=i, copy=True)
-            inputs_dict["input{}".format(i)] = self.get_input_name(input)
+            inputs_list[i] = self.get_input_name(input)
         params = node.layer.concat_param
         axis = params.axis
         layer_attrs = {'axis': axis}
         self.paddle_graph.add_layer(
-            "prim.list",
-            inputs=inputs_dict,
-            outputs=[node.layer_name + "_list"])
-        self.paddle_graph.add_layer(
             "paddle.concat",
-            inputs={"x": node.layer_name + "_list"},
+            inputs={"x": inputs_list},
             outputs=[node.layer_name],
             **layer_attrs)
 
@@ -616,15 +612,15 @@ class CaffeOpMapper(OpMapper):
             if hasattr(params, 'coeff') and len(params.coeff) == 2:
                 coeff = params.coeff
                 self.paddle_graph.add_layer(
-                    "prim.mul",
+                    "paddle.scale",
                     inputs={"x": input0_name},
                     outputs=[node.layer_name + '_mul0'],
-                    y=coeff[0])
+                    scale=coeff[0])
                 self.paddle_graph.add_layer(
-                    "prim.mul",
+                    "paddle.scale",
                     inputs={"x": input1_name},
                     outputs=[node.layer_name + '_mul1'],
-                    y=coeff[2])
+                    scale=coeff[2])
                 inputs_dict = {}
                 inputs_dict['x'] = node.layer_name + '_mul0'
                 inputs_dict['y'] = node.layer_name + '_mul1'
@@ -760,7 +756,7 @@ class CaffeOpMapper(OpMapper):
             param2_shape = self.params[node.layer_name + "_cparam2"].shape
             param2_shape_len = len(param2_shape)
             diff_len = len(output_shape) - axis - param2_shape_len
-            new_shape = param2_shape + [1] * diff_len
+            new_shape = list(param2_shape) + [1] * diff_len
             self.paddle_graph.add_layer(
                 "paddle.reshape",
                 inputs={"x": node.layer_name + "_cparam2"},
@@ -806,13 +802,8 @@ class CaffeOpMapper(OpMapper):
                 outputs=[node.layer_name + "_index_var"],
                 dtype="{}_topk_var.dtype".format(node.layer_name))
             self.paddle_graph.add_layer(
-                "prim.list",
-                inputs={"input0": node.layer_name + "_topk_var",
-                        "input1": node.layer_name + "_index_var"},
-                outputs=[node.layer_name + "_list"])
-            self.paddle_graph.add_layer(
                 "paddle.concat",
-                inputs={"x": node.layer_name + "_list"},
+                inputs={"x": [node.layer_name + "_topk_var", node.layer_name + "_index_var"]},
                 outputs=[node.layer_name],
                 axis=axis)
         else:
