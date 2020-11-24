@@ -64,6 +64,12 @@ class ONNXGraphNode(GraphNode):
         if 'value' not in self.attr_map:
             return None
         return self.attr_map['value']
+    
+    @property
+    def name(self):
+        if hasattr(self, 'index'):
+            return "{}_p{}".format(self.layer_name, self.index)
+        return self.layer_name
 
     def get_attribute_value(self, attr):
         """
@@ -118,6 +124,10 @@ class ONNXGraphDataNode(GraphNode):
             out_shapes = list()
             out_shapes.append(values)
             return out_shapes
+        
+    @property
+    def name(self):
+        return self.layer_name
 
     @property
     def dtype(self):
@@ -308,6 +318,7 @@ class ONNXGraph(Graph):
             if ipt_node.layer_name in node.which_child:
                 ipt_node.index = node.which_child[ipt_node.layer_name]
             return ipt_node
+        
 
     def graph_weights(self):
         """
