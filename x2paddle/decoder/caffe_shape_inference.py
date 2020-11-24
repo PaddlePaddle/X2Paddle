@@ -83,6 +83,10 @@ def shape_convolution(layer, input_shape):
     return get_strided_kernel_output_shape(params, input_shape[0], math.floor)
 
 
+def shape_depthwiseconvolution(layer, input_shape):
+    return shape_convolution(layer, input_shape)
+
+
 def shape_deconvolution(layer, input_shape):
 
     h_i = input_shape[0][2]
