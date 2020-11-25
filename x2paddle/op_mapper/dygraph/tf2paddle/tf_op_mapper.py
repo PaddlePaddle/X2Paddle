@@ -153,7 +153,7 @@ class TFOpMapper(OpMapper):
         layer_attrs = dict()
         if len(op_info) > 1:
             attrs_name_map_dict = op_info[1]
-            for tf_attr_name, pd_attr_name in attrs_name_map_dict:
+            for tf_attr_name, pd_attr_name in attrs_name_map_dict.items():
                 layer_attrs[pd_attr_name] = node.get_attr(tf_attr_name)
         if paddle_op.startswith("paddle.nn"):
             op_name = paddle_op[10:].lower()
@@ -767,11 +767,12 @@ class TFOpMapper(OpMapper):
         inputs_list = list()
         for i in range(len(node.inputs) - 1):
             inputs_list.append(self.graph.get_input_node(node, i))
+#         inputs_list = [self.graph.get_node(name) for name in node.layer.input[:-1]]
         axis = self.graph.get_input_node(node, -1)
         assert axis.layer_type == "Const", "axis for ConcatV2 must be type Const"
         axis = axis.value
         if axis < 0:
-            axis += len(inputs[0].out_shapes[0])
+            axis += len(inputs_list[0].out_shapes[0])
 
         input_names = [i.name for i in inputs_list]
         self.paddle_graph.add_layer(
@@ -846,6 +847,13 @@ class TFOpMapper(OpMapper):
                 new_end.append(999999)
             else:
                 new_end.append(end[i])
+            
+        if input.dtype == "bool":
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": input.name},
+                outputs=[input.name],
+                dtype=string("int32"))
 
         self.paddle_graph.add_layer(
             kernel="paddle.slice",
@@ -854,6 +862,14 @@ class TFOpMapper(OpMapper):
             axes=[i for i in range(len(new_begin))],
             starts=new_begin,
             ends=new_end)
+        
+        if input.dtype == "bool":
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                dtype=string("bool"))
+
         if len(new_axes) > 0:
             self.paddle_graph.add_layer(
                 kernel="paddle.unsqueeze",
@@ -905,7 +921,7 @@ class TFOpMapper(OpMapper):
             #                 outputs=[reshape_name],
             #                 shape=shape)
             #             inputs['offsets'] = reshape_name
-            begin = self.decoder.infer_tensor(begin).tolist()
+            begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).to_list()
             attrs['offsets'] = begin
         if size.layer_type == "Const":
             size = size.value.tolist()

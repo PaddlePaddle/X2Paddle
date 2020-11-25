@@ -953,7 +953,6 @@ class OpSet9():
     @print_mapping_info
     def Split(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-
         paddle_op = 'split'
         split = node.get_attr('split')
         axis = node.get_attr('axis', 0)
@@ -963,11 +962,10 @@ class OpSet9():
         }
         outputs_list = list()
         if isinstance(split, list) or isinstance(split, tuple):
-            for i, s in enumerate(split):
-                outputs_list.append("{}_p{}".format(node.name, i))
+            for i in range(len(split)):
+                outputs_list.append("{}_p{}".format(node.layer_name, i))
         else:
             outputs_list.append(node.name)
-
         self.paddle_graph.add_layer(
             'paddle.split', 
             inputs={"x": val_x.name}, 
