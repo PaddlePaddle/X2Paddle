@@ -921,7 +921,7 @@ class TFOpMapper(OpMapper):
             #                 outputs=[reshape_name],
             #                 shape=shape)
             #             inputs['offsets'] = reshape_name
-            begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).to_list()
+            begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).tolist()
             attrs['offsets'] = begin
         if size.layer_type == "Const":
             size = size.value.tolist()
