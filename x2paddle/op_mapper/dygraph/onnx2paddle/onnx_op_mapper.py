@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from x2paddle.op_mapper.dygraph.onnx2paddle.opset9 import OpSet9
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.decoder.onnx_decoder import ONNXGraphNode
@@ -25,34 +26,33 @@ class ONNXOpMapper(OpMapper):
         self.default_op_set = 9
         self.graph = decoder.graph
         self.paddle_graph = PaddleGraph(parent_layer=None, graph_type="dygraph", source_type="onnx")
+        self.paddle_graph.outputs = self.graph.output_nodes
         self.opset = self.create_opset(decoder)
         if not self.op_checker():
-            raise Exception("Model are not supported yet.")
-        #mapping op
+            raise Exception("Model is not supported yet.")
+        
         print("Total nodes: {}".format(
             sum([
                 isinstance(node, ONNXGraphNode)
                 for name, node in self.graph.node_map.items()
             ])))
-
         print("Nodes converting ...")
-        for node_name in self.graph.topo_sort:
+        for i, node_name in enumerate(self.graph.topo_sort):
+            sys.stderr.write("\rConverting node {} ...     ".format(i + 1))
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if hasattr(self.opset, op):
                 func = getattr(self.opset, op)
                 func(node)
-            elif op in self.opset.default_op_mapping:
+            elif op in self.opset.directly_map_ops:
                 self.opset.directly_map(node)
             elif op in self.opset.elementwise_ops:
                 self.opset.elementwise_map(node)
-        print("Nodes converted.")
-        self.weights = self.opset.weights
-        self.inputs_info = self.opset.inputs_info
+        print("\nNodes converted.")
         self.paddle_graph.set_name(self.graph.graph_name)
-        self.paddle_graph.set_parameters(self.weights)
-        self.paddle_graph.set_inputs_info(self.inputs_info)
-        self.paddle_graph.outputs = self.graph.output_nodes
+        self.paddle_graph.set_parameters(self.opset.weights)
+        self.paddle_graph.set_inputs_info(self.opset.inputs_info)
+        
 
     def op_checker(self):
         unsupported_ops = set()
@@ -60,16 +60,17 @@ class ONNXOpMapper(OpMapper):
             node = self.graph.get_node(node_name)
             op = node.layer_type
             if not hasattr(self.opset, op) and \
-                op not in self.opset.default_op_mapping and \
+                op not in self.opset.directly_map_ops and \
                 op not in self.opset.elementwise_ops:
                 unsupported_ops.add(op)
         if len(unsupported_ops) == 0:
             return True
         else:
-            print("There are {} ops not supported yet, list as below".format(
-                len(unsupported_ops)))
+            if len(unsupported_ops) > 0:
+                print("\n========= {} OPs are not supported yet ===========".format(
+                    len(unsupported_ops)))
             for op in unsupported_ops:
-                print(op)
+                print("========== {} ============".format(op))
             return False
 
     def create_opset(self, decoder):
