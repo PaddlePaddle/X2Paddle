@@ -22,13 +22,7 @@ from x2paddle.core.util import *
 class DygraphInterpolateBilinearFuser(FuseBase):
     def __init__(self):
         super(DygraphInterpolateBilinearFuser, self).__init__(graph_type="dygraph")
-        import torch
-        torch_version = torch.__version__
-        torch_version_part = torch_version.split(".")
-        if int(torch_version_part[0]) == 1 and int(torch_version_part[1]) > 5:
-            self.version_gt_150 = True
-        else:
-            self.version_gt_150 = False
+        self.pattenrs = list()
 
     def build_pattern(self):
         """ 描述需要替换的双线性插值图结构。
@@ -72,201 +66,201 @@ class DygraphInterpolateBilinearFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        if self.version_gt_150:
-            self.pattern.add_layer(
-                "prim.shape",
-                inputs={"input": "interpolate-input-0"},
-                outputs=[gen_name(9)])
-            self.pattern.add_layer(
-                "prim.len",
-                inputs={"input": gen_name(9)},
-                outputs=[gen_name(9)])
-            self.pattern.add_layer(
-                "prim.sub",
-                inputs={"x": gen_name(9)},
-                outputs=[gen_name(10)],
-                y=2)
-            self.pattern.add_layer(
-                "prim.list", inputs={}, outputs=[gen_name(11)])
-            self.pattern.add_layer(
-                "prim.loop",
-                inputs={"input": gen_name(10)},
-                outputs=[gen_name(12.1), gen_name(12.2)])
-            loop_layer = self.pattern.layers[list(self.pattern.layers.keys())[
-                -1]]
-            pattern_block = PaddleGraph(loop_layer, graph_type="dygraph")
-            pattern_block.add_layer(
-                "prim.append",
-                inputs={"list": gen_name(11)},
-                outputs=[],
-                element=None)
-            loop_layer.inputs["input-0"] = gen_name(11)
-            loop_layer.add_block(pattern_block)
-            self.pattern.add_layer(
-                "prim.tuple",
-                inputs={
-                    "input0": "interpolate-input-0",
-                    "input1": "interpolate-input-4",
-                },
-                outputs=[gen_name(12)],
-                input2=None,
-                input3=None)
-            
-            self.pattern.add_layer(
-                "prim.eq",
-                inputs={"x": "interpolate-input-2"},
-                outputs=[gen_name(10.1)],
-                y=3)
-            
-            self.pattern.add_layer(
-                "prim.if",
-                inputs={"input": gen_name(10.1)},
-                outputs=[gen_name(14)])
-            if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[
-                -1]]
-            pattern_block = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
-            pattern_block.add_layer(
-                "prim.exception",
-                inputs={},
-                outputs=[gen_name(15)],
-                input="Exception")
-            pattern_block.add_layer(
-                "prim.equal", inputs={}, outputs=[gen_name(14)], input=None)
-            if_layer1.add_block(pattern_block)
-            pattern_block = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
-            pattern_block.add_layer(
-                "prim.shape",
-                inputs={"input": "interpolate-input-0"},
-                outputs=[gen_name(18)])
-            pattern_block.add_layer(
-                "prim.len",
-                inputs={"input": gen_name(18)},
-                outputs=[gen_name(18)])
-            pattern_block.add_layer(
-                "prim.eq",
-                inputs={"x": gen_name(18)},
-                outputs=[gen_name(19)],
-                y=4)
-            
-            
-            pattern_block.add_layer(
-                "prim.if",
-                inputs={"input": gen_name(19)},
-                outputs=[gen_name(20)])
-            if_layer2 = pattern_block.layers[list(pattern_block.layers.keys())[
-                -1]]
-            pattern_block_block = PaddleGraph(parent_layer=if_layer2, graph_type="dygraph")            
-            pattern_block_block.add_layer(
-                "prim.getitem",
-                inputs={"list": gen_name(11)},
-                outputs=[gen_name(21)],
-                element=0)
-            pattern_block_block.add_layer(
-                "prim.getitem",
-                inputs={"list": gen_name(11)},
-                outputs=[gen_name(22)],
-                element=1)
-            pattern_block_block.add_layer(
-                "prim.isinstance",
-                inputs={"input": "interpolate-input-3"},
-                outputs=["interpolate-input-0_isinstance"],
-                cls="paddle.fluid.Variable")
-            pattern_block_block.add_layer(
-                "prim.if", {"input": "interpolate-input-0_isinstance"},
-                outputs=["interpolate-input-0_if1"])
-            if_layer_isinstance = pattern_block_block.layers[list(
-                pattern_block_block.layers.keys())[-1]]
-            pattern_block_block_block = PaddleGraph(
-                if_layer_isinstance, graph_type="dygraph")
-            pattern_block_block_block.add_layer(
-                "prim.var2list",
-                inputs={"input": "interpolate-input-3"},
-                outputs=["interpolate-input-3"])
-            if_layer_isinstance.add_block(pattern_block_block_block)
-            pattern_block_block_block = PaddleGraph(
-                if_layer_isinstance, graph_type="dygraph")
-            if_layer_isinstance.add_block(pattern_block_block_block)
-            if_layer_isinstance.inputs["input-0"] = "interpolate-input-3"
-            pattern_block_block.add_layer(
-                "paddle.nn.functional.interpolate",
-                inputs={
-                    "input": "interpolate-input-0",
-                    "size": "interpolate-input-3",
-                    "scale_factor": gen_name(21)
-                },
-                outputs=[gen_name(23)])
-            pattern_block_block.add_layer(
-                "prim.equal",
-                inputs={"input": gen_name(23)},
-                outputs=[gen_name(20)])
-            if_layer2.add_block(pattern_block_block)
-            pattern_block_block = PaddleGraph(if_layer2, graph_type="dygraph")
-            pattern_block_block.add_layer(
-                "prim.shape",
-                inputs={"input": "interpolate-input-0"},
-                outputs=[gen_name(24)])
-            pattern_block_block.add_layer(
-                "prim.len",
-                inputs={"input": gen_name(24)},
-                outputs=[gen_name(24)])
-            pattern_block_block.add_layer(
-                "prim.eq",
-                inputs={"x": gen_name(24)},
-                outputs=[gen_name(25)],
-                y=5)
-            pattern_block_block.add_layer(
-                "prim.if",
-                inputs={"input": gen_name(25)},
-                outputs=[gen_name(26)])
-            if_layer3 = pattern_block_block.layers[list(
-                pattern_block_block.layers.keys())[-1]]
-            pattern_block_block_block = PaddleGraph(
-                parent_layer=if_layer3, graph_type="dygraph")
-            pattern_block_block_block.add_layer(
-                "prim.exception",
-                inputs={},
-                outputs=[gen_name(27)],
-                input="Exception")
-            if_layer3.add_block(pattern_block_block_block)
-            pattern_block_block_block = PaddleGraph(
-                parent_layer=if_layer3, graph_type="dygraph")
-            pattern_block_block_block.add_layer(
-                "prim.exception",
-                inputs={},
-                outputs=[gen_name(28)],
-                input="Exception")
-            if_layer3.add_block(pattern_block_block_block)
-            pattern_block_block.add_layer(
-                "prim.equal", inputs={}, outputs=[gen_name(20)], input=None)
-            if_layer2.add_block(pattern_block_block)
-            if_layer2.inputs.update({
-                "input-0": "interpolate-input-0",
-                "input-1": "interpolate-input-3",
-                "input-2": "interpolate-input-3",
-                "input-3": gen_name(11),
-                "input-5": gen_name(11),
-            })
-            pattern_block.add_layer(
-                "prim.equal",
-                inputs={"input": gen_name(20)},
-                outputs=[gen_name(14)])
-            if_layer1.add_block(pattern_block)
-            if_layer1.inputs.update({
-                'input-2': 'interpolate-input-0', 
-                'input-4': gen_name(11), 
-                'input-6': gen_name(11), 
-                'input-8': 'interpolate-input-0', 
-                'input-9': 'interpolate-input-3', 
-                'input-10': 'interpolate-input-0'
-            })
-            self.pattern.build(inputs={
-                "input-0": "interpolate-input-0",
-                "input-1": "interpolate-input-1",
-                "input-2": "interpolate-input-2",
-                "input-3": "interpolate-input-3",
-                "input-4": "interpolate-input-4"
-            })
-            
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "prim.shape",
+            inputs={"input": "interpolate-input-0"},
+            outputs=[gen_name(9)])
+        pattern.add_layer(
+            "prim.len",
+            inputs={"input": gen_name(9)},
+            outputs=[gen_name(9)])
+        pattern.add_layer(
+            "prim.sub",
+            inputs={"x": gen_name(9)},
+            outputs=[gen_name(10)],
+            y=2)
+        pattern.add_layer(
+            "prim.list", inputs={}, outputs=[gen_name(11)])
+        pattern.add_layer(
+            "prim.loop",
+            inputs={"input": gen_name(10)},
+            outputs=[gen_name(12.1), gen_name(12.2)])
+        loop_layer = pattern.layers[list(pattern.layers.keys())[
+            -1]]
+        pattern_block = PaddleGraph(loop_layer, graph_type="dygraph")
+        pattern_block.add_layer(
+            "prim.append",
+            inputs={"list": gen_name(11)},
+            outputs=[],
+            element=None)
+        loop_layer.inputs["input-0"] = gen_name(11)
+        loop_layer.add_block(pattern_block)
+        pattern.add_layer(
+            "prim.tuple",
+            inputs={
+                "input0": "interpolate-input-0",
+                "input1": "interpolate-input-4",
+            },
+            outputs=[gen_name(12)],
+            input2=None,
+            input3=None)
+
+        pattern.add_layer(
+            "prim.eq",
+            inputs={"x": "interpolate-input-2"},
+            outputs=[gen_name(10.1)],
+            y=3)
+
+        pattern.add_layer(
+            "prim.if",
+            inputs={"input": gen_name(10.1)},
+            outputs=[gen_name(14)])
+        if_layer1 = pattern.layers[list(pattern.layers.keys())[
+            -1]]
+        pattern_block = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
+        pattern_block.add_layer(
+            "prim.exception",
+            inputs={},
+            outputs=[gen_name(15)],
+            input="Exception")
+        pattern_block.add_layer(
+            "prim.equal", inputs={}, outputs=[gen_name(14)], input=None)
+        if_layer1.add_block(pattern_block)
+        pattern_block = PaddleGraph(parent_layer=if_layer1, graph_type="dygraph")
+        pattern_block.add_layer(
+            "prim.shape",
+            inputs={"input": "interpolate-input-0"},
+            outputs=[gen_name(18)])
+        pattern_block.add_layer(
+            "prim.len",
+            inputs={"input": gen_name(18)},
+            outputs=[gen_name(18)])
+        pattern_block.add_layer(
+            "prim.eq",
+            inputs={"x": gen_name(18)},
+            outputs=[gen_name(19)],
+            y=4)
+
+
+        pattern_block.add_layer(
+            "prim.if",
+            inputs={"input": gen_name(19)},
+            outputs=[gen_name(20)])
+        if_layer2 = pattern_block.layers[list(pattern_block.layers.keys())[
+            -1]]
+        pattern_block_block = PaddleGraph(parent_layer=if_layer2, graph_type="dygraph")            
+        pattern_block_block.add_layer(
+            "prim.getitem",
+            inputs={"list": gen_name(11)},
+            outputs=[gen_name(21)],
+            element=0)
+        pattern_block_block.add_layer(
+            "prim.getitem",
+            inputs={"list": gen_name(11)},
+            outputs=[gen_name(22)],
+            element=1)
+        pattern_block_block.add_layer(
+            "prim.isinstance",
+            inputs={"input": "interpolate-input-3"},
+            outputs=["interpolate-input-0_isinstance"],
+            cls="paddle.fluid.Variable")
+        pattern_block_block.add_layer(
+            "prim.if", {"input": "interpolate-input-0_isinstance"},
+            outputs=["interpolate-input-0_if1"])
+        if_layer_isinstance = pattern_block_block.layers[list(
+            pattern_block_block.layers.keys())[-1]]
+        pattern_block_block_block = PaddleGraph(
+            if_layer_isinstance, graph_type="dygraph")
+        pattern_block_block_block.add_layer(
+            "prim.var2list",
+            inputs={"input": "interpolate-input-3"},
+            outputs=["interpolate-input-3"])
+        if_layer_isinstance.add_block(pattern_block_block_block)
+        pattern_block_block_block = PaddleGraph(
+            if_layer_isinstance, graph_type="dygraph")
+        if_layer_isinstance.add_block(pattern_block_block_block)
+        if_layer_isinstance.inputs["input-0"] = "interpolate-input-3"
+        pattern_block_block.add_layer(
+            "paddle.nn.functional.interpolate",
+            inputs={
+                "input": "interpolate-input-0",
+                "size": "interpolate-input-3",
+                "scale_factor": gen_name(21)
+            },
+            outputs=[gen_name(23)])
+        pattern_block_block.add_layer(
+            "prim.equal",
+            inputs={"input": gen_name(23)},
+            outputs=[gen_name(20)])
+        if_layer2.add_block(pattern_block_block)
+        pattern_block_block = PaddleGraph(if_layer2, graph_type="dygraph")
+        pattern_block_block.add_layer(
+            "prim.shape",
+            inputs={"input": "interpolate-input-0"},
+            outputs=[gen_name(24)])
+        pattern_block_block.add_layer(
+            "prim.len",
+            inputs={"input": gen_name(24)},
+            outputs=[gen_name(24)])
+        pattern_block_block.add_layer(
+            "prim.eq",
+            inputs={"x": gen_name(24)},
+            outputs=[gen_name(25)],
+            y=5)
+        pattern_block_block.add_layer(
+            "prim.if",
+            inputs={"input": gen_name(25)},
+            outputs=[gen_name(26)])
+        if_layer3 = pattern_block_block.layers[list(
+            pattern_block_block.layers.keys())[-1]]
+        pattern_block_block_block = PaddleGraph(
+            parent_layer=if_layer3, graph_type="dygraph")
+        pattern_block_block_block.add_layer(
+            "prim.exception",
+            inputs={},
+            outputs=[gen_name(27)],
+            input="Exception")
+        if_layer3.add_block(pattern_block_block_block)
+        pattern_block_block_block = PaddleGraph(
+            parent_layer=if_layer3, graph_type="dygraph")
+        pattern_block_block_block.add_layer(
+            "prim.exception",
+            inputs={},
+            outputs=[gen_name(28)],
+            input="Exception")
+        if_layer3.add_block(pattern_block_block_block)
+        pattern_block_block.add_layer(
+            "prim.equal", inputs={}, outputs=[gen_name(20)], input=None)
+        if_layer2.add_block(pattern_block_block)
+        if_layer2.inputs.update({
+            "input-0": "interpolate-input-0",
+            "input-1": "interpolate-input-3",
+            "input-2": "interpolate-input-3",
+            "input-3": gen_name(11),
+            "input-5": gen_name(11),
+        })
+        pattern_block.add_layer(
+            "prim.equal",
+            inputs={"input": gen_name(20)},
+            outputs=[gen_name(14)])
+        if_layer1.add_block(pattern_block)
+        if_layer1.inputs.update({
+            'input-2': 'interpolate-input-0', 
+            'input-4': gen_name(11), 
+            'input-6': gen_name(11), 
+            'input-8': 'interpolate-input-0', 
+            'input-9': 'interpolate-input-3', 
+            'input-10': 'interpolate-input-0'
+        })
+        pattern.build(inputs={
+            "input-0": "interpolate-input-0",
+            "input-1": "interpolate-input-1",
+            "input-2": "interpolate-input-2",
+            "input-3": "interpolate-input-3",
+            "input-4": "interpolate-input-4"
+        })
+        self.patterns.append(pattern)
             
             
 
