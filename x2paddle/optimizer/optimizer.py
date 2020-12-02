@@ -21,7 +21,8 @@ class GraphOptimizer(object):
     def __init__(self, source_frame, paddle_type="dygraph", jit_type="trace"):
         if source_frame == "pytorch":
             if jit_type == "trace":
-                self.passes = ["trace_fc_fuse_pass"]
+                self.passes = ["dygraph_constant_fuse_pass", 
+                               "trace_fc_fuse_pass"]
             else:
                 self.passes = [
                     "dygraph_constant_fuse_pass", 

@@ -447,6 +447,9 @@ class PaddleGraph(object):
             if self.source_type == "caffe":
                 custom_import = "from x2paddle.op_mapper.dygraph.caffe2paddle " + \
                                  "import caffe_custom_layer as x2paddle_nn"
+            elif self.source_type == "pytorch":
+                custom_import = "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
+                                 "import pytorch_custom_layer as x2paddle_nn"
             else:
                 custom_import = ""
             self.head = gen_codes(
@@ -455,6 +458,7 @@ class PaddleGraph(object):
                     "from paddle.fluid.param_attr import ParamAttr",
                     "import paddle",
                     "import paddle.fluid as fluid",
+                    "import math",
                     custom_import,
                     "",
                     "class {}(paddle.nn.Layer):".format(self.name),
@@ -590,7 +594,10 @@ class PaddleGraph(object):
                     if isinstance(v, list):
                         line += "{}=[{}], ".format(k, ", ".join(v))
                     else:
-                        line += "{}={}, ".format(k, v)
+                        if k == "args":
+                            line += v
+                        else:
+                            line += "{}={}, ".format(k, v)
                 for k, v in layer.attrs.items():
                     line += "{}={}, ".format(k, v)
                 line = line.strip(", ")

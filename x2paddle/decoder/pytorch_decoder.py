@@ -21,14 +21,14 @@ import numpy as np
 class Decoder(object):
      def _optimize_graph(self, graph):
         torch._C._jit_pass_constant_propagation(graph)
-        torch._C._jit_pass_dce(graph)
-        torch._C._jit_pass_lint(graph)
-        torch._C._jit_pass_peephole(graph)
-        torch._C._jit_pass_lint(graph)
-        torch._C._jit_pass_dce(graph)
-        torch._C._jit_pass_lint(graph)
-        torch._C._jit_pass_canonicalize(graph)
-        torch._C._jit_pass_lint(graph)
+#         torch._C._jit_pass_dce(graph)
+#         torch._C._jit_pass_lint(graph)
+#         torch._C._jit_pass_peephole(graph)
+#         torch._C._jit_pass_lint(graph)
+#         torch._C._jit_pass_dce(graph)
+#         torch._C._jit_pass_lint(graph)
+#         torch._C._jit_pass_canonicalize(graph)
+#         torch._C._jit_pass_lint(graph)
         torch._C._jit_pass_constant_propagation(graph)
         return graph       
 

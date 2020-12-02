@@ -180,7 +180,7 @@ def prim_float(layer, indent=1, init_func=[], forward_func=[], layer_id=None, di
 
 def prim_floor(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
     line = "{} = math.floor({})".format(layer.outputs[0],
-                                        get_value(layer, "input", different_attrs))
+                                        get_value(layer, "x", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -404,6 +404,13 @@ def prim_slice(layer, indent=1, init_func=[], forward_func=[], layer_id=None, di
                                         get_value(layer, "end", different_attrs),
                                         get_value(layer, "step", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
+    
+    
+def prim_startswith(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+    line = "{} = {}.startswith({})".format(layer.outputs[0],
+                                           get_value(layer, "input", different_attrs),
+                                           get_value(layer, "start_str", different_attrs))
+    forward_func.extend(gen_codes([line], indent=indent))
 
 
 def prim_str(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
@@ -451,3 +458,4 @@ def prim_warnings(layer, indent=1, init_func=[], forward_func=[], layer_id=None,
         get_value(layer, "input", different_attrs), layer.attrs["stacklevel"])
     lines.append(line)
     forward_func.extend(gen_codes(lines, indent=indent))
+    
