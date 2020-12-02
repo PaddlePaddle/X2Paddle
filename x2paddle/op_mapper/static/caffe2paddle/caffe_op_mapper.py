@@ -231,7 +231,7 @@ class CaffeOpMapper(OpMapper):
             self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of Convolution node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         layer_attrs = {
             'filter_size': kernel,
             'num_filters': channel,
@@ -273,7 +273,7 @@ class CaffeOpMapper(OpMapper):
             self.weights[node.layer_name + '_bias'] = data[1]
         assert len(node.inputs
                    ) == 1, 'The count of Deconvolution node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         layer_attrs = {
             'output_size': None,
             'filter_size': kernel,
@@ -306,7 +306,7 @@ class CaffeOpMapper(OpMapper):
             pool_type = 'avg'
         assert len(
             node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         layer_attrs = {
             'pool_size': kernel,
             'pool_stride': stride,
@@ -333,7 +333,7 @@ class CaffeOpMapper(OpMapper):
         # just scales by alpha (as does Krizhevsky's paper).
         # We'll account for that here.
         alpha = params.alpha / float(params.local_size)
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         layer_attrs = {
             'n': params.local_size,
             'k': params.k,
@@ -381,7 +381,7 @@ class CaffeOpMapper(OpMapper):
         #params = node.layer.inner_product_param
         assert params.axis == 1
         assert params.bias_term == True
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         layer_attrs = {
             'size': params.num_output,
             'name': string(node.layer_name),
@@ -399,7 +399,7 @@ class CaffeOpMapper(OpMapper):
     def Softmax(self, node):
         assert len(
             node.inputs) == 1, 'The count of Softmax node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.softmax_param
         axis = params.axis
         shape = node.input_shape[0]
@@ -415,7 +415,7 @@ class CaffeOpMapper(OpMapper):
     def Slice(self, node):
         assert len(
             node.inputs) == 1, 'The count of Slice node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         top_len = len(node.layer.top)
         params = node.layer.slice_param
         axis = params.axis
@@ -445,7 +445,7 @@ class CaffeOpMapper(OpMapper):
         ) >= 1, 'The count of Concat node\'s input is not more than 1.'
         inputs_list = []
         for i in range(len(node.inputs)):
-            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            input = self.graph.get_input_node(node, idx=i, copy=True)
             inputs_list.append(self.get_input_name(input))
         params = node.layer.concat_param
         axis = params.axis
@@ -464,7 +464,7 @@ class CaffeOpMapper(OpMapper):
         """
         assert len(
             node.inputs) == 1, 'The count of ReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
 
         params = node.layer.relu_param
         if params.HasField('negative_slope') and params.negative_slope != 0:
@@ -483,7 +483,7 @@ class CaffeOpMapper(OpMapper):
     def PReLU(self, node):
         assert len(
             node.inputs) == 1, 'The count of PReLU node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.prelu_param
         mode_bool = params.channel_shared
         if mode_bool:
@@ -511,10 +511,10 @@ class CaffeOpMapper(OpMapper):
         inputs_dict = dict()
         for i, shape in enumerate(node.input_shape):
             if shape[1] == 1:
-                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                input = self.graph.get_input_node(node, idx=i, copy=True)
                 inputs_dict["label"] = self.get_input_name(input)
             else:
-                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                input = self.graph.get_input_node(node, idx=i, copy=True)
                 inputs_dict["input"] = self.get_input_name(input)
         params = node.layer.accuracy_param
         top_k = params.top_k
@@ -534,9 +534,9 @@ class CaffeOpMapper(OpMapper):
         params = node.layer.eltwise_param
         mode = params.operation
         inputs = []
-        input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input0 = self.graph.get_input_node(node, idx=0, copy=True)
         inputs.append(input0)
-        input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+        input1 = self.graph.get_input_node(node, idx=1, copy=True)
         inputs.append(input1)
         if mode == 0:
             inputs_dict = {}
@@ -606,7 +606,7 @@ class CaffeOpMapper(OpMapper):
     def BatchNorm(self, node):
         assert len(
             node.inputs) == 1, 'The count of BatchNorm node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.batch_norm_param
         if hasattr(params, 'eps'):
             eps = params.eps
@@ -670,8 +670,8 @@ class CaffeOpMapper(OpMapper):
             # for two tensor, here resets axis to 1. Maybe there is a bug for unkown case.
             axis = 1
             bias_shape = node.input_shape[0][axis:axis + num_axes]
-            input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
-            input1 = self.graph.get_bottom_node(node, idx=1, copy=True)
+            input0 = self.graph.get_input_node(node, idx=0, copy=True)
+            input1 = self.graph.get_input_node(node, idx=1, copy=True)
             inputs_dict = {}
             inputs_dict['x'] = self.get_input_name(input0)
             inputs_dict['y'] = self.get_input_name(input1)
@@ -682,7 +682,7 @@ class CaffeOpMapper(OpMapper):
                 axis=axis)
         else:
             bias_shape = node.input_shape[0][axis:axis + num_axes]
-            input0 = self.graph.get_bottom_node(node, idx=0, copy=True)
+            input0 = self.graph.get_input_node(node, idx=0, copy=True)
             input0_name = self.get_input_name(input0)
             self.paddle_graph.add_layer(
                 kernel="fluid.ParamAttr",
@@ -739,7 +739,7 @@ class CaffeOpMapper(OpMapper):
         
 
     def Reshape(self, node):
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         top_count = len(input.layer.top)
         is_inplace = False if top_count == 1 else True
         output_shape = node.output_shape[0]
@@ -759,7 +759,7 @@ class CaffeOpMapper(OpMapper):
         assert len(node.inputs) == 1 and len(
             node.outputs
         ) == 1, 'The count of ArgMax node\'s input and output is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         input_shape = node.input_shape[0]
         params = node.layer.argmax_param
         out_max_val = params.out_max_val if hasattr(params,
@@ -796,8 +796,8 @@ class CaffeOpMapper(OpMapper):
     def Crop(self, node):
         assert len(
             node.inputs) == 2, 'The count of Crop node\'s input is not 2.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
-        example = self.graph.get_bottom_node(node, idx=1, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        example = self.graph.get_input_node(node, idx=1, copy=True)
         params = node.layer.crop_param
         axis = params.axis
         input_shape = node.input_shape[0]
@@ -822,7 +822,7 @@ class CaffeOpMapper(OpMapper):
         assert len(
             node.
             inputs) == 1, 'The count of DetectionOutput node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
             kernel="fluid.layers.reshape",
             inputs={"x": self.get_input_name(input)},
@@ -832,7 +832,7 @@ class CaffeOpMapper(OpMapper):
     def Power(self, node):
         assert len(
             node.inputs) == 1, 'The count of Permute node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.power_param
         power = params.power
         scale = params.scale
@@ -857,7 +857,7 @@ class CaffeOpMapper(OpMapper):
     def Reduction(self, node):
         assert len(
             node.inputs) == 1, 'The count of Reduction node\'s input is not 1.'
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.reduction_param
         operation = params.operation
         axis = params.axis
@@ -942,15 +942,15 @@ class CaffeOpMapper(OpMapper):
                 self.weights[weights_name[i]] = data[i]
         inputs_list = []
         for i in range(len(node.inputs)):
-            input = self.graph.get_bottom_node(node, idx=i, copy=True)
+            input = self.graph.get_input_node(node, idx=i, copy=True)
             if i == 1 and op == 'DetectionOutput':
-                input = self.graph.get_bottom_node(node, idx=i, copy=True)
+                input = self.graph.get_input_node(node, idx=i, copy=True)
                 while input is not None \
                       and input.layer_type != 'Softmax' \
                       and input.layer_type != 'Sigmoid':
-                    input = self.graph.get_bottom_node(input, idx=0, copy=True)
+                    input = self.graph.get_input_node(input, idx=0, copy=True)
                 assert input is not None, 'This kind of DetectionOutput is not supported!'
-                input = self.graph.get_bottom_node(input, idx=0, copy=True)
+                input = self.graph.get_input_node(input, idx=0, copy=True)
             inputs_list.append(self.get_input_name(input))
         kwargs_tmp = copy.deepcopy(kwargs)
         for k, v in kwargs_tmp.items():
@@ -970,7 +970,7 @@ class CaffeOpMapper(OpMapper):
     def directly_map(self, node):
         assert node.layer_type in self.directly_map_ops
         op_info = self.directly_map_ops[node.layer_type]
-        input = self.graph.get_bottom_node(node, idx=0, copy=True)
+        input = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
             kernel=op_info,
             inputs={"x": self.get_input_name(input)},

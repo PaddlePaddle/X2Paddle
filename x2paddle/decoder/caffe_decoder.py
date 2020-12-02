@@ -18,6 +18,7 @@ from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.core.fluid_code import FluidCode
+from x2paddle.decoder import caffe_shape_inference
 
 
 class CaffeResolver(object):
@@ -59,6 +60,28 @@ class CaffeGraphNode(GraphNode):
 
     def set_params(self, params):
         self.data = params
+        
+    @property
+    def name(self):
+        if hasattr(self, 'index'):
+            return "{}_p{}".format(self.layer_name, self.index)
+        return self.layer_name
+    
+    @property
+    def out_shapes(self):
+        return self._out_shapes
+
+    @out_shapes.setter
+    def out_shapes(self, value):
+        self._out_shapes = value
+        
+    @property
+    def in_shapes(self):
+        return self._in_shapes
+
+    @in_shapes.setter
+    def in_shapes(self, value):
+        self._in_shapes = value
 
 
 class CaffeGraph(Graph):
@@ -226,8 +249,11 @@ class CaffeGraph(Graph):
                        layer_name)
 
         super(CaffeGraph, self).build()
+        for i, node_name in enumerate(self.topo_sort):
+            node = self.get_node(node_name)
+            self.set_node_shape(node)
 
-    def get_bottom_node(self, node, idx=0, copy=False):
+    def get_input_node(self, node, idx=0, copy=False):
         input_node_name = node.inputs[idx]
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
@@ -238,6 +264,19 @@ class CaffeGraph(Graph):
         else:
             name = input_node_name
         return self.get_node(name, copy=copy)
+    
+    def set_node_shape(self, node):
+        inputs = node.inputs
+        input_shape = []
+        for i, nm in enumerate(inputs):
+            last_node = self.get_node(nm)
+            tmp = node.layer.bottom[i]
+            idx = list(last_node.layer.top).index(tmp)
+            input_shape.append(last_node.out_shapes[idx])
+        node.in_shapes = input_shape
+        func_name = 'shape_' + node.layer_type.lower()
+        node.out_shapes = getattr(caffe_shape_inference, func_name)(node.layer,
+                                                                    input_shape)
 
 
 class CaffeDecoder(object):

@@ -14,7 +14,7 @@ treelib
 
 ## 使用方式
 
-```
+``` python
 from x2paddle.convert import pytorch2paddle
 pytorch2paddle(module=torch_module, 
                save_dir="./pd_model", 
@@ -31,7 +31,7 @@ pytorch2paddle(module=torch_module,
 
 ## 使用示例
 
-```
+``` python
 import torch
 import numpy as np
 from torchvision.models import AlexNet

@@ -359,7 +359,7 @@ class TFOpMapper(OpMapper):
             kernel_value = kernel.value
             kernel_weight_name = kernel.name.replace('/', '_')
         else:
-            kernel_value = self.decoder.infer_tensor(kernel)
+            kernel_value = self.decoder.infer_tensor(kernel, use_diff_inputs=False)
             if kernel.layer_type == 'Split':
                 kernel_weight_name = "{}_{}_kernel".format(node.name,
                                                            kernel.name)
@@ -781,15 +781,15 @@ class TFOpMapper(OpMapper):
         if strides.layer_type == "Const":
             strides = strides.value.tolist()
         else:
-            strides = self.decoder.infer_shape_tensor(strides)
+            strides = self.decoder.infer_tensor(strides)
         if begin.layer_type == "Const":
             begin = begin.value.tolist()
         else:
-            begin = self.decoder.infer_shape_tensor(begin)
+            begin = self.decoder.infer_tensor(begin)
         if end.layer_type == "Const":
             end = end.value.tolist()
         else:
-            end = self.decoder.infer_shape_tensor(end)
+            end = self.decoder.infer_tensor(end)
 
         assert len(set(strides)) == 1 and strides[
             0] == 1, "Only support strides be 1 in StridedSlice OP"
@@ -897,7 +897,7 @@ class TFOpMapper(OpMapper):
             #                 outputs=[reshape_name],
             #                 shape=shape)
             #             inputs['offsets'] = reshape_name
-            begin = self.decoder.infer_tensor(begin).tolist()
+            begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).tolist()
             attrs['offsets'] = begin
         if size.layer_type == "Const":
             size = size.value.tolist()
@@ -1066,15 +1066,15 @@ class TFOpMapper(OpMapper):
         if out_shape.layer_type == "Const":
             out_shape = out_shape.value.tolist()
         else:
-            out_shape = self.decoder.infer_shape_tensor(out_shape,
-                                                        node.out_shapes[0])
+            out_shape = self.decoder.infer_tensor(out_shape,
+                                                  out_shape=node.out_shapes[0])
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(input).shape
+            in_shape = self.decoder.infer_tensor(input, use_diff_inputs=False).shape
         k_size = kernel.out_shapes[0]
         if k_size.count(-1) > 2:
-            k_size = self.decoder.infer_tensor(kernel).shape
+            k_size = self.decoder.infer_tensor(input, use_diff_inputs=False).shape
 
         pad_mode = node.get_attr("padding").decode()
         strides = node.get_attr("strides")

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import copy
+import numpy as np
 from x2paddle.core.util import *
 from x2paddle.core.program import PaddleGraph
 
@@ -926,7 +927,7 @@ def aten_conv2d(mapper, graph, node):
         %27 (Tensor): bias。
         %28 (int): 步长大小。
         %29 (int): 填充大小。
-        %30 (int): 膨胀系数大小。
+        %30 (int): 空洞大小。
         %26 (int): 卷积的组数。
     """
     scope_name = mapper.normalize_scope_name(node)
@@ -988,7 +989,7 @@ def aten__convolution(mapper, graph, node):
         %10 (Tensor): bias。
         %19 (list): 步长大小。
         %20 (list): 填充大小。
-        %21 (list): 膨胀系数大小。
+        %21 (list): 空洞大小。
         %13 (bool): 是否进行转置卷积。
         %22 (list): 输出形状上一侧额外添加的大小。
         %12 (int): 卷积的组数。
@@ -1009,9 +1010,12 @@ def aten__convolution(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%18
     weights = mapper.pytorch_params[inputs_name[1]]
-    mapper.paddle_params[op_name + ".weight"] = weights
-    layer_attrs["out_channels"] = weights.shape[0]
-    layer_attrs["kernel_size"] = weights.shape[2:]
+    mapper.paddle_params[op_name + ".weight"] = weights #np.swapaxes(weights, 0, 1)
+    if mapper.attrs[inputs_name[6]]:
+        layer_attrs["out_channels"] = weights.shape[1]
+    else:
+        layer_attrs["out_channels"] = weights.shape[0]
+    layer_attrs["kernel_size"] = weights.shape[2:]    
     # 处理输入2，即%10
     if inputs_name[2] in mapper.pytorch_params:
         bias = mapper.pytorch_params[inputs_name[2]]
@@ -1033,8 +1037,12 @@ def aten__convolution(mapper, graph, node):
         layer_attrs["output_padding"] = mapper.attrs[inputs_name[7]]
     # 处理输入8，即%12
     layer_attrs["groups"] = mapper.attrs[inputs_name[8]]
-    layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[inputs_name[
-        8]]
+    if mapper.attrs[inputs_name[6]]:
+        layer_attrs['in_channels'] = weights.shape[0] * mapper.attrs[inputs_name[
+            8]]
+    else:
+        layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[inputs_name[
+            8]]
     if mapper.attrs[inputs_name[6]]:
         graph.add_layer(
             "paddle.nn.Conv2DTranspose",
@@ -1049,6 +1057,71 @@ def aten__convolution(mapper, graph, node):
             outputs=layer_outputs,
             scope_name=scope_name,
             **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_conv_transpose2d(mapper, graph, node):
+    """ 构造conv_transpose2d的PaddleLayer。
+
+    TorchScript示例:
+        %input.10 : Tensor = aten::conv_transpose2d(%input.1, %18, %10, %19, %20, %21, %13, %22)
+        参数含义:
+        %input.10 (Tensor): 输出，卷积后的结果。
+        %input.8 (Tensor): 需要进行卷积的特征层。
+        %18 (Tensor): weights。
+        %10 (Tensor): bias。
+        %19 (list): 步长大小。
+        %20 (list): 填充大小。
+        %21 (int/tuple): 输出形状上一侧额外添加的大小。
+        %13 (int): 二维卷积层的组数。
+        %22 (int/tuple): 空洞大小。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("conv2d", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.8
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%18
+    weights = mapper.pytorch_params[inputs_name[1]]
+    mapper.paddle_params[op_name + ".weight"] = weights
+    layer_attrs["out_channels"] = weights.shape[1]
+    layer_attrs["kernel_size"] = weights.shape[2:]
+    # 处理输入2，即%10
+    if inputs_name[2] in mapper.pytorch_params:
+        bias = mapper.pytorch_params[inputs_name[2]]
+        if bias is not None:
+            mapper.paddle_params[op_name + ".bias"] = bias
+        else:
+            layer_attrs["bias_attr"] = False
+    else:
+        layer_attrs["bias_attr"] = False
+    # 处理输入3，即%19
+    layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
+    # 处理输入4，即%20
+    layer_attrs["padding"] = mapper.attrs[inputs_name[4]]
+    # 处理输入5，即%21
+    layer_attrs["output_padding"] = mapper.attrs[inputs_name[5]]
+    # 处理输入6，即%13
+    layer_attrs["groups"] = mapper.attrs[inputs_name[6]]
+    # 处理输入7，即%22
+    layer_attrs["dilation"] = mapper.attrs[inputs_name[7]]
+    layer_attrs['in_channels'] = weights.shape[0] * mapper.attrs[inputs_name[
+            6]]
+    graph.add_layer(
+        "paddle.nn.Conv2DTranspose",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 

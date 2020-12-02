@@ -1,3 +1,4 @@
+# -*- coding:UTF-8 -*-
 #   Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
@@ -20,6 +21,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Conv2D": "conv",
                   "paddle.nn.Embedding": "embedding",
                   "paddle.nn.Linear": "linear",
+                  "paddle.nn.Conv2DTranspose": "conv",
                   "paddle.nn.ReLU": "relu",
                   "paddle.nn.ReLU6": "relu",
                   "paddle.nn.Softmax": "softmax",
@@ -34,7 +36,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
-NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:5]
+NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:6]
 
 def rename_layers(layers, param_tree=None):
     """ 对子模块的输入输出等进行重命名。
