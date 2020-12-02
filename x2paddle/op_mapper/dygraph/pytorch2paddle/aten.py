@@ -1589,66 +1589,6 @@ def aten_expand(mapper, graph, node):
         outputs=layer_outputs, 
         scope_name=scope_name,
         **layer_attrs)
-
-#     graph.add_layer(
-#         "prim.type",
-#         inputs={"input": inputs_name[0]},
-#         outputs=[inputs_name[0] + "_type"],
-#         scope_name=scope_name)
-#     graph.add_layer(
-#         "prim.str",
-#         inputs={"input": inputs_name[0] + "_type"},
-#         outputs=[inputs_name[0] + "_type"],
-#         scope_name=scope_name)
-#     graph.add_layer(
-#         "prim.eq",
-#         inputs={"x": inputs_name[0] + "_type"},
-#         outputs=[inputs_name[0] + "_cond"],
-#         scope_name=scope_name,
-#         y=string("VarType.BOOL"))
-#     graph.add_layer(
-#         "prim.if", {'input': inputs_name[0] + "_cond"},
-#         outputs=[inputs_name[0] + "_if1", inputs_name[1] + "_var"],
-#         scope_name=scope_name)
-#     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-#     block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
-#     block.add_layer(
-#         "paddle.cast",
-#         inputs={"x": inputs_name[0]},
-#         outputs=[inputs_name[0]],
-#         scope_name=scope_name,
-#         dtype=string("int64"))
-#     block.add_layer(
-#         "paddle.zeros",
-#         inputs={"shape": inputs_name[1]},
-#         outputs=[inputs_name[1] + "_var"],
-#         scope_name=scope_name,
-#         dtype=string("int64"))
-#     if_layer.add_block(block)
-#     block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
-#     block.add_layer(
-#         "prim.type",
-#         inputs={"input": inputs_name[0]},
-#         outputs=[inputs_name[0] + "_type"],
-#         scope_name=scope_name)
-#     block.add_layer(
-#         "paddle.zeros",
-#         inputs={"shape": inputs_name[1]},
-#         outputs=[inputs_name[1] + "_var"],
-#         scope_name=scope_name,
-#         dtype=inputs_name[0] + "_type")
-#     if_layer.add_block(block)
-#     if_layer.inputs["input-0"] = inputs_name[0]
-#     if_layer.inputs["input-1"] = inputs_name[1]
-
-#     layer_inputs["y"] = inputs_name[1] + "_var"
-#     current_outputs.append(inputs_name[1] + "_var")
-#     # 获取当前节点输入的list
-#     current_inputs = list(layer_inputs.values())
-#     current_inputs.append(inputs_name[1])
-
-#     graph.add_layer(
-#         "paddle.expand_as", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
