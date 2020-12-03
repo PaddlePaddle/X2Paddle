@@ -402,7 +402,7 @@ class TFDecoder(object):
                 right_shape_been_input = False
                 while not right_shape_been_input:
                     try:
-                        shape = raw_input(
+                        shape = input(
                             "Shape of Input(e.g. None,224,224,3): ")
                     except:
                         shape = input("Shape of Input(e.g. None,224,224,3): ")
