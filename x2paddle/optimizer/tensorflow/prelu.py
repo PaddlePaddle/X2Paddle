@@ -118,5 +118,6 @@ class PReLUOpt:
                 graph.layers[transpose0.id] = transpose0
                 graph.layers[prelu.id] = prelu
                 graph.layers[transpose1.id] = transpose1
-                graph.parameters[alpha.outputs[0]] = np.reshape(graph.parameters[alpha.outputs[0]], (1, 0, 1, 1))
+                axis1 = graph.parameters[alpha.outputs[0]].shape[0]
+                graph.parameters[alpha.outputs[0]] = np.reshape(graph.parameters[alpha.outputs[0]], (1, axis1, 1, 1))
         graph.build()
