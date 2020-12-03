@@ -248,6 +248,15 @@ class TFOpMapper(OpMapper):
             inputs={"x": input.name},
             outputs=[node.name],
             perm=perm)
+        
+    def Neg(self, node):
+        input = self.graph.get_input_node(node, 0)
+        
+        self.paddle_graph.add_layer(
+            "paddle.scale",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            scale=-1)
 
     def Fill(self, node):
         dims = self.graph.get_input_node(node, 0)

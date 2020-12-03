@@ -304,6 +304,15 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
+            
+    def Neg(self, node):
+        input = self.graph.get_input_node(node, 0)
+        
+        self.paddle_graph.add_layer(
+            "paddle.scale",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            scale=-1)
 
     def MaxPool(self, node):
         input = self.graph.get_node(node.layer.input[0])
