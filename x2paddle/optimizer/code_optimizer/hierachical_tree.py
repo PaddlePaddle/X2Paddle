@@ -372,7 +372,7 @@ class HierarchicalTree(Tree):
                        "import paddle.fluid as fluid",
                        "from paddle.fluid.initializer import Constant",
                        "from paddle.fluid.param_attr import ParamAttr",
-                       "imort math",
+                       "import math",
                        "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"
                        "\n",]

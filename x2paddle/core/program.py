@@ -76,6 +76,7 @@ class PaddleGraph(object):
         self.source_type = source_type
         self.custom_code = None
         self.inputs_info = None
+        self.can_dygraph2static = True
 
 
     def set_name(self, name):
@@ -166,6 +167,8 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
+            if layer.kernel == "custom_layer:Gather":
+                self.can_dygraph2static = False
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, list):
@@ -283,7 +286,7 @@ class PaddleGraph(object):
             self.gen_dygraph_code(save_dir)
             self.dump_dygraph_parameter(save_dir)
         # 动转静
-        if len(self.inputs_info) > 0:
+        if len(self.inputs_info) > 0 and self.can_dygraph2static:
             input_shapes = list()
             input_types = list()
             for input_name in self.inputs:
