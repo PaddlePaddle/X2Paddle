@@ -358,7 +358,7 @@ class HierarchicalTree(Tree):
                 run_func_list.append("    # {}: 形状为{}，类型为{}。".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
-                 "    params, _ = fluid.load_dygraph('{}/model')".format(save_dir),
+                 "    params = paddle.load('{}/model.pdparams')".format(osp.abspath(save_dir)),
                  "    model = {}()".format(self.pd_graph.name),
                  "    model.set_dict(params)",
                  "    model.eval()",
