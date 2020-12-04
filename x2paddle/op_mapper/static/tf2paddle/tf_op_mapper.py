@@ -746,17 +746,13 @@ class TFOpMapper(OpMapper):
         input = self.graph.get_input_node(node, 0)
         input_name = input.name
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.size",
+            kernel="paddle.shape",
             inputs={"input": input_name},
             outputs=[node.name])
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.shape",
-#             inputs={"input": input_name},
-#             outputs=[node.name])
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.prod",
-#             inputs={"x": node.name},
-#             outputs=[node.name])
+        self.paddle_graph.add_layer(
+            kernel="paddle.prod",
+            inputs={"x": node.name},
+            outputs=[node.name])
         
     def Ceil(self, node):
         input = self.graph.get_input_node(node, 0)
