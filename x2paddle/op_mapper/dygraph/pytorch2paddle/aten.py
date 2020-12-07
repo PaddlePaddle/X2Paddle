@@ -752,6 +752,56 @@ def aten_chunk(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_clamp(mapper, graph, node):
+    """ 构造元素剪裁的PaddleLayer。
+
+    TorchScript示例:
+        %56 : Tensor = aten::clamp(%input.1, %46, %48, %49)
+        参数含义:
+        %56 (Tensor): 输出，累加后的结果。
+        %input.1 (Tensor): 输入，需要剪裁的Tensor。
+        %46 (float/Tensor): 最小值。
+        %48 (float/Tensor): 最大值。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%46
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["min"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["min"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入2，即%48，代表dtype
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["max"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["max"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    graph.add_layer(
+        "paddle.clip",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten___contains__(mapper, graph, node):
     """ 构造in的PaddleLayer。
 
@@ -810,7 +860,7 @@ def aten_constant_pad_nd(mapper, graph, node):
     # 处理输入1，即%4876
     layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%42
-    layer_attrs["pad_value"] = mapper.attrs[inputs_name[2]]
+    layer_attrs["value"] = mapper.attrs[inputs_name[2]]
 
     graph.add_layer(
         "prim.shape",
@@ -856,7 +906,7 @@ def aten_constant_pad_nd(mapper, graph, node):
         block.add_layer(
             kernel,
             inputs={"input": inputs_name[0] + "_var"},
-            outputs=layer_outputs,
+            outputs=copy.deepcopy(layer_outputs),
             scope_name=scope_name,
             **layer_attrs)
         block.add_layer(
@@ -1517,76 +1567,28 @@ def aten_expand(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
+    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%1875
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
     layer_inputs["x"] = inputs_name[0]
-    # 处理输入1，即%1888
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs, scope_name)
-
-    graph.add_layer(
-        "prim.type",
-        inputs={"input": inputs_name[0]},
-        outputs=[inputs_name[0] + "_type"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.str",
-        inputs={"input": inputs_name[0] + "_type"},
-        outputs=[inputs_name[0] + "_type"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.eq",
-        inputs={"x": inputs_name[0] + "_type"},
-        outputs=[inputs_name[0] + "_cond"],
-        scope_name=scope_name,
-        y=string("VarType.BOOL"))
-    graph.add_layer(
-        "prim.if", {'input': inputs_name[0] + "_cond"},
-        outputs=[inputs_name[0] + "_if1", inputs_name[1] + "_var"],
-        scope_name=scope_name)
-    if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
-    block.add_layer(
-        "paddle.cast",
-        inputs={"x": inputs_name[0]},
-        outputs=[inputs_name[0]],
-        scope_name=scope_name,
-        dtype=string("int64"))
-    block.add_layer(
-        "self.create_parameter",
-        inputs={"shape": inputs_name[1]},
-        outputs=[inputs_name[1] + "_var"],
-        scope_name=scope_name,
-        dtype=string("int64"),
-        default_initializer="paddle.nn.initializer.Constant(value=0.0)")
-    if_layer.add_block(block)
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
-    block.add_layer(
-        "prim.type",
-        inputs={"input": inputs_name[0]},
-        outputs=[inputs_name[0] + "_type"],
-        scope_name=scope_name)
-    block.add_layer(
-        "self.create_parameter",
-        inputs={"shape": inputs_name[1]},
-        outputs=[inputs_name[1] + "_var"],
-        scope_name=scope_name,
-        dtype=inputs_name[0] + "_type",
-        default_initializer="paddle.nn.initializer.Constant(value=0.0)")
-    if_layer.add_block(block)
-    if_layer.inputs["input-0"] = inputs_name[0]
-    if_layer.inputs["input-1"] = inputs_name[1]
-
-    layer_inputs["y"] = inputs_name[1] + "_var"
-    current_outputs.append(inputs_name[1] + "_var")
-    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    current_inputs.append(inputs_name[1])
-
+    # 处理输入1，即%51
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["shape"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["shape"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
     graph.add_layer(
-        "paddle.expand_as", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+        "paddle.expand", 
+        inputs=layer_inputs, 
+        outputs=layer_outputs, 
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -1841,11 +1843,39 @@ def aten_floor(mapper, graph, node):
     current_outputs = [output_name]
     # 处理输入0，即%scale.18
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
-    layer_inputs["input"] = inputs_name[0]
+    layer_inputs["x"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-
-    graph.add_layer("prim.floor", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    graph.add_layer(
+        "prim.type", 
+        {'input': inputs_name[0]},
+        outputs=[inputs_name[0] + "_type"],
+        scope_name=scope_name)
+    graph.add_layer(
+        "prim.str", 
+        {'input': inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_type"],
+        scope_name=scope_name)
+    graph.add_layer(
+        "prim.startswith", 
+        {'input': inputs_name[0] + "_type"},
+        outputs=[inputs_name[0] + "_cond"],
+        scope_name=scope_name,
+        start_str=string("VarType")) 
+    graph.add_layer(
+        "prim.if", 
+        {'input': inputs_name[0] + "_cond"},
+        outputs=[inputs_name[0] + "_if"],
+        scope_name=scope_name)
+    if_layer = graph.layers[list(graph.layers.keys())[-1]]
+    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block.add_layer("paddle.floor", inputs=copy.deepcopy(layer_inputs), outputs=copy.deepcopy(layer_outputs), scope_name=scope_name)
+    if_layer.add_block(block)
+    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block.add_layer("prim.floor", inputs=copy.deepcopy(layer_inputs), outputs=copy.deepcopy(layer_outputs), scope_name=scope_name)
+    if_layer.add_block(block)
+    if_layer.inputs["input-0"] = inputs_name[0]
+    if_layer.outputs.append(output_name)
     return current_inputs, current_outputs
 
 
@@ -1952,6 +1982,46 @@ def aten_full_like(mapper, graph, node):
         "paddle.full_like",
         inputs=layer_inputs,
         outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_gather(mapper, graph, node):
+    """ 构造gather激活的PaddleLayer。
+
+    TorchScript示例:
+        %result.3 : Tensor = aten::gather(%input.5, %18, %19, %20, %21)
+        参数含义:
+        %result.3 (Tensor): 输出，gather后的结果。
+        %result.5 (Tensor): 需要gather的Tensor。
+        %18 (int): 需要gather的维度。
+        %19 (Tensor): 需要gather的索引。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("gather", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%18
+    layer_attrs["dim"] = mapper.attrs[inputs_name[1]]
+    # 处理输入2，即%19
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs, scope_name)
+    layer_inputs["index"] = inputs_name[2]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    
+    graph.add_layer(
+        "custom_layer:Gather", 
+        inputs=layer_inputs, 
+        outputs=layer_outputs, 
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
@@ -2852,6 +2922,33 @@ def aten_mean(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_meshgrid(mapper, graph, node):
+    """ 构造对每个张量做扩充操作的PaddleLayer。
+
+    TorchScript示例:
+        %out.39 : int = aten::mshgrid(%input.1)
+        参数含义:
+        %out.39 (Tensor): 输出，扩充后的结果。
+        %input.1 (Tensor): 输入。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["args"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = layer_inputs.values()
+    current_outputs = layer_outputs
+
+    graph.add_layer("paddle.meshgrid", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 

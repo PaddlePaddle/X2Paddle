@@ -201,7 +201,6 @@ class HierarchicalTree(Tree):
         code_str = gen_layer_code(self.pd_graph, sub_layers, module_name, 
                                                      different_attrs=diff_attrs_column)
         
-#         print(code_str)
         self.codes.append(code_str)
         for sub_layers in sub_layers_list:
             inputs, outputs = get_inputs_outputs(self.pd_graph, sub_layers)
@@ -359,7 +358,7 @@ class HierarchicalTree(Tree):
                 run_func_list.append("    # {}: 形状为{}，类型为{}。".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
-                 "    params, _ = fluid.load_dygraph('{}/model')".format(save_dir),
+                 "    params = paddle.load('{}/model.pdparams')".format(osp.abspath(save_dir)),
                  "    model = {}()".format(self.pd_graph.name),
                  "    model.set_dict(params)",
                  "    model.eval()",
@@ -371,7 +370,12 @@ class HierarchicalTree(Tree):
         self.update_parameters()
         import_list = ["import paddle",
                        "import paddle.fluid as fluid",
-                       "",]
+                       "from paddle.fluid.initializer import Constant",
+                       "from paddle.fluid.param_attr import ParamAttr",
+                       "import math",
+                       "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
+                                 "import pytorch_custom_layer as x2paddle_nn"
+                       "\n",]
         import_str = "\n".join(import_list)
         if not osp.exists(save_dir):
             os.makedirs(save_dir)

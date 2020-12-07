@@ -29,9 +29,9 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Tanh": "tanh",
                   "paddle.nn.AvgPool2D": "pool",
                   "paddle.nn.MaxPool2D": "pool",
-                  "paddle.nn.Pad1d": "pad",
-                  "paddle.nn.Pad2d": "pad",
-                  "paddle.nn.Pad3d": "pad",
+                  "paddle.nn.Pad1D": "pad",
+                  "paddle.nn.Pad2D": "pad",
+                  "paddle.nn.Pad3D": "pad",
                   "paddle.nn.Dropout": "dropout",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
@@ -175,9 +175,11 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                 if layer.kernel.startswith("paddle.nn") and index == 0:
                     continue
                 if not output_name.startswith("x") or output_name in outputs \
-                        or layer.kernel == "prim.assert" or \
-                        layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                        or layer.kernel == "prim.assert":
                     continue
+                elif layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                    if index != 0:
+                        outputs.append(output_name)
                 elif output_name not in outputs:
                     outputs.append(output_name)
             continue
@@ -187,15 +189,22 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                     if layer.kernel.startswith("paddle.nn") and index == 0 and "functional" not in layer.kernel:
                         continue
                     if not output_name.startswith("x") or output_name in outputs \
-                            or layer.kernel == "prim.assert" or \
-                            layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                            or layer.kernel == "prim.assert":
                         continue
+                    elif layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                        if index != 0:
+                            outputs.append(output_name)
                     else:
                         outputs.append(output_name)
     no_output_count = 0
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
-        if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel):
-            line = "self.{} = {}(".format(layer.outputs[0], layer.kernel)
+        if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
+                layer.kernel.startswith("custom_layer"):
+            line = "self.{}".format(layer.outputs[0])
+            if layer.kernel.startswith("custom_layer"):
+                line += "= x2paddle_nn.{}(".format(layer.kernel.split(":")[-1])
+            else:
+                line += " = {}(".format(layer.kernel)
             for k, v in layer.attrs.items():
                 key_name = "{}_{}".format(layer.outputs[0], k)
                 if key_name in different_attrs:
@@ -289,7 +298,10 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                 else:
                     if v not in cur_outputs and v not in inputs:
                         inputs.append(v)
-                    line += "{}={}, ".format(k, v)
+                    if k == "args":
+                        line += v
+                    else:
+                        line += "{}={}, ".format(k, v)
             for k, v in layer.attrs.items():
                 key_name = "{}_{}".format(layer.outputs[0], k)
                 if key_name in different_attrs:

@@ -50,21 +50,25 @@ def get_inputs_outputs(pd_graph, layers):
     for layer_id, layer in layers.items():
         # 获取输出节点名字
         if layer_id not in pd_graph.edges_out:
-            for output_name in layer.outputs:
+            for index, output_name in enumerate(layer.outputs):
                 if not output_name.startswith("x") or output_name in outputs \
-                        or layer.kernel == "prim.assert" or \
-                        layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                        or layer.kernel == "prim.assert":
                     continue
+                elif layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                        if index != 0:
+                            outputs.append(output_name)
                 elif output_name not in outputs:
                     outputs.append(output_name)
         else:
             for out_layer_id in pd_graph.edges_out[layer_id]:
                 if out_layer_id not in layer_ids:
-                    for output_name in layer.outputs:
+                    for index, output_name in enumerate(layer.outputs):
                         if not output_name.startswith("x") or output_name in outputs \
-                                or layer.kernel == "prim.assert" or \
-                                layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                                or layer.kernel == "prim.assert":
                             continue
+                        elif layer.kernel == "prim.if" or layer.kernel == "prim.loop":
+                            if index != 0:
+                                outputs.append(output_name)
                         else:
                             outputs.append(output_name)
         # 获取输入节点名字
