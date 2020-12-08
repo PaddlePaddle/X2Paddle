@@ -21,7 +21,6 @@ class TransposeOpt:
             'fluid.layers.elementwise_add', 'fluid.layers.elementwise_sub',
             'fluid.layers.elementwise_mul', 'fluid.layers.elementwise_div'
         ]
-        #        self.reduce_layers = []
         self.reduce_layers = [
             'fluid.layers.reduce_mean', 'fluid.layers.reduce_all',
             'fluid.layers.reduce_max', 'fluid.layers.reduce_any',

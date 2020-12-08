@@ -10,12 +10,13 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX模型的�
 ## 环境依赖
 
 python == 2.7 | python >= 3.5  
-paddlepaddle >= 1.8.0  
+paddlepaddle >= 2.0.0  
 
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
 caffe ： 无  
 onnx ： onnx >= 1.6.0
+pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 ## 安装
 ### 安装方式一（推荐）
@@ -45,10 +46,19 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 ```
 
+### PyTorch
+> PyTorch不支持命令行使用方式，详见[PyTorch2Paddle](pytorch2paddle.md)
+
 ### Paddle2ONNX
+<<<<<<< HEAD
 ```
 Paddle2ONNX功能已迁移至新的github: https://github.com/PaddlePaddle/paddle2onnx, 欢迎大家去新的代码仓库查看详细介绍以及新功能。
 ```
+=======
+> Paddle2ONNX功能已迁移至新的github: https://github.com/PaddlePaddle/paddle2onnx, 欢迎大家去新的代码仓库查看详细介绍以及新功能。
+
+
+>>>>>>> paddle-2.0
 ### 参数选项
 | 参数 | |
 |----------|--------------|

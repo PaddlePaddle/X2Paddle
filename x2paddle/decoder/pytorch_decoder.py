@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import sys
 import torch
+import numpy as np
 
 
-class PyTorchDecoder(object):
-    def __init__(self, script_path):
-        self.script = torch.jit.load(script_path)
-        self.graph = self._optimize_graph(self.script.inlined_graph)
-
-    def _optimize_graph(self, graph):
+class Decoder(object):
+     def _optimize_graph(self, graph):
         torch._C._jit_pass_constant_propagation(graph)
         torch._C._jit_pass_dce(graph)
         torch._C._jit_pass_lint(graph)
@@ -31,4 +30,40 @@ class PyTorchDecoder(object):
         torch._C._jit_pass_canonicalize(graph)
         torch._C._jit_pass_lint(graph)
         torch._C._jit_pass_constant_propagation(graph)
-        return graph
+        return graph       
+
+
+class ScriptDecoder(Decoder):
+    """ 当script_path非None，直接load ScriptModule;
+        当model_path非None，load PyTorchModule后使用script方式转换为ScriptModule。
+        
+        Args:
+            script_path (str): ScriptModule保存路径。
+            model_path (str): PyTorchModule保存路径。
+    """
+    def __init__(self, module, input_examples=None):
+        self.script = torch.jit.script(module)
+        self.graph = self._optimize_graph(self.script.inlined_graph)
+        self.input_examples = input_examples
+            
+class TraceDecoder(Decoder):
+    """ PyTorchModule后使用trace方式转换为ScriptModule。
+        
+        Args:
+            model_path (str): PyTorchModule保存路径。
+            input_files (list): 输入网络的numpy，每个numpy保存成.npy文件, 
+                                文件路径存储在input_files中。
+    """
+    def __init__(self, module, input_examples):
+        try:
+            self.script = torch.jit.trace(module, input_examples)
+        except RuntimeError as e:
+            if "strict" in str(e):
+                self.script = torch.jit.trace(module, input_examples, strict=False)
+            else:
+                print(e)
+                exit(0)
+        self.graph = self._optimize_graph(self.script.inlined_graph)
+        self.input_examples = input_examples
+        
+            

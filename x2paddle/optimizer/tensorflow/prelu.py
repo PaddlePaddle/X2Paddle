@@ -118,6 +118,12 @@ class PReLUOpt:
                 graph.layers[transpose0.id] = transpose0
                 graph.layers[prelu.id] = prelu
                 graph.layers[transpose1.id] = transpose1
+<<<<<<< HEAD
                 graph.parameters[alpha.outputs[0]] = np.expand_dims(graph.parameters[alpha.outputs[0]], 0)
         graph.build()
         
+=======
+                first_axis = graph.parameters[alpha.outputs[0]].shape[0]
+                graph.parameters[alpha.outputs[0]] = np.reshape(graph.parameters[alpha.outputs[0]], (1, first_axis, 1, 1))
+        graph.build()
+>>>>>>> paddle-2.0

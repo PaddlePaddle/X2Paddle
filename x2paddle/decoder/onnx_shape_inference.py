@@ -1605,7 +1605,11 @@ class SymbolicShapeInference:
                     symbolic_shape_inference.out_mp_)
             print('[INFO] Complete symbolic shape inference.')
         except:
+<<<<<<< HEAD
             print('[WARNING] Incomplete symbolic shape inference.')
+=======
+            print('[WARNING] Incomplete symbolic shape inference')
+>>>>>>> paddle-2.0
             symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                 symbolic_shape_inference.out_mp_)
         return symbolic_shape_inference.out_mp_.graph

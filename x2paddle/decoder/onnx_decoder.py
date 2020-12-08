@@ -64,6 +64,12 @@ class ONNXGraphNode(GraphNode):
         if 'value' not in self.attr_map:
             return None
         return self.attr_map['value']
+    
+    @property
+    def name(self):
+        if hasattr(self, 'index'):
+            return "{}_p{}".format(self.layer_name, self.index)
+        return self.layer_name
 
     def get_attribute_value(self, attr):
         """
@@ -118,6 +124,10 @@ class ONNXGraphDataNode(GraphNode):
             out_shapes = list()
             out_shapes.append(values)
             return out_shapes
+        
+    @property
+    def name(self):
+        return self.layer_name
 
     @property
     def dtype(self):
@@ -144,11 +154,16 @@ class ONNXGraph(Graph):
         if self.graph is None:
             print('[WARNING] Shape inference by ONNX offical interface.')
             onnx_model = shape_inference.infer_shapes(onnx_model)
+<<<<<<< HEAD
             self.graph = onnx_model.graph 
+=======
+            self.graph = onnx_model.graph
+>>>>>>> paddle-2.0
         print("shape inferenced.")
         self.build()
         self.collect_value_infos()
         self.allocate_shapes()
+        self.graph_name = "ONNXModel"
 
     def get_inner_nodes(self):
         """
@@ -307,6 +322,7 @@ class ONNXGraph(Graph):
             if ipt_node.layer_name in node.which_child:
                 ipt_node.index = node.which_child[ipt_node.layer_name]
             return ipt_node
+        
 
     def graph_weights(self):
         """
