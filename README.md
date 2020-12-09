@@ -50,15 +50,9 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 > PyTorch不支持命令行使用方式，详见[PyTorch2Paddle](pytorch2paddle.md)
 
 ### Paddle2ONNX
-<<<<<<< HEAD
-```
-Paddle2ONNX功能已迁移至新的github: https://github.com/PaddlePaddle/paddle2onnx, 欢迎大家去新的代码仓库查看详细介绍以及新功能。
-```
-=======
 > Paddle2ONNX功能已迁移至新的github: https://github.com/PaddlePaddle/paddle2onnx, 欢迎大家去新的代码仓库查看详细介绍以及新功能。
 
 
->>>>>>> paddle-2.0
 ### 参数选项
 | 参数 | |
 |----------|--------------|
