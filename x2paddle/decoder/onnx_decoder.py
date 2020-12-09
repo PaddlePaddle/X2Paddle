@@ -154,11 +154,7 @@ class ONNXGraph(Graph):
         if self.graph is None:
             print('[WARNING] Shape inference by ONNX offical interface.')
             onnx_model = shape_inference.infer_shapes(onnx_model)
-<<<<<<< HEAD
-            self.graph = onnx_model.graph 
-=======
             self.graph = onnx_model.graph
->>>>>>> paddle-2.0
         print("shape inferenced.")
         self.build()
         self.collect_value_infos()

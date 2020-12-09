@@ -1,4 +1,4 @@
-# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+## Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -117,27 +117,6 @@ def tf2paddle(model_path,
         return
     
     from x2paddle.decoder.tf_decoder import TFDecoder
-<<<<<<< HEAD
-    from x2paddle.op_mapper.tf_op_mapper import TFOpMapper
-    from x2paddle.optimizer.tensorflow.bias import BiasOpt
-    from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
-    from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
-    from x2paddle.optimizer.tensorflow.prelu import PReLUOpt
-
-    print("Now translating model from tensorflow to paddle.")
-    model = TFDecoder(model_path, define_input_shape=define_input_shape)
-    mapper = TFOpMapper(model)
-    program.build()
-    bias_opt = BiasOpt()
-    transpose_opt = TransposeOpt()
-    batch_norm_opt = BatchNormOpt()
-    prelu_opt = PReLUOpt()
-    bias_opt.run(program)
-    batch_norm_opt.run(program)
-    prelu_opt.run(program)
-    transpose_opt.run(program)
-    program.gen_model(save_dir)
-=======
     if paddle_type == "dygraph":
         from x2paddle.op_mapper.dygraph.tf2paddle.tf_op_mapper import TFOpMapper
     else:
@@ -167,7 +146,6 @@ def tf2paddle(model_path,
         transpose_opt.run(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
         
->>>>>>> paddle-2.0
 
 
 def caffe2paddle(proto, weight, save_dir, caffe_proto, 
@@ -259,20 +237,7 @@ def pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None):
     graph_opt = GraphOptimizer(source_frame="pytorch", paddle_type="dygraph", jit_type=jit_type)
     graph_opt.optimize(mapper.paddle_graph)
     print("Model optimized.")
-<<<<<<< HEAD
-    if input_shapes is not None:
-        real_input_shapes = list()
-        for shape in input_shapes:
-            sp = shape[1:-1].split(",")
-            for i, s in enumerate(sp):
-                sp[i] = int(s)
-            real_input_shapes.append(sp)
-    else:
-        real_input_shapes = None
-    mapper.graph.gen_model(save_dir, real_input_shapes)
-=======
     mapper.paddle_graph.gen_model(save_dir, jit_type=jit_type)
->>>>>>> paddle-2.0
 
 
 def main():
@@ -343,11 +308,7 @@ def main():
 
     else:
         raise Exception(
-<<<<<<< HEAD
-            "--framework only support tensorflow/caffe/onnx/ now")
-=======
             "--framework only support tensorflow/caffe/onnx now")
->>>>>>> paddle-2.0
 
 
 if __name__ == "__main__":
