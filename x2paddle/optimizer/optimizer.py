@@ -16,13 +16,13 @@ from x2paddle.optimizer.pass_manager import PassManager
 from x2paddle.optimizer.fusion.dygraph import *
 from x2paddle.optimizer.fusion.static import *
 from x2paddle.optimizer.elimination.dygraph import *
+from x2paddle.optimizer.elimination.static import *
 
 class GraphOptimizer(object):
     def __init__(self, source_frame, paddle_type="dygraph", jit_type="trace"):
         if source_frame == "pytorch":
             if jit_type == "trace":
-                self.passes = ["dygraph_constant_fuse_pass", 
-                               "trace_fc_fuse_pass"]
+                self.passes = ["trace_fc_fuse_pass"]
             else:
                 self.passes = [
                     "dygraph_constant_fuse_pass", 
@@ -39,12 +39,20 @@ class GraphOptimizer(object):
             else:
                 self.passes = ["static_bn_scale_fuse_pass"]
         elif source_frame == "tf":
-            self.passes = [
-                "dygraph_conv2d_add_fuse_pass",
-                "dygraph_tf_batchnorm_fuse_pass",
-                "dygraph_prelu_fuse_pass",
-                "transpose_eliminate_pass"
-            ]
+            if paddle_type == "dygraph":
+                self.passes = [
+                    "dygraph_conv2d_add_fuse_pass",
+                    "dygraph_tf_batchnorm_fuse_pass",
+                    "dygraph_prelu_fuse_pass",
+                    "transpose_eliminate_pass"
+                ]
+            else:
+                self.passes = [
+                    "static_conv2d_add_fuse_pass",
+                    "static_tf_batchnorm_fuse_pass",
+                    "static_prelu_fuse_pass",
+                    "static_transpose_eliminate_pass"
+                ]
         else:
             self.passes = []
 

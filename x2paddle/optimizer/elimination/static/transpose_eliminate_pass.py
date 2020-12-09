@@ -12,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .bn_scale_fuser import Static_BNScaleFuser
-from .bn_scale_fuse_pass import Static_BNScaleFusePass
-from .conv2d_add_fuser import StaticConv2DAddFuser
-from .conv2d_add_fuse_pass import StaticConv2DAddFusePass
-from .prelu_fuser import StaticPReLUFuser
-from .prelu_fuse_pass import StaticPReLUFusePass
-from .tf_batchnorm_fuser import StaticTFBatchNormFuser
-from .tf_batchnorm_fuse_pass import StaticTFBatchNormFusePass
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.elimination.static import StaticTransposeElimination
+from x2paddle.optimizer.pass_manager import pass_register
 
+
+@pass_register
+class StaticTransposeEliminatePass(Pass):
+    name = "static_transpose_eliminate_pass"
+
+    def __init__(self):
+        Pass.__init__(self)
+
+    def apply(self, graph):
+        fuser = StaticTransposeElimination()
+        fuser.operate(graph)
+
+
+# 用于注册
+static_transpose_eliminate_pass = StaticTransposeEliminatePass()
