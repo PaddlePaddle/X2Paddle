@@ -89,7 +89,6 @@ class CaffeOpMapper(OpMapper):
             input_shape.append(last_node.output_shape[idx])
 
         node.input_shape = input_shape
-
         func_name = 'shape_' + node.layer_type.lower()
         if is_fluid_op:
             node.output_shape = getattr(caffe_shape, func_name)(node.layer,
@@ -458,7 +457,6 @@ class CaffeOpMapper(OpMapper):
 
     def ReLU(self, node):
         """
-
         :param node:
         :return:
         """
@@ -975,4 +973,3 @@ class CaffeOpMapper(OpMapper):
             kernel=op_info,
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name])
-        
