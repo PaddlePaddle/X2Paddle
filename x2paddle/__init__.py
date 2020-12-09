@@ -1,4 +1,4 @@
-__version__ = "0.8.9"
+__version__ = "1.0.0"
 
 from .core.program import PaddleGraph
 
