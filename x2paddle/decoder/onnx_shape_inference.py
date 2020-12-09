@@ -1601,11 +1601,11 @@ class SymbolicShapeInference:
                     in_mp)
             symbolic_shape_inference._update_output_from_vi()
             if not all_shapes_inferred:
+                print('!' * 10)
                 symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                     symbolic_shape_inference.out_mp_)
-            print('[INFO] Complete symbolic shape inference.')
         except:
-            print('[WARNING] Incomplete symbolic shape inference.')
+            print('[WARNING] Incomplete symbolic shape inference')
             symbolic_shape_inference.out_mp_ = shape_inference.infer_shapes(
                 symbolic_shape_inference.out_mp_)
         return symbolic_shape_inference.out_mp_.graph

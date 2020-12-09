@@ -1,4 +1,4 @@
-#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -18,3 +18,11 @@ import os
 
 def string(param):
     return "\'{}\'".format(param)
+
+def name_generator(nn_name, nn_name2id):
+    if nn_name in nn_name2id:
+        nn_name2id[nn_name] += 1
+    else:
+        nn_name2id[nn_name] = 0
+    real_nn_name = nn_name + str(nn_name2id[nn_name])
+    return real_nn_name

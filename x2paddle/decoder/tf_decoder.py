@@ -132,6 +132,7 @@ class TFGraph(Graph):
         self.identity_map = dict()
         self.multi_out_ops = ['Split', 'SplitV', 'IteratorV2']
         self.tf_data_format = data_format
+        self.graph_name = "TFModel"
 
     def build(self):
         for layer in self.model.node:
@@ -188,6 +189,10 @@ class TFGraph(Graph):
         if len(items) == 1 and node.layer_type in self.multi_out_ops:
             node.index = 0
         return node
+    
+    def get_input_node(self, node, idx=0, copy=False):
+        input_node_name = node.layer.input[idx]
+        return self.get_node(input_node_name, copy)
 
     def remove_node(self, node_name):
         if node_name not in self.node_map:
@@ -315,7 +320,7 @@ class TFDecoder(object):
             self.sess = tf.compat.v1.Session()
         except:
             self.sess = tf.Session()
-        self.input_info = dict()
+        self.inputs_info = dict()
         self.define_input_shape = define_input_shape
         with open(pb_model, 'rb') as f:
             try:
@@ -397,7 +402,7 @@ class TFDecoder(object):
                 right_shape_been_input = False
                 while not right_shape_been_input:
                     try:
-                        shape = raw_input(
+                        shape = input(
                             "Shape of Input(e.g. None,224,224,3): ")
                     except:
                         shape = input("Shape of Input(e.g. None,224,224,3): ")
@@ -425,50 +430,40 @@ class TFDecoder(object):
                 input_map["{}:0".format(layer.name)] = x2paddle_input
                 if shape.count(None) > 0:
                     shape[shape.index(None)] = -1
-                self.input_info["x2paddle_{}".format(layer.name)] = (shape,
+                self.inputs_info["x2paddle_{}".format(layer.name)] = (shape,
                                                                      dtype)
             else:
                 value = graph_node.layer.attr["shape"].shape
                 shape = [dim.size for dim in value.dim]
-                self.input_info[layer.name] = (shape, dtype)
+                self.inputs_info[layer.name] = (shape, dtype)
 
         return input_map
 
     # trick method
     # should be removed after PaddlePaddle V1.6 been released
-    def infer_tensor(self, graph_node):
+    def infer_tensor(self, graph_node, out_shape=None, use_diff_inputs=True):
         if hasattr(graph_node, "index"):
             tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
         else:
             tensor_name = graph_node.layer.name + ":0"
         feed = dict()
-        for input_name, info in self.input_info.items():
-            (shape, dtype) = cp.deepcopy(info)
-            input_tensor = self.sess.graph.get_tensor_by_name(input_name + ":0")
-            if shape.count(-1) > 0:
-                shape[shape.index(-1)] = 2
-            feed[input_tensor] = numpy.random.random_sample(shape)
-        output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
-        return self.sess.run([output_tensor], feed)[0]
-
-    def infer_shape_tensor(self, graph_node, out_shape=None):
-        if hasattr(graph_node, "index"):
-            tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
+        if use_diff_inputs:
+            batch_size = [2, 3, 5]
         else:
-            tensor_name = graph_node.layer.name + ":0"
-        feed = dict()
-        batch_size = [2, 3, 5]
+            batch_size = [2]
         results = list()
         for b in batch_size:
-            for input_name, info in self.input_info.items():
+            for input_name, info in self.inputs_info.items():
                 (shape, dtype) = cp.deepcopy(info)
-                input_tensor = self.sess.graph.get_tensor_by_name(input_name +
-                                                                  ":0")
+                input_tensor = self.sess.graph.get_tensor_by_name(input_name + ":0")
                 if shape.count(-1) > 0:
                     shape[shape.index(-1)] = b
                 feed[input_tensor] = numpy.random.random_sample(shape)
             output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
-            results.append(self.sess.run([output_tensor], feed)[0].flatten())
+            if use_diff_inputs:
+                results.append(self.sess.run([output_tensor], feed)[0].flatten())
+            else:
+                return self.sess.run([output_tensor], feed)[0]
 
         compare01 = (results[0] == results[1])
         compare12 = (results[1] == results[2])
@@ -493,38 +488,4 @@ class TFDecoder(object):
             return results[0].tolist()
         else:
             raise Exception("Couldn't infer a stable shape shape tensor value")
-
-    def infer_tensor_shape(self, graph_node):
-        if hasattr(graph_node, "index"):
-            tensor_name = graph_node.layer.name + ":{}".format(graph_node.index)
-        else:
-            tensor_name = graph_node.layer.name + ":0"
-        feed = dict()
-        batch_size = [2, 3, 5]
-        shapes = list()
-        for b in batch_size:
-            for input_name, info in self.input_info.items():
-                (shape, dtype) = cp.deepcopy(info)
-                input_tensor = self.sess.graph.get_tensor_by_name(input_name +
-                                                                  ":0")
-                if shape.count(-1) > 0:
-                    shape[shape.index(-1)] = b
-                feed[input_tensor] = numpy.random.random_sample(shape)
-            output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
-            shape = self.sess.run([output_tensor], feed)[0].shape
-            shapes.append(numpy.array(shape))
-
-        compare01 = (shapes[0] == shapes[1])
-        compare12 = (shapes[1] == shapes[2])
-
-        if compare01.all() and compare12.all():
-            return shape[0].tolist()
-
-        if (compare01 == compare12).all():
-            index = numpy.argwhere(compare01 == False).flatten()
-            if index.shape[0] != 1:
-                raise Exception("There's not only one unstable dimension")
-            if index[0] != 0:
-                raise Exception("Batch size not in the first dimension")
-            shapes[0][0] = -1
-            return shapes[0].tolist()
+            

@@ -41,6 +41,8 @@ class Layer(object):
             layer_code = layer_code
         elif self.use_fluid:
             layer_code = layer_code + "fluid." + self.op + "("
+        elif self.op == "full_like":
+            layer_code = layer_code + "paddle." + self.op + "("
         else:
             layer_code = layer_code + "fluid.layers." + self.op + "("
 
