@@ -106,7 +106,7 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 3. 新增TensorFlow op（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
 
-**如果你需要之前版本的tensorflow2fluid/caffe2fluid/onnx2fluid，可以继续访问release-0.8分支，获取之前版本的代码使用。**
+**如果你需要之前版本的tensorflow2fluid/caffe2fluid/onnx2fluid，可以继续访问release-0.9分支，获取之前版本的代码使用。**
 
 
 ## Acknowledgements
