@@ -46,7 +46,7 @@ torch_module.load_state_dict(torch_state_dict)
 torch_module.eval()
 # 进行转换
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(torch_model, 
+pytorch2paddle(torch_module, 
                save_dir="pd_model_trace", 
                jit_type="trace", 
                input_examples=[torch.tensor(input_data)])
