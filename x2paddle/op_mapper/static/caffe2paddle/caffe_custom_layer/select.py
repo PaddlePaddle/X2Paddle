@@ -1,53 +1,31 @@
-from .register import register
-from x2paddle.core.util import *
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import paddle
+import paddle.fluid as fluid
 
-def select_shape(input_shape, axis=None, slice_point=None):
-    inshape = input_shape[0]
-    slice_point = slice_point
-    start = slice_point[0]
-    if len(slice_point) == 2:
-        end = slice_point[1]
+def select(x,
+           input_shape, 
+           point, 
+           axis):
+    start = point[0]
+    if len(point) == 2:
+        end = point[1]
     else:
         end = input_shape[axis]
-    assert end > start, "invalid slice_point with [start:%d, end:%d]" % (start,
-                                                                         end)
-    output_shape = input_shape
-    output_shape[axis] = end - start
-    return [output_shape]
-
-
-def select_layer(inputs,
-                 axis=None,
-                 slice_point=None,
-                 input_shape=None,
-                 name=None):
-    input = inputs[0]
-    maxint32 = 2147483647
-    slice_point = [0] + slice_point
-    slice_point.append(maxint32)
-    i = 0
-    out = []
-    for i in range(len(slice_point)):
-        out.append(
-            fluid.layers.slice(
-                input,
-                axes=[axis],
-                starts=[slice_point[i]],
-                ends=[slice_point[i + 1]],
-                name=name + '_' + str(i)))
-        if i == len(slice_point) - 2:
-            break
+    out = paddle.slice(x=x,
+                       start=start,
+                       end=end,
+                       axes=[axis])
     return out
-
-
-def select_weights(name, data=None):
-    weights_name = []
-    return weights_name
-
-
-register(
-    kind='Select',
-    shape=select_shape,
-    layer=select_layer,
-    weights=select_weights)

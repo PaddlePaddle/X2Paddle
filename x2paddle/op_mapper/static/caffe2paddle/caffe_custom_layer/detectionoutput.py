@@ -1,59 +1,47 @@
-from .register import register
-from x2paddle.core.util import *
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import paddle
+import paddle.fluid as fluid
 
-def detectionoutput_shape(input_shape):
-    return [[-1, 6]]
-
-
-def detectionoutput_layer(inputs,
-                          nms_param=None,
-                          background_label_id=0,
-                          share_location=True,
-                          keep_top_k=100,
-                          confidence_threshold=0.1,
-                          input_shape=None,
-                          name=None):
-    if nms_param is None:
-        nms_param = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
-    mbox_conf_flatten = inputs[1]
-    mbox_priorbox = inputs[2]
-    mbox_priorbox_list = fluid.layers.split(mbox_priorbox, 2, dim=1)
-    pb = mbox_priorbox_list[0]
-    pbv = mbox_priorbox_list[1]
-    pb = fluid.layers.reshape(x=pb, shape=[-1, 4])
-    pbv = fluid.layers.reshape(x=pbv, shape=[-1, 4])
-    mbox_loc = inputs[0]
-    mbox_loc = fluid.layers.reshape(x=mbox_loc, shape=[-1, pb.shape[0], 4])
-    mbox_conf_flatten = fluid.layers.reshape(
-        x=mbox_conf_flatten, shape=[0, pb.shape[0], -1])
-
-    default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
-    fields = ['eta', 'top_k', 'nms_threshold']
-    for f in default.keys():
-        if f not in nms_param:
-            nms_param[f] = default[f]
-    out = fluid.layers.detection_output(
-        scores=mbox_conf_flatten,
-        loc=mbox_loc,
-        prior_box=pb,
-        prior_box_var=pbv,
-        background_label=background_label_id,
-        nms_threshold=nms_param["nms_threshold"],
-        nms_top_k=nms_param["top_k"],
-        keep_top_k=keep_top_k,
-        score_threshold=confidence_threshold,
-        nms_eta=nms_param["eta"])
+def detectionoutput(x0, 
+                     x1, 
+                     x2, 
+                     nms_threshold, 
+                     nms_top_k, 
+                     keep_top_k, 
+                     nms_eta, 
+                     score_threshold, 
+                     background_label):
+    detection_output_layer_attrs = {
+            "background_label": background_label,
+            "nms_threshold": nms_threshold,
+            "nms_top_k": nms_top_k,
+            "keep_top_k": keep_top_k,
+            "score_threshold": score_threshold,
+            "nms_eta": nms_eta}
+    priorbox_list = paddle.split(x2, num_or_sections=2, axis=1)
+    pb = priorbox_list[0]
+    pbv = priorbox_list[1]
+    pb = paddle.reshape(x=pb, shape=[-1, 4])
+    pbv = paddle.reshape(x=pbv, shape=[-1, 4])
+    pb_dim = fluid.layers.shape(pb)[0]
+    loc = paddle.reshape(x0, shape=[-1, pb_dim, 4])
+    conf_flatten = paddle.reshape(x1, shape=[0, pb_dim, -1])
+    out = fluid.layers.detection_output(loc=loc, 
+                                        scores=conf_flatten,
+                                        prior_box=pb, 
+                                        prior_box_var=pbv,
+                                        **detection_output_layer_attrs)
     return out
-
-
-def detectionoutput_weights(name, data=None):
-    weights_name = []
-    return weights_name
-
-
-register(
-    kind='DetectionOutput',
-    shape=detectionoutput_shape,
-    layer=detectionoutput_layer,
-    weights=detectionoutput_weights)

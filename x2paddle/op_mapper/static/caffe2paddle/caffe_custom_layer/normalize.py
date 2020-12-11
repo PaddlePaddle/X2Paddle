@@ -1,37 +1,24 @@
-from .register import register
-from x2paddle.core.util import *
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import paddle
+import paddle.fluid as fluid
 
-def normalize_shape(input_shape):
-    return input_shape
-
-
-def normalize_layer(inputs,
-                    across_spatial=None,
-                    channel_shared=None,
-                    input_shape=None,
-                    name=None):
-    assert across_spatial == False, "Only support across_spatial == False for Normalize"
-    input = inputs[0]
-    l2_norm = fluid.layers.l2_normalize(input, axis=1, name=name + '_l2')
-    scale_param = fluid.layers.create_parameter(
-        shape=[1] if channel_shared else [1, 1, 1, input_shape[0][1]],
-        dtype=input.dtype,
-        attr=fluid.ParamAttr(name=name + '_scale'))
-    scale_param = fluid.layers.reshape(x=scale_param, \
-                  shape=[1] if channel_shared else [input_shape[0][1]])
-    out = fluid.layers.elementwise_mul(
-        x=l2_norm, y=scale_param, axis=-1 if channel_shared else 1)
+def normalize(x, axis, param_name, param_shape, param_dtype):
+    l2 = fluid.layers.prior_box(x=x, p=2, axis=1)
+    param = paddle.static.nn.create_parameter(shape=param_shape,
+                                              dtype=string(param_dtype),
+                                              name=string(param_name))
+    out = paddle.multiply(x=l2, y=param, axis=axis)
     return out
-
-
-def normalize_weights(name, data=None):
-    weights_name = [name + '_scale']
-    return weights_name
-
-
-register(
-    kind='Normalize',
-    shape=normalize_shape,
-    layer=normalize_layer,
-    weights=normalize_weights)

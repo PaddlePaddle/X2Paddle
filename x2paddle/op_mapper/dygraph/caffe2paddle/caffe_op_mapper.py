@@ -1092,11 +1092,7 @@ class CaffeOpMapper(OpMapper):
             **layer_attrs)
         
     def ReLU6(self, node):
-        if "relu6" in self.nn_name2id:
-            self.nn_name2id["relu6"] += 1
-        else:
-            self.nn_name2id["relu6"] = 0
-        relu6_name = "relu6" + str(self.nn_name2id["relu6"])
+        relu6_name = name_generator("relu6", self.nn_name2id)
         output_name = node.layer_name
         layer_outputs = [relu6_name, output_name]
         assert len(
@@ -1124,7 +1120,7 @@ class CaffeOpMapper(OpMapper):
             "pooled_width": params.pooled_w,
             "spatial_scale": params.spatial_scale}
         self.paddle_graph.add_layer(
-            "custom_layer:ROIPooling",
+            "custom_layer:roipooling",
             inputs=inputs_dict,
             outputs=layer_outputs,
             **layer_attrs)
