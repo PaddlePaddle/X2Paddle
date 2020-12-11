@@ -3179,6 +3179,39 @@ def aten_permute(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_pixel_shuffle(mapper, graph, node):
+    """ 构造以像素的方式重排的PaddleLayer。
+
+    TorchScript示例:
+        %x.6 : aten::pixel_shuffle(%input.101, %726)
+        参数含义:
+        %x.6 (Tensor): 输出，重排后的Tensor。
+        %input.101 (Tensor): 需要重排的Tensor。
+        %726 (int): 增大空间分辨率的增大因子。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.101
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%726
+    layer_attrs["upscale_factor"] = mapper.attrs[inputs_name[1]]
+
+    graph.add_layer(
+        "paddle.nn.functional.pixel_shuffle",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
 def aten_pow(mapper, graph, node):
     """ 构造指数激活的PaddleLayer。
 
