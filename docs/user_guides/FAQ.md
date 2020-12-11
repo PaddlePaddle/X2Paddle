@@ -23,3 +23,20 @@ A: 此提示为错误信息，表示该模型的转换需要固定的输入大�
 > 1. 模型来源于PaddleX导出，可以在导出的命令中，指定--fixed_input_shape=[Height,Width]，详情可见：[PaddleX模型导出文档](https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/deploy/export_model.md)。
 > 2. 模型来源于PaddleDetection导出，可以在导出模型的时候，指定 TestReader.inputs_def.image_shape=[Channel,Height,Width], 详情可见：[PaddleDetection模型导出文档](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/advanced_tutorials/deploy/EXPORT_MODEL.md#设置导出模型的输入大小)。
 > 3. 模型来源于自己构建，可在网络构建的`fluid.data(shape=[])`中，指定shape参数来固定模型的输入大小。
+
+
+**Q6. 进行动态图转换时，提示『Fail to generate inference model! Problem happend while export inference model from python code...』**
+A: 此提示为无法将动态图代码转换为静态图模型，有两种可能：
+> 使用动态图代码确认转换后的代码是否正确，可使用如下代码进行确认：
+```
+import paddle
+import numpy as np
+np.random.seed(6)
+# ipt为输入数据
+ipt = np.random.rand(1, 3, 224, 224).astype("float32")
+paddle.disable_static()
+# pd_model_dygraph为保存路径（其中的”/“用”.“替换）
+from pd_model_dygraph.x2paddle_code import main
+out =main(ipt)
+```
+> 若运行代码无误，则说明代码中有op不支持动转静，我们将会再未来支持；若报错，则说明pytorch2paddle转换出错，请提issue，我们将及时回复。

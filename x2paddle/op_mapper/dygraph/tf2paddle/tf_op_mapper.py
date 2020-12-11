@@ -284,7 +284,6 @@ class TFOpMapper(OpMapper):
             inputs["shape"] = dims.name
         layer_attrs["dtype"] = string(input_value.dtype)
         layer_attrs["fill_value"] = input_value.value
-        
 
         self.paddle_graph.add_layer(
             "paddle.full",
@@ -578,6 +577,9 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
+            
+    def FusedBatchNormV3(self, node):
+        self.FusedBatchNorm(node)
 
     def Mean(self, node):
         input = self.graph.get_input_node(node, 0)
@@ -923,6 +925,23 @@ class TFOpMapper(OpMapper):
         if axis < 0:
             axis += len(inputs_list[0].out_shapes[0])
 
+        input_names = [i.name for i in inputs_list]
+        self.paddle_graph.add_layer(
+            kernel="paddle.concat",
+            inputs={"x": input_names},
+            outputs=[node.name],
+            axis=axis)
+        
+    def Concat(self, node):
+        inputs_list = list()
+        for i in range(1, len(node.inputs)):
+            inputs_list.append(self.graph.get_input_node(node, i))
+        axis = self.graph.get_input_node(node, 0)
+        assert axis.layer_type == "Const", "axis for ConcatV2 must be type Const"
+        axis = axis.value
+        if axis < 0:
+            axis += len(inputs_list[0].out_shapes[0])
+            
         input_names = [i.name for i in inputs_list]
         self.paddle_graph.add_layer(
             kernel="paddle.concat",
@@ -1400,6 +1419,7 @@ class TFOpMapper(OpMapper):
         inputs = {"x": x.name, "y": y.name}
         x_shape = x.out_shapes[0]
         y_shape = y.out_shapes[0]
+        # TODO(syf)
         layer_id = self.paddle_graph.add_layer(
             "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
         self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}

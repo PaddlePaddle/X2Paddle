@@ -79,7 +79,6 @@ class Static_BNScaleFuser(FuseBase):
         graph.layers[new_layer_id] = new_layer
         matches.pop(new_layer_id)
 
-
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
         layer = matches[layers_id[0]]

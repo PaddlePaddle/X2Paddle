@@ -132,18 +132,9 @@ def tf2paddle(model_path,
         graph_opt = GraphOptimizer(source_frame="tf", paddle_type=paddle_type)
         graph_opt.optimize(mapper.paddle_graph)
     else:
-        from x2paddle.optimizer.tensorflow.bias import BiasOpt
-        from x2paddle.optimizer.tensorflow.transpose import TransposeOpt
-        from x2paddle.optimizer.tensorflow.batch_norm import BatchNormOpt
-        from x2paddle.optimizer.tensorflow.prelu import PReLUOpt
-        bias_opt = BiasOpt()
-        transpose_opt = TransposeOpt()
-        batch_norm_opt = BatchNormOpt()
-        prelu_opt = PReLUOpt()
-        bias_opt.run(mapper.paddle_graph)
-        batch_norm_opt.run(mapper.paddle_graph)
-        prelu_opt.run(mapper.paddle_graph)
-        transpose_opt.run(mapper.paddle_graph)
+        from x2paddle.optimizer.optimizer import GraphOptimizer
+        graph_opt = GraphOptimizer(source_frame="tf", paddle_type=paddle_type)
+        graph_opt.optimize(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
         
 

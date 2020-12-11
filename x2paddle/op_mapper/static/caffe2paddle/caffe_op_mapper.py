@@ -457,7 +457,6 @@ class CaffeOpMapper(OpMapper):
 
     def ReLU(self, node):
         """
-
         :param node:
         :return:
         """
@@ -974,4 +973,3 @@ class CaffeOpMapper(OpMapper):
             kernel=op_info,
             inputs={"x": self.get_input_name(input)},
             outputs=[node.layer_name])
-        

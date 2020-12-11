@@ -74,3 +74,25 @@
 |Ultra-Light-Fast-Generic-Face-Detector-1MB| [onnx_model](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/master/models/onnx)|9 |
 |BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](FAQ.md)|
 |GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](FAQ.md)|
+
+
+## PyTorch
+
+| 模型 | 代码 | 备注 |
+|------|----------|------|
+| AlexNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py)|-|
+| MNasNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mnasnet.py) |-|
+| MobileNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py) |-|
+| ResNet18 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |-|
+| ShuffleNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/shufflenet.py) |-|
+| SqueezeNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py) |-|
+| VGG16 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |-|
+| InceptionV3 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py) |-|
+| DeepLabv3_ResNet50 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/deeplabv3.py) |-|
+| FCN_ResNet50 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/fcn.py) |-|
+| CamembertForQuestionAnswering | [code](https://huggingface.co/transformers/model_doc/camembert.html) |只支持trace模式|
+| DPRContextEncoder | [code](https://huggingface.co/transformers/model_doc/dpr.html) |只支持trace模式|
+| ElectraModel | [code](https://huggingface.co/transformers/model_doc/electra.html ) |只支持trace模式|
+| FlaubertModel | [code](https://huggingface.co/transformers/model_doc/flaubert.html) |只支持trace模式|
+| Roberta| [code](https://huggingface.co/transformers/model_doc/roberta.html)  |只支持trace模式|
+| XLMRobertaForTokenClassification|[code](https://huggingface.co/transformers/model_doc/xlmroberta.html)  |只支持trace模式|
