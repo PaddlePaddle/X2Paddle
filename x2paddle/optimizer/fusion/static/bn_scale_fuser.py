@@ -20,87 +20,126 @@ from x2paddle.core.util import *
 
 class Static_BNScaleFuser(FuseBase):
     def __init__(self):
-        super(Static_BNScaleFuser, self).__init__(graph_type="dygraph")
+        super(Static_BNScaleFuser, self).__init__(graph_type="static")
+        patterns = list()
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm2d图结构。
         batchnorm2d层模式python实现代码示例:
-            conv5_bn = fluid.layers.batch_norm(input=conv5, is_test=True, param_attr=None, bias_attr=None, moving_mean_name='conv5_bn_mean', moving_variance_name='conv5_bn_variance', epsilon=9.999999747378752e-06, name='conv5_bn')
-        conv5_scale_scale = fluid.ParamAttr(name='conv5_scale_scale')
-        conv5_scale_cparam1 = fluid.layers.create_parameter(attr=conv5_scale_scale, dtype=conv5_bn.dtype, shape=[256], name='conv5_scale_cparam1', is_bias=True, default_initializer=Constant(value=1.0))
-        conv5_scale_mul = fluid.layers.elementwise_mul(x=conv5_bn, y=conv5_scale_cparam1, axis=1)
-        conv5_scale_offset = fluid.ParamAttr(name='conv5_scale_offset')
-        conv5_scale_cparam2 = fluid.layers.create_parameter(attr=conv5_scale_offset, dtype=conv5_bn.dtype, shape=[256], name='conv5_scale_cparam2', is_bias=True, default_initializer=Constant(value=1.0))
-        conv5_scale = fluid.layers.elementwise_add(x=conv5_scale_mul, y=conv5_scale_cparam2, axis=1)
+        模式一：
+        conv1_bn = paddle.nn.functional.batch_norm(x=conv1, weight=conv1_bn_weight, bias=conv1_bn_bias, running_mean=conv1_bn_mean, running_var=conv1_bn_variance, epsilon=9.999999747378752e-06, momentum=0.9990000128746033)
+        conv1_scale_cparam1 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam1')
+        conv1_scale_mul = paddle.multiply(x=conv1_bn, y=conv1_scale_cparam1, axis=1)
+        conv1_scale_cparam2 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam2')
+        conv1_scale_cparam2 = paddle.reshape(x=conv1_scale_cparam2, shape=[32, 1, 1])
+        conv1_scale = paddle.add(x=conv1_scale_mul, y=conv1_scale_cparam2)
+        模式二：
+        conv1_bn = paddle.nn.functional.batch_norm(x=conv1, weight=conv1_bn_weight, bias=conv1_bn_bias, running_mean=conv1_bn_mean, running_var=conv1_bn_variance, epsilon=9.999999747378752e-06, momentum=0.9990000128746033)
+        conv1_scale_cparam1 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam1')
+        conv1_scale_mul = paddle.multiply(x=conv1_bn, y=conv1_scale_cparam1, axis=1)
+        conv1_scale_cparam2 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam2')
+        conv1_scale = paddle.add(x=conv1_scale_mul, y=conv1_scale_cparam2)
         """
 
         def gen_name(id):
             return "x" + str(id)
         
-        self.pattern.add_layer(
-            "fluid.layers.batch_norm",
-            inputs={"input": "bn-input-0"},
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "paddle.nn.functional.batch_norm",
+            inputs={"input": "bn-input-0",
+                    "weight": "bn-input-1",
+                    "bias": "bn-input-2",
+                    "running_mean": "bn-input-3",
+                    "running_var": "bn-input-4",},
             outputs=[gen_name(0)])
-        self.pattern.add_layer(
-            "fluid.ParamAttr",
+        pattern.add_layer(
+            "paddle.static.create_parameter",
             inputs={},
             outputs=[gen_name(1)])
-        self.pattern.add_layer(
-            "fluid.layers.create_parameter",
-            inputs={"attr": gen_name(1)},
-            outputs=[gen_name(2)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(0)
-        inputs_dict['y'] = gen_name(2)
-        self.pattern.add_layer(
-            "fluid.layers.elementwise_mul",
+        inputs_dict['y'] = gen_name(1)
+        pattern.add_layer(
+            "paddle.multiply",
             inputs=inputs_dict,
-            outputs=[gen_name(3)])
-        self.pattern.add_layer(
-            "fluid.ParamAttr",
+            outputs=[gen_name(2)])
+        pattern.add_layer(
+            "paddle.static.create_parameter",
             inputs={},
+            outputs=[gen_name(3)])
+        pattern.add_layer(
+            "paddle.reshape",
+            inputs={"x": gen_name(3)},
             outputs=[gen_name(4)])
-        self.pattern.add_layer(
-            "fluid.layers.create_parameter",
-            inputs={"attr": gen_name(4)},
-            outputs=[gen_name(5)])
         inputs_dict = {}
-        inputs_dict['x'] = gen_name(3)
-        inputs_dict['y'] = gen_name(5)
-        self.pattern.add_layer(
-            "fluid.layers.elementwise_add",
+        inputs_dict['x'] = gen_name(2)
+        inputs_dict['y'] = gen_name(4)
+        pattern.add_layer(
+            "paddle.add",
             inputs=inputs_dict,
-            outputs=[gen_name(6)])
-        self.pattern.build(inputs={"input-0": "bn-input-0"})
+            outputs=[gen_name(5)])
+        pattern.build(inputs={"input-0": "bn-input-0",
+                              "input-1": "bn-input-1",
+                              "input-2": "bn-input-2",
+                              "input-3": "bn-input-3",
+                              "input-4": "bn-input-4"})
+        self.patterns.append(pattern)
+        
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "paddle.nn.functional.batch_norm",
+            inputs={"input": "bn-input-0",
+                    "weight": "bn-input-1",
+                    "bias": "bn-input-2",
+                    "running_mean": "bn-input-3",
+                    "running_var": "bn-input-4",},
+            outputs=[gen_name(0)])
+        pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(1)])
+        inputs_dict = {}
+        inputs_dict['x'] = gen_name(0)
+        inputs_dict['y'] = gen_name(1)
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs=inputs_dict,
+            outputs=[gen_name(2)])
+        pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(3)])
+        inputs_dict = {}
+        inputs_dict['x'] = gen_name(2)
+        inputs_dict['y'] = gen_name(3)
+        pattern.add_layer(
+            "paddle.add",
+            inputs=inputs_dict,
+            outputs=[gen_name(4)])
+        pattern.build(inputs={"input-0": "bn-input-0",
+                              "input-1": "bn-input-1",
+                              "input-2": "bn-input-2",
+                              "input-3": "bn-input-3",
+                              "input-4": "bn-input-4"})
+        self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)
-        new_layer_id = list(matches.keys())[0]
+        new_layer_id = list(matches.keys())[-1]
         graph.layers[new_layer_id] = new_layer
+        matches.pop(list(matches.keys())[1])
+        matches.pop(list(matches.keys())[2])
         matches.pop(new_layer_id)
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
-        layer = matches[layers_id[0]]
-        layer_inputs = layer.inputs
-        layer_name = layer.outputs[0]
-        layer_attrs = layer.attrs
-        layer_attrs["param_attr"] = string("{}_scale".format(layer_name))
-        layer_attrs["bias_attr"] = string("{}_offset".format(layer_name))
-        layer = matches[layers_id[-1]]
-        layer_outputs = layer.outputs
+        bn_layer = matches[layers_id[0]]
         layer = matches[layers_id[1]]
-        layer_name = layer.outputs[0]
-        scale_numpy = parameters.pop(layer_name)
-        parameters[layer_attrs["param_attr"][1: -1]] = scale_numpy
-        layer = matches[layers_id[4]]
-        layer_name = layer.outputs[0]
-        scale_numpy = parameters.pop(layer_name)
-        parameters[layer_attrs["bias_attr"][1: -1]] = scale_numpy
-        new_layer = PaddleLayer(
-            layers_id[0],
-            "fluid.layers.batch_norm",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            **layer_attrs)
-        return new_layer
+        bn_layer.inputs["weight"] = layer.outputs[0]
+        layer = matches[layers_id[3]]
+        bn_layer.inputs["bias"] = layer.outputs[0]
+        bn_layer.id = layers_id[-1]
+        layer = matches[layers_id[-1]]
+        bn_layer.outputs = layer.outputs
+        return bn_layer

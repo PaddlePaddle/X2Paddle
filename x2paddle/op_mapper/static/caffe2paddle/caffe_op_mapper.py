@@ -212,7 +212,7 @@ class CaffeOpMapper(OpMapper):
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
             shape=self.params[kernel_weight_name].shape,
@@ -222,7 +222,7 @@ class CaffeOpMapper(OpMapper):
             kernel_bias_name = node.name + '_bias'
             self.params[kernel_bias_name] = data[1]
             self.paddle_graph.add_layer(
-                kernel="paddle.static.nn.create_parameter",
+                kernel="paddle.static.create_parameter",
                 inputs={},
                 outputs=[kernel_bias_name],
                 shape=self.params[kernel_bias_name].shape,
@@ -268,7 +268,7 @@ class CaffeOpMapper(OpMapper):
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
             shape=self.params[kernel_weight_name].shape,
@@ -278,7 +278,7 @@ class CaffeOpMapper(OpMapper):
             kernel_bias_name = node.name + '_bias'
             self.params[kernel_bias_name] = data[1]
             self.paddle_graph.add_layer(
-                kernel="paddle.static.nn.create_parameter",
+                kernel="paddle.static.create_parameter",
                 inputs={},
                 outputs=[kernel_bias_name],
                 shape=self.params[kernel_bias_name].shape,
@@ -330,7 +330,7 @@ class CaffeOpMapper(OpMapper):
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
             shape=self.params[kernel_weight_name].shape,
@@ -340,7 +340,7 @@ class CaffeOpMapper(OpMapper):
             kernel_bias_name = node.name + '_bias'
             self.params[kernel_bias_name] = data[1]
             self.paddle_graph.add_layer(
-                kernel="paddle.static.nn.create_parameter",
+                kernel="paddle.static.create_parameter",
                 inputs={},
                 outputs=[kernel_bias_name],
                 shape=self.params[kernel_bias_name].shape,
@@ -467,7 +467,7 @@ class CaffeOpMapper(OpMapper):
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
             shape=self.params[kernel_weight_name].shape,
@@ -477,7 +477,7 @@ class CaffeOpMapper(OpMapper):
             kernel_bias_name = node.name + '_bias'
             self.params[kernel_bias_name] = data[1]
             self.paddle_graph.add_layer(
-                kernel="paddle.static.nn.create_parameter",
+                kernel="paddle.static.create_parameter",
                 inputs={},
                 outputs=[kernel_bias_name],
                 shape=self.params[kernel_bias_name].shape,
@@ -614,7 +614,7 @@ class CaffeOpMapper(OpMapper):
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = np.squeeze(data[0])
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
             shape=[num_parameters],
@@ -727,7 +727,7 @@ class CaffeOpMapper(OpMapper):
         mean_name = node.name + '_mean'
         self.params[mean_name] = mean
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[mean_name],
             shape=self.params[mean_name].shape,
@@ -736,7 +736,7 @@ class CaffeOpMapper(OpMapper):
         variance_name = node.name + '_variance'
         self.params[variance_name] = variance
         self.paddle_graph.add_layer(
-            kernel="paddle.static.nn.create_parameter",
+            kernel="paddle.static.create_parameter",
             inputs={},
             outputs=[variance_name],
             shape=self.params[variance_name].shape,
@@ -790,7 +790,7 @@ class CaffeOpMapper(OpMapper):
                 axis=1)
         else:
             self.paddle_graph.add_layer(
-                "paddle.static.nn.create_parameter",
+                "paddle.static.create_parameter",
                 inputs={},
                 outputs=[node.name + "_cparam1"],
                 shape=self.params[node.name + "_cparam1"].shape,
@@ -807,7 +807,7 @@ class CaffeOpMapper(OpMapper):
                 outputs=[node.name + "_mul"],
                 axis=axis)
         self.paddle_graph.add_layer(
-            "paddle.static.nn.create_parameter",
+            "paddle.static.create_parameter",
             inputs={},
             outputs=[node.name + "_cparam2"],
             shape=self.params[node.name + "_cparam2"].shape,
