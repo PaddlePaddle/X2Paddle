@@ -1120,7 +1120,7 @@ class CaffeOpMapper(OpMapper):
             "pooled_width": params.pooled_w,
             "spatial_scale": params.spatial_scale}
         self.paddle_graph.add_layer(
-            "custom_layer:roipooling",
+            "custom_layer:ROIPooling",
             inputs=inputs_dict,
             outputs=layer_outputs,
             **layer_attrs)
