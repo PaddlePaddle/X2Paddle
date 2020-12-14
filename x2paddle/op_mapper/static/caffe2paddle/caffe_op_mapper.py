@@ -21,7 +21,7 @@ from x2paddle.core.util import *
 from x2paddle.core.program import PaddleGraph 
 
 
-def adjust_parameters(node):
+def _adjust_parameters(node):
     data = node.data
     # When using the protobuf-backend, each parameter initially has four dimensions.
     # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
@@ -57,8 +57,8 @@ def adjust_parameters(node):
         shape_new = data[idx].shape
     return data
 
-def get_kernel_parameters(kind, params):
-    assert kind in ['Convolution', 'Pooling', 'Deconvolution']
+def _get_kernel_parameters(kind, params):
+    assert kind in ["Convolution", "Pooling", "Deconvolution", "ConvolutionDepthwise"]
     [k_h, k_w] = [1, 1]
     if isinstance(params.kernel_size, numbers.Number):
         [k_h, k_w] = [params.kernel_size] * 2
@@ -93,8 +93,9 @@ def get_kernel_parameters(kind, params):
     dila_h = dila_w = 1
     group = 1
     c_o = 1
-    if kind in ['Convolution', 'Deconvolution']:
-        c_o = params.num_output
+    if kind in ["Convolution", "Deconvolution", "ConvolutionDepthwise"]:
+        if kind in ["Convolution", "Deconvolution"]:
+            c_o = params.num_output
         dila_len = len(params.dilation)
         if dila_len == 2:
             dila_h = params.dilation[0]
@@ -193,7 +194,7 @@ class CaffeOpMapper(OpMapper):
     def Convolution(self, node):
         data = node.data
         params = node.layer.convolution_param
-        channel, kernel, stride, pad, dilation, group = get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
         if data is None:
             data = []
@@ -207,7 +208,7 @@ class CaffeOpMapper(OpMapper):
                     'float32'))
             data.append(np.zeros([output_c, ]).astype('float32'))
         else:
-            data = adjust_parameters(node)
+            data = _adjust_parameters(node)
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
@@ -249,7 +250,7 @@ class CaffeOpMapper(OpMapper):
     def Deconvolution(self, node):
         data = node.data
         params = node.layer.convolution_param
-        channel, kernel, stride, pad, dilation, group = get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
         if data is None:
             data = []
@@ -263,7 +264,7 @@ class CaffeOpMapper(OpMapper):
                     'float32'))
             data.append(np.zeros([output_c, ]).astype('float32'))
         else:
-            data = adjust_parameters(node)
+            data = _adjust_parameters(node)
         kernel_weight_name = node.name + '_weights'
         self.params[kernel_weight_name] = data[0]
         self.paddle_graph.add_layer(
@@ -307,9 +308,6 @@ class CaffeOpMapper(OpMapper):
         self.ConvolutionDepthwise(node)
         
     def ConvolutionDepthwise(self, node):
-        conv2d_name = name_generator("conv", self.nn_name2id)
-        output_name = node.layer_name
-        layer_outputs = [conv2d_name, output_name]
         data = node.data
         params = node.layer.convolution_param
         out_channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
@@ -372,7 +370,7 @@ class CaffeOpMapper(OpMapper):
         ceil_mode = getattr(params, 'ceil_mode', True)
         global_pool = getattr(params, 'global_pooling', False)
         kernel_default = [1, 1]
-        channel, kernel, stride, pad, dilation, group = get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
         assert len(
             node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
@@ -390,7 +388,7 @@ class CaffeOpMapper(OpMapper):
                 self.paddle_graph.add_layer(
                     "paddle.nn.functional.adaptive_avg_pool2d",
                     inputs={"x": input.name},
-                    outputs=layer_outputs,
+                    outputs=[node.name],
                     output_size=kernel)
         else:
             if params.pool == 0:
@@ -406,7 +404,7 @@ class CaffeOpMapper(OpMapper):
                 # TODO(syf): The op has diff.
                 self.paddle_graph.add_layer(
                     kernel="fluid.layers.pool2d",
-                    inputs={"input": x.name},
+                    inputs={"input": input.name},
                     outputs=[node.name],
                     pool_size=kernel,
                     pool_type=string("avg"),
@@ -456,7 +454,7 @@ class CaffeOpMapper(OpMapper):
             data.append(
                 np.zeros([output_c]).astype('float32').astype('float32'))
         else:
-            data = adjust_parameters(node)
+            data = _adjust_parameters(node)
             # Reshape the parameters to Paddle's ordering
             transpose_order = (1, 0)
             w = data[0]
@@ -605,20 +603,21 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.prelu_param
         mode_bool = params.channel_shared
+        output_shape = node.out_shapes[0]
         if mode_bool:
-            mode = 'all'
+            num_parameters = 1
         else:
-            mode = 'channel'
+            num_parameters = output_shape[1]
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
             node.name, node.layer_type)
         kernel_weight_name = node.name + '_weights'
-        self.params[kernel_weight_name] = data[0]
+        self.params[kernel_weight_name] = np.squeeze(data[0])
         self.paddle_graph.add_layer(
             kernel="paddle.static.nn.create_parameter",
             inputs={},
             outputs=[kernel_weight_name],
-            shape=self.params[kernel_weight_name].shape,
+            shape=[num_parameters],
             dtype=string(str(self.params[kernel_weight_name].dtype)),
             name=string(kernel_weight_name))
         self.paddle_graph.add_layer(
