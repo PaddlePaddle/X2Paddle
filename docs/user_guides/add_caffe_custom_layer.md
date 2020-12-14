@@ -38,50 +38,6 @@ bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
 ```
 
 ***步骤三 添加自定义Layer的实现代码***
-**静态图方式：**
-- 进入./x2paddle/op_mapper/static/caffe2paddle/caffe_custom_layer，创建.py文件，例如mylayer.py
-- 仿照./x2paddle/op_mapper/static/caffe2paddle/caffe_custom_layer中的其他文件，在mylayer.py中主要需要实现3个函数，下面以roipooling.py为例分析代码：
-  1. `def roipooling_shape(input_shape, pooled_w=None, pooled_h=None)`  
-     参数：
-     1. input_shape（list）：其中每个元素代表该层每个输入数据的shape，为必须传入的参数  
-     2. pooled_w（int）：代表ROI Pooling的kernel的宽，其命名与.prototxt中roi_pooling_param中的key一致
-     3. pooled_h（int）：代表ROI Pooling的kernel的高，其命名与.prototxt中roi_pooling_param中的key一致  
-
-     功能：计算出进行ROI Pooling后的shape  
-     返回：一个list，其中每个元素代表每个输出数据的shape，由于ROI Pooling的输出数据只有一个，所以其list长度为1  
-
-  2. `def roipooling_layer(inputs, input_shape=None, name=None, pooled_w=None, pooled_h=None, spatial_scale=None)`
-
-     参数：
-     1. inputs（list）：其中每个元素代表该层每个输入数据，为必须传入的参数
-     2. input_shape（list）：其中每个元素代表该层每个输入数据的shape，为必须传入的参数  
-     3. name（str）：ROI Pooling层的名字，为必须传入的参数  
-     4. pooled_w（int）：代表ROI Pooling的kernel的宽，其命名与.prototxt中roi_pooling_param中的key一致
-     5. pooled_h（int）：代表ROI Pooling的kernel的高，其命名与.prototxt中roi_pooling_param中的key一致
-     6. spatial_scale（float）：用于将ROI坐标从输入比例转换为池化时使用的比例，其命名与.prototxt中roi_pooling_param中的key一致  
-
-     功能：运用PaddlePaddle完成组网来实现`roipooling_layer`的功能  
-     返回：一个Variable，为组网后的结果
-
-  3. `def roipooling_weights(name, data=None)`  
-
-     参数：
-     1. name（str）：ROI Pooling层的名字，为必须传入的参数
-     2. data（list）：由Caffe模型.caffemodel获得的关于roipooling的参数，roipooling的参数为None
-
-     功能：为每个参数（例如kernel、bias等）命名；同时，若Caffe中该层参数与PaddlePaddle中参数的格式不一致，则变换操作也在该函数中实现。  
-     返回：一个list，包含每个参数的名字。
-
-- 在roipooling.py中注册`roipooling`，主要运用下述代码实现：
-  ```
-  register(kind='ROIPooling', shape=roipooling_shape, layer=roipooling_layer, weights=roipooling_weights)
-  # kind为在model.prototxt中roipooling的type
-  ```
-- 在./x2paddle/op_mapper/caffe_custom_layer/\_\_init\_\_.py中引入该层的使用
-  ```
-  from . import roipooling
-  ```
-**动态图方式：**
 > 【注意】若Caffe自定义layer与Paddle的op一一对应，使用方式一，否则使用方式二。
 
 - 方式一：
