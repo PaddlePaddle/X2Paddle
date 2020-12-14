@@ -1092,11 +1092,7 @@ class CaffeOpMapper(OpMapper):
             **layer_attrs)
         
     def ReLU6(self, node):
-        if "relu6" in self.nn_name2id:
-            self.nn_name2id["relu6"] += 1
-        else:
-            self.nn_name2id["relu6"] = 0
-        relu6_name = "relu6" + str(self.nn_name2id["relu6"])
+        relu6_name = name_generator("relu6", self.nn_name2id)
         output_name = node.layer_name
         layer_outputs = [relu6_name, output_name]
         assert len(

@@ -15,183 +15,167 @@
 import numbers
 import copy
 import numpy as np
-from x2paddle.decoder.caffe_decoder import CaffeGraph
+from x2paddle.decoder.caffe_decoder import CaffeGraph, CaffeGraphNode
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
-from x2paddle.op_mapper.static.caffe2paddle import caffe_shape
-from x2paddle.op_mapper.static.caffe2paddle.caffe_custom_layer import *
 from x2paddle.core.program import PaddleGraph 
+
+
+def _adjust_parameters(node):
+    data = node.data
+    # When using the protobuf-backend, each parameter initially has four dimensions.
+    # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
+    # This implementation takes care of the common cases. However, it does leave the
+    # potential for future issues.
+    # The Caffe-backend does not suffer from this problem.
+    data = list(data)
+
+    squeeze_indices = [1]  # Squeeze biases.
+    if node.layer_type == 'InnerProduct':
+        squeeze_indices.append(0)  # Squeeze FC.
+
+    for idx in squeeze_indices:
+        if idx >= len(data):
+            continue
+
+        d = data[idx]
+        assert len(
+            d.shape
+        ) == 4, 'invalid shape[%s] from caffe when adjust_parameters' % (
+            str(d.shape))
+
+        shape_old = d.shape
+        sq_axis = None
+        if idx == 0:
+            sq_axis = (0, 1)
+        elif idx == 1:
+            sq_axis = (0, 1, 2)
+        else:
+            continue
+
+        data[idx] = np.squeeze(d, axis=sq_axis)
+        shape_new = data[idx].shape
+    return data
+
+def _get_kernel_parameters(kind, params):
+    assert kind in ["Convolution", "Pooling", "Deconvolution", "ConvolutionDepthwise"]
+    [k_h, k_w] = [1, 1]
+    if isinstance(params.kernel_size, numbers.Number):
+        [k_h, k_w] = [params.kernel_size] * 2
+    elif len(params.kernel_size) > 0:
+        k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[
+            0]
+        k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
+            len(params.kernel_size) - 1]
+    elif params.kernel_h > 0 or params.kernel_w > 0:
+        k_h = params.kernel_h
+        k_w = params.kernel_w
+    [s_h, s_w] = [1, 1]
+    if isinstance(params.stride, numbers.Number):
+        [s_h, s_w] = [params.stride] * 2
+    elif len(params.stride) > 0:
+        s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
+        s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
+            params.stride) - 1]
+    elif params.stride_h > 0 or params.stride_w > 0:
+        s_h = params.stride_h
+        s_w = params.stride_w
+    [p_h, p_w] = [0, 0]
+    if isinstance(params.pad, numbers.Number):
+        [p_h, p_w] = [params.pad] * 2
+    elif len(params.pad) > 0:
+        p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
+        p_w = params.pad_w if params.pad_w > 0 else params.pad[len(
+            params.pad) - 1]
+    elif params.pad_h > 0 or params.pad_w > 0:
+        p_h = params.pad_h
+        p_w = params.pad_w
+    dila_h = dila_w = 1
+    group = 1
+    c_o = 1
+    if kind in ["Convolution", "Deconvolution", "ConvolutionDepthwise"]:
+        if kind in ["Convolution", "Deconvolution"]:
+            c_o = params.num_output
+        dila_len = len(params.dilation)
+        if dila_len == 2:
+            dila_h = params.dilation[0]
+            dila_w = params.dilation[1]
+        elif dila_len == 1:
+            dila_h = dila_w = params.dilation[0]
+        else:
+            assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
+                dila_len)
+    if kind in ['Convolution', 'Deconvolution']:
+        group = params.group
+    kernel = [k_h, k_w]
+    stride = [s_h, s_w]
+    pad = [p_h, p_w]
+    dilation = [dila_h, dila_w]
+    return c_o, kernel, stride, pad, dilation, group
 
 
 class CaffeOpMapper(OpMapper):
     directly_map_ops = {
         'AbsVal': 'paddle.abs',
-        'Sigmoid': 'fluid.layers.sigmoid',
+        'Sigmoid': 'paddle.nn.functional.sigmoid',
         'TanH': 'paddle.tanh',
     }
 
     def __init__(self, decoder):
         super(CaffeOpMapper, self).__init__()
         self.graph = decoder.caffe_graph
-        self.weights = dict()
+        self.params = dict()
         resolver = decoder.resolver
         self.used_custom_layers = {}
         self.paddle_graph = PaddleGraph(parent_layer=None, graph_type="static", source_type="caffe")
         self.paddle_graph.inputs = self.graph.input_nodes
         self.paddle_graph.outputs = self.graph.output_nodes
 
-        print("Total nodes: {}".format(len(self.graph.topo_sort)))
+        print("Total nodes: {}".format(
+            sum([
+                isinstance(node, CaffeGraphNode)
+                for name, node in self.graph.node_map.items()
+            ])))
+        print("Nodes converting ...")
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
-            if node.layer_type == 'DepthwiseConvolution':
-                node.layer_type = 'ConvolutionDepthwise'
             op = node.layer_type
             if hasattr(self, op):
-                self.set_node_shape(node)
                 func = getattr(self, op)
                 func(node)
-            elif op in custom_layers:
-                self.set_node_shape(node, is_fluid_op=False)
-                self.deal_custom_layer(node)
             elif op in self.directly_map_ops:
-                self.set_node_shape(node)
                 self.directly_map(node)
-            else:
-                raise Exception(
-                    "The op {} in model is not supported yet.".format(op))
-        self.paddle_graph.set_parameters(self.weights)
+        print("\nNodes converted.")
+        self.paddle_graph.set_parameters(self.params)
         self.paddle_graph.set_custom(self.used_custom_layers)
-
 
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
             node = self.graph.get_node(node_name)
             op = node.layer_type
-            if not hasattr(self, op) and op not in custom_layers:
+            if not hasattr(self, op) and \
+                op not in self.directly_map_ops and \
+                op not in self.elementwise_ops:
                 unsupported_ops.add(op)
         if len(unsupported_ops) == 0:
             return True
         else:
-            print("There are {} ops not supported yet, list as below".format(
-                len(unsupported_ops)))
+            if len(unsupported_ops) > 0:
+                print("\n========= {} OPs are not supported yet ===========".format(
+                    len(unsupported_ops)))
             for op in unsupported_ops:
-                print(op)
+                print("========== {} ============".format(op))
             return False
-
-    def set_node_shape(self, node, is_fluid_op=True):
-        inputs = node.inputs
-        input_shape = []
-        for i, nm in enumerate(inputs):
-            last_node = self.graph.get_node(nm)
-            tmp = node.layer.bottom[i]
-            idx = list(last_node.layer.top).index(tmp)
-            input_shape.append(last_node.output_shape[idx])
-
-        node.input_shape = input_shape
-        func_name = 'shape_' + node.layer_type.lower()
-        if is_fluid_op:
-            node.output_shape = getattr(caffe_shape, func_name)(node.layer,
-                                                                input_shape)
-        else:
-            node.output_shape = compute_output_shape(node)
-
-    def adjust_parameters(self, node):
-        data = node.data
-        # When using the protobuf-backend, each parameter initially has four dimensions.
-        # In certain cases (like FC layers), we want to eliminate the singleton dimensions.
-        # This implementation takes care of the common cases. However, it does leave the
-        # potential for future issues.
-        # The Caffe-backend does not suffer from this problem.
-        data = list(data)
-
-        squeeze_indices = [1]  # Squeeze biases.
-        if node.layer_type == 'InnerProduct':
-            squeeze_indices.append(0)  # Squeeze FC.
-
-        for idx in squeeze_indices:
-            if idx >= len(data):
-                continue
-
-            d = data[idx]
-            assert len(
-                d.shape
-            ) == 4, 'invalid shape[%s] from caffe when adjust_parameters' % (
-                str(d.shape))
-
-            shape_old = d.shape
-            sq_axis = None
-            if idx == 0:
-                sq_axis = (0, 1)
-            elif idx == 1:
-                sq_axis = (0, 1, 2)
-            else:
-                continue
-
-            data[idx] = np.squeeze(d, axis=sq_axis)
-            shape_new = data[idx].shape
-        return data
-
-    def get_kernel_parameters(self, kind, params):
-        assert kind in ['Convolution', 'Pooling', 'Deconvolution']
-        [k_h, k_w] = [1, 1]
-        if isinstance(params.kernel_size, numbers.Number):
-            [k_h, k_w] = [params.kernel_size] * 2
-        elif len(params.kernel_size) > 0:
-            k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[
-                0]
-            k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
-                len(params.kernel_size) - 1]
-        elif params.kernel_h > 0 or params.kernel_w > 0:
-            k_h = params.kernel_h
-            k_w = params.kernel_w
-        [s_h, s_w] = [1, 1]
-        if isinstance(params.stride, numbers.Number):
-            [s_h, s_w] = [params.stride] * 2
-        elif len(params.stride) > 0:
-            s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
-            s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
-                params.stride) - 1]
-        elif params.stride_h > 0 or params.stride_w > 0:
-            s_h = params.stride_h
-            s_w = params.stride_w
-        [p_h, p_w] = [0, 0]
-        if isinstance(params.pad, numbers.Number):
-            [p_h, p_w] = [params.pad] * 2
-        elif len(params.pad) > 0:
-            p_h = params.pad_h if params.pad_h > 0 else params.pad[0]
-            p_w = params.pad_w if params.pad_w > 0 else params.pad[len(
-                params.pad) - 1]
-        elif params.pad_h > 0 or params.pad_w > 0:
-            p_h = params.pad_h
-            p_w = params.pad_w
-        dila_h = dila_w = 1
-        group = 1
-        c_o = 1
-        if kind in ['Convolution', 'Deconvolution']:
-            c_o = params.num_output
-            dila_len = len(params.dilation)
-            if dila_len == 2:
-                dila_h = params.dilation[0]
-                dila_w = params.dilation[1]
-            elif dila_len == 1:
-                dila_h = dila_w = params.dilation[0]
-            else:
-                assert dila_len == 0, "invalid length[%s] of dilation in convolution" % (
-                    dila_len)
-        if kind in ['Convolution', 'Deconvolution']:
-            group = params.group
-        kernel = [k_h, k_w]
-        stride = [s_h, s_w]
-        pad = [p_h, p_w]
-        dilation = [dila_h, dila_w]
-        return c_o, kernel, stride, pad, dilation, group
-
-    def get_input_name(self, node):
-        if hasattr(node, "index"):
-            return "{}_{}".format(node.layer_name, node.index)
-        else:
-            return node.layer_name
+        
+    def directly_map(self, node):
+        assert node.layer_type in self.directly_map_ops
+        op_info = self.directly_map_ops[node.layer_type]
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            kernel=op_info,
+            inputs={"x": input.name},
+            outputs=[node.name])
 
     def Input(self, node):
         shape = list(node.layer.input_param.shape[0].dim)[1:]
@@ -199,128 +183,236 @@ class CaffeOpMapper(OpMapper):
         layer_attrs = {
             "dtype": string(dtype),
             "shape": [-1] + shape,
-            "name": string(node.layer_name)
+            "name": string(node.name)
         }
         self.paddle_graph.add_layer(
-            kernel="fluid.data",
+            kernel="paddle.static.data",
             inputs={},
-            outputs=[node.layer_name],
+            outputs=[node.name],
             **layer_attrs)
 
     def Convolution(self, node):
         data = node.data
         params = node.layer.convolution_param
-        channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
         if data is None:
             data = []
             print(
                 "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
-                .format(node.layer_name, node.layer_type))
-            input_c = node.input_shape[0][1]
+                .format(node.name, node.layer_type))
+            input_c = node.in_shapes[0][1]
             output_c = channel
             data.append(
                 np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype(
                     'float32'))
             data.append(np.zeros([output_c, ]).astype('float32'))
         else:
-            data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_weights'] = data[0]
+            data = _adjust_parameters(node)
+        kernel_weight_name = node.name + '_weights'
+        self.params[kernel_weight_name] = data[0]
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[kernel_weight_name],
+            shape=self.params[kernel_weight_name].shape,
+            dtype=string(str(self.params[kernel_weight_name].dtype)),
+            name=string(kernel_weight_name))
         if len(data) == 2:
-            self.weights[node.layer_name + '_bias'] = data[1]
+            kernel_bias_name = node.name + '_bias'
+            self.params[kernel_bias_name] = data[1]
+            self.paddle_graph.add_layer(
+                kernel="paddle.static.create_parameter",
+                inputs={},
+                outputs=[kernel_bias_name],
+                shape=self.params[kernel_bias_name].shape,
+                dtype=string(str(self.params[kernel_bias_name].dtype)),
+                name=string(kernel_bias_name))
         assert len(node.inputs
                    ) == 1, 'The count of Convolution node\'s input is not 1.'
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        layer_attrs = {
-            'filter_size': kernel,
-            'num_filters': channel,
-            'stride': stride,
-            'padding': pad,
-            'dilation': dilation,
-            'groups': group,
-            'name': string(node.layer_name),
-            'param_attr': string(node.layer_name + '_weights'),
-            'bias_attr': False
-            if len(data) == 1 else string(node.layer_name + '_bias'),
-        }
+        layer_inputs = {"x": input.name, 
+                        "weight": kernel_weight_name}
+        layer_attrs = {'stride': stride,
+                       'padding': pad,
+                       'dilation': dilation,
+                       'groups': group}
+        if len(data) == 2:
+            layer_inputs["bias"] = kernel_bias_name
+        else:
+            layer_attrs["bias"] = None
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.conv2d",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)        
+            kernel="paddle.nn.functional.conv2d",
+            inputs=layer_inputs,
+            outputs=[node.name],
+            **layer_attrs) 
         
     def Deconvolution(self, node):
         data = node.data
         params = node.layer.convolution_param
-        channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
         if data is None:
             data = []
             print(
                 'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
-                .format(node.layer_name, node.layer_type))
-            input_c = node.input_shape[0][1]
+                .format(node.name, node.layer_type))
+            input_c = node.in_shapes[0][1]
             output_c = channel
             data.append(
                 np.zeros([output_c, input_c, kernel[0], kernel[1]]).astype(
                     'float32'))
             data.append(np.zeros([output_c, ]).astype('float32'))
         else:
-            data = self.adjust_parameters(node)
-        self.weights[node.layer_name + '_weights'] = data[0]
+            data = _adjust_parameters(node)
+        kernel_weight_name = node.name + '_weights'
+        self.params[kernel_weight_name] = data[0]
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[kernel_weight_name],
+            shape=self.params[kernel_weight_name].shape,
+            dtype=string(str(self.params[kernel_weight_name].dtype)),
+            name=string(kernel_weight_name))
         if len(data) == 2:
-            self.weights[node.layer_name + '_bias'] = data[1]
+            kernel_bias_name = node.name + '_bias'
+            self.params[kernel_bias_name] = data[1]
+            self.paddle_graph.add_layer(
+                kernel="paddle.static.create_parameter",
+                inputs={},
+                outputs=[kernel_bias_name],
+                shape=self.params[kernel_bias_name].shape,
+                dtype=string(str(self.params[kernel_bias_name].dtype)),
+                name=string(kernel_bias_name))
         assert len(node.inputs
                    ) == 1, 'The count of Deconvolution node\'s input is not 1.'
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        layer_attrs = {
-            'output_size': None,
-            'filter_size': kernel,
-            'num_filters': channel,
-            'stride': stride,
-            'padding': pad,
-            'dilation': dilation,
-            'groups': group,
-            'name': string(node.layer_name),
-            'param_attr': string(node.layer_name + '_weights'),
-            'bias_attr': False
-            if len(data) == 1 else string(node.layer_name + '_bias')
-        }
+        layer_inputs = {"x": input.name, 
+                        "weight": kernel_weight_name}
+        layer_attrs = {'stride': stride,
+                       'padding': pad,
+                       'dilation': dilation,
+                       'groups': group}
+        if len(data) == 2:
+            layer_inputs["bias"] = kernel_bias_name
+        else:
+            layer_attrs["bias"] = None
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.conv2d_transpose",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
+            kernel="paddle.nn.functional.conv2d_transpose",
+            inputs=layer_inputs,
+            outputs=[node.name],
             **layer_attrs)    
+        
+    def DepthwiseConvolution(self, node):
+        node.layer_type = "ConvolutionDepthwise"
+        self.ConvolutionDepthwise(node)
+        
+    def ConvolutionDepthwise(self, node):
+        data = node.data
+        params = node.layer.convolution_param
+        out_channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
+            node.layer_type, params)
+        out_channel = params.num_output if params.num_output is not None else node.in_shapes[0][1]
+        in_channel = node.in_shapes[0][1]
+        group = int(in_channel / (in_channel / out_channel)) if in_channel > out_channel else int(in_channel /
+                                                                (out_channel / in_channel))
+        if data is None:
+            data = []
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.layer_name, node.layer_type))
+            data.append(
+                np.zeros([out_channel, node.in_shapes[0][1], kernel[0], kernel[1]]).astype(
+                    'float32'))
+            data.append(np.zeros([out_channel, ]).astype('float32'))
+        else:
+            data = _adjust_parameters(node)
+        kernel_weight_name = node.name + '_weights'
+        self.params[kernel_weight_name] = data[0]
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[kernel_weight_name],
+            shape=self.params[kernel_weight_name].shape,
+            dtype=string(str(self.params[kernel_weight_name].dtype)),
+            name=string(kernel_weight_name))
+        if len(data) == 2:
+            kernel_bias_name = node.name + '_bias'
+            self.params[kernel_bias_name] = data[1]
+            self.paddle_graph.add_layer(
+                kernel="paddle.static.create_parameter",
+                inputs={},
+                outputs=[kernel_bias_name],
+                shape=self.params[kernel_bias_name].shape,
+                dtype=string(str(self.params[kernel_bias_name].dtype)),
+                name=string(kernel_bias_name))
+        assert len(node.inputs
+                   ) == 1, "The count of Deconvolution node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        layer_inputs = {"x": input.name, 
+                        "weight": kernel_weight_name}
+        layer_attrs = {'stride': stride,
+                       'padding': pad,
+                       'dilation': dilation,
+                       'groups': group}
+        if len(data) == 2:
+            layer_inputs["bias"] = kernel_bias_name
+        else:
+            layer_attrs["bias"] = None
+        self.paddle_graph.add_layer(
+            kernel="paddle.nn.functional.conv2d",
+            inputs=layer_inputs,
+            outputs=[node.name],
+            **layer_attrs) 
 
     def Pooling(self, node):
         params = node.layer.pooling_param
         ceil_mode = getattr(params, 'ceil_mode', True)
         global_pool = getattr(params, 'global_pooling', False)
         kernel_default = [1, 1]
-        channel, kernel, stride, pad, dilation, group = self.get_kernel_parameters(
+        channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
             node.layer_type, params)
-        if params.pool == 0:
-            pool_type = 'max'
-        else:
-            pool_type = 'avg'
         assert len(
             node.inputs) == 1, 'The count of Pooling node\'s input is not 1.'
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        layer_attrs = {
-            'pool_size': kernel,
-            'pool_stride': stride,
-            'pool_padding': pad,
-            'ceil_mode': ceil_mode,
-            'pool_type': string(pool_type),
-            'exclusive': False,
-            'global_pooling': global_pool,
-            'name': string(node.layer_name)
-        }
-        self.paddle_graph.add_layer(
-            kernel="fluid.layers.pool2d",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)    
+        if global_pool:
+            if kernel[0] == 0:
+                kernel = [1, 1]
+            if params.pool == 0:
+                self.paddle_graph.add_layer(
+                    "paddle.nn.functional.adaptive_max_pool2d",
+                    inputs={"x": input.name},
+                    outputs=layer_outputs,
+                    output_size=kernel)
+            else:
+                self.paddle_graph.add_layer(
+                    "paddle.nn.functional.adaptive_avg_pool2d",
+                    inputs={"x": input.name},
+                    outputs=[node.name],
+                    output_size=kernel)
+        else:
+            if params.pool == 0:
+                self.paddle_graph.add_layer(
+                    kernel="paddle.nn.functional.max_pool2d",
+                    inputs={"x": input.name},
+                    outputs=[node.name],
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=pad,
+                    ceil_mode=ceil_mode)
+            else:
+                # TODO(syf): The op has diff.
+                self.paddle_graph.add_layer(
+                    kernel="fluid.layers.pool2d",
+                    inputs={"input": input.name},
+                    outputs=[node.name],
+                    pool_size=kernel,
+                    pool_type=string("avg"),
+                    pool_stride=stride,
+                    pool_padding=pad,
+                    ceil_mode=ceil_mode,
+                    exclusive=False,
+                    global_pooling=False)
 
     def LRN(self, node):
         assert len(node.inputs) == 1, 'The count of LRN node\'s input is not 1.'
@@ -338,12 +430,12 @@ class CaffeOpMapper(OpMapper):
             'k': params.k,
             'alpha': alpha,
             'beta': params.beta,
-            'name': string(node.layer_name)
+            'name': string(node.name)
         }
         self.paddle_graph.add_layer(
             kernel="fluid.layers.lrn",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
+            inputs={"input": input.name},
+            outputs=[node.name],
             **layer_attrs)
 
     def InnerProduct(self, node):
@@ -353,7 +445,7 @@ class CaffeOpMapper(OpMapper):
             print(
                 'The parameter of {} (type is {}) is not set. So we set the parameters as 0.'
                 .format(node.layer_name, node.layer_type))
-            input_c = node.input_shape[0][1]
+            input_c = node.in_shapes[0][1]
             output_c = params.num_output
             data = []
             data.append(
@@ -362,7 +454,7 @@ class CaffeOpMapper(OpMapper):
             data.append(
                 np.zeros([output_c]).astype('float32').astype('float32'))
         else:
-            data = self.adjust_parameters(node)
+            data = _adjust_parameters(node)
             # Reshape the parameters to Paddle's ordering
             transpose_order = (1, 0)
             w = data[0]
@@ -372,28 +464,55 @@ class CaffeOpMapper(OpMapper):
             w = w.transpose(transpose_order)
             data[0] = w
 
-        self.weights[node.layer_name + '_weights'] = data[0]
+        kernel_weight_name = node.name + '_weights'
+        self.params[kernel_weight_name] = data[0]
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[kernel_weight_name],
+            shape=self.params[kernel_weight_name].shape,
+            dtype=string(str(self.params[kernel_weight_name].dtype)),
+            name=string(kernel_weight_name))
         if len(data) == 2:
-            self.weights[node.layer_name + '_bias'] = data[1]
+            kernel_bias_name = node.name + '_bias'
+            self.params[kernel_bias_name] = data[1]
+            self.paddle_graph.add_layer(
+                kernel="paddle.static.create_parameter",
+                inputs={},
+                outputs=[kernel_bias_name],
+                shape=self.params[kernel_bias_name].shape,
+                dtype=string(str(self.params[kernel_bias_name].dtype)),
+                name=string(kernel_bias_name))
         assert len(node.inputs
                    ) == 1, 'The count of InnerProduct node\'s input is not 1.'
         #params = node.layer.inner_product_param
         assert params.axis == 1
         assert params.bias_term == True
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        layer_attrs = {
-            'size': params.num_output,
-            'name': string(node.layer_name),
-            'act': None,
-            'param_attr': string(node.layer_name + '_weights'),
-            'bias_attr': False
-            if len(data) == 1 else string(node.layer_name + '_bias')
-        }
-        self.paddle_graph.add_layer(
-            kernel="fluid.layers.fc",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)
+        layer_inputs = {"x": input.name, 
+                        "weight": kernel_weight_name}
+        layer_attrs = dict()
+        if len(data) == 2:
+            layer_inputs["bias"] = kernel_bias_name
+        else:
+            layer_attrs["bias"] = None
+        if node.in_shapes[0][-1] != data[0].shape[0]:
+            self.paddle_graph.add_layer(
+                "paddle.reshape",
+                inputs={"x": input.name},
+                outputs=[input.name],
+                shape=[-1, data[0].shape[0]])
+            self.paddle_graph.add_layer(
+                kernel="paddle.nn.functional.linear",
+                inputs=layer_inputs,
+                outputs=[node.name],
+                **layer_attrs)        
+        else:
+            self.paddle_graph.add_layer(
+                kernel="paddle.nn.functional.linear",
+                inputs=layer_inputs,
+                outputs=[node.name],
+                **layer_attrs)        
 
     def Softmax(self, node):
         assert len(
@@ -401,19 +520,19 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.softmax_param
         axis = params.axis
-        shape = node.input_shape[0]
+        shape = node.in_shapes[0]
         dims = len(shape)
         axis = axis + dims if axis < 0 else axis
         layer_attrs = {'axis': axis, 'name': string(node.layer_name + '_softmax')}
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.softmax",
-            inputs={"x": self.get_input_name(input)},
+            inputs={"x": input.name},
             outputs=[node.layer_name],
             **layer_attrs)
 
     def Slice(self, node):
         assert len(
-            node.inputs) == 1, 'The count of Slice node\'s input is not 1.'
+            node.inputs) == 1, "The count of Slice node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         top_len = len(node.layer.top)
         params = node.layer.slice_param
@@ -421,20 +540,19 @@ class CaffeOpMapper(OpMapper):
         slice_dim = params.slice_dim
         if slice_dim != 1 and axis == 1:
             axis = slice_dim
-        output_shape = node.output_shape
+        output_shape = node.out_shapes
         sections_list = list()
         outputs_list = list()
         for i, s in enumerate(output_shape):
             sections_list.append(s[axis])
-            outputs_list.append("{}_{}".format(node.layer_name, i))
+            outputs_list.append("{}_p{}".format(node.layer_name, i))
         layer_attrs = {
             'num_or_sections': sections_list,
-            'dim': axis,
-            'name': string(node.layer_name)
+            'axis': axis,
         }
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.split",
-            inputs={"input": self.get_input_name(input)},
+            "paddle.split",
+            inputs={"x": input.name},
             outputs=outputs_list,
             **layer_attrs)
 
@@ -445,18 +563,19 @@ class CaffeOpMapper(OpMapper):
         inputs_list = []
         for i in range(len(node.inputs)):
             input = self.graph.get_input_node(node, idx=i, copy=True)
-            inputs_list.append(self.get_input_name(input))
+            inputs_list.append(input.name)
         params = node.layer.concat_param
         axis = params.axis
-        layer_attrs = {'axis': axis, 'name': string(node.layer_name)}
+        layer_attrs = {'axis': axis, 'name': string(node.name)}
         self.paddle_graph.add_layer(
             kernel="paddle.concat",
             inputs={"x": inputs_list},
-            outputs=[node.layer_name],
+            outputs=[node.name],
             **layer_attrs)
 
     def ReLU(self, node):
         """
+
         :param node:
         :return:
         """
@@ -468,15 +587,15 @@ class CaffeOpMapper(OpMapper):
         if params.HasField('negative_slope') and params.negative_slope != 0:
             negative_slope = float(params.negative_slope)
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.leaky_relu",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name],
-                alpha=negative_slope)
+                kernel="paddle.nn.functional.leaky_relu",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                negative_slope=negative_slope)
         else:
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.relu",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name])
+                kernel="paddle.nn.functional.relu",
+                inputs={"x": input.name},
+                outputs=[node.name])
 
     def PReLU(self, node):
         assert len(
@@ -484,122 +603,83 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.prelu_param
         mode_bool = params.channel_shared
+        output_shape = node.out_shapes[0]
         if mode_bool:
-            mode = 'all'
+            num_parameters = 1
         else:
-            mode = 'channel'
+            num_parameters = output_shape[1]
         data = node.data
         assert data is not None, 'The parameter of {} (type is {}) is not set. You need to use python package of caffe to set the default value.'.format(
-            node.layer_name, node.layer_type)
-        self.weights[node.layer_name + '_weights'] = data[0]
-        layer_attrs = {
-            'mode': string(mode),
-            'param_attr': string(node.layer_name + '_weights'),
-            'name': string(node.layer_name)
-        }
+            node.name, node.layer_type)
+        kernel_weight_name = node.name + '_weights'
+        self.params[kernel_weight_name] = np.squeeze(data[0])
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.prelu",
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)
-
-    def Accuracy(self, node):
-        assert len(
-            node.inputs) == 2, 'The count of Accuracy node\'s input is not 2.'
-        inputs_dict = dict()
-        for i, shape in enumerate(node.input_shape):
-            if shape[1] == 1:
-                input = self.graph.get_input_node(node, idx=i, copy=True)
-                inputs_dict["label"] = self.get_input_name(input)
-            else:
-                input = self.graph.get_input_node(node, idx=i, copy=True)
-                inputs_dict["input"] = self.get_input_name(input)
-        params = node.layer.accuracy_param
-        top_k = params.top_k
-        axis = params.axis
-        ignore_label = params.ignore_label
-        assert axis == 1, 'PaddlePaddle can not support the situation when the axis is not 1.'
-        assert not ignore_label >= 0, 'PaddlePaddle can not support the situation when the model has ignore label.'
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[kernel_weight_name],
+            shape=[num_parameters],
+            dtype=string(str(self.params[kernel_weight_name].dtype)),
+            name=string(kernel_weight_name))
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.accuracy",
-            inputs=inputs_dict,
-            outputs=[node.layer_name],
-            k=top_k)
+            kernel="paddle.nn.functional.prelu",
+            inputs={"x": input.name,
+                    "weight": kernel_weight_name},
+            outputs=[node.name])
 
     def Eltwise(self, node):
         assert len(
-            node.inputs) == 2, 'The count of TanH node\'s input is not 2.'
+            node.inputs) == 2, "The count of Eltwise node\'s input is not 2."
         params = node.layer.eltwise_param
         mode = params.operation
         inputs = []
         input0 = self.graph.get_input_node(node, idx=0, copy=True)
-        inputs.append(input0)
         input1 = self.graph.get_input_node(node, idx=1, copy=True)
-        inputs.append(input1)
+        input0_name = input0.name
+        input1_name = input1.name
         if mode == 0:
             inputs_dict = {}
-            inputs_dict['x'] = self.get_input_name(inputs[0])
-            inputs_dict['y'] = self.get_input_name(inputs[1])
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.elementwise_mul",
+                "paddle.multiply",
                 inputs=inputs_dict,
-                outputs=[node.layer_name])
+                outputs=[node.name])
         elif mode == 1:
             if hasattr(params, 'coeff') and len(params.coeff) == 2:
                 coeff = params.coeff
-                input1_name = self.get_input_name(inputs[0])
-                layer_attrs = {
-                    'shape': [1],
-                    'value': coeff[0],
-                    'dtype': '{}.dtype'.format(input1_name)
-                }
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.fill_constant",
-                    inputs={},
-                    outputs=["{}_const1".format(node.layer_name)],
-                    **layer_attrs)
+                    "paddle.scale",
+                    inputs={"x": input0_name},
+                    outputs=[node.name + '_mul0'],
+                    scale=coeff[0])
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.elementwise_mul",
-                    inputs={"x": input1_name,
-                            "y": "{}_const1".format(node.layer_name)},
-                    outputs=["{}_mul1".format(node.layer_name)])
-                input2_name = self.get_input_name(inputs[1])
-                layer_attrs = {
-                    'shape': [1],
-                    'value': coeff[1],
-                    'dtype': '{}.dtype'.format(input2_name)
-                }
+                    "paddle.scale",
+                    inputs={"x": input1_name},
+                    outputs=[node.name + '_mul1'],
+                    scale=coeff[2])
+                inputs_dict = {}
+                inputs_dict['x'] = node.name + '_mul0'
+                inputs_dict['y'] = node.name + '_mul1'
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.fill_constant",
-                    inputs={},
-                    outputs=["{}_const2".format(node.layer_name)],
-                    **layer_attrs)
-                self.paddle_graph.add_layer(
-                    kernel="fluid.layers.elementwise_mul",
-                    inputs={"x": input2_name,
-                            "y": "{}_const2".format(node.layer_name)},
-                    outputs=["{}_mul2".format(node.layer_name)])
-                self.paddle_graph.add_layer(
-                    kernel="fluid.layers.elementwise_add",
-                    inputs={"x": "{}_mul1".format(node.layer_name),
-                            "y": "{}_mul2".format(node.layer_name)},
-                    outputs=[node.layer_name])
+                    "paddle.add",
+                    inputs=inputs_dict,
+                    outputs=[node.name])
             else:
                 inputs_dict = {}
-                inputs_dict['x'] = self.get_input_name(inputs[0])
-                inputs_dict['y'] = self.get_input_name(inputs[1])
+                inputs_dict['x'] = input0_name
+                inputs_dict['y'] = input1_name
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.elementwise_add",
+                    "paddle.add",
                     inputs=inputs_dict,
-                    outputs=[node.layer_name])
+                    outputs=[node.name])
         else:
             inputs_dict = {}
-            inputs_dict['x'] = self.get_input_name(inputs[0])
-            inputs_dict['y'] = self.get_input_name(inputs[1])
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
             self.paddle_graph.add_layer(
-                    kernel="fluid.layers.elementwise_max",
-                    inputs=inputs_dict,
-                    outputs=[node.layer_name])
+                "paddle.max",
+                inputs=inputs_dict,
+                outputs=[node.name])
 
     def BatchNorm(self, node):
         assert len(
@@ -610,11 +690,15 @@ class CaffeOpMapper(OpMapper):
             eps = params.eps
         else:
             eps = 1e-5
+        if hasattr(params, 'moving_average_fraction'):
+            momentum = params.moving_average_fraction
+        else:
+            momentum = 0.9
         if node.data is None or len(node.data) != 3:
             print(
                 'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
                 .format(node.layer_name, node.layer_type))
-            input_c = node.input_shape[0][1]
+            input_c = node.in_shapes[0][1]
             mean = np.zeros([input_c, ]).astype('float32')
             variance = np.zeros([input_c, ]).astype('float32')
             scale = 0
@@ -626,235 +710,241 @@ class CaffeOpMapper(OpMapper):
         scaling_factor = 1.0 / scale if scale != 0 else 0
         mean *= scaling_factor
         variance *= scaling_factor
-        self.weights[node.layer_name + '_mean'] = mean
-        self.weights[node.layer_name + '_variance'] = variance
+        weight_name = node.name + '_weight'
+        self.paddle_graph.add_layer(
+            kernel="paddle.ones",
+            inputs={},
+            outputs=[weight_name],
+            shape=mean.shape,
+            dtype=string("float32"))
+        bias_name = node.name + '_bias'
+        self.paddle_graph.add_layer(
+            kernel="paddle.zeros",
+            inputs={},
+            outputs=[bias_name],
+            shape=mean.shape,
+            dtype=string("float32"))
+        mean_name = node.name + '_mean'
+        self.params[mean_name] = mean
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[mean_name],
+            shape=self.params[mean_name].shape,
+            dtype=string(str(self.params[mean_name].dtype)),
+            name=string(mean_name))
+        variance_name = node.name + '_variance'
+        self.params[variance_name] = variance
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.create_parameter",
+            inputs={},
+            outputs=[variance_name],
+            shape=self.params[variance_name].shape,
+            dtype=string(str(self.params[variance_name].dtype)),
+            name=string(variance_name))
         layer_attrs = {
-            'is_test': True,
-            'param_attr': None,
-            'bias_attr': None,
-            'moving_mean_name': string(node.layer_name + '_mean'),
-            'moving_variance_name': string(node.layer_name + '_variance'),
             'epsilon': eps,
-            'name': string(node.layer_name)
+            'momentum': momentum
         }
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.batch_norm",
-            inputs={"input": self.get_input_name(input)},
-            outputs=[node.layer_name],
+            kernel="paddle.nn.functional.batch_norm",
+            inputs={"x": input.name,
+                    "weight": weight_name,
+                    "bias": bias_name,
+                    "running_mean": mean_name,
+                    "running_var": variance_name,},
+            outputs=[node.name],
             **layer_attrs)
 
     def Scale(self, node):
         if node.data is None:
             print(
-                'The parameter of {} (type is {}) is not set. So we set the parameters as 0'
-                .format(node.layer_name, node.layer_type))
-            input_c = node.input_shape[0][1]
-            self.weights[node.layer_name + '_scale'] = np.zeros([
-                input_c,
-            ]).astype('float32')
-            self.weights[node.layer_name + '_offset'] = np.zeros([
-                input_c,
-            ]).astype('float32')
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(node.name, node.layer_type))
+            self.params[node.name + "_cparam1"] = np.zeros([
+                node.in_shapes[0][1],
+            ]).astype("float32")
+            self.params[node.name + "_cparam2"] = np.zeros([
+                node.in_shapes[0][1],
+            ]).astype("float32")
         else:
-            self.weights[node.layer_name + '_scale'] = np.squeeze(node.data[
-                0]).astype('float32')
-            self.weights[node.layer_name + '_offset'] = np.squeeze(node.data[
-                1]).astype('float32')
+            self.params[node.name + "_cparam1"] = np.squeeze(node.data[
+                0]).astype("float32")
+            self.params[node.name + "_cparam2"] = np.squeeze(node.data[
+                1]).astype("float32")
         params = node.layer.scale_param
         axis = params.axis
-        num_axes = params.num_axes
         inputs = []
         if len(node.inputs) == 2:
-            # for two tensor, here resets axis to 1. Maybe there is a bug for unkown case.
-            axis = 1
-            bias_shape = node.input_shape[0][axis:axis + num_axes]
             input0 = self.graph.get_input_node(node, idx=0, copy=True)
             input1 = self.graph.get_input_node(node, idx=1, copy=True)
+            input0_name = input0.name
+            input1_name = input1.name
             inputs_dict = {}
-            inputs_dict['x'] = self.get_input_name(input0)
-            inputs_dict['y'] = self.get_input_name(input1)
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = input1_name
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.elementwise_mul",
+                "paddle.multiply",
                 inputs=inputs_dict,
-                outputs=["{}_mul".format(node.layer_name)],
-                axis=axis)
+                outputs=[node.name + "_mul"],
+                axis=1)
         else:
-            bias_shape = node.input_shape[0][axis:axis + num_axes]
-            input0 = self.graph.get_input_node(node, idx=0, copy=True)
-            input0_name = self.get_input_name(input0)
             self.paddle_graph.add_layer(
-                kernel="fluid.ParamAttr",
+                "paddle.static.create_parameter",
                 inputs={},
-                outputs=["{}_scale".format(node.layer_name)],
-                name = string("{}_scale".format(node.layer_name)))
-            layer_attrs = {
-                'dtype': '{}.dtype'.format(input0_name),
-                'shape': bias_shape,
-                'name': string(node.layer_name + '_cparam1'),
-                'is_bias': True,
-                'default_initializer': 'Constant(value=1.0)'
-            }
-            self.paddle_graph.add_layer(
-                kernel="fluid.layers.create_parameter",
-                inputs={"attr": node.layer_name + '_scale',},
-                outputs=["{}_cparam1".format(node.layer_name)],
-                **layer_attrs)
+                outputs=[node.name + "_cparam1"],
+                shape=self.params[node.name + "_cparam1"].shape,
+                dtype=string(str(self.params[node.name + "_cparam1"].dtype)),
+                name=string(node.name + "_cparam1"))
+            input0 = self.graph.get_input_node(node, idx=0, copy=True)
+            input0_name = input0.name
             inputs_dict = {}
-            inputs_dict['x'] = self.get_input_name(input0)
-            inputs_dict['y'] = "{}_cparam1".format(node.layer_name)
+            inputs_dict['x'] = input0_name
+            inputs_dict['y'] = node.name + "_cparam1"
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.elementwise_mul",
+                "paddle.multiply",
                 inputs=inputs_dict,
-                outputs=["{}_mul".format(node.layer_name)],
+                outputs=[node.name + "_mul"],
                 axis=axis)
-        scale_shape = bias_shape
-        input0_name = self.get_input_name(input0)
         self.paddle_graph.add_layer(
-            kernel="fluid.ParamAttr",
+            "paddle.static.create_parameter",
             inputs={},
-            outputs=["{}_offset".format(node.layer_name)],
-            name = string("{}_offset".format(node.layer_name)))
-        layer_attrs = {
-            'dtype': '{}.dtype'.format(input0_name),
-            'shape': scale_shape,
-            'name': string(node.layer_name + '_cparam2'),
-            'is_bias': True,
-            'default_initializer': 'Constant(value=1.0)'
-        }
-        self.paddle_graph.add_layer(
-            kernel="fluid.layers.create_parameter",
-            inputs={"attr": node.layer_name + '_offset'},
-            outputs=["{}_cparam2".format(node.layer_name)],
-            **layer_attrs)
+            outputs=[node.name + "_cparam2"],
+            shape=self.params[node.name + "_cparam2"].shape,
+            dtype=string(str(self.params[node.name + "_cparam2"].dtype)),
+            name=string(node.name + "_cparam2"))
         inputs_dict = {}
-        inputs_dict['x'] = "{}_mul".format(node.layer_name)
-        inputs_dict['y'] = "{}_cparam2".format(node.layer_name)
-        self.paddle_graph.add_layer(
-            kernel="fluid.layers.elementwise_add",
-            inputs=inputs_dict,
-            outputs=[node.layer_name],
-            axis=axis)
+        inputs_dict['x'] = node.name + "_mul"
+        inputs_dict['y'] = node.name + "_cparam2"
+        output_shape = node.out_shapes[0]
+        if axis == -1:
+            self.paddle_graph.add_layer(
+                "paddle.add",
+                inputs=inputs_dict,
+                outputs=[node.name])
+        else:
+            if axis < 0:
+                axis = axis + len(output_shape)
+            param2_shape = self.params[node.name + "_cparam2"].shape
+            param2_shape_len = len(param2_shape)
+            diff_len = len(output_shape) - axis - param2_shape_len
+            new_shape = list(param2_shape) + [1] * diff_len
+            self.paddle_graph.add_layer(
+                "paddle.reshape",
+                inputs={"x": node.name + "_cparam2"},
+                outputs=[node.name + "_cparam2"],
+                shape=new_shape)
+            self.paddle_graph.add_layer(
+                "paddle.add",
+                inputs=inputs_dict,
+                outputs=[node.name])
         
 
     def Reshape(self, node):
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        top_count = len(input.layer.top)
-        is_inplace = False if top_count == 1 else True
-        output_shape = node.output_shape[0]
-        layer_attrs = {
-            'shape': output_shape,
-            'inplace': is_inplace,
-            'act': None,
-            'name': string(node.layer_name)
-        }
+        output_shape = node.out_shapes[0]
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.reshape",
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)
+            "paddle.reshape",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            shape=output_shape)
 
     def ArgMax(self, node):
         assert len(node.inputs) == 1 and len(
             node.outputs
-        ) == 1, 'The count of ArgMax node\'s input and output is not 1.'
+        ) == 1, "The count of ArgMax node\'s input and output is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
-        input_shape = node.input_shape[0]
+        in_shapes = node.in_shapes[0]
         params = node.layer.argmax_param
         out_max_val = params.out_max_val if hasattr(params,
                                                     out_max_val) else False
         top_k = params.top_k if hasattr(params, top_k) else 1
         axis = parmas.axis if hasattr(params, axis) else -1
         if axis < 0:
-            axis += len(input_shape)
+            axis += len(in_shapes)
         if out_max_val is True:
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.topk",
-                inputs={"input": self.get_input_name(input)},
-                outputs=["{}_topk_var".format(node.layer_name),
-                         "{}_index_var".format(node.layer_name)],
+                "paddle.topk",
+                inputs={"x": input.name},
+                outputs=[node.name + "_topk_var", node.name + "_index_var"],
                 k=top_k)
             self.paddle_graph.add_layer(
-                kernel="paddle.cast",
-                inputs={"x": "{}_topk_var".format(node.layer_name)},
-                outputs=["{}_topk_var".format(node.layer_name)],
-                dtype="{}_topk_var.dtype".format(node.layer_name))
+                "paddle.cast",
+                inputs={"x": node.name + "_index_var"},
+                outputs=[node.name + "_index_var"],
+                dtype="{}_topk_var.dtype".format(node.name))
             self.paddle_graph.add_layer(
-                kernel="paddle.concat",
-                inputs={"x": "[{}_topk_var, {}_index_var]".format(node.layer_name,
-                                                                  node.layer_name)},
-                outputs=[node.layer_name],
+                "paddle.concat",
+                inputs={"x": [node.name + "_topk_var", node.name + "_index_var"]},
+                outputs=[node.name],
                 axis=axis)
         else:
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.topk",
-                inputs={"input": self.get_input_name(input)},
-                outputs=["_", node.layer_name],
+                "paddle.topk",
+                inputs={"x": input.name},
+                outputs=["_", node.name],
                 k=top_k)
 
     def Crop(self, node):
         assert len(
-            node.inputs) == 2, 'The count of Crop node\'s input is not 2.'
+            node.inputs) == 2, "The count of Crop node\'s input is not 2."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         example = self.graph.get_input_node(node, idx=1, copy=True)
         params = node.layer.crop_param
         axis = params.axis
-        input_shape = node.input_shape[0]
+        in_shapes = node.in_shapes[0]
         if axis < 0:
-            axis += len(input_shape)
-        offset_real = [0] * len(input_shape)
+            axis += len(in_shapes)
+        offset_real = [0] * len(in_shapes)
         if hasattr(params, "offset") and len(params.offset) > 0:
             offset = list(params.offset)
-            assert (len(input_shape) - axis
+            assert (len(in_shapes) - axis
                     ) == len(offset), "invalid offset[%s] in crop layer" % (
                         str(offset))
             offset_real = [0] * axis + offset
-        layer_attrs = {"offsets": list(offset_real), 
-                       "shape": node.input_shape[1]}
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.crop_tensor",
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            **layer_attrs)
+                "paddle.crop",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                shape=node.in_shapes[1],
+                offsets=list(offset_real))
+
         
     def Flatten(self, node):
         assert len(
             node.
-            inputs) == 1, 'The count of DetectionOutput node\'s input is not 1.'
+            inputs) == 1, "The count of DetectionOutput node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.reshape",
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name],
-            shape = node.output_shape[0])
-        
+            "paddle.reshape",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            shape=node.out_shapes[0])
+
     def Power(self, node):
         assert len(
-            node.inputs) == 1, 'The count of Permute node\'s input is not 1.'
+            node.inputs) == 1, "The count of Permute node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.power_param
-        power = params.power
-        scale = params.scale
-        shift = params.shift
         layer_attrs = {
-            'scale': scale,
-            'bias': shift,
-            'bias_after_scale': True,
-            'name': string(node.layer_name + '_scale')
+            'scale': params.scale,
+            'bias': params.shift,
+            'bias_after_scale': True
         }
         self.paddle_graph.add_layer(
-            kernel="paddle.scale",
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name],
+            "paddle.scale",
+            inputs={"x": input.name},
+            outputs=[node.name],
             **layer_attrs)
         self.paddle_graph.add_layer(
-            kernel="paddle.pow",
-            inputs={"x": node.layer_name},
-            outputs=[node.layer_name],
-            factor=power)
+            "paddle.pow",
+            inputs={"x": node.name},
+            outputs=[node.name],
+            exponent=params.power)
 
     def Reduction(self, node):
         assert len(
-            node.inputs) == 1, 'The count of Reduction node\'s input is not 1.'
+            node.inputs) == 1, "The count of Reduction node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.reduction_param
         operation = params.operation
@@ -862,86 +952,104 @@ class CaffeOpMapper(OpMapper):
         coeff = params.coeff
         assert operation >= 1 and operation <= 4, "reduction reduction [%s] error" % (
             operation)
-        input_len = len(node.input_shape[0])
+        input_len = len(node.in_shapes[0])
         if axis < 0:
             axis += input_len + 1
         dim = list(range(input_len))
-        if operation == 1:  ## operation = SUM
+        # operation = SUM
+        if operation == 1:  
             layer_attrs = {
-                'dim': dim[axis:],
-                'keep_dim': False,
-                'name': string(node.layer_name)
+                "dim": dim[axis:],
+                "keep_dim": False,
             }
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.reduce_sum",
-                inputs={"input": self.get_input_name(input)},
-                outputs=[node.layer_name],
+                "paddle.sum",
+                inputs={"input": input.name},
+                outputs=[node.name],
                 **layer_attrs)
-        elif operation == 2:  ## operation = ASUM
+        # operation = ASUM
+        elif operation == 2:  
             self.paddle_graph.add_layer(
-                kernel="paddle.abs",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name])
+                "paddle.abs",
+                inputs={"x": input.name},
+                outputs=[node.name])
             layer_attrs = {
-                'dim': dim[axis:],
-                'keep_dim': False,
-                'name': string(node.layer_name)
+                "dim": dim[axis:],
+                "keep_dim": False,
             }
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.reduce_sum",
-                inputs={"input": node.layer_name},
-                outputs=[node.layer_name],
+                "paddle.sum",
+                inputs={"input": node.name},
+                outputs=[node.name],
                 **layer_attrs)
-        elif operation == 3:  ## operation = SUMSQ
+        # operation = SUMSQ
+        elif operation == 3: 
             self.paddle_graph.add_layer(
-                kernel="paddle.pow",
-                inputs={"x": self.get_input_name(input)},
-                outputs=[node.layer_name],
-                factor=2.0)
+                "paddle.pow",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                exponent=2.0)
             layer_attrs = {
-                'dim': dim[axis:],
-                'keep_dim': False,
-                'name': string(node.layer_name)
+                "dim": dim[axis:],
+                "keep_dim": False,
             }
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.reduce_sum",
-                inputs={"input": node.layer_name},
-                outputs=[node.layer_name],
+                "paddle.sum",
+                inputs={"input": node.name},
+                outputs=[node.name],
                 **layer_attrs)
-        else:  ## operation = MEAN
+        # operation = MEAN
+        else: 
             layer_attrs = {
-                'dim': dim[axis:],
-                'keep_dim': False,
-                'name': string(node.layer_name)
+                "dim": dim[axis:],
+                "keep_dim": False,
             }
             self.paddle_graph.add_layer(
-                kernel="fluid.layers.reduce_mean",
-                inputs={"input": node.layer_name},
-                outputs=[node.layer_name],
+                "paddle.mean",
+                inputs={"input": input.name},
+                outputs=[node.name],
                 **layer_attrs)
         self.paddle_graph.add_layer(
-            kernel="paddle.scale",
-            inputs={"x": node.layer_name},
-            outputs=[node.layer_name],
+            "paddle.scale",
+            inputs={"x": node.name},
+            outputs=[node.name],
             scale=coeff)
-
-    def deal_custom_layer(self, node):
-        op = node.layer_type
-        custom_code, func = make_custom_layer(node)
-        params = get_params(node.layer, node.layer_type)
-        arg_names, kwargs = set_args(func, params)
-        kwargs['name'] = string(node.layer_name)
-        kwargs['input_shape'] = node.input_shape
-        data = node.data
-        if data is not None:
-            data = self.adjust_parameters(node)
-            weights_name = deal_weights(node)
-            for i in range(len(data)):
-                self.weights[weights_name[i]] = data[i]
-        inputs_list = []
+        
+    def Axpy(self, node):
+        assert len(node.inputs) == 1 and len(
+            node.outputs
+        ) == 1, "The count of Axpy node\'s input and output is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        params = node.layer.axpy_param
+        input0 = self.graph.get_input_node(node, idx=0, copy=True)
+        input1 = self.graph.get_input_node(node, idx=1, copy=True)
+        input2 = self.graph.get_input_node(node, idx=2, copy=True)
+        input0_name = input0.name
+        input1_name = input1.name
+        input2_name = input2.name
+        inputs_dict = {}
+        inputs_dict['x'] = input1_name
+        inputs_dict['y'] = input0_name
+        self.paddle_graph.add_layer(
+            "paddle.multiply",
+            inputs=inputs_dict,
+            outputs=[node.name + "_mul"],
+            axis=0)
+        inputs_dict = {}
+        inputs_dict['x'] = node.name + "_mul"
+        inputs_dict['y'] = input2_name
+        self.paddle_graph.add_layer(
+            "paddle.add",
+            inputs=inputs_dict,
+            outputs=[node.name + "_mul"])
+        
+    def DetectionOutput(self, node):
+        assert len(
+            node.inputs) == 3, "The count of DetectionOutput node\'s input is not 3."
+        inputs_dict = dict()
         for i in range(len(node.inputs)):
             input = self.graph.get_input_node(node, idx=i, copy=True)
-            if i == 1 and op == 'DetectionOutput':
+            if i == 1:
                 input = self.graph.get_input_node(node, idx=i, copy=True)
                 while input is not None \
                       and input.layer_type != 'Softmax' \
@@ -949,27 +1057,165 @@ class CaffeOpMapper(OpMapper):
                     input = self.graph.get_input_node(input, idx=0, copy=True)
                 assert input is not None, 'This kind of DetectionOutput is not supported!'
                 input = self.graph.get_input_node(input, idx=0, copy=True)
-            inputs_list.append(self.get_input_name(input))
-        kwargs_tmp = copy.deepcopy(kwargs)
-        for k, v in kwargs_tmp.items():
-            if str(type(v)) == "<class 'caffe_pb2.NonMaximumSuppressionParameter'>":
-                kwargs[k] = dict()
-                kwargs[k]["nms_threshold"] = v.nms_threshold
-                kwargs[k]["top_k"] = v.top_k
-                kwargs[k]["eta"] = v.eta
+            inputs_dict["x{}".format(i)] = input.name
+        params = node.layer.detection_output_param
+        nms_param = params.nms_param
+        nms_param_dict = dict()
+        nms_param_dict["nms_threshold"] = nms_param.nms_threshold
+        nms_param_dict["top_k"] = nms_param.top_k
+        nms_param_dict["eta"] = nms_param.eta
+        if nms_param is None:
+            nms_param_dict = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
+        default = {"nms_threshold": 0.3, "top_k": 10, "eta": 1.0}
+        fields = ["eta", "top_k", "nms_threshold"]
+        for f in default.keys():
+            if f not in nms_param_dict:
+                nms_param_dict[f] = default[f]
+        layer_attrs = {
+            "background_label": params.background_label_id,
+            "nms_threshold": nms_param_dict["nms_threshold"],
+            "nms_top_k": nms_param_dict["top_k"],
+            "keep_top_k": params.keep_top_k,
+            "score_threshold": params.confidence_threshold,
+            "nms_eta": nms_param_dict["eta"]}
         self.paddle_graph.add_layer(
-            kernel="custom_layer:{}".format(op),
-            inputs={"inputs": inputs_list},
-            outputs=[node.layer_name],
-            **kwargs)
-        if op not in self.used_custom_layers:
-            self.used_custom_layers[op] = custom_code
+            kernel="custom_layer:detectionoutput",
+            inputs=inputs_dict,
+            outputs=[node.name],
+            **layer_attrs)
 
-    def directly_map(self, node):
-        assert node.layer_type in self.directly_map_ops
-        op_info = self.directly_map_ops[node.layer_type]
+    def Normalize(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Normalize node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        params = node.layer.norm_param
+        scale_name = node.name + "_scale"
+        if node.data is None or len(node.data) != 1:
+            print(
+                "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
+                .format(scale_name, node.layer_type))
+            self.parmas[scale_name] = \
+                np.zeros([1] if params.channel_shared else [1, 1, 1, node.in_shapes[0][1]]).astype("float32")
+        else:
+            self.parmas[scale_name] = _adjust_parameters(node)[0]
+        
+        layer_attrs = {
+            "axis": -1 if params.channel_shared else 1,
+            "param_name": scale_name,
+            "param_shape": self.parmas[scale_name].shape,
+            "param_dtype": str(self.parmas[scale_name].dtype)}
+        self.pd_pdgraph.add_layer(
+            "custom_layer:normalize",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            **layer_attrs)
+        
+    def Permute(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Permute node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        params = node.layer.permute_param
+        order = list(params.order)    
+        self.paddle_graph.add_layer(
+            "paddle.transpose",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            perm=order)
+        
+    def PriorBox(self, node):
+        assert len(
+            node.inputs) == 2, "The count of PriorBox node\'s input is not 2."
+        input0 = self.graph.get_input_node(node, idx=0, copy=True)
+        input1 = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs_dict = {}
+        inputs_dict["x0"] = input0.name
+        inputs_dict["x1"] = input1.name
+        params = node.layer.prior_box_param
+        steps = tuple(params.step) if type(params.step) \
+                is list or type(params.step) is tuple \
+                else (params.step, params.step)
+        layer_attrs = {
+            "min_sizes": params.min_size,
+            "max_sizes": params.max_size,
+            "aspect_ratios": params.aspect_ratio,
+            "variance": params.variance,
+            "flip": params.flip,
+            "clip": params.clip,
+            "steps": steps,
+            "offset": params.offset,
+            "min_max_aspect_ratios_order": True}
+        self.paddle_graph.add_layer(
+            "custom_layer:priorbox",
+            inputs=inputs_dict,
+            outputs=[node.name],
+            **layer_attrs)
+        
+    def ReLU6(self, node):
+        assert len(
+            node.inputs) == 1, "The count of RelU6 node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
-            kernel=op_info,
-            inputs={"x": self.get_input_name(input)},
-            outputs=[node.layer_name])
+            "paddle.nn.functional.relu6",
+            inputs={"x": input.name},
+            outputs=[node.name])
+        
+    def ROIPooling(self, node):
+        assert len(
+            node.inputs) == 2, "The count of ROIPooling node\'s input is not 2."
+        input0 = self.graph.get_input_node(node, idx=0, copy=True)
+        input1 = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs_dict = {}
+        inputs_dict["x0"] = input0.name
+        inputs_dict["x1"] = input1.name
+        params = node.layer.roi_pooling_param
+        layer_attrs = {
+            "pooled_height": params.pooled_h,
+            "pooled_width": params.pooled_w,
+            "spatial_scale": params.spatial_scale}
+        self.paddle_graph.add_layer(
+            "custom_layer:ROIPooling",
+            inputs=inputs_dict,
+            outputs=[node.name],
+            **layer_attrs)
+        
+    def ShuffleChannel(self, node):
+        assert len(
+            node.inputs) == 1, "The count of ShuffleChannel node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        params = node.layer.shuffle_channel_param
+        self.paddle_graph.add_layer(
+            "fluid.layers.shuffle_channel",
+            inputs={"x": input.name},
+            outputs=[node.layer_name],
+            group=params.group)
+        
+    def Upsample(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Upsample node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        params = node.layer.upsample_param
+        layer_attrs = {
+            "align_corners": False,
+            "scale_factor": params.scale,
+            "mode": "nearest"}
+        self.paddle_graph.add_layer(
+            "paddle.nn.functioanl.interpolate",
+            inputs={"input": input.name},
+            outputs=[node.layer_name],
+            **layer_attrs)
+    
+    def Select(self, node):
+        assert len(
+            node.inputs) == 1, "The count of Select node\'s input is not 1."
+        input = self.graph.get_input_node(node, idx=0, copy=True)
+        in_shapes = node.in_shapes[0]
+        params = node.layer.select_param
+        layer_attrs = {
+            "in_shapes": in_shapes,
+            "point": params.slice_point,
+            "axis": params.axis}
+        self.paddle_graph.add_layer(
+            "custom_layer:select",
+            inputs={"x": input.name},
+            outputs=[node.name],
+            **layer_attrs)

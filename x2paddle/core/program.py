@@ -309,12 +309,19 @@ class PaddleGraph(object):
         if not osp.exists(code_dir):
             os.makedirs(code_dir)
         f = open(osp.join(code_dir, 'x2paddle_model.py'), 'w')
+        
+        if self.source_type == "caffe":
+            custom_import = "from x2paddle.op_mapper.static.caffe2paddle " + \
+                             "import caffe_custom_layer as x2paddle_nn"
+        else:
+            custom_import = ""
 
         write_code(
             f, [
                 "from paddle.fluid.initializer import Constant",
                 "from paddle.fluid.param_attr import ParamAttr",
                 "import paddle.fluid as fluid", 
+                custom_import,
                 "import paddle", "import math", "",
                 
             ],
@@ -347,7 +354,7 @@ class PaddleGraph(object):
                     line += "{}, ".format(output)
                 line = line.strip(", ")
             if layer.kernel.startswith("custom_layer"):
-                line += " = {}(".format(layer.kernel.split(":")[-1].lower() + "_layer")
+                line += "= x2paddle_nn.{}(".format(layer.kernel.split(":")[-1])
             else:
                 line += " = {}(".format(layer.kernel)
             for k, v in layer.inputs.items():
