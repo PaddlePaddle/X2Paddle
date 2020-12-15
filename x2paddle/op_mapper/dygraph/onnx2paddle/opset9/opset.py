@@ -1588,9 +1588,6 @@ class OpSet9():
 
     @print_mapping_info
     def ConvTranspose(self, node):
-        op_name = name_generator("conv", self.nn_name2id)
-        output_name = node.name
-        layer_outputs = [op_name, output_name]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_w = self.graph.get_input_node(node, idx=1, copy=True)
         val_b = None
@@ -1604,7 +1601,7 @@ class OpSet9():
         assert 2 <= convnd <= 3, 'only Conv2DTranspose and Conv3DTranspose supported'
         num_in_channels = val_w.out_shapes[0][0]
         num_out_channels = val_w.out_shapes[0][1]
-        paddle_op = 'paddle.nn.Conv{}DTranspose'.format(convnd)
+        paddle_op = 'paddle.nn.functional.conv{}d_transpose'.format(convnd)
 
         num_groups = node.get_attr('group', 1)
         strides = node.get_attr('strides', [1] * convnd)
@@ -1622,37 +1619,21 @@ class OpSet9():
         output_size[1] = (val_x.out_shapes[0][3] - 1
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
+        # Conv2DTranspose缺少output_size，只能在forward里头传进output_size
+        inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name,
+                       "weight": val_w.name}
         layer_attrs = {
-            'in_channels': num_in_channels,
-            'out_channels': num_out_channels,
-            'output_size': output_size or None,
-            'kernel_size': kernel_shape,
-            'padding': paddings,
-            'stride': strides,
-            'dilation': dilations,
-            'groups': num_groups,
-            'weight_attr': string(val_w.name),
-            'bias_attr': None if val_b is None else string(val_b.name),
-        }
+            "stride": strides,
+            "dilation": dilations,
+            "padding": paddings,
+            "groups": num_groups,
+            "output_size": node.out_shapes[0][2:]}
+        if val_b is not None:
+            inputs_dict["bias"] = val_b.name
+        else:
+            layer_attrs["bias"] = None
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs={"x": val_x.name}, 
-            outputs=layer_outputs, 
+            kernel="paddle.nn.functional.conv2d_transpose",
+            inputs=inputs_dict,
+            outputs=[node.name],
             **layer_attrs)
-#         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name,
-#                        "weight": val_w.name}
-#         layer_attrs = {
-#             "stride": strides,
-#             "dilation": dilations,
-#             "padding": paddings,
-#             "groups": num_groups,
-#             "output_size": node.out_shapes[0][2:]}
-#         if val_b is not None:
-#             inputs_dict["bias"] = val_b.name
-#         else:
-#             layer_attrs["bias"] = None
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.nn.functional.conv2d_transpose",
-#             inputs=inputs_dict,
-#             outputs=[node.name],
-#             **layer_attrs)

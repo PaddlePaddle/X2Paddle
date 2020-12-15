@@ -17,7 +17,6 @@ from x2paddle.core.graph import GraphNode
 from x2paddle.core.fluid_code import Layer
 from x2paddle.core.fluid_code import FluidCode
 from x2paddle.core.util import string
-from x2paddle.op_mapper.static.onnx2paddle.opset9.custom_layer import *
 from functools import reduce
 import numpy as np
 import onnx
@@ -508,33 +507,30 @@ class OpSet9():
 
     @print_mapping_info
     def InstanceNormalization(self, node):
-        op_name = name_generator("instanse_norm", self.nn_name2id)
-        output_name = node.name
-        layer_outputs = [op_name, output_name]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_scale = self.graph.get_input_node(node, idx=1, copy=True)
         val_b = self.graph.get_input_node(node, idx=2, copy=True)
         epsilon = node.get_attr('epsilon', 1e-5)
         layer_attrs = {
-            'epsilon': epsilon,
+            'eps': epsilon,
         }
         dim = len(val_x.out_shapes[0])
         if dim ==2 :
-            layer_attrs["data_format"] = "NC"
+            layer_attrs["data_format"] = string("NC")
         elif dim == 3:
-            layer_attrs["data_format"] = "NCL"
+            layer_attrs["data_format"] = string("NCL")
         elif dim == 4:
-            layer_attrs["data_format"] = "NCHW"
+            layer_attrs["data_format"] = string("NCHW")
         elif dim == 5:
-            layer_attrs["data_format"] = "NCDHW"
+            layer_attrs["data_format"] = string("NCDHW")
         else:
             raise Exception("The paddle only support 2D, 3D, 4D or 5D input in InstanceNormalization.")
         self.paddle_graph.add_layer(
-            paddle_op, 
+            "paddle.nn.functional.instance_norm", 
             inputs={"x": val_x.name,
                     "weight": val_scale.name,
                     "bias": val_b.name}, 
-            outputs=layer_outputs, 
+            outputs=[node.name], 
             **layer_attrs)
 
     @print_mapping_info
@@ -1577,7 +1573,7 @@ class OpSet9():
         if val_b is not None:
             layer_inputs["bias"] = val_b.name
         self.paddle_graph.add_layer(
-            kernel="paddle.nn.functional.conv2d_transpose",
+            kernel=paddle_op,
             inputs=layer_inputs,
             outputs=[node.name],
             **layer_attrs)
