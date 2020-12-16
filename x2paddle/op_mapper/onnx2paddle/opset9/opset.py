@@ -1564,7 +1564,7 @@ class OpSet9():
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
         attr = {
-            'num_filters': num_out_channels,
+            'num_filters': num_out_channels * num_groups,
             'output_size': output_size or None,
             'filter_size': kernel_shape,
             'padding': paddings,
