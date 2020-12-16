@@ -1544,10 +1544,10 @@ class OpSet9():
         assert kernel_shape, 'kernel_shape not inferred'
         convnd = len(kernel_shape)
         assert 2 <= convnd <= 3, 'only conv2d_transpose and conv3d_transpose supported'
+        num_out_channels = val_w.out_shapes[0][1]
         fluid_op = 'conv{}d_transpose'.format(convnd)
 
         num_groups = node.get_attr('group', 1)
-        num_out_channels = val_w.out_shapes[0][1] * num_groups
         strides = node.get_attr('strides', [1] * convnd)
         dilations = node.get_attr('dilations', [1] * convnd)
         output_size = node.get_attr('output_shape', [])
@@ -1564,7 +1564,7 @@ class OpSet9():
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
         attr = {
-            'num_filters': num_out_channels,
+            'num_filters': num_out_channels * num_groups,
             'output_size': output_size or None,
             'filter_size': kernel_shape,
             'padding': paddings,
