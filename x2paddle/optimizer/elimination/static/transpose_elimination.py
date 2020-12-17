@@ -178,13 +178,13 @@ class StaticTransposeElimination(FuseBase):
                                 if _graph.layers[ipt].outputs[
                                         output_index] == _graph.layers[current_id].inputs[
                                             'x']:
-                                    if len(x_shape) <= 1:
+                                    if list(x_shape)==[1] or len(x_shape) < 1:
                                         elementwise_layers.append(current_id)
                                         continue
                                 elif _graph.layers[ipt].outputs[
                                         output_index] == _graph.layers[current_id].inputs[
                                             'y']:
-                                    if len(y_shape) <= 1:
+                                    if list(y_shape)==[1] or len(y_shape) < 1:
                                         elementwise_layers.append(current_id)
                                         continue
                                 else:
@@ -279,11 +279,6 @@ class StaticTransposeElimination(FuseBase):
         for layer_id in list(set(optimized_concat_layers)):
             axis = graph.layers[layer_id].attrs.get('axis', 0)
             graph.layers[layer_id].attrs['axis'] = [0, 2, 3, 1][axis]
-        for layer_id in list(set(optimized_elementwise_layers)):
-            axis = graph.layers[layer_id].attrs.get('axis', -1)
-            graph.layers[layer_id].attrs['axis'] = [0, 2, 3, 1][axis]
-            if graph.layers[layer_id].kernel == "paddle.add":
-                graph.layers[layer_id].kernel = "fluid.layers.elementwise_add"
 
         current_transpose_num = self.get_transpose_num(graph)
         print(

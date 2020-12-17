@@ -172,7 +172,7 @@ class TFGraph(Graph):
         self._remove_isolated_node()
         self._optimize_dialiation_conv()
         self._remove_identity_node()
-#         self._remove_cast_node()
+        self._remove_cast_node()
         
 
     def get_node(self, node_name, copy=False):
