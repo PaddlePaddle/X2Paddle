@@ -185,16 +185,8 @@ def onnx2paddle(model_path, save_dir, paddle_type, params_merge=False):
         from x2paddle.op_mapper.static.onnx2paddle.onnx_op_mapper import ONNXOpMapper
     model = ONNXDecoder(model_path)
     mapper = ONNXOpMapper(model)
-    if paddle_type == "dygraph":
-        mapper.paddle_graph.build()
-        mapper.paddle_graph.gen_model(save_dir)
-    else:
-        from x2paddle.optimizer.onnx_optimizer import ONNXOptimizer
-        print("Model optimizing ...")
-        optimizer = ONNXOptimizer(mapper)
-        optimizer.delete_redundance_code()
-        print("Model optimized.")
-        mapper.save_inference_model(save_dir, params_merge)
+    mapper.paddle_graph.build()
+    mapper.paddle_graph.gen_model(save_dir)
 
 
 def pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None):
