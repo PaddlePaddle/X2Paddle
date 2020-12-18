@@ -167,7 +167,7 @@ class DygraphAdaptivePool2dFuser(FuseBase):
             new_layer = PaddleLayer(
                 layers_id[0],
                 "paddle.nn.functional.adaptive_avg_pool2d",
-                inputs={"input": input_name},
+                inputs={"x": input_name},
                 outputs=[output_name],
                 **attrs)
         else:
