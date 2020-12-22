@@ -103,8 +103,11 @@ class OpSet9():
         'ReduceMin': ['paddle.min', 
                       dict(axes='axis', keepdims='keepdim'), 
                       dict(keepdim=1)],
-        'ReduceMax': ['paddle.max', 
-                      dict(axes='axis', keepdims='keepdim'), 
+        'ReduceMax': ['paddle.max',
+                      dict(axes='axis', keepdims='keepdim'),
+                      dict(keepdim=1)],
+        'ArgMax':   ['paddle.argmax',
+                      dict(axis='axis', keepdims='keepdim'),
                       dict(keepdim=1)],
         # active function
         'Relu': ['paddle.nn.ReLU'],
