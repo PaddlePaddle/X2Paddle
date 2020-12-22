@@ -38,7 +38,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
 NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:6]
 
-def rename_layers(layers, param_tree=None):
+def rename_layers(layers, param_tree=None, is_rename_module=False):
     """ 对子模块的输入输出等进行重命名。
     """
     layers_cp = copy.deepcopy(layers)
@@ -84,17 +84,23 @@ def rename_layers(layers, param_tree=None):
                         layer.outputs[0] = new_name
                         nn_count_dict[layer.kernel] += 1
                     elif i == 0 and layer.kernel == "module":
-                        old_name = layer.outputs[0].split("/")[0]
-                        if old_name not in nn_count_dict:
-                            nn_count_dict[old_name] = 0
+                        if is_rename_module:
+                            if param_tree is not None:
+                                param_node = param_tree.get_node(layer.outputs[0])
+                                nn_param_nodes.append(param_node)
+                                param_node.new_name = layer.outputs[0]
                         else:
-                            nn_count_dict[old_name] += 1
-                        new_name = old_name + str(nn_count_dict[old_name])
-                        if param_tree is not None:
-                            param_node = param_tree.get_node(layer.outputs[0])
-                            nn_param_nodes.append(param_node)
-                            param_node.new_name = new_name
-                        layer.outputs[0] = new_name
+                            old_name = layer.outputs[0].split("/")[0]
+                            if old_name not in nn_count_dict:
+                                nn_count_dict[old_name] = 0
+                            else:
+                                nn_count_dict[old_name] += 1
+                            new_name = old_name + str(nn_count_dict[old_name])
+                            if param_tree is not None:
+                                param_node = param_tree.get_node(layer.outputs[0])
+                                nn_param_nodes.append(param_node)
+                                param_node.new_name = new_name
+                            layer.outputs[0] = new_name
                     else:
                         old_name = layer.outputs[i]
                         new_name = "x{}".format(count)
@@ -196,6 +202,15 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                             outputs.append(output_name)
                     else:
                         outputs.append(output_name)
+        if layer.kernel == "prim.dict":
+            is_set_item = True
+            for out_layer_id in graph.edges_out[layer_id]:
+                out_layer = sub_layers[out_layer_id]
+                if out_layer.kernel != "prim.set_item":
+                    is_set_item = False
+                    break
+            if is_set_item:
+                outputs.append(layer.outputs[0])
     no_output_count = 0
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
