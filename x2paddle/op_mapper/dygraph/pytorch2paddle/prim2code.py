@@ -471,9 +471,15 @@ def prim_str(layer, indent=1, init_func=[], forward_func=[], layer_id=None, diff
 
 
 def prim_sub(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {} - {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), 
-                                 get_value(layer, "y", different_attrs))
+    if int(get_value(layer, "alpha", different_attrs)) == 1:
+        line = "{} = {} - {}".format(layer.outputs[0],
+                                     get_value(layer, "x", different_attrs), 
+                                     get_value(layer, "y", different_attrs))
+    else:
+        line = "{} = {} - {} * {}".format(layer.outputs[0],
+                                     get_value(layer, "x", different_attrs), 
+                                     get_value(layer, "alpha", different_attrs),
+                                     get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 

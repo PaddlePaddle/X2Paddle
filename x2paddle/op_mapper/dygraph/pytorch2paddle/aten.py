@@ -663,6 +663,37 @@ def aten_batch_norm(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_bmm(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+
+    TorchScript示例:
+        %x.222 : Tensor = aten::bmm(%32, %7)
+        参数含义:
+        %x.222 (Tensor): 输出，矩阵相乘后的结果。
+        %i.12 (list): 输入1。
+        %7 (int): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%i.12
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%288
+    mapper._check_input(
+        graph, inputs_node[1], inputs_name[1], current_outputs, scope_name, add_dim=True)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("paddle.bmm", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_cat(mapper, graph, node):
     """ 构造连接Tensor的PaddleLayer。
 
@@ -1522,6 +1553,32 @@ def aten_eq(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     graph.add_layer("prim.eq", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_erf(mapper, graph, node):
+    """ 构造逐元素计算 Erf 激活函数的PaddleLayer。
+
+    TorchScript示例:
+        %94 : Tensor = aten::erf(%sinusoid_inp.1)
+        参数含义:
+        %94 (Tensor): 输出，erf之后的结果。
+        %sinusoid_inp.1 (Tensor): 需要进行erf的Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%sinusoid_inp.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("paddle.erf", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -3986,16 +4043,18 @@ def aten_sub(mapper, graph, node):
     """ 构造数值相减的PaddleLayer。
 
     TorchScript示例:
-        %840 : int = aten::sub(%839, %836)
+        %840 : int = aten::sub(%839, %836, %3)
         参数含义:
         %840 (-): 相减结果。
         %839 (-): 输入数值 x。
         %836 (-): 输入数值 y。
+        %3 (-): alpha。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
+    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -4006,12 +4065,36 @@ def aten_sub(mapper, graph, node):
     mapper._check_input(
         graph, inputs_node[1], inputs_name[1], current_outputs, scope_name, add_dim=True)
     layer_inputs["y"] = inputs_name[1]
+    # 处理输入2，即%3
+    if len(inputs_node) > 2:
+        if inputs_name[2] in mapper.attrs:
+            layer_attrs["alpha"] = mapper.attrs[inputs_name[2]]
+        else:
+            mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                                current_outputs, scope_name)
+            layer_inputs["alpha"] = inputs_name[2]
+            current_inputs.append(inputs_name[2])
+    else:
+        layer_attrs["alpha"] = 1.0
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.sub", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    graph.add_layer("prim.sub", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name, **layer_attrs)
     return current_inputs, current_outputs
 
+
+def aten_sub_(mapper, graph, node):
+    """ 构造数值相减的PaddleLayer。
+
+    TorchScript示例:
+        %840 : int = aten::sub_(%839, %836, %3)
+        参数含义:
+        %840 (-): 相减结果。
+        %839 (-): 输入数值 x。
+        %836 (-): 输入数值 y。
+        %3 (-): alpha。
+    """
+    return aten_sub(mapper, graph, node)
 
 def aten_t(mapper, graph, node):
     """ 构造矩阵转置的PaddleLayer。
