@@ -117,7 +117,13 @@ class ONNXGraphDataNode(GraphNode):
         if isinstance(self.layer, ValueInfoProto):
             values = self.layer.type.tensor_type.shape.dim
             out_shapes = list()
-            out_shapes.append([dim.dim_value for dim in values])
+            shape = list()
+            for dim in values:
+                if dim.dim_value == 0:
+                    shape.append(-1)
+                else:
+                    shape.append(dim.dim_value)
+            out_shapes.append(shape)
             return out_shapes
         else:
             values = self.layer.dims

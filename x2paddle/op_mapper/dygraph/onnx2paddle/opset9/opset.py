@@ -534,7 +534,7 @@ class OpSet9():
             'bias_attr': string(val_b.name)
         }
         dim = len(val_x.out_shapes[0])
-        if dim == 2 or dim == 3:
+        if dim == 3:
             paddle_op = "paddle.nn.InstanceNorm1D"
         elif dim == 4:
             paddle_op = "paddle.nn.InstanceNorm2D"
@@ -1539,7 +1539,6 @@ class OpSet9():
         layer_outputs = [op_name, output_name]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_w = self.graph.get_input_node(node, idx=1, copy=True)
-        val_y = self.graph.get_node(node.layer.output[0], copy=True)
         has_bias = len(node.layer.input) == 3
         if has_bias:
             val_b = self.graph.get_input_node(node, idx=2, copy=True)
@@ -1620,23 +1619,7 @@ class OpSet9():
         output_size[1] = (val_x.out_shapes[0][3] - 1
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
-#         layer_attrs = {
-#             'in_channels': num_in_channels,
-#             'out_channels': num_out_channels,
-#             'output_size': output_size or None,
-#             'kernel_size': kernel_shape,
-#             'padding': paddings,
-#             'stride': strides,
-#             'dilation': dilations,
-#             'groups': num_groups,
-#             'weight_attr': string(val_w.name),
-#             'bias_attr': None if val_b is None else string(val_b.name),
-#         }
-#         self.paddle_graph.add_layer(
-#             paddle_op, 
-#             inputs={"x": val_x.name}, 
-#             outputs=layer_outputs, 
-#             **layer_attrs)
+        # Conv2DTranspose缺少output_size，只能在forward里头传进output_size
         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name,
                        "weight": val_w.name}
         layer_attrs = {

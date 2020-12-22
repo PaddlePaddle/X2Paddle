@@ -35,15 +35,15 @@ pip install x2paddle==1.0.0rc0 --index https://pypi.Python.org/simple/
 ## 使用方法
 ### TensorFlow
 ```
-x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
+x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model --paddle_type dygraph
 ```
 ### Caffe
 ```
-x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
+x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model --paddle_type dygraph
 ```
 ### ONNX
 ```
-x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
+x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --paddle_type dygraph
 ```
 
 ### PyTorch
@@ -64,6 +64,7 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
 |--caffe_proto | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 |--define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/user_guides/FAQ.md) |
 |--params_merge | **[可选]** 当指定该参数时，转换完成后，inference_model中的所有模型参数将合并保存为一个文件__params__ |
+|--paddle_type | **[可选]** 该参数指定转换为动态图代码（dygraph）或者静态图代码（static），默认为dygraph|
 
 
 
