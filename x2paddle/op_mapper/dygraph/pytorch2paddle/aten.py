@@ -2515,6 +2515,89 @@ def aten_log(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_lstm(mapper, graph, node):
+    """ 构造长短期记忆网络（LSTM）的PaddleLayer。
+
+    TorchScript示例:
+        %input.96, %551, %552 = aten::lstm(%input.95, %734, %549, %526, %525, %524, %526, %526, %526)
+        参数含义:
+        %input.96 (Tensor): 输出，由前向和后向cell的输出拼接得到。
+        %551 (Tensor): cell state。
+        %552 (Tensor): hidden state。
+        %input.95 (Tensor): 网络输入。
+        %734 (Tensor): 网络的初始状态。
+        %549 (list): 所有权重组合成的list。
+        %526 (bool): 是否使用bias。
+        %525 (int): 网络层数。
+        %524 (float): dropout概率。
+        %526 (bool): 是否为训练阶段。
+        %526 (bool): 是否使用双向LSTM。
+        %526 (bool): 第一个维度是否为batch size。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("lstm", mapper.nn_name2id)
+    output_names = mapper._get_outputs_name(node)
+    layer_outputs = [op_name]
+    layer_outputs.extend(output_names)
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = output_names
+    # 处理输入0，即%input.95
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input0"] = inputs_name[0]
+    # 处理输入1，即%734
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs, scope_name)
+    layer_inputs["input1"] = inputs_name[1]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入2，即%734
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs, scope_name)
+    graph.layers.pop(mapper.output2id[inputs_name[2]])
+    param_inputs_name, _ = mapper._get_inputs_name(inputs_node[2])
+    new_param_inputs_name = list()
+    for i, param_name in enumerate(param_inputs_name):
+        if i == 0:
+            layer_attrs["hidden_size"] = int(mapper.paddle_params[param_name].shape[0] / 4)
+            layer_attrs["input_size"] = int(mapper.paddle_params[param_name].shape[1])
+        if len(mapper.paddle_params[param_name].shape) > 1:
+            part_name = param_name.split("_weight_")[-1]
+            mapper.paddle_params["{}.weight_{}".format(op_name, part_name)] = mapper.paddle_params[param_name]
+            new_param_inputs_name.append("{}.weight_{}".format(op_name, part_name))
+        else:
+            part_name = param_name.split("_bias_")[-1]
+            mapper.paddle_params["{}.bias_{}".format(op_name, part_name)] = mapper.paddle_params[param_name]
+        mapper.paddle_params.pop(param_name)
+        
+    # 处理输入3，即%526
+    is_bias = mapper.attrs[inputs_name[3]]
+    if not is_bias:
+        for param_name in new_param_inputs_name:
+            bias_name = param_name.replace("weight", "bias")
+            bias_shape= mapper.paddle_params[param_name].shape[:1]
+            mapper.paddle_params[bias_name] = np.zeros(bias_shape).astype("float32")
+    # 处理输入4，即%525
+    layer_attrs["num_layers"] = mapper.attrs[inputs_name[4]]
+    # 处理输入5，即%524
+    layer_attrs["dropout"] = mapper.attrs[inputs_name[5]]
+    # 处理输入7，即%526
+    is_bidirectional = mapper.attrs[inputs_name[7]]
+    if is_bidirectional:
+        layer_attrs["direction"] = string("bidirectional")
+    # 处理输入8，即%526
+    batch_first = mapper.attrs[inputs_name[8]]
+    if not batch_first:
+        layer_attrs["time_major"] = True
+    graph.add_layer(
+        "paddle.nn.LSTM",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_lt(mapper, graph, node):
     """ 构造对比大小的PaddleLayer。
 

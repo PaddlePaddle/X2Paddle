@@ -37,6 +37,7 @@ class PyTorchOpMapper(OpMapper):
         self.scope_name_list = list()
         self.scope_name2id = dict()
         self.inputs_info = dict()
+        self.output2id = dict() # output名字和layer_id的关系，用于lstm去除前面的node
         # 转换
         if not self.op_checker(decoder.graph):
             raise Exception("Model is not supported yet.")
@@ -175,7 +176,7 @@ class PyTorchOpMapper(OpMapper):
                 if add_dim:
                     param = param[np.newaxis, :]
                 self.paddle_params[output_name] = param
-                graph.add_layer(
+                layer_id = graph.add_layer(
                     "self.create_parameter",
                     inputs={},
                     outputs=[output_name],
@@ -183,6 +184,7 @@ class PyTorchOpMapper(OpMapper):
                     dtype=string(str(param.dtype)),
                     shape = param.shape,
                     default_initializer="paddle.nn.initializer.Constant(value=0.0)")
+                self.output2id[output_name] = layer_id
             else:
                 if isinstance(param, dict) and "Tensor" in param and \
                 "parent_layer_id" in param:
@@ -202,7 +204,7 @@ class PyTorchOpMapper(OpMapper):
                                         if add_dim:
                                             param = param[np.newaxis, :]
                                         self.paddle_params[output_name] = param
-                                        graph.add_layer(
+                                        layer_id = graph.add_layer(
                                             "self.create_parameter",
                                             inputs={},
                                             outputs=[output_name],
@@ -211,6 +213,7 @@ class PyTorchOpMapper(OpMapper):
                                             shape = param.shape,
                                           default_initializer="paddle.nn.initializer.Constant(value=0.0)")
                                         node_outputs.append(output_name)
+                                        self.output2id[output_name] = layer_id
                                         return
                     # 若if-else外，则可直接引用if-else中的赋值结果
                     graph.add_layer(
@@ -231,14 +234,15 @@ class PyTorchOpMapper(OpMapper):
         elif node.kind() == "prim::Constant" and output_name in self.pytorch_params:
             param = self.pytorch_params[output_name]
             self.paddle_params[output_name] = param
-            graph.add_layer(
+            layer_id = graph.add_layer(
                 "self.create_parameter",
                 inputs={},
                 outputs=[output_name],
                 scope_name=scope_name,
                 dtype=string(str(param.dtype)),
                 shape = param.shape,
-                default_initializer="paddle.nn.initializer.Constant(value=0.0)")     
+                default_initializer="paddle.nn.initializer.Constant(value=0.0)")  
+            self.output2id[output_name] = layer_id
 
             
     def _get_inputs_name(self, node):

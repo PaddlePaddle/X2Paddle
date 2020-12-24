@@ -210,6 +210,8 @@ class PaddleGraph(object):
                         layer_id, 0) == 0 and layer.kernel != "prim.assert" \
                         and layer.kernel != "prim.exception" \
                         and layer.kernel != "prim.warnings":
+                    if layer.kernel == "paddle.to_tensor":
+                        self.inputs_info.pop(layer.outputs[0])
                     invalid_list.append(layer_id)
         for layer_id in invalid_list:
             self.layers.pop(layer_id)
@@ -425,8 +427,7 @@ class PaddleGraph(object):
                     continue
                 if layer.kernel == "paddle.to_tensor":
                     data = layer.attrs["data"]
-                    if not data.startswith("params["):
-                        self.inputs.append(data)
+                    self.inputs.append(data)
                 if len(layer.blocks) > 0:
                     for block in layer.blocks:
                         block.get_dygraph_inputs()
@@ -578,7 +579,10 @@ class PaddleGraph(object):
                 elif len(layer.outputs) == 2:
                     line = layer.outputs[1]
                 else:
-                    line = ','.join(layer.outputs[1:])
+                    if layer.kernel == "paddle.nn.LSTM":
+                        line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
+                    else:
+                        line = ','.join(layer.outputs[1:])
                 if layer.kernel == "paddle.to_tensor" and layer.attrs[
                         "data"].startswith("params["):
                     line += " = self.{}".format(layer.outputs[0])

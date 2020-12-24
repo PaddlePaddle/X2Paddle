@@ -22,6 +22,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Embedding": "embedding",
                   "paddle.nn.Linear": "linear",
                   "paddle.nn.Conv2DTranspose": "conv",
+                  "paddle.nn.LSTM": "lstm",
                   "paddle.nn.ReLU": "relu",
                   "paddle.nn.ReLU6": "relu",
                   "paddle.nn.Softmax": "softmax",
@@ -36,7 +37,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
-NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:6]
+NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:7]
 
 def rename_layers(layers, param_tree=None, is_rename_module=False):
     """ 对子模块的输入输出等进行重命名。
@@ -235,7 +236,10 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
             elif len(layer.outputs) == 2:
                 line = layer.outputs[1]
             else:
-                line = ','.join(layer.outputs[1:])
+                if layer.kernel == "paddle.nn.LSTM":
+                    line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
+                else:
+                    line = ','.join(layer.outputs[1:])
             
             line += " = self.{}(".format(layer.outputs[0])
             for k, v in layer.inputs.items():

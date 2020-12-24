@@ -39,6 +39,7 @@ class HierarchicalTree(Tree):
         self.identifier_idx = dict()
         self.param_tree = PamareterTree()
         self.module_name2count = dict()
+        self.scope_name_list = list()
         
     def insert(self, layer):
         """ 往层次树中插入节点。
@@ -47,6 +48,7 @@ class HierarchicalTree(Tree):
             layer (PaddleLayer): 需要插入的节点。
         """
         scope_name = layer.scope_name
+        self.scope_name_list.append(scope_name)
         if scope_name == "":
             if layer.kernel == "prim.tuple" or layer.kernel == "prim.tuple_unpack":
                 layer_id = layer.id
@@ -55,12 +57,33 @@ class HierarchicalTree(Tree):
                     layer_id_list.append(int(input_layer_id))
                 layer_id_list = list(set(layer_id_list))
                 layer_id_list.sort(reverse=True) 
-                for input_layer_id in layer_id_list:
-                    input_layer_id_str = str(input_layer_id)
-                    if self.pd_graph.layers[input_layer_id_str].scope_name != "":
+                
+                if layer.kernel == "prim.tuple":
+                    for i, input_layer_id in enumerate(layer_id_list):
+                        input_layer_id_str = str(input_layer_id)
                         scope_name = self.pd_graph.layers[input_layer_id_str].scope_name
-                        break
-                layer.scope_name = scope_name
+                        if i == 0:
+                            min_scope_name = scope_name
+                        else:
+                            len1 = len(min_scope_name.split("/"))
+                            len2 = len(scope_name.split("/"))
+                            if len1 > len2 and scope_name in self.scope_name_list:
+                                min_scope_name = scope_name
+                    if min_scope_name == "":
+                        self.create_node(tag=layer.id, 
+                                 identifier="no_scope_" + layer.id, 
+                                 parent=self.pd_graph.name,
+                                 data=layer)
+                        return 
+                    layer.scope_name = min_scope_name
+                    scope_name = min_scope_name
+                else:
+                    for input_layer_id in layer_id_list:
+                        input_layer_id_str = str(input_layer_id)
+                        if self.pd_graph.layers[input_layer_id_str].scope_name != "":
+                            scope_name = self.pd_graph.layers[input_layer_id_str].scope_name
+                            break                     
+                    layer.scope_name = scope_name
             else:
                 self.create_node(tag=layer.id, 
                                  identifier="no_scope_" + layer.id, 
