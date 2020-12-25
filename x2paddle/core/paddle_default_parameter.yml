@@ -1,0 +1,105 @@
+paddle.nn.AdaptiveAvgPool2D:
+     data_format: NCHW
+
+paddle.addmm:
+    alpha: 1.0
+    beta: 1.0
+    
+paddle.arange:
+    start: 0
+    end: ~
+    step: 1
+
+paddle.nn.BatchNorm:
+    momentum: 0.9
+    epsilon: 0.00001
+    data_format: NCHW
+    
+paddle.concat:
+    axis: 0
+    
+paddle.nn.Conv2D:
+    stride: 
+        - 1
+        - 1
+    padding:
+        - 0
+        - 0
+    dilation:
+        - 1
+        - 1
+    groups: 1
+    padding_mode: zeros
+    data_format: NCHW
+    
+paddle.nn.Conv2DTranspose:
+    stride: 
+        - 1
+        - 1
+    padding:
+        - 0
+        - 0
+    dilation:
+        - 1
+        - 1
+    output_padding:
+        - 0
+        - 0
+    groups: 1
+    padding_mode: zeros
+    data_format: NCHW
+    
+paddle.flatten:
+    start_axis: 0
+    stop_axis: -1
+    
+paddle.nn.Hardtanh:
+    min: -1.0
+    max: 1.0
+    
+paddle.nn.LayerNorm:
+    epsilon: 0.00001
+    
+paddle.nn.LeakyReLU:
+    negative_slope: 0.01
+    
+paddle.nn.LSTM:
+    num_layers: 1
+    direction: forward
+    time_major: False
+    dropout: 0
+    
+paddle.nn.MaxPool2D:
+    padding:
+        - 0
+        - 0
+    ceil_mode: False
+    return_mask: False
+    
+paddle.mean:
+    keepdim: False
+    
+paddle.split:
+    axis: 0
+    
+paddle.nn.Softmax:
+    axis: -1
+    
+paddle.nn.Softplus:
+    beta: 1
+    threshold: 20
+    
+paddle.stack:
+    axis: 0
+    
+paddle.split:
+    axis: 0
+    
+paddle.nn.functioanl.interpolate:
+     mode: nearest
+     align_corners: False
+     align_mode: 0
+     data_format: NCHW
+   
+
+    
