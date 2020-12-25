@@ -929,7 +929,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[inputs_name[0] + "_list"],
             scope_name=scope_name)
         block.add_layer(
-            "paddle.tensor.unsqueeze",
+            "paddle.unsqueeze",
             inputs={"x": inputs_name[0],
                     "axis": inputs_name[0] + "_list"},
             outputs=[inputs_name[0] + "_var"],
@@ -941,7 +941,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             scope_name=scope_name,
             **layer_attrs)
         block.add_layer(
-            "paddle.tensor.squeeze",
+            "paddle.squeeze",
             inputs={"x": output_name,
                     "axis": inputs_name[0] + "_list"},
             outputs=[output_name],
@@ -1703,7 +1703,7 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[1] + "_type"],
         scope_name=scope_name)
     block.add_layer(
-        "fluid.layers.cast",
+        "paddle.cast",
         inputs={"x": inputs_name[0]},
         outputs=[inputs_name[0]],
         scope_name=scope_name,
@@ -1722,7 +1722,7 @@ def aten_expand_as(mapper, graph, node):
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
     block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
-        "fluid.layers.cast",
+        "paddle.cast",
         inputs={"x": layer_outputs[0]},
         outputs=copy.deepcopy(layer_outputs),
         scope_name=scope_name,
@@ -4074,7 +4074,7 @@ def aten_squeeze(mapper, graph, node):
         layer_inputs["axis"] = inputs_name[1]
         current_inputs.append(inputs_name[1])
     graph.add_layer(
-        "paddle.tensor.squeeze",
+        "paddle.squeeze",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name,

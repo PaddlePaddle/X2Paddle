@@ -179,16 +179,27 @@ class ModuleGraph(object):
     def analyze_attrs_table(self, attrs_table):
         """ 分析属性表格，哪些属性取值不一致。
         """
-        diff_attrs_column = list()
+        diff_attrs_column = dict()
         for column in list(attrs_table.columns):
             elements = list(attrs_table.get(column))
-            base = elements[0]
-            for element in elements[1:]:
-                if isinstance(base, str) and "'" not in base:
+            elements_list = list()
+            count_list = list()
+            for element in elements:
+                if isinstance(element, str) and "'" not in element:
                     break
-                if element != base:
-                    diff_attrs_column.append(column)
-                    break
+                if element not in elements_list:
+                    count_list.append(1)
+                    elements_list.append(element)
+                else:
+                    index = elements_list.index(element)
+                    count_list[index] += 1
+            if len(elements_list) > 1:
+                max_ct = 0
+                for k, v in zip(elements_list, count_list):
+                    if v > max_ct:
+                        max_ele = k
+                        max_ct = v
+                diff_attrs_column[column] = max_ele
         return diff_attrs_column
     
     def analyze_graph(self, sub_layers_list):
@@ -258,8 +269,10 @@ class ModuleGraph(object):
             outputs = ["{}_{}".format(mn, index)] + outputs
             node_name = "{}_{}".format(module_name, index)
             diff_attrs = dict() 
-            for column in diff_attrs_column:
-                diff_attrs[column] = attrs_table.get(column).loc[node_name]
+            for column, element in diff_attrs_column.items():
+                current_element = attrs_table.get(column).loc[node_name]
+                if current_element != element:
+                    diff_attrs[column] = current_element
             new_layer = PaddleLayer(id=list(sub_layers.keys())[-1],
                                     kernel="module",
                                     inputs=inputs_dict,

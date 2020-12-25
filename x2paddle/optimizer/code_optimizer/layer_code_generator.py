@@ -14,6 +14,9 @@
 # limitations under the License.
 
 import copy
+import yaml
+import os.path as osp
+import x2paddle
 from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode
 
 NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
@@ -125,15 +128,34 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
     rename_sub_layers(layers_cp, count)
     return layers_cp, nn_param_nodes, new_names
 
+def load_default_parameter():
+    path = x2paddle.__file__
+    path = path.replace("__init__.py", "core")
+    yaml_dir = osp.join(path, "paddle_default_parameter.yml")
+    with open(yaml_dir, "rb") as fr:
+        default_parameter = yaml.load(fr.read())
+    return default_parameter
 
-def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
+def is_abandon(default_parameter, layer_kernel, param_key, param_value):
+    if layer_kernel not in default_parameter:
+        return False
+    params = default_parameter[layer_kernel]
+    if param_key not in params:
+        return False
+    if params[param_key] == param_value:
+        return True
+    else:
+        return False
+    
+
+def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
     """ 根据sub_layers生成对应的Module代码。
     
     Args:
         graph (x2paddle.core.program.PaddleGraph): 整个Paddle图。
         sub_layers (dict): 子图的id和其对应layer组成的字典。
         sub_layers_name (str): 子图的名字。
-        different_attrs (list): 属性列表，这些属性表明在被调用时赋予不同值。
+        different_attrs (dict/list): 属性字典/列表，这些属性表明在被调用时赋予不同值。
     """
     def gen_codes(code_list, indent=0):
         """ 根据code_list生成代码段。
@@ -158,7 +180,13 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
         # 生成Layer的头部代码
         head = gen_codes(["class {}(paddle.nn.Layer):".format(sub_layers_name)], indent=0)
         # 生成init函数的头部代码
-        attrs_str = ", ".join(different_attrs)
+        diff_str_list = list()
+        if isinstance(different_attrs, dict):
+            for k, v in different_attrs.items():
+                diff_str_list.append("{}={}".format(k, v))
+            attrs_str = ", ".join(diff_str_list)
+        else:
+            attrs_str = ", ".join(different_attrs)
         init_func_head = \
             gen_codes(["def __init__(self, {}):".format(attrs_str)], indent=1) + \
             gen_codes(["super({}, self).__init__()".format(sub_layers_name)], indent=2)
@@ -213,6 +241,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
             if is_set_item:
                 outputs.append(layer.outputs[0])
     no_output_count = 0
+    default_parameter = load_default_parameter()
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
                 layer.kernel.startswith("custom_layer"):
@@ -226,6 +255,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                 if key_name in different_attrs:
                     line += "{}={}, ".format(k, key_name)
                 else:
+                    if is_abandon(default_parameter, layer.kernel, k, v):
+                        continue
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
             line += ")"
@@ -267,7 +298,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                     init_func=init_func,
                     forward_func=forward_func,
                     layer_id=layer_id, 
-                    different_attrs=different_attrs)
+                    different_attrs=list(different_attrs.keys()) if isinstance(different_attrs, dict) else different_attrs)
                 cur_outputs.extend(layer.outputs)
             else:
                 raise Exception(
@@ -327,6 +358,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                     line += "{}=self.{}, ".format(k, key_name)
                     init_func.extend(gen_codes(["self.{} = {}".format(key_name, key_name)], indent=2))
                 else:
+                    if is_abandon(default_parameter, layer.kernel, k, v):
+                        continue
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
             line += ")"

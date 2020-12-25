@@ -67,7 +67,10 @@ class HierarchicalTree(Tree):
                         else:
                             len1 = len(min_scope_name.split("/"))
                             len2 = len(scope_name.split("/"))
-                            if len1 > len2 and scope_name in self.scope_name_list:
+                            if scope_name not in self.scope_name_list:
+                                min_scope_name = scope_name
+                                continue
+                            if len1 > len2:
                                 min_scope_name = scope_name
                     if min_scope_name == "":
                         self.create_node(tag=layer.id, 
