@@ -302,7 +302,19 @@ class ONNXGraph(Graph):
                         if opt == in_node:
                             self.connect(nd.name, layer_name)
                             flag = 1
-                            node.which_child[nd.name] = idx
+                            if nd.name in node.which_child:
+                                for n_i, n_ipt in enumerate(node.inputs):
+                                    if first_i == n_i:
+                                        continue
+                                    if n_ipt == nd.name:
+                                        new_nd_name = "{}/{}".format(nd.name, n_i)
+                                        if new_nd_name not in node.which_child:
+                                            node.which_child[new_nd_name] = idx
+                                            break
+                                print(node.which_child)
+                            else:
+                                first_i = node.inputs.index(nd.name)
+                                node.which_child[nd.name] = idx
                             self.node_map[nd.name].index = 0
                             break
                     if flag == 1:
@@ -318,11 +330,18 @@ class ONNXGraph(Graph):
         if len(node.which_child) == 0:
             ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
             return ipt_node
-
         else:
             ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
-            if ipt_node.layer_name in node.which_child:
-                ipt_node.index = node.which_child[ipt_node.layer_name]
+            new_ipt_name = "{}/{}".format(ipt_node.layer_name, idx)
+            if new_ipt_name in node.which_child:
+                print(new_ipt_name)
+                ipt_node.index = node.which_child[new_ipt_name]
+                print("ipt_node.index", ipt_node.index)
+            else:
+                if ipt_node.layer_name in node.which_child:
+                    ipt_node.index = node.which_child[ipt_node.layer_name]
+                    print("ipt_node.index", ipt_node.index)                
+                
             return ipt_node
         
 
