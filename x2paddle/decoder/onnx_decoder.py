@@ -205,7 +205,7 @@ class ONNXGraph(Graph):
                             shape = raw_input(
                                 "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
                             )
-                        except:
+                        except NameError:
                             shape = input(
                                 "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
                             )

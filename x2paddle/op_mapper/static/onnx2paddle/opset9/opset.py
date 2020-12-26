@@ -272,7 +272,7 @@ class OpSet9():
                 ipt = inputs.pop("x")
                 inputs["input"] = ipt
                 mode = node.get_attr('mode', 'nearest')
-                attrs = attrs.update({"align_corners": False})
+                attrs.update({"align_corners": False})
                 self.paddle_graph.add_layer(
                     kernel="fluid.layers.resize_nearest",
                     inputs=inputs,
