@@ -19,7 +19,7 @@ import pandas as pd
 from x2paddle.optimizer.code_optimizer.layer_code_generator import rename_layers
 
 
-def construct_attrs_table(sub_layers_list, node_name2sub_layers):
+def construct_attrs_table(sub_layers_list, node_name2sub_layers=None, module_name=None):
     """ 构造不同属性的表格。
     """
     def get_node_name(sub_layers):
@@ -32,9 +32,12 @@ def construct_attrs_table(sub_layers_list, node_name2sub_layers):
     _, _, new_names = rename_layers(sub_layers)
     table = list()
     node_names = list()
-    for sub_layers in sub_layers_list:
+    for i, sub_layers in enumerate(sub_layers_list):
         attrs = dict()
-        node_names.append(get_node_name(sub_layers))
+        if node_name2sub_layers is not None:
+            node_names.append(get_node_name(sub_layers))
+        else:
+            node_names.append("{}_{}".format(module_name, i))
         for i, (layer_id, layer) in enumerate(sub_layers.items()):
             for k, v in layer.attrs.items():
                 attrs[new_names[i] + "_{}".format(k)] = v
