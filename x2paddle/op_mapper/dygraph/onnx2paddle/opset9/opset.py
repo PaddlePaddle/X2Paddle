@@ -255,10 +255,16 @@ class OpSet9():
             if len(node.layer.input) == 2:
                 # opset 10
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-                inputs['scale_factor'] = val_scales.name
+                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # which is the same as the rank of input.
+#                 inputs['scale_factor'] = val_scales.name
+                attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
+                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # which is the same as the rank of input.
+#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 4:
                 # opset 11
@@ -291,7 +297,7 @@ class OpSet9():
                 return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            inputs['scale'] = val_scales
+            inputs['scale_factor'] = val_scales
 
         mode = node.get_attr('mode', 'nearest')
         attrs.update({"align_corners": False,
@@ -1097,10 +1103,6 @@ class OpSet9():
         dtypes = set()
         for i in range(len(node.layer.input)):
             ipt = self.graph.get_input_node(node, idx=i, copy=True)
-            try:
-                print(ipt.index)
-            except:
-                pass
             inputs_list.append(ipt.name)
             dtypes.add(ipt.dtype)
         if len(dtypes) > 1:

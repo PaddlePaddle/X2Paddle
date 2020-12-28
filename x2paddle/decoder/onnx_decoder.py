@@ -311,7 +311,6 @@ class ONNXGraph(Graph):
                                         if new_nd_name not in node.which_child:
                                             node.which_child[new_nd_name] = idx
                                             break
-                                print(node.which_child)
                             else:
                                 first_i = node.inputs.index(nd.name)
                                 node.which_child[nd.name] = idx
@@ -334,13 +333,10 @@ class ONNXGraph(Graph):
             ipt_node = super(ONNXGraph, self).get_node(node.inputs[idx], copy)
             new_ipt_name = "{}/{}".format(ipt_node.layer_name, idx)
             if new_ipt_name in node.which_child:
-                print(new_ipt_name)
                 ipt_node.index = node.which_child[new_ipt_name]
-                print("ipt_node.index", ipt_node.index)
             else:
                 if ipt_node.layer_name in node.which_child:
                     ipt_node.index = node.which_child[ipt_node.layer_name]
-                    print("ipt_node.index", ipt_node.index)                
                 
             return ipt_node
         

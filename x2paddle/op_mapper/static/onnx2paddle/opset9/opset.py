@@ -245,10 +245,16 @@ class OpSet9():
             if len(node.layer.input) == 2:
                 # opset 10
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-                inputs['scale_factor'] = val_scales.name
+                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # which is the same as the rank of input.
+#                 inputs['scale_factor'] = val_scales.name
+                attrs['scale_factor'] = self.params[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
+                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # which is the same as the rank of input.
+#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.params[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 4:
                 # opset 11
