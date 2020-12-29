@@ -17,9 +17,9 @@ import copy
 import os
 import os.path as osp
 from x2paddle.core.program import PaddleLayer
-from x2paddle.optimizer.code_optimizer.subgraphs_union import construct_attrs_table, get_inputs_outputs
-from x2paddle.optimizer.code_optimizer.layer_code_generator import gen_layer_code, rename_layers
-from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode, PamareterTree
+from x2paddle.optimizer.pytorch_code_optimizer.subgraphs_union import construct_attrs_table, get_inputs_outputs
+from x2paddle.optimizer.pytorch_code_optimizer.layer_code_generator import gen_layer_code, rename_layers
+from x2paddle.optimizer.pytorch_code_optimizer.parameter_tree import PamareterNode, PamareterTree
 
 
 NoModuleStart = ["paddle.nn.ReLU"]

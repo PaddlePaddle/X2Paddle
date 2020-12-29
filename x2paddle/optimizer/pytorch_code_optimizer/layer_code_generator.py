@@ -16,7 +16,7 @@
 import copy
 import os.path as osp
 import x2paddle
-from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode
+from x2paddle.optimizer.pytorch_code_optimizer.parameter_tree import PamareterNode
 from x2paddle.core.util import *
 
 
@@ -128,7 +128,23 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
         return count
     rename_sub_layers(layers_cp, count)
     return layers_cp, nn_param_nodes, new_names
-    
+
+
+def _update_attrs(layer, different_attrs):
+    if "module" in layer.kernel or "prim" in layer.kernel:
+        return
+    common_attrs = copy.deepcopy(layer.attrs)
+    special_attrs = dict()
+    for k, v in layer.attrs.items():
+        if len(layer.outputs) < 1:
+            break
+        key_name = "{}_{}".format(layer.outputs[0], k)
+        if key_name in different_attrs:
+            common_attrs.pop(k)
+            special_attrs[k] = v
+    remove_default_attrs(layer.kernel, common_attrs)
+    common_attrs.update(special_attrs)
+    layer.attrs = common_attrs
 
 def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
     """ 根据sub_layers生成对应的Module代码。
@@ -224,7 +240,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 outputs.append(layer.outputs[0])
     no_output_count = 0
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
-        remove_default_attrs(layer, different_attrs)
+        _update_attrs(layer, different_attrs)
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
                 layer.kernel.startswith("custom_layer"):
             line = "self.{}".format(layer.outputs[0])

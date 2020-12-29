@@ -275,7 +275,7 @@ class PaddleGraph(object):
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
         if jit_type == "trace":
-            from x2paddle.optimizer.code_optimizer import HierarchicalTree
+            from x2paddle.optimizer.pytorch_code_optimizer import HierarchicalTree
             hierarchical_tree = HierarchicalTree(self)
             for layer_id, layer in self.layers.items():
                 hierarchical_tree.insert(layer)
@@ -283,7 +283,7 @@ class PaddleGraph(object):
             self.dump_dygraph_parameter(save_dir)
         else:
             if self.source_type == "pytorch":
-                from x2paddle.optimizer.code_optimizer import ModuleGraph
+                from x2paddle.optimizer.pytorch_code_optimizer import ModuleGraph
                 module_graph = ModuleGraph(self)
                 module_graph.save_source_files(save_dir)
                 self.dump_dygraph_parameter(save_dir)
@@ -347,7 +347,8 @@ class PaddleGraph(object):
             ],
             indent=1)
         for layer_id, layer in self.layers.items():
-            remove_default_attrs(layer)
+            if layer.kernel.startswith("paddle"):
+                remove_default_attrs(layer.kernel, layer.attrs)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
             if len(edges_in) == 0 and len(edges_out) == 0:
@@ -546,7 +547,8 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
-            remove_default_attrs(layer)
+            if layer.kernel.startswith("paddle"):
+                remove_default_attrs(layer.kernel, layer.attrs)
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
                 layer.kernel.startswith("custom_layer") or \

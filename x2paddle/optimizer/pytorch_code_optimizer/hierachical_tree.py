@@ -18,10 +18,10 @@ import copy
 import os.path as osp
 from treelib import Tree
 from queue import Queue
-from x2paddle.optimizer.code_optimizer.layer_code_generator import gen_layer_code, rename_layers, NN_KERNEL_WITH_PARAMS, NN_KERNEL_NAME
-from x2paddle.optimizer.code_optimizer.subgraphs_union import  distinguish_sequential, get_inputs_outputs
+from x2paddle.optimizer.pytorch_code_optimizer.layer_code_generator import gen_layer_code, rename_layers, NN_KERNEL_WITH_PARAMS, NN_KERNEL_NAME
+from x2paddle.optimizer.pytorch_code_optimizer.subgraphs_union import  distinguish_sequential, get_inputs_outputs
 from x2paddle.core.program import PaddleLayer
-from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode, PamareterTree
+from x2paddle.optimizer.pytorch_code_optimizer.parameter_tree import PamareterNode, PamareterTree
 
 SEPARATOR_IN_SCOPE = "/"
 

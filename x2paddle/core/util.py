@@ -28,7 +28,7 @@ def name_generator(nn_name, nn_name2id):
     real_nn_name = nn_name + str(nn_name2id[nn_name])
     return real_nn_name
 
-def remove_default_attrs(layer, diff_attrs=None):
+def remove_default_attrs(kernel, attrs):
     def get_default_args(func):
         signature = inspect.signature(func)
         return {
@@ -36,10 +36,6 @@ def remove_default_attrs(layer, diff_attrs=None):
             for k, v in signature.parameters.items()
             if v.default is not inspect.Parameter.empty
         }
-    kernel = layer.kernel
-    attrs = layer.attrs
-    if ":" in kernel or "prim" in kernel or "module" in kernel:
-        return 
     is_func = True
     if "paddle.nn" in kernel and "functional"not in kernel:
         is_func = False
@@ -61,9 +57,4 @@ def remove_default_attrs(layer, diff_attrs=None):
                 if len(set(attrs[default_k])) == 1:
                     attrs[default_k] = attrs[default_k][0]
             if default_v == attrs[default_k]:
-                if diff_attrs is None:
-                    attrs.pop(default_k)
-                else:
-                    key_name = "{}_{}".format(layer.outputs[0], default_k)
-                    if key_name not in diff_attrs:
-                        attrs.pop(default_k)
+                attrs.pop(default_k)
