@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.fusion.dygraph import DygraphIfFuser
+from x2paddle.optimizer.pass_manager import pass_register
 
-from x2paddle.optimizer.code_optimizer.hierachical_tree import HierarchicalTree
-from x2paddle.optimizer.code_optimizer.module_graph import ModuleGraph
+
+@pass_register
+class DygraphIfFusePass(Pass):
+    name = "dygraph_if_fuse_pass"
+
+    def __init__(self):
+        Pass.__init__(self)
+
+    def apply(self, graph):
+        fuser = DygraphIfFuser()
+        fuser.operate(graph, match_kind="op")
+
+
+# 用于注册
+if_fuse_pass = DygraphIfFuser()

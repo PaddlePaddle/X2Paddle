@@ -279,8 +279,14 @@ class PaddleGraph(object):
             hierarchical_tree.save_source_files(save_dir)
             self.dump_dygraph_parameter(save_dir)
         else:
-            self.gen_dygraph_code(save_dir)
-            self.dump_dygraph_parameter(save_dir)
+            if self.source_type == "pytorch":
+                from x2paddle.optimizer.code_optimizer import ModuleGraph
+                module_graph = ModuleGraph(self)
+                module_graph.save_source_files(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+            else:
+                self.gen_dygraph_code(save_dir)
+                self.dump_dygraph_parameter(save_dir)
         # 动转静
         code_path = osp.join(osp.abspath(save_dir), "x2paddle_code.py")
         print("Exporting inference model from python code ('{}')... \n".format(code_path))
@@ -621,7 +627,7 @@ class PaddleGraph(object):
                                                                               layer.outputs[0])], indent=indent))
                 else:
                     self.forward_func.extend(gen_codes([line], indent=indent))
-        if indent == 2:
+        if indent == 2 and code_dir is not None:
             gen_main_code(code_dir)
             write_code(code_dir)
         else:

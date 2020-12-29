@@ -84,7 +84,7 @@ class PyTorchOpMapper(OpMapper):
                 current_node_outputs.extend(outputs)
 
         # 初始化
-        graph = PaddleGraph(parent_layer=parent_layer, graph_type="dygraph")
+        graph = PaddleGraph(source_type="pytorch", parent_layer=parent_layer, graph_type="dygraph")
         if "TopLevelTracedModule" in str(type(self.script)):
             graph.set_script(self.script)
         current_node_outputs = []

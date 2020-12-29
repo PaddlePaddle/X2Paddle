@@ -28,6 +28,8 @@ class PatternMatcher(object):
             self.detect_patterns_by_topo(graph)
         elif match_kind == "edge":
             self.detect_patterns_by_edge(graph)
+        elif match_kind == "op":
+            self.detect_patterns_by_op(graph)
         self.remove_overlapped_match()
         return self.matches
 
@@ -228,6 +230,42 @@ class PatternMatcher(object):
             for j, block in enumerate(layer.blocks):
                 if len(block.layers) > 0:
                     self.detect_patterns_by_edge(layer.blocks[j])
+                    
+    def detect_patterns_by_op(self, graph):
+        """ 当只匹配op时使用此方式。
+        """
+        def get_subgraph(pattern, graph, start_index):
+            pattern_id2layers = pattern.get_global_layers()
+            pattern_ids = list(pattern_id2layers.keys())
+            pattern_layer_id = pattern_ids[0]
+            subgraph_id2layers = dict()
+            layer_id = list(graph.layers.keys())[start_index]
+            graph_layers = graph.layers
+
+            def update(layer_id, pattern_layer_id):
+                layer = graph_layers[layer_id]
+                pattern_layer = pattern_id2layers[pattern_layer_id]
+                if layer.kernel != pattern_layer.kernel:
+                    return False
+                subgraph_id2layers[layer_id] = layer
+                
+            while len(subgraph_id2layers) != len(pattern_id2layers):
+                out = update(layer_id, pattern_layer_id)
+                if out == False:
+                    return False
+                else:
+                    if len(subgraph_id2layers) == len(pattern_id2layers):
+                        return subgraph_id2layers
+                    else:
+                        return False
+        for i, (layer_id, layer) in enumerate(graph.layers.items()):
+            match_info = get_subgraph(self.pattern, graph, i)
+            if match_info:
+                self.matches.append(match_info)
+            for j, block in enumerate(layer.blocks):
+                if len(block.layers) > 0:
+                    self.detect_patterns_by_op(layer.blocks[j])
+
 
     def remove_overlapped_match(self):
         """ 如果2个子图有重叠，只取前一个子图。
@@ -297,14 +335,11 @@ class FuseBase(object):
         """ 删除不需要的中间layer及其对应参数。
         """
         for match in self.matches:
+            if len(match) == 0:
+                continue
             first_layer_id = list(match.keys())[0]
             subgraph = get_subgraph("", first_layer_id, graph)
             for layer_id, layer in match.items():
-                if layer.kernel == "fluid.dygraph.base.to_variable" and \
-                layer.attrs["value"].startswith("params["):
-                    param_name = layer.attrs["value"][8:-2]
-                    if param_name in graph.parameters:
-                        graph.parameters.pop(param_name)
                 if layer_id in subgraph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
                     subgraph.layers.pop(layer_id)

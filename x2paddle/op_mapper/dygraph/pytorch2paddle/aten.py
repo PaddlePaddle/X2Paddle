@@ -663,6 +663,37 @@ def aten_batch_norm(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_bmm(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+
+    TorchScript示例:
+        %x.222 : Tensor = aten::bmm(%32, %7)
+        参数含义:
+        %x.222 (Tensor): 输出，矩阵相乘后的结果。
+        %i.12 (list): 输入1。
+        %7 (int): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%i.12
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%288
+    mapper._check_input(
+        graph, inputs_node[1], inputs_name[1], current_outputs, scope_name, add_dim=True)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("paddle.bmm", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_cat(mapper, graph, node):
     """ 构造连接Tensor的PaddleLayer。
 
@@ -885,7 +916,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[inputs_name[0] + "_if", output_name],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         block.add_layer(
             "prim.sub",
             inputs={"y": inputs_name[0] + "_len"},
@@ -916,7 +947,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[output_name],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         layer_inputs["input"] = inputs_name[0]
         block.add_layer(
             kernel, inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name, **layer_attrs)
@@ -1525,6 +1556,32 @@ def aten_eq(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_erf(mapper, graph, node):
+    """ 构造逐元素计算 Erf 激活函数的PaddleLayer。
+
+    TorchScript示例:
+        %94 : Tensor = aten::erf(%sinusoid_inp.1)
+        参数含义:
+        %94 (Tensor): 输出，erf之后的结果。
+        %sinusoid_inp.1 (Tensor): 需要进行erf的Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%sinusoid_inp.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("paddle.erf", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_exp(mapper, graph, node):
     """ 构造以自然数e为底指数运算的PaddleLayer。
 
@@ -1639,7 +1696,7 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[0] + "_if1"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "prim.type",
         inputs={"input": inputs_name[1]},
@@ -1652,7 +1709,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=inputs_name[1] + "_type")
     if_layer.add_block(block)
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = inputs_name[0]
     if_layer.inputs["input-1"] = inputs_name[1]
@@ -1663,7 +1720,7 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[0] + "_if2"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "fluid.layers.cast",
         inputs={"x": layer_outputs[0]},
@@ -1671,7 +1728,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=string("bool"))
     if_layer.add_block(block)
-    block = PaddleGraph(if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = layer_outputs[0]
     # TODO(syf): check expand_as
@@ -1868,10 +1925,10 @@ def aten_floor(mapper, graph, node):
         outputs=[inputs_name[0] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer("paddle.floor", inputs=copy.deepcopy(layer_inputs), outputs=copy.deepcopy(layer_outputs), scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer("prim.floor", inputs=copy.deepcopy(layer_inputs), outputs=copy.deepcopy(layer_outputs), scope_name=scope_name)
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = inputs_name[0]
@@ -2569,14 +2626,14 @@ def aten_masked_fill_(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -2677,14 +2734,14 @@ def aten_masked_fill(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -3986,16 +4043,18 @@ def aten_sub(mapper, graph, node):
     """ 构造数值相减的PaddleLayer。
 
     TorchScript示例:
-        %840 : int = aten::sub(%839, %836)
+        %840 : int = aten::sub(%839, %836, %3)
         参数含义:
         %840 (-): 相减结果。
         %839 (-): 输入数值 x。
         %836 (-): 输入数值 y。
+        %3 (-): alpha。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
+    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -4006,12 +4065,36 @@ def aten_sub(mapper, graph, node):
     mapper._check_input(
         graph, inputs_node[1], inputs_name[1], current_outputs, scope_name, add_dim=True)
     layer_inputs["y"] = inputs_name[1]
+    # 处理输入2，即%3
+    if len(inputs_node) > 2:
+        if inputs_name[2] in mapper.attrs:
+            layer_attrs["alpha"] = mapper.attrs[inputs_name[2]]
+        else:
+            mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                                current_outputs, scope_name)
+            layer_inputs["alpha"] = inputs_name[2]
+            current_inputs.append(inputs_name[2])
+    else:
+        layer_attrs["alpha"] = 1.0
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.sub", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    graph.add_layer("prim.sub", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name, **layer_attrs)
     return current_inputs, current_outputs
 
+
+def aten_sub_(mapper, graph, node):
+    """ 构造数值相减的PaddleLayer。
+
+    TorchScript示例:
+        %840 : int = aten::sub_(%839, %836, %3)
+        参数含义:
+        %840 (-): 相减结果。
+        %839 (-): 输入数值 x。
+        %836 (-): 输入数值 y。
+        %3 (-): alpha。
+    """
+    return aten_sub(mapper, graph, node)
 
 def aten_t(mapper, graph, node):
     """ 构造矩阵转置的PaddleLayer。
@@ -4366,14 +4449,14 @@ def aten_upsample_bilinear2d(mapper, graph, node):
             outputs=[inputs_name[0] + "_if1"],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         block.add_layer(
             "prim.var2list",
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1]],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(parent_layer=if_layer, graph_type="dygraph")
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     # 处理输入2，即%5421
