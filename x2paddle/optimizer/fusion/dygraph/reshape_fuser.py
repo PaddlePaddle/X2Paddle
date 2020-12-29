@@ -27,7 +27,7 @@ class DygraphReshapeFuser(FuseBase):
         reshape层模式python实现代码示例:
             x165 = int(x164)
             x166 = [x158, x159, x165]
-            x167 = fluid.layers.reshape(x=x157, shape=x166)
+            x167 = paddle.reshape(x=x157, shape=x166)
         """
 
         def gen_name(id):
@@ -46,7 +46,7 @@ class DygraphReshapeFuser(FuseBase):
             },
             outputs=[gen_name(1)])
         self.pattern.add_layer(
-            "fluid.layers.reshape",
+            "paddle.reshape",
             inputs={"x": "reshape-input-3",
                     "shape": gen_name(1)},
             outputs=[gen_name(2)])

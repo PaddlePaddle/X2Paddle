@@ -49,7 +49,7 @@ class TraceFcFuser(FuseBase):
             inputs={},
             outputs=[gen_name(0)])
         pattern.add_layer(
-            "fluid.layers.transpose",
+            "paddle.transpose",
             inputs={"x": gen_name(0)},
             outputs=[gen_name(1)],
             perm=[1, 0])

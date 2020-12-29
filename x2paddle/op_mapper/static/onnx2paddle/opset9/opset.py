@@ -14,8 +14,6 @@
 
 from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
 from x2paddle.core.graph import GraphNode
-from x2paddle.core.fluid_code import Layer
-from x2paddle.core.fluid_code import FluidCode
 from x2paddle.core.util import string
 from functools import reduce
 import numpy as np
@@ -88,7 +86,7 @@ class OpSet9():
     elementwise_ops = {
         'Add': 'paddle.add',
         'Div': 'paddle.divide',
-        'Sub': 'fluid.layers.elementwise_sub',
+        'Sub': 'paddle.subtract',
         'Mul': 'paddle.multiply',
         'Pow': 'paddle.pow',
     }
@@ -271,16 +269,11 @@ class OpSet9():
                     inputs={"x": var_hw},
                     outputs=[var_hw],
                     dtype=string('int32'))
-#                 inputs['size'] = var_hw
-                
-                # TODO(syf): all use 
-                inputs['out_shape'] = var_hw
-                ipt = inputs.pop("x")
-                inputs["input"] = ipt
-                mode = node.get_attr('mode', 'nearest')
-                attrs.update({"align_corners": False})
+                inputs['size'] = var_hw
+                attrs = {"align_corners": False,
+                         "mode": string(node.get_attr('mode', 'nearest'))}
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.resize_nearest",
+                    kernel="paddle.nn.functional.interpolate",
                     inputs=inputs,
                     outputs=[node.name],
                     **attrs)
@@ -346,7 +339,7 @@ class OpSet9():
             'sampling_ratio': sampling_ratio,
         }
         self.paddle_graph.add_layer(
-            'fluid.layers.roi_align',
+            'paddle.fluid.layers.roi_align',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
@@ -365,7 +358,7 @@ class OpSet9():
             'spatial_scale': spatial_scale,
         }
         self.paddle_graph.add_layer(
-            'fluid.layers.roi_pool',
+            'paddle.fluid.layers.roi_pool',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
@@ -394,7 +387,7 @@ class OpSet9():
             layer_attrs['data_format'] = string('NCHW')
             layer_attrs['value'] = value
         else:
-            paddle_op = 'fluid.layers.pad'
+            paddle_op = 'paddle.fluid.layers.pad'
             layer_attrs["pad_value"] = value
         if len(pads) == 4:
             paddings = np.array(pads).reshape(
@@ -1046,23 +1039,21 @@ class OpSet9():
                                       strides[1])
             paddings = pad_h + pad_w
 
-        paddle_op = 'fluid.layers.pool{}d'.format(poolnd)
-        assert 2 <= poolnd <= 3, 'only pool2d and pool3d are supported'
+        paddle_op = 'paddle.nn.functional.avg_pool{}d'.format(poolnd)
+        assert 1 <= poolnd <= 3, 'only avg_pool1d, avg_pool2d and avg_pool3d are supported'
         layer_attrs = {
-            "pool_size": kernel_shape,
-            "pool_type": string('avg'),
-            "pool_stride": strides,
-            "pool_padding": paddings,
+            "kernel_size": kernel_shape,
+            "stride": strides,
+            "padding": paddings,
             "ceil_mode": ceil_mode,
-            "exclusive": 'True',
+            "exclusive": True,
             "name": string(node.name)
         }
         self.paddle_graph.add_layer(
             paddle_op, 
-            inputs={'input': val_x if isinstance(val_x, str) else val_x.name}, 
+            inputs={'x': val_x if isinstance(val_x, str) else val_x.name}, 
             outputs=[node.name], 
             **layer_attrs)
-        # TODO(syf): op has diff
 
     @print_mapping_info
     def Concat(self, node):

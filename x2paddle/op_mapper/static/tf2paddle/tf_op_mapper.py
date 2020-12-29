@@ -72,7 +72,7 @@ class TFOpMapper(OpMapper):
         'RealDiv': 'paddle.divide',
         'DivNoNan': 'paddle.divide',
         # TODO (syf): replace
-        'Sub': 'fluid.layers.elementwise_sub',
+        'Sub': 'paddle.subtract',
         'Maximum': 'paddle.maximum',
         'Minimum': 'paddle.minimum',
         'Mul': 'paddle.multiply',
@@ -315,7 +315,7 @@ class TFOpMapper(OpMapper):
             shape=[0, c, h, w])
 
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.pixel_shuffle",
+            kernel="paddle.nn.functional.pixel_shuffle",
             inputs={"x": reshape_name},
             outputs=[node.name],
             upscale_factor=block_size)
@@ -437,8 +437,6 @@ class TFOpMapper(OpMapper):
 
         if c == -1:
             attr = {"shape": [0, k_size[2], 0, 0]}
-            node.fluid_code.add_layer(
-                "reshape", inputs=input, output=input, param_attr=attr)
             self.paddle_graph.add_layer(
                 kernel="paddle.reshape",
                 inputs={"x": input_name},
@@ -842,13 +840,12 @@ class TFOpMapper(OpMapper):
         # TODO(syf): The op has diff.
 
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.pool2d",
-            inputs={"input": input_name},
+            kernel="paddle.nn.functional.avg_pool2d",
+            inputs={"x": input_name},
             outputs=[node.name],
-            pool_size=k_size[2:4],
-            pool_type=string("avg"),
-            pool_stride=strides[2:4],
-            pool_padding=string(pad_mode))
+            kernel_size=k_size[2:4],
+            stride=strides[2:4],
+            padding=string(pad_mode))
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
@@ -1406,7 +1403,7 @@ class TFOpMapper(OpMapper):
         y_shape = y.out_shapes[0]
         # TODO(syf)
         layer_id = self.paddle_graph.add_layer(
-            "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+            "paddle.subtract", inputs=inputs, outputs=[node.name])
         self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}

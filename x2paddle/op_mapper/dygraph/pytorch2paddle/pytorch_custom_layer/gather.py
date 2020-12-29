@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import paddle
-import paddle.fluid as fluid
 from itertools import product
 import numpy as np
 

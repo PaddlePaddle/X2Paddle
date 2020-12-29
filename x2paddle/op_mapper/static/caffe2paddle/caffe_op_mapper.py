@@ -401,18 +401,14 @@ class CaffeOpMapper(OpMapper):
                     padding=pad,
                     ceil_mode=ceil_mode)
             else:
-                # TODO(syf): The op has diff.
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.pool2d",
-                    inputs={"input": input.name},
+                    kernel="paddle.nn.functional.avg_pool2d",
+                    inputs={"x": input.name},
                     outputs=[node.name],
-                    pool_size=kernel,
-                    pool_type=string("avg"),
-                    pool_stride=stride,
-                    pool_padding=pad,
-                    ceil_mode=ceil_mode,
-                    exclusive=False,
-                    global_pooling=False)
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=pad,
+                    ceil_mode=ceil_mode)
 
     def LRN(self, node):
         assert len(node.inputs) == 1, 'The count of LRN node\'s input is not 1.'
@@ -433,7 +429,7 @@ class CaffeOpMapper(OpMapper):
             'name': string(node.name)
         }
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.lrn",
+            kernel="paddle.fluid.layers.lrn",
             inputs={"input": input.name},
             outputs=[node.name],
             **layer_attrs)
@@ -1184,7 +1180,7 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.shuffle_channel_param
         self.paddle_graph.add_layer(
-            "fluid.layers.shuffle_channel",
+            "paddle.fluid.layers.shuffle_channel",
             inputs={"x": input.name},
             outputs=[node.layer_name],
             group=params.group)

@@ -367,56 +367,45 @@ class CaffeOpMapper(OpMapper):
                     output_size=kernel)
         else:
             layer_attrs = {
-                'pool_size': kernel,
-                'pool_stride': stride,
-                'pool_padding': pad,
+                'kernel_size': kernel,
+                'stride': stride,
+                'padding': pad,
                 'ceil_mode': ceil_mode,
-                'pool_type': string(pool_type),
-                'exclusive': False,
-                'global_pooling': global_pool,
             }
-            self.paddle_graph.add_layer(
-                "paddle.fluid.dygraph.Pool2D",
-                inputs={"input": input.name},
-                outputs=layer_outputs,
-                **layer_attrs)
-#             layer_attrs = {
-#                 'kernel_size': kernel,
-#                 'stride': stride,
-#                 'padding': pad,
-#                 'ceil_mode': ceil_mode,
-#             }
-#             if params.pool == 0:
-#                 self.paddle_graph.add_layer(
-#                     "paddle.nn.MaxPool2D",
-#                     inputs={"input": input.name},
-#                     outputs=layer_outputs,
-#                     **layer_attrs)
-#             else:
-#                 layer_attrs["count_include_pad"] = True
-#                 self.paddle_graph.add_layer(
-#                     "paddle.nn.AvgPool2D",
-#                     inputs={"input": input.name},
-#                     outputs=layer_outputs,
-#                     **layer_attrs)
+            if params.pool == 0:
+                self.paddle_graph.add_layer(
+                    "paddle.nn.MaxPool2D",
+                    inputs={"input": input.name},
+                    outputs=layer_outputs,
+                    **layer_attrs)
+            else:
+                self.paddle_graph.add_layer(
+                    "paddle.nn.AvgPool2D",
+                    inputs={"input": input.name},
+                    outputs=layer_outputs,
+                    **layer_attrs)
 
     def LRN(self, node):
+        lrn_name = name_generator("lrn", self.nn_name2id)
+        output_name = node.layer_name
+        layer_outputs = [lrn_name, output_name]
         assert len(node.inputs) == 1, "The count of LRN node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.lrn_param
         assert params.local_size % 2 == 1
         alpha = params.alpha / float(params.local_size)
         layer_attrs = {
-            "n": params.local_size,
-            "k": params.k,
+            "size": params.local_size, 
+            "k": params.k, 
             "alpha": alpha,
-            "beta": params.beta,
+            "beta": params.beta
         }
         self.paddle_graph.add_layer(
-            "fluid.layers.lrn", 
+            "paddle.nn.LocalResponseNorm",
             inputs={"input": input.name},
-            outputs=[node.layer_name],
+            outputs=layer_outputs,
             **layer_attrs)
+
 
     def InnerProduct(self, node):
         linear_name = name_generator("linear", self.nn_name2id)
@@ -1131,7 +1120,7 @@ class CaffeOpMapper(OpMapper):
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.shuffle_channel_param
         self.paddle_graph.add_layer(
-            "fluid.layers.shuffle_channel",
+            "paddle.fluid.layers.shuffle_channel",
             inputs={"x": input.name},
             outputs=[node.layer_name],
             group=params.group)

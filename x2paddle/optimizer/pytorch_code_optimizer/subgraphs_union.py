@@ -16,7 +16,7 @@
 
 import copy
 import pandas as pd
-from x2paddle.optimizer.code_optimizer.layer_code_generator import rename_layers
+from x2paddle.optimizer.pytorch_code_optimizer.layer_code_generator import rename_layers
 
 
 def construct_attrs_table(sub_layers_list, node_name2sub_layers=None, module_name=None):
