@@ -21,12 +21,14 @@ from x2paddle.core.util import *
 class Static_BNScaleFuser(FuseBase):
     def __init__(self):
         super(Static_BNScaleFuser, self).__init__(graph_type="static")
-        patterns = list()
+        self.patterns = list()
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm2d图结构。
         batchnorm2d层模式python实现代码示例:
         模式一：
+        conv1_bn_mean = paddle.static.create_parameter(shape=(128,), dtype='float32', name='conv1_bn_mean')
+        conv1_bn_variance = paddle.static.create_parameter(shape=(128,), dtype='float32', name='conv1_bn_variance')
         conv1_bn = paddle.nn.functional.batch_norm(x=conv1, weight=conv1_bn_weight, bias=conv1_bn_bias, running_mean=conv1_bn_mean, running_var=conv1_bn_variance, epsilon=9.999999747378752e-06, momentum=0.9990000128746033)
         conv1_scale_cparam1 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam1')
         conv1_scale_mul = paddle.multiply(x=conv1_bn, y=conv1_scale_cparam1, axis=1)
@@ -34,6 +36,8 @@ class Static_BNScaleFuser(FuseBase):
         conv1_scale_cparam2 = paddle.reshape(x=conv1_scale_cparam2, shape=[32, 1, 1])
         conv1_scale = paddle.add(x=conv1_scale_mul, y=conv1_scale_cparam2)
         模式二：
+        conv1_bn_mean = paddle.static.create_parameter(shape=(128,), dtype='float32', name='conv1_bn_mean')
+        conv1_bn_variance = paddle.static.create_parameter(shape=(128,), dtype='float32', name='conv1_bn_variance')
         conv1_bn = paddle.nn.functional.batch_norm(x=conv1, weight=conv1_bn_weight, bias=conv1_bn_bias, running_mean=conv1_bn_mean, running_var=conv1_bn_variance, epsilon=9.999999747378752e-06, momentum=0.9990000128746033)
         conv1_scale_cparam1 = paddle.static.create_parameter(shape=(32,), dtype='float32', name='conv1_scale_cparam1')
         conv1_scale_mul = paddle.multiply(x=conv1_bn, y=conv1_scale_cparam1, axis=1)
@@ -46,12 +50,20 @@ class Static_BNScaleFuser(FuseBase):
         
         pattern = PaddleGraph(graph_type="dygraph")
         pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(10)])
+        pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(11)])
+        pattern.add_layer(
             "paddle.nn.functional.batch_norm",
             inputs={"input": "bn-input-0",
                     "weight": "bn-input-1",
                     "bias": "bn-input-2",
-                    "running_mean": "bn-input-3",
-                    "running_var": "bn-input-4",},
+                    "running_mean": gen_name(10),
+                    "running_var": gen_name(11)},
             outputs=[gen_name(0)])
         pattern.add_layer(
             "paddle.static.create_parameter",
@@ -81,19 +93,25 @@ class Static_BNScaleFuser(FuseBase):
             outputs=[gen_name(5)])
         pattern.build(inputs={"input-0": "bn-input-0",
                               "input-1": "bn-input-1",
-                              "input-2": "bn-input-2",
-                              "input-3": "bn-input-3",
-                              "input-4": "bn-input-4"})
+                              "input-2": "bn-input-2"})
         self.patterns.append(pattern)
         
         pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(10)])
+        pattern.add_layer(
+            "paddle.static.create_parameter",
+            inputs={},
+            outputs=[gen_name(11)])
         pattern.add_layer(
             "paddle.nn.functional.batch_norm",
             inputs={"input": "bn-input-0",
                     "weight": "bn-input-1",
                     "bias": "bn-input-2",
-                    "running_mean": "bn-input-3",
-                    "running_var": "bn-input-4",},
+                    "running_mean": gen_name(10),
+                    "running_var": gen_name(11),},
             outputs=[gen_name(0)])
         pattern.add_layer(
             "paddle.static.create_parameter",
@@ -119,25 +137,25 @@ class Static_BNScaleFuser(FuseBase):
             outputs=[gen_name(4)])
         pattern.build(inputs={"input-0": "bn-input-0",
                               "input-1": "bn-input-1",
-                              "input-2": "bn-input-2",
-                              "input-3": "bn-input-3",
-                              "input-4": "bn-input-4"})
+                              "input-2": "bn-input-2"})
         self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)
         new_layer_id = list(matches.keys())[-1]
         graph.layers[new_layer_id] = new_layer
+        matches.pop(list(matches.keys())[0])
+        matches.pop(list(matches.keys())[0])
         matches.pop(list(matches.keys())[1])
         matches.pop(list(matches.keys())[2])
         matches.pop(new_layer_id)
 
     def gen_new_layer(self, parameters, matches):
         layers_id = list(matches.keys())
-        bn_layer = matches[layers_id[0]]
-        layer = matches[layers_id[1]]
-        bn_layer.inputs["weight"] = layer.outputs[0]
+        bn_layer = matches[layers_id[2]]
         layer = matches[layers_id[3]]
+        bn_layer.inputs["weight"] = layer.outputs[0]
+        layer = matches[layers_id[5]]
         bn_layer.inputs["bias"] = layer.outputs[0]
         bn_layer.id = layers_id[-1]
         layer = matches[layers_id[-1]]

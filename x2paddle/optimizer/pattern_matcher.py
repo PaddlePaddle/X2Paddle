@@ -99,7 +99,7 @@ class PatternMatcher(object):
                                     return False
                                 else:
                                     subgraph_id2layers.pop(layer_id)
-                                    continue
+                                    continue                                
                         else:
                             if len(graph.edges_out[layer_id]) != len(
                                     pattern.edges_out[pattern_layer_id]):
@@ -116,7 +116,20 @@ class PatternMatcher(object):
                                     else:
                                         subgraph_id2layers.pop(layer_id)
                                         continue
-                                        
+                            else:
+                                layer_out = graph.edges_out[layer_id]
+                                pattern_layer_out = pattern.edges_out[pattern_layer_id]
+                                is_pop = False
+                                for i in range(len(layer_out)):
+                                    layer_id_out = layer_out[i]
+                                    pattern_layer_id_out = pattern_layer_out[i]
+                                    if layer_id_out != -1:
+                                        if graph_layers[layer_id_out].kernel != pattern.layers[pattern_layer_id_out].kernel:
+                                            is_pop = True
+                                            break
+                                if is_pop:
+                                    subgraph_id2layers.pop(layer_id)
+                                    continue
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
                         if len(pattern_layer.blocks) != len(layer.blocks):
@@ -161,7 +174,7 @@ class PatternMatcher(object):
 
         for i, (layer_id, layer) in enumerate(graph.layers.items()):
             match_info = get_subgraph(self.pattern, graph, i)
-            if match_info:
+            if match_info and match_info not in self.matches:
                 self.matches.append(match_info)
             for j, block in enumerate(layer.blocks):
                 if len(block.layers) > 0:
@@ -343,4 +356,5 @@ class FuseBase(object):
                 if layer_id in subgraph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
                     subgraph.layers.pop(layer_id)
+                    
                     

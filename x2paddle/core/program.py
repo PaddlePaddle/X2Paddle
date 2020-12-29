@@ -26,6 +26,7 @@ import six
 import pickle
 import numpy as np
 from os import path as osp 
+from x2paddle.core.util import *
 
 
 class PaddleLayer(object):
@@ -326,12 +327,10 @@ class PaddleGraph(object):
 
         write_code(
             f, [
-                "from paddle.fluid.initializer import Constant",
-                "from paddle.fluid.param_attr import ParamAttr",
-                "import paddle.fluid as fluid", 
                 custom_import,
-                "import paddle", "import math", "",
-                
+                "import paddle", 
+                "import math", 
+                "",
             ],
             indent=0)
         if self.custom_code is not None:
@@ -348,6 +347,7 @@ class PaddleGraph(object):
             ],
             indent=1)
         for layer_id, layer in self.layers.items():
+            remove_default_attrs(layer)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
             if len(edges_in) == 0 and len(edges_out) == 0:
@@ -474,10 +474,7 @@ class PaddleGraph(object):
                 custom_import = ""
             self.head = gen_codes(
                 [
-                    "from paddle.fluid.initializer import Constant",
-                    "from paddle.fluid.param_attr import ParamAttr",
                     "import paddle",
-                    "import paddle.fluid as fluid",
                     "import math",
                     custom_import,
                     "",
@@ -549,6 +546,7 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
+            remove_default_attrs(layer)
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
                 layer.kernel.startswith("custom_layer") or \

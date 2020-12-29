@@ -426,11 +426,11 @@ def aten_avg_pool2d(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%538
-    layer_attrs["pool_size"] = mapper.attrs[inputs_name[1]]
+    layer_attrs["kernel_size"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%539
-    layer_attrs["pool_stride"] = mapper.attrs[inputs_name[2]]
+    layer_attrs["stride"] = mapper.attrs[inputs_name[2]]
     # 处理输入3，即%540
-    layer_attrs["pool_padding"] = mapper.attrs[inputs_name[3]]
+    layer_attrs["padding"] = mapper.attrs[inputs_name[3]]
     # 处理输入4，即%273
     layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[4]]
     # 处理输入5，即%272
@@ -445,22 +445,13 @@ def aten_avg_pool2d(mapper, graph, node):
         key=mapper.attrs[inputs_name[6]],
         value=None)
 
-                # TODO(syf): The op has diff.
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.nn.AvgPool2D",
-#             inputs={"input": input_name},
-#             outputs=layer_outputs,
-#             kernel_size=k_size[2:4],
-#             stride=strides[2:4],
-#             padding=string(pad_mode))
-
-    layer_attrs["pool_type"] = string("avg")
     graph.add_layer(
-        "fluid.layers.pool2d",
+        kernel="paddle.nn.AvgPool2D",
         inputs=layer_inputs,
-        outputs=layer_outputs[1:],
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+
     return current_inputs, current_outputs
 
 def aten_avg_pool3d(mapper, graph, node):
@@ -493,11 +484,11 @@ def aten_avg_pool3d(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%538
-    layer_attrs["pool_size"] = mapper.attrs[inputs_name[1]]
+    layer_attrs["kernel_size"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%539
-    layer_attrs["pool_stride"] = mapper.attrs[inputs_name[2]]
+    layer_attrs["stride"] = mapper.attrs[inputs_name[2]]
     # 处理输入3，即%540
-    layer_attrs["pool_padding"] = mapper.attrs[inputs_name[3]]
+    layer_attrs["padding"] = mapper.attrs[inputs_name[3]]
     # 处理输入4，即%273
     layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[4]]
     # 处理输入5，即%272
@@ -512,20 +503,10 @@ def aten_avg_pool3d(mapper, graph, node):
         key=mapper.attrs[inputs_name[6]],
         value=None)
 
-                # TODO(syf): The op has diff.
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.nn.AvgPool2D",
-#             inputs={"input": input_name},
-#             outputs=layer_outputs,
-#             kernel_size=k_size[2:4],
-#             stride=strides[2:4],
-#             padding=string(pad_mode))
-
-    layer_attrs["pool_type"] = string("avg")
     graph.add_layer(
-        "fluid.layers.pool3d",
+        kernel="paddle.nn.AvgPool3D",
         inputs=layer_inputs,
-        outputs=layer_outputs[1:],
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
@@ -561,11 +542,11 @@ def aten_avg_pool1d(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%538
-    layer_attrs["pool_size"] = mapper.attrs[inputs_name[1]]
+    layer_attrs["kernel_size"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%539
-    layer_attrs["pool_stride"] = mapper.attrs[inputs_name[2]]
+    layer_attrs["stride"] = mapper.attrs[inputs_name[2]]
     # 处理输入3，即%540
-    layer_attrs["pool_padding"] = mapper.attrs[inputs_name[3]]
+    layer_attrs["padding"] = mapper.attrs[inputs_name[3]]
     # 处理输入4，即%273
     layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[4]]
     # 处理输入5，即%272
@@ -580,20 +561,10 @@ def aten_avg_pool1d(mapper, graph, node):
         key=mapper.attrs[inputs_name[6]],
         value=None)
 
-                # TODO(syf): The op has diff.
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.nn.AvgPool2D",
-#             inputs={"input": input_name},
-#             outputs=layer_outputs,
-#             kernel_size=k_size[2:4],
-#             stride=strides[2:4],
-#             padding=string(pad_mode))
-
-    layer_attrs["pool_type"] = string("avg")
     graph.add_layer(
-        "fluid.layers.pool1d",
+        kernel="paddle.nn.AvgPool1D",
         inputs=layer_inputs,
-        outputs=layer_outputs[1:],
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
@@ -2930,22 +2901,13 @@ def aten_max_pool2d(mapper, graph, node):
     # 处理输入5，即%19
     layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[5]]
     layer_attrs_tmp["ceil_mode"] = mapper.attrs[inputs_name[5]]
-
-    if mapper.attrs[inputs_name[5]] == True:
-        layer_attrs["pool_type"] = string("max")
-        graph.add_layer(
-            "fluid.layers.pool2d",
-            inputs=layer_inputs,
-            outputs=layer_outputs[1:],
-            scope_name=scope_name,
-            **layer_attrs_tmp)
-    else:
-        graph.add_layer(
-            "paddle.nn.MaxPool2D",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            scope_name=scope_name,
-            **layer_attrs)
+    
+    graph.add_layer(
+        "paddle.nn.MaxPool2D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 

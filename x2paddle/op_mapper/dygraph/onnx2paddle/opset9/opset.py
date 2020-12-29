@@ -14,8 +14,6 @@
 
 from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
 from x2paddle.core.graph import GraphNode
-from x2paddle.core.fluid_code import Layer
-from x2paddle.core.fluid_code import FluidCode
 from x2paddle.core.util import *
 from functools import reduce
 import numpy as np
@@ -86,7 +84,7 @@ class OpSet9():
     elementwise_ops = {
         'Add': 'paddle.add',
         'Div': 'paddle.divide',
-        'Sub': 'fluid.layers.elementwise_sub',
+        'Sub': 'paddle.subtract',
         'Mul': 'paddle.multiply',
         'Pow': 'paddle.pow',
     }
@@ -250,22 +248,15 @@ class OpSet9():
     def _interpolate(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         inputs = {'x': val_x.name}
-        attrs = dict()
         if node.layer_type == 'Resize':
             if len(node.layer.input) == 2:
                 # opset 10
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-                # TODO(syf): paddle.nn.functional.interpolate will support the length  
-                # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
-                attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
+                inputs['scale_factor'] = val_scales.name
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
-                # TODO(syf): paddle.nn.functional.interpolate will support the length  
-                # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
-                attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
+                inputs['scale_factor'] = val_scales.name
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
@@ -281,28 +272,35 @@ class OpSet9():
                     inputs={"x": var_hw},
                     outputs=[var_hw],
                     dtype=string('int32'))
-#                 inputs['size'] = var_hw
-                
-                # TODO(syf): all use 
-                inputs['out_shape'] = var_hw
-                ipt = inputs.pop("x")
-                inputs["input"] = ipt
-                mode = node.get_attr('mode', 'nearest')
-                attrs.update({"align_corners": False})
+                inputs['size'] = var_hw
+                attrs = {"align_corners": False,
+                         "mode": string(node.get_attr('mode', 'nearest'))}
                 self.paddle_graph.add_layer(
-                    kernel="fluid.layers.resize_nearest",
+                    kernel="paddle.nn.functioanl.interpolate",
                     inputs=inputs,
                     outputs=[node.name],
                     **attrs)
+                
+#                 # TODO(syf): all use 
+#                 inputs['out_shape'] = var_hw
+#                 ipt = inputs.pop("x")
+#                 inputs["input"] = ipt
+#                 mode = node.get_attr('mode', 'nearest')
+#                 attrs = {"align_corners": False}
+#                 self.paddle_graph.add_layer(
+#                     kernel="fluid.layers.resize_nearest",
+#                     inputs=inputs,
+#                     outputs=[node.name],
+#                     **attrs)
                 return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            inputs['scale_factor'] = val_scales
+            inputs['scale'] = val_scales
 
         mode = node.get_attr('mode', 'nearest')
-        attrs.update({"align_corners": False,
-                      "mode": string(mode),
-                      "align_mode": 1})
+        attrs = {"align_corners": False,
+                 "mode": string(mode),
+                 "align_mode": 1}
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.interpolate",
             inputs=inputs,
@@ -356,7 +354,7 @@ class OpSet9():
             'sampling_ratio': sampling_ratio,
         }
         self.paddle_graph.add_layer(
-            'fluid.layers.roi_align',
+            'paddle.fluid.layers.roi_align',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
@@ -376,7 +374,7 @@ class OpSet9():
             'spatial_scale': spatial_scale,
         }
         self.paddle_graph.add_layer(
-            'fluid.layers.roi_pool',
+            'paddle.fluid.layers.roi_pool',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
@@ -933,17 +931,16 @@ class OpSet9():
                 'max': max_value,
                 'min': min_value,
             }
-            
             self.paddle_graph.add_layer(
                 'paddle.clip', 
                 inputs={"x": val_x.name}, 
                 outputs=[node.name], 
                 **layer_attrs)
         else:
-            min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
-            max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
-            min_value = _const_weight_or_none(min_ipt)
+            max_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+            min_ipt = self.graph.get_input_node(node, idx=2, copy=True)
             max_value = _const_weight_or_none(max_ipt)
+            min_value = _const_weight_or_none(min_ipt)
             if max_value.shape == (1, ):
                 max_value = max_value[0]
             if min_value.shape == (1, ):
@@ -1062,40 +1059,23 @@ class OpSet9():
                                       strides[1])
             paddings = pad_h + pad_w
 
-        paddle_op = 'fluid.layers.pool{}d'.format(poolnd)
-        assert 2 <= poolnd <= 3, 'only pool2d and pool3d are supported'
+        op_name = name_generator("pool", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [op_name, output_name]
+        paddle_op = 'paddle.nn.AvgPool{}D'.format(poolnd)
+        assert 1 <= poolnd <= 3, 'only Pool1D, Pool2D and Pool3D are supported'
         layer_attrs = {
-            "pool_size": kernel_shape,
-            "pool_type": string('avg'),
-            "pool_stride": strides,
-            "pool_padding": paddings,
+            "kernel_size": kernel_shape,
+            "stride": strides,
+            "padding": paddings,
             "ceil_mode": ceil_mode,
             "exclusive": 'True',
-            "name": string(node.name)
         }
         self.paddle_graph.add_layer(
             paddle_op, 
-            inputs={'input': val_x if isinstance(val_x, str) else val_x.name}, 
-            outputs=[node.name], 
+            inputs={'x': val_x.name}, 
+            outputs=layer_outputs, 
             **layer_attrs)
-        # TODO(syf): op has diff
-#         op_name = name_generator("pool", self.nn_name2id)
-#         output_name = node.name
-#         layer_outputs = [op_name, output_name]
-#         paddle_op = 'paddle.nn.Pool{}D'.format(poolnd)
-#         assert 1 <= poolnd <= 3, 'only Pool1D, Pool2D and Pool3D are supported'
-#         layer_attrs = {
-#             "kernel_size": kernel_shape,
-#             "stride": strides,
-#             "padding": paddings,
-#             "ceil_mode": ceil_mode,
-#             "exclusive": 'True',
-#         }
-#         self.paddle_graph.add_layer(
-#             paddle_op, 
-#             inputs={'x': val_x.name}, 
-#             outputs=layer_outputs, 
-#             **layer_attrs)
 
     @print_mapping_info
     def Concat(self, node):
@@ -1643,18 +1623,5 @@ class OpSet9():
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.conv2d_transpose",
             inputs=inputs_dict,
-            outputs=[node.name],
-            **layer_attrs)
-        
-    @print_mapping_info
-    def ArgMax(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        axis = node.get_attr('axis')
-        keepdims = False if node.get_attr('keepdims') == 0 else True
-        layer_attrs = {'axis': axis,
-                      'keepdim': keepdims}
-        self.paddle_graph.add_layer(
-            'paddle.argmax', 
-            inputs={"x": val_x.name}, 
             outputs=[node.name],
             **layer_attrs)

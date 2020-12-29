@@ -196,7 +196,7 @@ class ModuleGraph(object):
             if len(elements_list) > 1:
                 max_ct = 0
                 for k, v in zip(elements_list, count_list):
-                    if v > max_ct:
+                    if v > max_ct and str(k) != "nan" :
                         max_ele = k
                         max_ct = v
                 diff_attrs_column[column] = max_ele
@@ -365,9 +365,6 @@ class ModuleGraph(object):
         self.convert_subgraph_to_layer(combination, combination_id)
         self.update_parameters()
         import_list = ["import paddle",
-                       "import paddle.fluid as fluid",
-                       "from paddle.fluid.initializer import Constant",
-                       "from paddle.fluid.param_attr import ParamAttr",
                        "import math",
                        "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"

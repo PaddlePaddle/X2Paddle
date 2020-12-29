@@ -14,10 +14,11 @@
 # limitations under the License.
 
 import copy
-import yaml
 import os.path as osp
 import x2paddle
 from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode
+from x2paddle.core.util import *
+
 
 NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.LayerNorm": "layernorm",
@@ -127,25 +128,6 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
         return count
     rename_sub_layers(layers_cp, count)
     return layers_cp, nn_param_nodes, new_names
-
-def load_default_parameter():
-    path = x2paddle.__file__
-    path = path.replace("__init__.py", "core")
-    yaml_dir = osp.join(path, "paddle_default_parameter.yml")
-    with open(yaml_dir, "rb") as fr:
-        default_parameter = yaml.load(fr.read())
-    return default_parameter
-
-def is_abandon(default_parameter, layer_kernel, param_key, param_value):
-    if layer_kernel not in default_parameter:
-        return False
-    params = default_parameter[layer_kernel]
-    if param_key not in params:
-        return False
-    if params[param_key] == param_value:
-        return True
-    else:
-        return False
     
 
 def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
@@ -241,8 +223,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
             if is_set_item:
                 outputs.append(layer.outputs[0])
     no_output_count = 0
-    default_parameter = load_default_parameter()
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
+        remove_default_attrs(layer, different_attrs)
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
                 layer.kernel.startswith("custom_layer"):
             line = "self.{}".format(layer.outputs[0])
@@ -255,8 +237,6 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 if key_name in different_attrs:
                     line += "{}={}, ".format(k, key_name)
                 else:
-                    if is_abandon(default_parameter, layer.kernel, k, v):
-                        continue
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
             line += ")"
@@ -358,8 +338,6 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                     line += "{}=self.{}, ".format(k, key_name)
                     init_func.extend(gen_codes(["self.{} = {}".format(key_name, key_name)], indent=2))
                 else:
-                    if is_abandon(default_parameter, layer.kernel, k, v):
-                        continue
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
             line += ")"

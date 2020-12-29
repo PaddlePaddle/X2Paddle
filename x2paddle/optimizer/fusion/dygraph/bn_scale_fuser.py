@@ -21,47 +21,94 @@ from x2paddle.core.util import *
 class DygraphBNScaleFuser(FuseBase):
     def __init__(self):
         super(DygraphBNScaleFuser, self).__init__(graph_type="dygraph")
+        patterns = list()
 
     def build_pattern(self):
         """ 描述需要替换的batchnorm2d图结构。
         batchnorm2d层模式python实现代码示例:
+            模式一：
             bn_conv1 = self.batchnorm0(conv1)
             scale_conv1_cparam1 = self.scale_conv1_cparam1
             scale_conv1_mul = paddle.multiply(x=bn_conv1, y=scale_conv1_cparam1, axis=1)
             scale_conv1_cparam2 = self.scale_conv1_cparam2
-            scale_conv1 = fluid.layers.elementwise_add(x=scale_conv1_mul, y=scale_conv1_cparam2, axis=1)
+            scale_conv1 = paddle.add(x=scale_conv1_mul, y=scale_conv1_cparam2, axis=1)
+            模式二：
+            bn_conv1 = self.batchnorm0(conv1)
+            scale_conv1_cparam1 = self.scale_conv1_cparam1
+            scale_conv1_mul = paddle.multiply(x=bn_conv1, y=scale_conv1_cparam1, axis=1)
+            scale_conv1_cparam2 = self.scale_conv1_cparam2
+            scale_conv1_cparam2 = paddle.reshape(x=scale_conv1_cparam2, shape=[32, 1, 1])
+            scale_conv1 = paddle.add(x=scale_conv1_mul, y=scale_conv1_cparam2, axis=1)
         """
 
         def gen_name(id):
             return "x" + str(id)
         
-        self.pattern.add_layer(
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
             "paddle.nn.BatchNorm2D",
             inputs={"input": "bn-input-0"},
             outputs=[gen_name(0)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(1)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(0)
         inputs_dict['y'] = gen_name(1)
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.multiply",
             inputs=inputs_dict,
             outputs=[gen_name(2)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter",
             inputs={},
             outputs=[gen_name(3)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(2)
         inputs_dict['y'] = gen_name(3)
-        self.pattern.add_layer(
-            "fluid.layers.elementwise_add",
+        pattern.add_layer(
+            "paddle.add",
             inputs=inputs_dict,
             outputs=[gen_name(4)])
-        self.pattern.build(inputs={"input-0": "bn-input-0"})
+        pattern.build(inputs={"input-0": "bn-input-0"})
+        self.patterns.append(pattern)
+        
+        pattern = PaddleGraph(graph_type="dygraph")
+        pattern.add_layer(
+            "paddle.nn.BatchNorm2D",
+            inputs={"input": "bn-input-0"},
+            outputs=[gen_name(0)])
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(1)])
+        inputs_dict = {}
+        inputs_dict['x'] = gen_name(0)
+        inputs_dict['y'] = gen_name(1)
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs=inputs_dict,
+            outputs=[gen_name(2)])
+        pattern.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[gen_name(3)])
+        pattern.add_layer(
+            "paddle.reshape",
+            inputs={"x": gen_name(3)},
+            outputs=[gen_name(3)])
+        inputs_dict = {}
+        inputs_dict['x'] = gen_name(2)
+        inputs_dict['y'] = gen_name(3)
+        pattern.add_layer(
+            "paddle.add",
+            inputs=inputs_dict,
+            outputs=[gen_name(4)])
+        pattern.build(inputs={"input-0": "bn-input-0"})
+        self.patterns.append(pattern)
+        
+        
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer = self.gen_new_layer(parameters, matches)
@@ -78,7 +125,7 @@ class DygraphBNScaleFuser(FuseBase):
         layer_attrs = layer.attrs
         layer_attrs.pop("weight_attr")
         layer_attrs.pop("bias_attr")
-        layer = matches[layers_id[4]]
+        layer = matches[layers_id[-1]]
         layer_outputs = [bn_name] + layer.outputs
         layer = matches[layers_id[1]]
         data0_name = layer.outputs[0]
