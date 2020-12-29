@@ -61,7 +61,7 @@
 | 41 | MatMul   | 42 | Sum       | 43 | Transpose | 44 | BatchNormalization |
 | 45 | Squeeze  | 46 | Equal     | 47 | Identity  | 48 | GlobalAveragePool  |
 | 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
-| 53 | Abs      | 54 | Floor     |
+| 53 | Abs      | 54 | Floor     | 52 | ArgMax    |
 
 ## PyTorch
 Aten:
@@ -93,7 +93,8 @@ Aten:
 | 93 | aten::sub | 94 | aten::t |95|aten::tanh|96|aten::split|
 | 97 | aten::transpose | 98 | aten::to |99|aten::type\_as|100|aten::unsqueeze|
 | 101 | aten::upsample\_bilinear2d | 102 | aten::values |103|aten::view|104|aten::warn|
-| 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|||
+| 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
+| 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
