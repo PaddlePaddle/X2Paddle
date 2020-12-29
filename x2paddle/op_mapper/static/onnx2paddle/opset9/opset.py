@@ -273,7 +273,7 @@ class OpSet9():
                 attrs = {"align_corners": False,
                          "mode": string(node.get_attr('mode', 'nearest'))}
                 self.paddle_graph.add_layer(
-                    kernel="paddle.nn.functioanl.interpolate",
+                    kernel="paddle.nn.functional.interpolate",
                     inputs=inputs,
                     outputs=[node.name],
                     **attrs)
