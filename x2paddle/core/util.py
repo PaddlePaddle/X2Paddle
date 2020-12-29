@@ -1,3 +1,4 @@
+# -*- coding:UTF-8 -*-
 # Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
@@ -18,9 +19,17 @@ import inspect
 
 
 def string(param):
+    """ 生成字符串。
+    """
     return "\'{}\'".format(param)
 
 def name_generator(nn_name, nn_name2id):
+    """ 生成paddle.nn类op的名字。
+    
+    Args:
+        nn_name (str): 名字。
+        nn_name2id (dict): key为名字，value为名字出现的次数-1。
+    """
     if nn_name in nn_name2id:
         nn_name2id[nn_name] += 1
     else:
@@ -29,6 +38,12 @@ def name_generator(nn_name, nn_name2id):
     return real_nn_name
 
 def remove_default_attrs(kernel, attrs):
+    """ 删除每个OP的默认参数。
+    
+    Args:
+        kernel (str): OP的类型名字。
+        attrs (dict): 目前该OP所包含的参数， key为参数名，value为参数值。
+    """
     def get_default_args(func):
         signature = inspect.signature(func)
         return {
