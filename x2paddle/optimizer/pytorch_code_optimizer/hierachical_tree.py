@@ -300,6 +300,7 @@ class HierarchicalTree(Tree):
         """
         depths = sorted(list(self._hierarchical_order.keys()), reverse=True)
         all_name_old2new = dict()
+        current_module_name_list = list()
         for depth in depths[1:]:
             # Module的名字与子图的对应关系
             module_name2sub_layers = dict()
@@ -352,6 +353,10 @@ class HierarchicalTree(Tree):
                         module_name = None
                     else:
                         module_name = name
+                        while module_name in current_module_name_list:
+                            module_name += "__0"
+                    current_module_name_list.append(module_name)
+                    current_module_name_list.append(module_name)
                     self.merge_node(module_name2sub_layers[name], 
                                    sequentials2attrs_table[name],
                                    node_name2sub_layers,
