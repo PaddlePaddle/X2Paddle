@@ -356,7 +356,6 @@ class HierarchicalTree(Tree):
                         while module_name in current_module_name_list:
                             module_name += "__0"
                     current_module_name_list.append(module_name)
-                    current_module_name_list.append(module_name)
                     self.merge_node(module_name2sub_layers[name], 
                                    sequentials2attrs_table[name],
                                    node_name2sub_layers,
