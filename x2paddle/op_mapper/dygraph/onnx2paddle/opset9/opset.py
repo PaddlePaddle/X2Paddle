@@ -104,6 +104,9 @@ class OpSet9():
         'ReduceMax': ['paddle.max', 
                       dict(axes='axis', keepdims='keepdim'), 
                       dict(keepdim=1)],
+        'ReduceProd': ['paddle.prod', 
+                      dict(axes='axis', keepdims='keepdim'), 
+                      dict(keepdim=1)],
         # active function
         'Relu': ['paddle.nn.ReLU'],
         'LeakyRelu': ['paddle.nn.LeakyReLU', 
@@ -379,6 +382,14 @@ class OpSet9():
     def Pad(self, node, op_independent=True):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         pads = node.get_attr('pads')
+        is_pads_attr = True
+        if pads is None:
+            val_pad = self.graph.get_input_node(node, idx=1, copy=True)
+            pad_shape = val_pad.out_shapes[0]
+            is_pads_attr = False
+            pads = _const_weight_or_none(val_pad)
+            if pads is not None:
+                is_pads_attr = True
         mode = node.get_attr('mode', 'constant')
         value = node.get_attr('value', 0.)
         data_shape = val_x.out_shapes[0]
@@ -386,56 +397,77 @@ class OpSet9():
         assume_pad2d = False
         layer_attrs = {}
         layer_attrs['mode'] = string(mode)
-        paddings = []
-        if len(pads) == 4:
-            assume_pad2d |= mode != 'constant'
-            if data_shape:
-                assume_pad2d |= data_shape and len(data_shape) == 4  # NCHW
-            if output_shape:
-                assume_pad2d |= output_shape and len(output_shape) == 4  # NCHW
-        if assume_pad2d:
-            paddle_op = 'paddle.nn.Pad2D'
-            layer_attrs['data_format'] = string('NCHW')
-            layer_attrs['value'] = value
-        else:
-            paddle_op = 'paddle.fluid.layers.pad'
-            layer_attrs["pad_value"] = value
-        if len(pads) == 4:
-            paddings = np.array(pads).reshape(
-                (-1, 2)).transpose().flatten().tolist()  # SSEE -> SESE
-        elif len(pads) == 8:
-            paddings = np.array(pads).reshape(
-                (-1, 4)).transpose().flatten().tolist()  # SSEE -> SESE
-            if sum(paddings[:4]) == 0:
+        if is_pads_attr:
+            paddings = []
+            if len(pads) == 4:
+                assume_pad2d |= mode != 'constant'
+                if data_shape:
+                    assume_pad2d |= data_shape and len(data_shape) == 4  # NCHW
+                if output_shape:
+                    assume_pad2d |= output_shape and len(output_shape) == 4  # NCHW
+            if assume_pad2d:
                 paddle_op = 'paddle.nn.Pad2D'
-                paddings = paddings[4:]
+                layer_attrs['data_format'] = string('NCHW')
                 layer_attrs['value'] = value
-                if 'pad_value' in layer_attrs:
-                    layer_attrs.pop('pad_value')
-        tmp_paddings = copy.deepcopy(paddings)
-        paddings[0] = tmp_paddings[2]
-        paddings[1] = tmp_paddings[3]
-        paddings[2] = tmp_paddings[0]
-        paddings[3] = tmp_paddings[1]
-        if paddle_op == 'paddle.nn.Pad2D':
-            layer_attrs['padding'] = paddings
-            nn_op_name = name_generator("pad2d", self.nn_name2id)
+            else:
+                paddle_op = 'paddle.fluid.layers.pad'
+                layer_attrs["pad_value"] = value
+            if len(pads) == 4:
+                paddings = np.array(pads).reshape(
+                    (-1, 2)).transpose().flatten().tolist()  # SSEE -> SESE
+            elif len(pads) == 8:
+                paddings = np.array(pads).reshape(
+                    (-1, 4)).transpose().flatten().tolist()  # SSEE -> SESE
+                if sum(paddings[:4]) == 0:
+                    paddle_op = 'paddle.nn.Pad2D'
+                    paddings = paddings[4:]
+                    layer_attrs['value'] = value
+                    if 'pad_value' in layer_attrs:
+                        layer_attrs.pop('pad_value')
+            tmp_paddings = copy.deepcopy(paddings)
+            paddings[0] = tmp_paddings[2]
+            paddings[1] = tmp_paddings[3]
+            paddings[2] = tmp_paddings[0]
+            paddings[3] = tmp_paddings[1]
+            if paddle_op == 'paddle.nn.Pad2D':
+                layer_attrs['padding'] = paddings
+                nn_op_name = name_generator("pad2d", self.nn_name2id)
+            else:
+                layer_attrs['paddings'] = paddings
+            if op_independent:
+                self.paddle_graph.add_layer(
+                    paddle_op, 
+                    inputs={'x': val_x.name}, 
+                    outputs=[nn_op_name, node.name] if paddle_op == 'paddle.nn.Pad2D' else [node.name], 
+                    **layer_attrs)
+            else:
+                self.paddle_graph.add_layer(
+                    paddle_op,
+                    inputs={'x': val_x.name},
+                    outputs=[nn_op_name, node.name + '_paded'] if paddle_op == 'paddle.nn.Pad2D' \
+                        else [node.name + '_paded'],
+                    **layer_attrs)
+                return node.name + '_paded'
         else:
-            layer_attrs['paddings'] = paddings
-        if op_independent:
+            if pad_shape[0] == 4:
+                assume_pad2d |= mode != 'constant'
+                if data_shape:
+                    assume_pad2d |= data_shape and len(data_shape) == 4  # NCHW
+                if output_shape:
+                    assume_pad2d |= output_shape and len(output_shape) == 4  # NCHW
+            if pad_shape[0] == 8 or not assume_pad2d:
+                raise Exception("When the pad shape is 8 and pad is tensor, the op is not supported yet!")
+            nn_op_name = name_generator("custom_pad", self.nn_name2id)
+            output_name = node.name + '_paded'
+            layer_outputs = [nn_op_name, output_name]
+            layer_attrs['value'] = value
             self.paddle_graph.add_layer(
-                paddle_op, 
-                inputs={'x': val_x.name}, 
-                outputs=[nn_op_name, node.name] if paddle_op == 'paddle.nn.Pad2D' else [node.name], 
+                "custom_layer:CustomPad", 
+                inputs={'x': val_x.name, 'pad': val_pad.name}, 
+                outputs=layer_outputs, 
                 **layer_attrs)
-        else:
-            self.paddle_graph.add_layer(
-                paddle_op,
-                inputs={'x': val_x.name},
-                outputs=[nn_op_name, node.name + '_paded'] if paddle_op == 'paddle.nn.Pad2D' \
-                    else [node.name + '_paded'],
-                **layer_attrs)
-            return node.name + '_paded'
+            if not op_independent:
+                return node.name + '_paded'
 
     @print_mapping_info
     def Unsqueeze(self, node):
@@ -637,7 +669,7 @@ class OpSet9():
                 self.paddle_graph.add_layer(
                     'paddle.cast',
                     inputs={"x": indices.name},
-                    outputs=indices_cast,
+                    outputs=[indices_cast],
                     dtype=string('int64'))
                 op_name = name_generator("embedding", self.nn_name2id)
                 output_name = node.name
@@ -832,7 +864,7 @@ class OpSet9():
                 "starts": starts.name,
                 "ends": ends.name
             }
-            if starts_value is not None and ends_value is not None:
+            if starts_value is not None and ends_value is not None and axes is not None:
                 starts_value = starts_value.copy()
                 ends_value = ends_value.copy()
                 #for idx in range(len(ends_value)):
@@ -862,6 +894,8 @@ class OpSet9():
                     layer_attrs['starts'] = starts_cast
                 if ends.dtype != 'int32':
                     ends_cast = ends.name + '_cast'
+                else:
+                    ends_cast = ends.name
                 self.paddle_graph.add_layer(
                     'paddle.cast',
                     inputs={"x": ends.name},
@@ -1006,7 +1040,7 @@ class OpSet9():
                 'paddle.reshape',
                 inputs={'x': val_x.name,
                         'shape': val_shape.name},
-                outputs=node)
+                outputs=[node.name])
 
     @print_mapping_info
     def Cast(self, node):
@@ -1634,3 +1668,48 @@ class OpSet9():
             inputs={"x": val_x.name}, 
             outputs=[node.name],
             **layer_attrs)
+        
+    @print_mapping_info
+    def Size(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.shape", 
+            inputs={"x": val_x.name}, 
+            outputs=[node.name])
+        self.paddle_graph.add_layer(
+            "paddle.prod",
+            inputs={"x": node.name},
+            outputs=[node.name])
+        
+    @print_mapping_info
+    def Sign(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.sign", 
+            inputs={"x": val_x.name}, 
+            outputs=[node.name])
+        
+    @print_mapping_info
+    def OneHot(self, node):
+        nn_op_name = name_generator("onehot", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [nn_op_name, output_name]
+        indices = self.graph.get_input_node(node, idx=0, copy=True)
+        depth = self.graph.get_input_node(node, idx=1, copy=True)
+        values = self.graph.get_input_node(node, idx=2, copy=True)
+        axis = node.get_attr('axis', -1)
+        self.paddle_graph.add_layer(
+            "custom_layer:OneHot", 
+            inputs={"indices": indices.name,
+                    "depth": depth.name,
+                    "values": values.name}, 
+            outputs=layer_outputs,
+            axis=axis)
+    
+    @print_mapping_info
+    def Reciprocal(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.reciprocal", 
+            inputs={"x": val_x.name}, 
+            outputs=[node.name])

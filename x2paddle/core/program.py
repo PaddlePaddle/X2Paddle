@@ -471,6 +471,9 @@ class PaddleGraph(object):
             elif self.source_type == "pytorch":
                 custom_import = "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"
+            elif self.source_type == "onnx":
+                custom_import = "from x2paddle.op_mapper.dygraph.onnx2paddle " + \
+                                 "import onnx_custom_layer as x2paddle_nn"
             else:
                 custom_import = ""
             self.head = gen_codes(
