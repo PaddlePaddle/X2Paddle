@@ -33,11 +33,33 @@ def prim_Constant(mapper, graph, node):
     output_type = output.type()
     if isinstance(value, str):
         value = string(value)
-    if str(output_type) == "Tensor":
+    if "Tensor" in str(output_type):
         tensor_value = value
         value = "{}".format(value)
         if "tensor" in value:
-            mapper.pytorch_params[output_name] = tensor_value.cpu().detach().numpy()
+            if isinstance(tensor_value, list) or isinstance(tensor_value, tuple):
+                name_dict = dict()
+                for i, tv in enumerate(tensor_value):
+                    output_name_i = "{}_p{}".format(output_name,i)
+                    key_i = "input{}".format(i)
+                    mapper.paddle_params[output_name_i] = tv.cpu().detach().numpy()
+                    graph.add_layer(
+                        "self.create_parameter",
+                        inputs={},
+                        outputs=[output_name_i],
+                        scope_name=scope_name,
+                        dtype=string(str(mapper.paddle_params[output_name_i].dtype)),
+                        shape = mapper.paddle_params[output_name_i].shape,
+                        default_initializer="paddle.nn.initializer.Constant(value=0.0)")
+                    name_dict[key_i] = output_name_i
+                graph.add_layer(
+                    "prim.list",
+                    inputs=name_dict,
+                    outputs=[output_name],
+                    scope_name=scope_name)
+                return [], [output_name]
+            else:
+                mapper.pytorch_params[output_name] = tensor_value.cpu().detach().numpy()
 
     if "inf" in str(value):
         t = str(type(value)).split("'")[1]
@@ -218,11 +240,13 @@ def prim_ListConstruct(mapper, graph, node):
     current_outputs = [output_name]
     # 处理每个输入
     for i, input_name in enumerate(inputs_name):
+        mapper._check_input(graph, inputs_node[i], input_name, current_outputs, scope_name)
         layer_inputs["input{}".format(i)] = input_name
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    layer_id = graph.add_layer("prim.list", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    mapper.output2id[output_name] = layer_id
     return current_inputs, current_outputs
 
 

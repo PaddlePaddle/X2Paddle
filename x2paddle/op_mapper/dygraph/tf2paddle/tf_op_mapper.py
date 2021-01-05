@@ -70,7 +70,7 @@ class TFOpMapper(OpMapper):
         'AddV2': 'paddle.add',
         'RealDiv': 'paddle.divide',
         'DivNoNan': 'paddle.divide',
-        'Sub': 'fluid.layers.elementwise_sub',
+        'Sub': 'paddle.subtract',
         'Maximum': 'paddle.maximum',
         'Minimum': 'paddle.minimum',
         'Mul': 'paddle.multiply',
@@ -346,7 +346,7 @@ class TFOpMapper(OpMapper):
             shape=[0, c, h, w])
 
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.pixel_shuffle",
+            kernel="paddle.nn.functional.pixel_shuffle",
             inputs={"x": reshape_name},
             outputs=[node.name],
             upscale_factor=block_size)
@@ -858,22 +858,22 @@ class TFOpMapper(OpMapper):
         layer_outputs = [op_name, output_name]
         
         # TODO(syf): The op has diff.
-#         self.paddle_graph.add_layer(
-#             kernel="paddle.nn.AvgPool2D",
-#             inputs={"input": input_name},
-#             outputs=layer_outputs,
-#             kernel_size=k_size[2:4],
-#             stride=strides[2:4],
-#             padding=string(pad_mode))
-
         self.paddle_graph.add_layer(
-            kernel="fluid.layers.pool2d",
+            kernel="paddle.nn.AvgPool2D",
             inputs={"input": input_name},
-            outputs=[node.name],
-            pool_size=k_size[2:4],
-            pool_type=string("avg"),
-            pool_stride=strides[2:4],
-            pool_padding=string(pad_mode))
+            outputs=layer_outputs,
+            kernel_size=k_size[2:4],
+            stride=strides[2:4],
+            padding=string(pad_mode))
+
+#         self.paddle_graph.add_layer(
+#             kernel="fluid.layers.pool2d",
+#             inputs={"input": input_name},
+#             outputs=[node.name],
+#             pool_size=k_size[2:4],
+#             pool_type=string("avg"),
+#             pool_stride=strides[2:4],
+#             pool_padding=string(pad_mode))
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
@@ -1118,14 +1118,6 @@ class TFOpMapper(OpMapper):
             begin = begin.value.tolist()
             attrs['offsets'] = begin
         else:
-            #             shape = begin.out_shapes[0]
-            #             reshape_name = gen_name("slice", "reshape")
-            #             self.paddle_graph.add_layer(
-            #                 kernel="fluid.layers.reshape",
-            #                 inputs={"x": begin.name},
-            #                 outputs=[reshape_name],
-            #                 shape=shape)
-            #             inputs['offsets'] = reshape_name
             begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).tolist()
             attrs['offsets'] = begin
         if size.layer_type == "Const":
@@ -1433,7 +1425,7 @@ class TFOpMapper(OpMapper):
         y_shape = y.out_shapes[0]
         # TODO(syf)
         layer_id = self.paddle_graph.add_layer(
-            "fluid.layers.elementwise_sub", inputs=inputs, outputs=[node.name])
+            "paddle.subtract", inputs=inputs, outputs=[node.name])
         self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}

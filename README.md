@@ -10,7 +10,7 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX/PyTorch�
 ## 环境依赖
 
 python == 2.7 | python >= 3.5  
-paddlepaddle 2.0-rc 或者 develop  
+paddlepaddle 2.0.0-rc1 或者 develop  
 
 **按需安装以下依赖**  
 tensorflow ： tensorflow == 1.14.0  
@@ -93,12 +93,6 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 6. [X2Paddle添加内置的Caffe自定义层](./docs/user_guides/add_caffe_custom_layer.md)
 
 ## 更新历史
-2019.08.05  
-1. 统一tensorflow/caffe/onnx模型转换代码和对外接口
-2. 解决上一版caffe2fluid无法转换多分支模型的问题
-3. 解决Windows上保存模型无法加载的问题
-4. 新增optimizer，优化代码结构，合并conv、batch_norm的bias和激活函数  
-
 2020.12.09
 1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。
 方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。
@@ -106,8 +100,6 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
 3. 新增TensorFlow op（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
-
-**如果你需要之前版本的tensorflow2fluid/caffe2fluid/onnx2fluid，可以继续访问release-0.9分支，获取之前版本的代码使用。**
 
 
 ## Acknowledgements

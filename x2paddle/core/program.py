@@ -26,6 +26,7 @@ import six
 import pickle
 import numpy as np
 from os import path as osp 
+from x2paddle.core.util import *
 
 
 class PaddleLayer(object):
@@ -210,6 +211,8 @@ class PaddleGraph(object):
                         layer_id, 0) == 0 and layer.kernel != "prim.assert" \
                         and layer.kernel != "prim.exception" \
                         and layer.kernel != "prim.warnings":
+                    if layer.kernel == "paddle.to_tensor":
+                        self.inputs_info.pop(layer.outputs[0])
                     invalid_list.append(layer_id)
         for layer_id in invalid_list:
             self.layers.pop(layer_id)
@@ -272,7 +275,7 @@ class PaddleGraph(object):
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
         if jit_type == "trace":
-            from x2paddle.optimizer.code_optimizer import HierarchicalTree
+            from x2paddle.optimizer.pytorch_code_optimizer import HierarchicalTree
             hierarchical_tree = HierarchicalTree(self)
             for layer_id, layer in self.layers.items():
                 hierarchical_tree.insert(layer)
@@ -280,7 +283,7 @@ class PaddleGraph(object):
             self.dump_dygraph_parameter(save_dir)
         else:
             if self.source_type == "pytorch":
-                from x2paddle.optimizer.code_optimizer import ModuleGraph
+                from x2paddle.optimizer.pytorch_code_optimizer import ModuleGraph
                 module_graph = ModuleGraph(self)
                 module_graph.save_source_files(save_dir)
                 self.dump_dygraph_parameter(save_dir)
@@ -324,12 +327,10 @@ class PaddleGraph(object):
 
         write_code(
             f, [
-                "from paddle.fluid.initializer import Constant",
-                "from paddle.fluid.param_attr import ParamAttr",
-                "import paddle.fluid as fluid", 
                 custom_import,
-                "import paddle", "import math", "",
-                
+                "import paddle", 
+                "import math", 
+                "",
             ],
             indent=0)
         if self.custom_code is not None:
@@ -346,6 +347,8 @@ class PaddleGraph(object):
             ],
             indent=1)
         for layer_id, layer in self.layers.items():
+            if layer.kernel.startswith("paddle"):
+                remove_default_attrs(layer.kernel, layer.attrs)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
             if len(edges_in) == 0 and len(edges_out) == 0:
@@ -425,8 +428,7 @@ class PaddleGraph(object):
                     continue
                 if layer.kernel == "paddle.to_tensor":
                     data = layer.attrs["data"]
-                    if not data.startswith("params["):
-                        self.inputs.append(data)
+                    self.inputs.append(data)
                 if len(layer.blocks) > 0:
                     for block in layer.blocks:
                         block.get_dygraph_inputs()
@@ -473,10 +475,7 @@ class PaddleGraph(object):
                 custom_import = ""
             self.head = gen_codes(
                 [
-                    "from paddle.fluid.initializer import Constant",
-                    "from paddle.fluid.param_attr import ParamAttr",
                     "import paddle",
-                    "import paddle.fluid as fluid",
                     "import math",
                     custom_import,
                     "",
@@ -548,6 +547,8 @@ class PaddleGraph(object):
             gen_head()
 
         for layer_id, layer in self.layers.items():
+            if layer.kernel.startswith("paddle"):
+                remove_default_attrs(layer.kernel, layer.attrs)
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
                 layer.kernel.startswith("custom_layer") or \
@@ -578,7 +579,10 @@ class PaddleGraph(object):
                 elif len(layer.outputs) == 2:
                     line = layer.outputs[1]
                 else:
-                    line = ','.join(layer.outputs[1:])
+                    if layer.kernel == "paddle.nn.LSTM":
+                        line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
+                    else:
+                        line = ','.join(layer.outputs[1:])
                 if layer.kernel == "paddle.to_tensor" and layer.attrs[
                         "data"].startswith("params["):
                     line += " = self.{}".format(layer.outputs[0])

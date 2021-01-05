@@ -14,7 +14,11 @@
 # limitations under the License.
 
 import copy
-from x2paddle.optimizer.code_optimizer.parameter_tree import PamareterNode
+import os.path as osp
+import x2paddle
+from x2paddle.optimizer.pytorch_code_optimizer.parameter_tree import PamareterNode
+from x2paddle.core.util import *
+
 
 NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.LayerNorm": "layernorm",
@@ -22,6 +26,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Embedding": "embedding",
                   "paddle.nn.Linear": "linear",
                   "paddle.nn.Conv2DTranspose": "conv",
+                  "paddle.nn.LSTM": "lstm",
                   "paddle.nn.ReLU": "relu",
                   "paddle.nn.ReLU6": "relu",
                   "paddle.nn.Softmax": "softmax",
@@ -36,7 +41,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
-NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:6]
+NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:7]
 
 def rename_layers(layers, param_tree=None, is_rename_module=False):
     """ 对子模块的输入输出等进行重命名。
@@ -125,14 +130,30 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
     return layers_cp, nn_param_nodes, new_names
 
 
-def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
+def _update_attrs(layer, different_attrs):
+    if "module" in layer.kernel or "prim" in layer.kernel:
+        return
+    common_attrs = copy.deepcopy(layer.attrs)
+    special_attrs = dict()
+    for k, v in layer.attrs.items():
+        if len(layer.outputs) < 1:
+            break
+        key_name = "{}_{}".format(layer.outputs[0], k)
+        if key_name in different_attrs:
+            common_attrs.pop(k)
+            special_attrs[k] = v
+    remove_default_attrs(layer.kernel, common_attrs)
+    common_attrs.update(special_attrs)
+    layer.attrs = common_attrs
+
+def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
     """ 根据sub_layers生成对应的Module代码。
     
     Args:
         graph (x2paddle.core.program.PaddleGraph): 整个Paddle图。
         sub_layers (dict): 子图的id和其对应layer组成的字典。
         sub_layers_name (str): 子图的名字。
-        different_attrs (list): 属性列表，这些属性表明在被调用时赋予不同值。
+        different_attrs (dict/list): 属性字典/列表，这些属性表明在被调用时赋予不同值。
     """
     def gen_codes(code_list, indent=0):
         """ 根据code_list生成代码段。
@@ -157,7 +178,13 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
         # 生成Layer的头部代码
         head = gen_codes(["class {}(paddle.nn.Layer):".format(sub_layers_name)], indent=0)
         # 生成init函数的头部代码
-        attrs_str = ", ".join(different_attrs)
+        diff_str_list = list()
+        if isinstance(different_attrs, dict):
+            for k, v in different_attrs.items():
+                diff_str_list.append("{}={}".format(k, v))
+            attrs_str = ", ".join(diff_str_list)
+        else:
+            attrs_str = ", ".join(different_attrs)
         init_func_head = \
             gen_codes(["def __init__(self, {}):".format(attrs_str)], indent=1) + \
             gen_codes(["super({}, self).__init__()".format(sub_layers_name)], indent=2)
@@ -213,6 +240,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                 outputs.append(layer.outputs[0])
     no_output_count = 0
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
+        _update_attrs(layer, different_attrs)
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \
                 layer.kernel.startswith("custom_layer"):
             line = "self.{}".format(layer.outputs[0])
@@ -235,7 +263,10 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
             elif len(layer.outputs) == 2:
                 line = layer.outputs[1]
             else:
-                line = ','.join(layer.outputs[1:])
+                if layer.kernel == "paddle.nn.LSTM":
+                    line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
+                else:
+                    line = ','.join(layer.outputs[1:])
             
             line += " = self.{}(".format(layer.outputs[0])
             for k, v in layer.inputs.items():
@@ -263,7 +294,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=list()):
                     init_func=init_func,
                     forward_func=forward_func,
                     layer_id=layer_id, 
-                    different_attrs=different_attrs)
+                    different_attrs=list(different_attrs.keys()) if isinstance(different_attrs, dict) else different_attrs)
                 cur_outputs.extend(layer.outputs)
             else:
                 raise Exception(
