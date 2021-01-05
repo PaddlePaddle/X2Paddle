@@ -12,20 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle
 
-class CustomPad(object):
-    def __init__(self, value, mode):
-        self.layer_attrs = {}
-        self.layer_attrs['mode'] = string(mode)
-        self.layer_attrs['data_format'] = string('NCHW')
-        self.layer_attrs['value'] = value
-
-        
-    def __call__(self, x, pad):
-        pad = paddle.reshape(pad, shape=[2, -1])
-        pad = paddle.transpose(pad, perm=[1, 0])
-        pad = paddle.reverse(pad, axis=[0])
-        pad = paddle.flatten(pad)
-        out = paddle.nn.functional.pad(x=x, pad=pad, **self.layer_attrs)
-        return out
+from .one_hot import one_hot
+from .pad import custom_pad

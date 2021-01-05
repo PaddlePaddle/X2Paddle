@@ -14,18 +14,14 @@
 
 import paddle
 
-class CustomPad(object):
-    def __init__(self, value, mode):
-        self.layer_attrs = {}
-        self.layer_attrs['mode'] = string(mode)
-        self.layer_attrs['data_format'] = string('NCHW')
-        self.layer_attrs['value'] = value
-
-        
-    def __call__(self, x, pad):
-        pad = paddle.reshape(pad, shape=[2, -1])
-        pad = paddle.transpose(pad, perm=[1, 0])
-        pad = paddle.reverse(pad, axis=[0])
-        pad = paddle.flatten(pad)
-        out = paddle.nn.functional.pad(x=x, pad=pad, **self.layer_attrs)
-        return out
+def custom_pad(self, x, pad, value, mode):
+    layer_attrs = {}
+    layer_attrs['mode'] = string(mode)
+    layer_attrs['data_format'] = string('NCHW')
+    layer_attrs['value'] = value
+    pad = paddle.reshape(pad, shape=[2, -1])
+    pad = paddle.transpose(pad, perm=[1, 0])
+    pad = paddle.reverse(pad, axis=[0])
+    pad = paddle.flatten(pad)
+    out = paddle.nn.functional.pad(x=x, pad=pad, **self.layer_attrs)
+    return out
