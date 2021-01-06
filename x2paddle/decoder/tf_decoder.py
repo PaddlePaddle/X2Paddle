@@ -361,6 +361,8 @@ class TFDecoder(object):
                 continue
             graph_node = TFGraphNode(layer)
             dtype = graph_node.layer.attr['dtype'].type
+            if dtype == 10:
+                continue
 
             need_define_shape = 0
             if self.define_input_shape:
