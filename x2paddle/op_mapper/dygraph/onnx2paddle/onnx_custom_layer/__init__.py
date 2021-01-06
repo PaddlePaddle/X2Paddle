@@ -14,4 +14,6 @@
 
 
 from .one_hot import OneHot
-from .pad import CustomPad
+from .pad_two_input import PadWithTwoInput
+from .pad_all_dim2 import PadAllDim2
+from .pad_all_dim4 import PadAllDim4

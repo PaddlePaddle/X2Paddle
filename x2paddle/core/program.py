@@ -210,8 +210,8 @@ class PaddleGraph(object):
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
                         layer_id, 0) == 0 and layer.kernel != "prim.assert" \
                         and layer.kernel != "prim.exception" \
-                        and layer.kernel != "prim.warnings":
-                    if layer.kernel == "paddle.to_tensor":
+                        and layer.kernel != "prim.warnings" and layer.outputs[0] not in self.outputs:
+                    if layer.kernel == "paddle.to_tensor" and layer.outputs[0] in self.inputs_info:
                         self.inputs_info.pop(layer.outputs[0])
                     invalid_list.append(layer_id)
         for layer_id in invalid_list:

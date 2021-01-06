@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import paddle
+from x2paddle.core.util import *
 
-class CustomPad(object):
+class PadAllDim2(object):
     def __init__(self, value, mode):
         self.layer_attrs = {}
-        self.layer_attrs['mode'] = string(mode)
-        self.layer_attrs['data_format'] = string('NCHW')
+        self.layer_attrs['mode'] = mode
+        self.layer_attrs['data_format'] = 'NCHW'
         self.layer_attrs['value'] = value
 
         
@@ -27,5 +28,8 @@ class CustomPad(object):
         pad = paddle.transpose(pad, perm=[1, 0])
         pad = paddle.reverse(pad, axis=[0])
         pad = paddle.flatten(pad)
+        pad = paddle.cast(pad, dtype="int32")
+        x = paddle.unsqueeze(x, axis=[0, 1])
         out = paddle.nn.functional.pad(x=x, pad=pad, **self.layer_attrs)
+        out = paddle.squeeze(out, axis=[0, 1])
         return out
