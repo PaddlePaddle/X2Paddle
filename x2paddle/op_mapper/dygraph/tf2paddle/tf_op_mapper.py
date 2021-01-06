@@ -676,8 +676,8 @@ class TFOpMapper(OpMapper):
         input = self.graph.get_input_node(node, 0)
         paddings = self.graph.get_input_node(node, 1)
         assert paddings.layer_type == "Const", "Padding should be Const"
-        paddings = np.flip(paddings.value, 0).flatten().tolist()
-        dim = int(len(paddings) / 2)
+        new_paddings = numpy.flip(paddings.value, 0).flatten().tolist()
+        dim = int(len(new_paddings) / 2)
         transpose_name = gen_name("pad", "transpose")
         self.paddle_graph.add_layer(
             kernel="paddle.transpose",
@@ -688,7 +688,7 @@ class TFOpMapper(OpMapper):
             kernel="paddle.nn.Pad{}D".format(dim),
             inputs={"x": transpose_name},
             outputs=layer_outputs,
-            pad=new_padding)
+            pad=new_paddings)
         self.paddle_graph.add_layer(
             kernel="paddle.transpose",
             inputs={"x": node.name},
