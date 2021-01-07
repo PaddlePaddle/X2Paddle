@@ -1356,8 +1356,6 @@ class OpSet9():
         shape_slope = val_slope.out_shapes[0]
         if shape_slope == [1]:
             mode = 'all'
-        elif len(shape_slope) > 2:
-            raise Exception("The 'element' mode is not supported yet!")
 
         if mode == "element":
             self.paddle_graph.add_layer(
