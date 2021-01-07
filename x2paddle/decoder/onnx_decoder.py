@@ -234,11 +234,7 @@ class ONNXGraph(Graph):
         """
         generate output_nodes node of ONNX model
         """
-#         inner_nodes = self.get_inner_nodes()
         output_nodes = [value.name for value in self.graph.output]
-#         for opt_data in output_nodes:
-#             if opt_data not in inner_nodes:
-#                 self.output_nodes.append(opt_data)
         for opt_data in output_nodes:
             n = super(ONNXGraph, self).get_node(opt_data)
             if n is None:
@@ -408,10 +404,8 @@ class ONNXDecoder(object):
         check_model(onnx_model)
 
         onnx_model = self.optimize_model_skip_op(onnx_model)
-#         onnx_model = self.optimize_model_strip_initializer(onnx_model)
         onnx_model = self.optimize_node_name(onnx_model)
         self.graph = ONNXGraph(onnx_model)
-        #self.onnx_model = onnx_model
 
     def build_value_refs(self, nodes):
         """
