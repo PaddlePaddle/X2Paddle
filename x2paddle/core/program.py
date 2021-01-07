@@ -322,7 +322,7 @@ class PaddleGraph(object):
         if self.source_type == "caffe":
             custom_import = "from x2paddle.op_mapper.static.caffe2paddle " + \
                              "import caffe_custom_layer as x2paddle_nn"
-        if self.source_type == "onnx":
+        elif self.source_type == "onnx":
             custom_import = "from x2paddle.op_mapper.static.onnx2paddle " + \
                              "import onnx_custom_layer as x2paddle_nn"
         else:
