@@ -1359,21 +1359,49 @@ class OpSet9():
         elif len(shape_slope) > 2:
             raise Exception("The 'element' mode is not supported yet!")
 
-        if mode == 'channel' and len(shape_slope) == 1:
-            # paddle params shape need be [1, channel]
-            slope_data = _const_weight_or_none(val_slope)
-            slope_data = np.reshape(slope_data, [1] + shape_slope)
-            self.weights[val_slope.name] = slope_data
-            num_parameters = val_x.out_shapes[0][1]
+        if mode == "element":
+            self.paddle_graph.add_layer(
+                "paddle.zeros",
+                inputs={}, 
+                outputs=[output_name + "__zeros"], 
+                shape=shape_slope,
+                dtype=string(node.dtype))
+            self.paddle_graph.add_layer(
+                "paddle.maximum",
+                inputs={"x": val_x.name, 
+                        "y": output_name + "__zeros"}, 
+                outputs=[output_name + "__max"])
+            self.paddle_graph.add_layer(
+                "paddle.minimum",
+                inputs={"x": val_x.name, 
+                        "y": output_name + "__zeros"}, 
+                outputs=[output_name + "__max"])
+            self.paddle_graph.add_layer(
+                "paddle.multiply",
+                inputs={"x": val_slope.name, 
+                        "y": output_name + "__min"}, 
+                outputs=[output_name + "__mul"])
+            self.paddle_graph.add_layer(
+                "paddle.add",
+                inputs={"x": output_name + "__max", 
+                        "y": output_name + "__mul"}, 
+                outputs=[output_name])
         else:
-            num_parameters = 1
+            if mode == 'channel' and len(shape_slope) == 1:
+                # paddle params shape need be [1, channel]
+                slope_data = _const_weight_or_none(val_slope)
+                slope_data = np.reshape(slope_data, [1] + shape_slope)
+                self.weights[val_slope.name] = slope_data
+                num_parameters = val_x.out_shapes[0][1]
+            else:
+                num_parameters = 1
 
-        self.paddle_graph.add_layer(
-            "paddle.nn.PReLU", 
-            inputs={"x": val_x.name}, 
-            outputs=layer_outputs, 
-            num_parameters=num_parameters,
-            weight_attr=string(val_slope.name))
+            self.paddle_graph.add_layer(
+                "paddle.nn.PReLU", 
+                inputs={"x": val_x.name}, 
+                outputs=layer_outputs, 
+                num_parameters=num_parameters,
+                weight_attr=string(val_slope.name))
 
     @print_mapping_info
     def Squeeze(self, node):

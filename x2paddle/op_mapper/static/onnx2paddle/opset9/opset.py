@@ -1336,17 +1336,25 @@ class OpSet9():
         elif len(shape_slope) > 2:
             raise Exception("The 'element' mode is not supported yet!")
 
-        if mode == 'channel' and len(shape_slope) == 1:
-            # paddle params shape need be [1, channel]
-            slope_data = _const_weight_or_none(val_slope)
-            slope_data = np.reshape(slope_data, [1] + shape_slope)
-            self.params[val_slope.name] = slope_data
-  
-        self.paddle_graph.add_layer(
-            "paddle.nn.functional.prelu", 
-            inputs={"x": val_x.name,
-                    "weight": val_slope.name}, 
-            outputs=[node.name])
+        if mode == "element":
+            self.paddle_graph.add_layer(
+                "paddle.static.nn.prelu", 
+                inputs={"x": val_x.name,
+                        "param_attr": val_slope.name}, 
+                outputs=[node.name],
+                mode="element")
+        else:
+            if mode == 'channel' and len(shape_slope) == 1:
+                # paddle params shape need be [1, channel]
+                slope_data = _const_weight_or_none(val_slope)
+                slope_data = np.reshape(slope_data, [1] + shape_slope)
+                self.params[val_slope.name] = slope_data
+
+            self.paddle_graph.add_layer(
+                "paddle.nn.functional.prelu", 
+                inputs={"x": val_x.name,
+                        "weight": val_slope.name}, 
+                outputs=[node.name])
 
     @print_mapping_info
     def Squeeze(self, node):
