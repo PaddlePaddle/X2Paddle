@@ -415,7 +415,7 @@ class OpSet9():
                     paddle_op = 'paddle.nn.Pad{}D'.format(len(output_shape) - 2)
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
-                    paddings = np.flip(paddings).flatten().tolist()
+                    paddings = np.flip(paddings, axis=0).flatten().tolist()
                     layer_attrs['padding'] = paddings
                 else:
                     if data_shape:
@@ -435,10 +435,16 @@ class OpSet9():
                 if output_shape:
                     assume_pad |= output_shape and 2 * len(output_shape) == len(pads)  # NCHW
                 if assume_pad:
-                    paddle_op = 'paddle.nn.functional.pad'
+                    paddle_op = 'paddle.nn.Pad2D'
                     paddings = np.array(pads).reshape(
-                        (2, -1)).transpose().astype("int32").flatten().tolist()
-                    layer_attrs['pad'] = paddings
+                        (2, -1)).transpose().astype("int32")
+                    paddings = np.flip(paddings, axis=0).flatten().tolist()
+                    if sum(paddings[:4]) == 0:
+                        paddings = paddings[4:]
+                        layer_attrs['padding'] = paddings
+                    else:
+                        layer_attrs["pad"] = paddings
+                        paddle_op = "custom_layer:PadAllDim4WithOneInput"
             else:
                  raise Exception("The padding value {} is wrong!".format(pads))
             self.paddle_graph.add_layer(

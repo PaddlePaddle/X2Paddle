@@ -14,14 +14,17 @@
 
 import paddle
 
-def custom_pad(self, x, pad, value, mode):
-    layer_attrs = {}
-    layer_attrs['mode'] = string(mode)
-    layer_attrs['data_format'] = string('NCHW')
-    layer_attrs['value'] = value
+def pad_all_dim2(x, pad, value, mode):
     pad = paddle.reshape(pad, shape=[2, -1])
     pad = paddle.transpose(pad, perm=[1, 0])
     pad = paddle.reverse(pad, axis=[0])
     pad = paddle.flatten(pad)
-    out = paddle.nn.functional.pad(x=x, pad=pad, **self.layer_attrs)
+    pad = paddle.cast(pad, dtype="int32")
+    x = paddle.unsqueeze(x, axis=[0, 1])
+    out = paddle.nn.functional.pad(x=x, 
+                                   pad=pad,
+                                   mode=mode,
+                                   data_format='NCHW',
+                                   value=value)
+    out = paddle.squeeze(out, axis=[0, 1])
     return out

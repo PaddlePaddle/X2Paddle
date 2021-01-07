@@ -354,7 +354,7 @@ class PaddleGraph(object):
                 remove_default_attrs(layer.kernel, layer.attrs)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
-            if len(edges_in) == 0 and len(edges_out) == 0:
+            if len(edges_in) == 0 and len(edges_out) == 0 and layer.outputs[0] not in self.outputs:
                 continue
 
             line = ""

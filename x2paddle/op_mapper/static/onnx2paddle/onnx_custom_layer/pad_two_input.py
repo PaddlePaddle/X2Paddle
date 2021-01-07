@@ -12,9 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import paddle
 
-from .one_hot import OneHot
-from .pad_two_input import PadWithTwoInput
-from .pad_all_dim2 import PadAllDim2
-from .pad_all_dim4 import PadAllDim4
-from .pad_all_dim4_one_input import PadAllDim4WithOneInput
+def pad_with_two_input(x, pad, value, mode, data_format):
+    pad = paddle.reshape(pad, shape=[2, -1])
+    pad = paddle.transpose(pad, perm=[1, 0])
+    pad = paddle.reverse(pad, axis=[0])
+    pad = paddle.flatten(pad)
+    pad = paddle.cast(pad, dtype="int32")
+    out = paddle.nn.functional.pad(x=x, 
+                                   pad=pad, 
+                                   value=value,
+                                   mode=mode,
+                                   data_format=data_format)
+    return out
