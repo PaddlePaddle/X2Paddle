@@ -227,6 +227,8 @@ class ONNXGraph(Graph):
         inner_nodes = self.get_inner_nodes()
         for ipt_vi in self.graph.input:
             if ipt_vi.name not in inner_nodes:
+                if len(ipt_vi.type.tensor_type.shape.dim) == 0:
+                    continue
                 self.check_input_shape(ipt_vi)
                 self.place_holder_nodes.append(ipt_vi.name)
 

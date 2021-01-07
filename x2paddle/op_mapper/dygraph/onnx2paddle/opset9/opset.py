@@ -216,7 +216,7 @@ class OpSet9():
             node = parameter
         dtype = node.dtype
         shape = node.out_shapes[0]
-        if len(node.weight.shape) == 0:
+        if hasattr(node.weight, "shape") and len(node.weight.shape) == 0:
             self.paddle_graph.add_layer(
                 "paddle.full", 
                 inputs={}, 
@@ -1694,6 +1694,16 @@ class OpSet9():
             self.weights[val_b_name] = self.weights[val_b.name]
         else:
             layer_attrs["bias_attr"] = False
+        input_shape = val_x.out_shapes[0]
+        if reduce(lambda x,y:x*y, input_shape) in [1, -1] and 1 not in input_shape:
+            input_shape[1] = num_in_channels * num_groups
+            input_shape[0] = 0
+            input_shape[2] = 0
+            self.paddle_graph.add_layer(
+                "paddle.reshape", 
+                inputs=layer_inputs, 
+                outputs=[layer_inputs["x"]], 
+                shape=input_shape)
         self.paddle_graph.add_layer(
             paddle_op, 
             inputs=layer_inputs, 
