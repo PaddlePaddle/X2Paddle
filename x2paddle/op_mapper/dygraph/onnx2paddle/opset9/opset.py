@@ -302,6 +302,7 @@ class OpSet9():
         val_x_shape = val_x.out_shapes[0]
         if mode == "linear" and len(val_x_shape) == 4:
             attrs["mode"] = string("bilinear")
+            attrs["align_corners"] = True
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.interpolate",
             inputs=inputs,
