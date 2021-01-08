@@ -299,6 +299,9 @@ class OpSet9():
         attrs.update({"align_corners": False,
                       "mode": string(mode),
                       "align_mode": 1})
+        val_x_shape = val_x.out_shapes[0]
+        if mode == "linear" and len(val_x_shape) == 4:
+            attrs["mode"] = string("bilinear")
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.interpolate",
             inputs=inputs,
@@ -1386,9 +1389,7 @@ class OpSet9():
                 outputs=[output_name])
         else:
             if mode == 'channel' and len(shape_slope) == 1:
-                # paddle params shape need be [1, channel]
                 slope_data = _const_weight_or_none(val_slope)
-                slope_data = np.reshape(slope_data, [1] + shape_slope)
                 self.weights[val_slope.name] = slope_data
                 num_parameters = val_x.out_shapes[0][1]
             else:

@@ -289,6 +289,9 @@ class OpSet9():
         attrs.update({"align_corners": False,
                  "mode": string(mode),
                  "align_mode": 1})
+        val_x_shape = val_x.out_shapes[0]
+        if mode == "linear" and len(val_x_shape) == 4:
+            attrs["mode"] = string("bilinear")
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.interpolate",
             inputs=inputs,
@@ -1323,9 +1326,6 @@ class OpSet9():
 
     @print_mapping_info
     def PRelu(self, node):
-        op_name = name_generator("prelu", self.nn_name2id)
-        output_name = node.name
-        layer_outputs = [op_name, output_name]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_slope = self.graph.get_input_node(node, idx=1, copy=True)
 
@@ -1342,12 +1342,13 @@ class OpSet9():
                 outputs=[node.name],
                 mode="element")
         else:
-            if mode == 'channel' and len(shape_slope) == 1:
-                # paddle params shape need be [1, channel]
-                slope_data = _const_weight_or_none(val_slope)
-                slope_data = np.reshape(slope_data, [1] + shape_slope)
-                self.params[val_slope.name] = slope_data
-
+            if mode == 'channel':
+                if len(shape_slope) > 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.reshape", 
+                        inputs={"x": val_slope.name}, 
+                        outputs=[val_slope.name],
+                        shape=[shape_slope[0]])
             self.paddle_graph.add_layer(
                 "paddle.nn.functional.prelu", 
                 inputs={"x": val_x.name,

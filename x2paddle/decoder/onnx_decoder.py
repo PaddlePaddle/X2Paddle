@@ -31,6 +31,7 @@ import numpy as np
 from copy import deepcopy
 import logging as _logging
 import os
+import copy
 
 default_op_domain = 'ai.onnx'
 _logger = _logging.getLogger(__name__)
@@ -123,6 +124,17 @@ class ONNXGraphDataNode(GraphNode):
                     shape.append(-1)
                 else:
                     shape.append(dim.dim_value)
+            out_shapes.append(shape)
+            return out_shapes
+        elif isinstance(self.layer, TensorProto):
+            values = self.layer.dims
+            out_shapes = list()
+            shape = list()
+            for dim in values:
+                if dim == 0:
+                    shape.append(-1)
+                else:
+                    shape.append(dim)
             out_shapes.append(shape)
             return out_shapes
         else:
@@ -227,8 +239,6 @@ class ONNXGraph(Graph):
         inner_nodes = self.get_inner_nodes()
         for ipt_vi in self.graph.input:
             if ipt_vi.name not in inner_nodes:
-                if len(ipt_vi.type.tensor_type.shape.dim) == 0:
-                    continue
                 self.check_input_shape(ipt_vi)
                 self.place_holder_nodes.append(ipt_vi.name)
 
@@ -289,7 +299,7 @@ class ONNXGraph(Graph):
         #generate topo
         super(ONNXGraph, self).build()
 
-        self.input_nodes = self.place_holder_nodes
+        self.input_nodes = copy.deepcopy(self.place_holder_nodes)
 
     def build_connection(self, layer_name, node):
         """
