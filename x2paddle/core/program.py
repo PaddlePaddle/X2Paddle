@@ -18,7 +18,7 @@ from __future__ import division
 import paddle.fluid as fluid
 import paddle
 from paddle.fluid.proto import framework_pb2
-from collections import OrderedDict
+import collections
 import numpy
 import sys
 import os
@@ -38,7 +38,7 @@ class PaddleLayer(object):
             outputs,
             list), "parameter 'outputs' for PaddleLayer should be type of list"
         for k, v in inputs.items():
-            if isinstance(v, list):
+            if isinstance(v, (list, tuple)):
                 for i in v:
                     assert isinstance(
                         i, six.string_types
@@ -66,7 +66,7 @@ class PaddleLayer(object):
 
 class PaddleGraph(object):
     def __init__(self, source_type=None, parent_layer=None, graph_type="static"):
-        self.layers = OrderedDict()
+        self.layers = collections.OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
@@ -94,7 +94,7 @@ class PaddleGraph(object):
         self.script = script
 
     def clear(self):
-        self.layers = OrderedDict()
+        self.layers = collections.OrderedDict()
         self.edges_out = dict()
         self.edges_in = dict()
         self.inputs = list()
@@ -166,9 +166,10 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
+            print(layer.kernel, layer.outputs ,layer.inputs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
-                if not isinstance(vs, list):
+                if not isinstance(vs, (list, tuple)):
                     vs = [vs]
                 for v in vs:
                     assert v in outputs_from_nodes or (
@@ -616,6 +617,8 @@ class PaddleGraph(object):
                 for k, v in layer.inputs.items():
                     if isinstance(v, list):
                         line += "{}=[{}], ".format(k, ", ".join(v))
+                    elif isinstance(v, tuple):
+                        line += "{}=({}), ".format(k, ", ".join(v))
                     else:
                         if k == "args":
                             line += v

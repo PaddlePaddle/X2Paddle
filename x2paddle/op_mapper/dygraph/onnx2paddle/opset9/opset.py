@@ -122,6 +122,9 @@ class OpSet9():
                      dict(threshold='threshold'), 
                      dict(threshold=float(sys.maxsize))],
         'Exp': ['paddle.exp'],
+        'LogSoftmax': ['paddle.nn.functional.log_softmax', 
+                    dict(axis='axis'), 
+                    dict(axis=1)],
         'Softmax': ['paddle.nn.Softmax', 
                     dict(axis='axis'), 
                     dict(axis=1)],
@@ -1634,3 +1637,88 @@ class OpSet9():
             inputs={"x": val_x.name}, 
             outputs=[node.name],
             **layer_attrs)
+
+    @print_mapping_info
+    def LSTM(self, node):
+        # parameters order in paddle:lstm:
+        # 1. gate order in paddle is: input, forget, cell, output.
+        # 2. gate orfer in onnx is: input, output, forget, cell.
+
+        def reform_weights(w, n, intervals):
+            slices = [w[:,x * n: y * n] for x, y in intervals]
+            return np.concatenate(slices, axis=1)
+
+        def transform_weight_with_bias(weights, n, intervals):
+            return [reform_weights(w, n, intervals) for w in weights]
+
+        print(node.layer.input)
+        x = self.graph.get_input_node(node, idx=0, copy=True)
+        input_weight = self.graph.get_input_node(node, idx=1, copy=True)
+        hidden_weight = self.graph.get_input_node(node, idx=2, copy=True)
+
+        input_nums = len(node.layer.input)
+        exist_input_nums = 3
+        if input_nums > 3 and node.layer.input[3] != '':
+            bias = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            exist_input_nums += 1
+        if input_nums > 4 and node.layer.input[4] != '':
+            sequence_lens = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            exist_input_nums += 1
+        if input_nums > 5 and node.layer.input[5] != '':
+            init_h = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            exist_input_nums += 1
+        if input_nums > 6 and node.layer.input[6] != '':
+            init_c = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+
+        input_weight_np = _const_weight_or_none(input_weight)
+        hidden_size = node.get_attr('hidden_size', input_weight_np.shape[1]/3)
+        input_size = input_weight_np.shape[2]
+        hidden_weight_np = _const_weight_or_none(hidden_weight)
+        bias_np = _const_weight_or_none(bias)
+        input_bias_np = bias_np[:, :3*hidden_size]
+        hidden_bias_np = bias_np[:, 3*hidden_size:]
+
+        reform_permutation = [(0, 1), (3, 4), (1, 3)]
+
+        input_weight_np, hidden_weight_np, input_bias_np, hidden_bias_np = transform_weight_with_bias(
+            [input_weight_np, hidden_weight_np, input_bias_np, hidden_bias_np],
+            hidden_size, reform_permutation)
+
+        self.weights[input_weight.name] = input_weight_np 
+        self.weights[hidden_weight.name] = hidden_weight_np
+        input_bias_name = bias.name + '_input'
+        hidden_bias_name = bias.name + '_hidden'
+        self.weights[input_bias_name] = input_bias_np 
+        self.weights[hidden_bias_name] = hidden_bias_np 
+
+        op_name = name_generator("lstm", self.nn_name2id)
+
+        y_out = node.output(0)
+        yh_out = node.output(1) 
+        yc_out = node.output(2)
+        self.paddle_graph.add_layer(
+            'paddle.nn.LSTM', 
+            inputs={'input': x.name, 'initial_states': (init_h.name, init_c.name)},
+            outputs=[op_name, y_out, yh_out, yc_out],
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=1,
+            weight_ih_attr=string(input_weight.name),
+            weight_hh_attr=string(hidden_weight.name),
+            bias_ih_attr=string(input_bias_name),
+            bias_hh_attr=string(hidden_bias_name),
+            direction=string(node.get_attr('direction')),
+            time_major=True)
+
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": y_out},
+            outputs=[y_out],
+            shape=[-1, -1, -1, hidden_size]
+            )
+        self.paddle_graph.add_layer(
+            'paddle.transpose',
+            inputs={"x": y_out},
+            outputs=[y_out],
+            perm=[0,2,1,3]
+            )

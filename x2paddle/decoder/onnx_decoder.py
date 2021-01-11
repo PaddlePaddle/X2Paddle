@@ -95,6 +95,13 @@ class ONNXGraphNode(GraphNode):
             return default
         return self.attr_map[name]
 
+    def output(self, index=0):
+        if index >0 and len(self.layer.output) <= index:
+            raise IndexError('Output numbers of Node:{} is {} <= index:{}'.format(self.layer_name, len(self.layer.output), index))
+        if index > 0:
+            return "{}_p{}".format(self.layer_name, index)
+        return self.layer_name
+
 
 class ONNXGraphDataNode(GraphNode):
     def __init__(self, layer, layer_name=None, is_global_input=False):
