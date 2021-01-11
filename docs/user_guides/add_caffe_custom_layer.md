@@ -36,6 +36,7 @@ pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
 # /home/root/caffe/src/caffe/proto为caffe.proto的存放路径，生成的caffe_pb2.py也将保存在该路径下
 ```
+将生成的caffe_pb2.py替换x2paddle/decoder下的caffe_pb2.py。
 
 ***步骤三 添加自定义Layer的实现代码***
 > 【注意】若Caffe自定义layer与Paddle的op一一对应，使用方式一，否则使用方式二。
