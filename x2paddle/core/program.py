@@ -210,9 +210,12 @@ class PaddleGraph(object):
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
                         layer_id, 0) == 0 and layer.kernel != "prim.assert" \
                         and layer.kernel != "prim.exception" \
-                        and layer.kernel != "prim.warnings":
-                    if layer.kernel == "paddle.to_tensor":
+                        and layer.kernel != "prim.warnings" \
+                        and layer.outputs[0] not in self.outputs:
+                    if layer.kernel == "paddle.to_tensor" and layer.outputs[0] in self.inputs_info:
                         self.inputs_info.pop(layer.outputs[0])
+                    if layer.outputs[0] in self.inputs:
+                        self.inputs.pop(self.inputs.index(layer.outputs[0]))
                     invalid_list.append(layer_id)
         for layer_id in invalid_list:
             self.layers.pop(layer_id)
@@ -322,6 +325,9 @@ class PaddleGraph(object):
         if self.source_type == "caffe":
             custom_import = "from x2paddle.op_mapper.static.caffe2paddle " + \
                              "import caffe_custom_layer as x2paddle_nn"
+        elif self.source_type == "onnx":
+            custom_import = "from x2paddle.op_mapper.static.onnx2paddle " + \
+                             "import onnx_custom_layer as x2paddle_nn"
         else:
             custom_import = ""
 
@@ -351,7 +357,9 @@ class PaddleGraph(object):
                 remove_default_attrs(layer.kernel, layer.attrs)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
-            if len(edges_in) == 0 and len(edges_out) == 0:
+            if len(edges_in) == 0 and len(edges_out) == 0 and layer.outputs[0] not in self.outputs:
+                if layer.outputs[0] in self.inputs:
+                    self.inputs.pop(self.inputs.index(layer.outputs[0]))
                 continue
 
             line = ""
@@ -471,6 +479,9 @@ class PaddleGraph(object):
             elif self.source_type == "pytorch":
                 custom_import = "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"
+            elif self.source_type == "onnx":
+                custom_import = "from x2paddle.op_mapper.dygraph.onnx2paddle " + \
+                                 "import onnx_custom_layer as x2paddle_nn"
             else:
                 custom_import = ""
             self.head = gen_codes(
