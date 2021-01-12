@@ -166,7 +166,6 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
-            print(layer.kernel, layer.outputs ,layer.inputs)
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
                 if not isinstance(vs, (list, tuple)):
@@ -211,9 +210,12 @@ class PaddleGraph(object):
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
                         layer_id, 0) == 0 and layer.kernel != "prim.assert" \
                         and layer.kernel != "prim.exception" \
-                        and layer.kernel != "prim.warnings":
-                    if layer.kernel == "paddle.to_tensor":
+                        and layer.kernel != "prim.warnings" \
+                        and layer.outputs[0] not in self.outputs:
+                    if layer.kernel == "paddle.to_tensor" and layer.outputs[0] in self.inputs_info:
                         self.inputs_info.pop(layer.outputs[0])
+                    if layer.outputs[0] in self.inputs:
+                        self.inputs.pop(self.inputs.index(layer.outputs[0]))
                     invalid_list.append(layer_id)
         for layer_id in invalid_list:
             self.layers.pop(layer_id)
@@ -323,6 +325,9 @@ class PaddleGraph(object):
         if self.source_type == "caffe":
             custom_import = "from x2paddle.op_mapper.static.caffe2paddle " + \
                              "import caffe_custom_layer as x2paddle_nn"
+        elif self.source_type == "onnx":
+            custom_import = "from x2paddle.op_mapper.static.onnx2paddle " + \
+                             "import onnx_custom_layer as x2paddle_nn"
         else:
             custom_import = ""
 
@@ -352,7 +357,9 @@ class PaddleGraph(object):
                 remove_default_attrs(layer.kernel, layer.attrs)
             edges_in = self.edges_in.get(layer_id, [])
             edges_out = self.edges_out.get(layer_id, [])
-            if len(edges_in) == 0 and len(edges_out) == 0:
+            if len(edges_in) == 0 and len(edges_out) == 0 and layer.outputs[0] not in self.outputs:
+                if layer.outputs[0] in self.inputs:
+                    self.inputs.pop(self.inputs.index(layer.outputs[0]))
                 continue
 
             line = ""
@@ -472,6 +479,9 @@ class PaddleGraph(object):
             elif self.source_type == "pytorch":
                 custom_import = "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"
+            elif self.source_type == "onnx":
+                custom_import = "from x2paddle.op_mapper.dygraph.onnx2paddle " + \
+                                 "import onnx_custom_layer as x2paddle_nn"
             else:
                 custom_import = ""
             self.head = gen_codes(
@@ -580,7 +590,7 @@ class PaddleGraph(object):
                 elif len(layer.outputs) == 2:
                     line = layer.outputs[1]
                 else:
-                    if layer.kernel == "paddle.nn.LSTM":
+                    if layer.kernel in ["paddle.nn.LSTM", 'custom_layer:LSTM']:
                         line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
                     else:
                         line = ','.join(layer.outputs[1:])
@@ -589,8 +599,13 @@ class PaddleGraph(object):
                     line += " = self.{}".format(layer.outputs[0])
                 else:
                     line += " = self.{}(".format(layer.outputs[0])
-                    for k, v in layer.inputs.items():
-                        line += "{}, ".format(v)
+                    for v in layer.inputs.values():
+                        if isinstance(v, list):
+                            line += "[{}], ".format(", ".join(v))
+                        elif isinstance(v, tuple):
+                            line += "({}), ".format(", ".join(v))
+                        else:
+                            line += "{}, ".format(v)
                     line = line.strip(", ")
                     line += ")"
                 self.forward_func.extend(gen_codes([line], indent=indent))                
