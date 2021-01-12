@@ -4512,6 +4512,10 @@ def aten_upsample_bilinear2d(mapper, graph, node):
                             current_outputs, scope_name)
         layer_inputs["align_corners"] = inputs_name[2]
         current_inputs.append(inputs_name[2])
+    if "size" in layer_attrs and layer_attrs["size"] is None:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("bilinear")
     graph.add_layer(
@@ -4577,6 +4581,10 @@ def aten_upsample_nearest2d(mapper, graph, node):
         block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
+    if "size" in layer_attrs and layer_attrs["size"] is None:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("nearest")
     graph.add_layer(
