@@ -226,9 +226,6 @@ class OpSet9():
                 shape=[1],
                 fill_value=node.weight)
         else:
-            if len(node.weight.shape) == 1 and node.weight.shape[0] == 1:
-                print(node.name)
-                print(node.weight)
             self.weights[node.name] = node.weight
             self.paddle_graph.add_layer(
                 "self.create_parameter",
