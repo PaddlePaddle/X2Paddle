@@ -625,31 +625,10 @@ class TFOpMapper(OpMapper):
                     shape=out_shape.tolist())
 
     def Pad(self, node):
-        input = self.graph.get_node(node.layer.input[0])
-        paddings = self.graph.get_node(node.layer.input[1])
+        input = self.graph.get_input_node(node, 0)
+        paddings = self.graph.get_input_node(node, 1)
         assert paddings.layer_type == "Const", "Padding should be Const"
         paddings = paddings.value.flatten().tolist()
-
-        if len(input.out_shapes[0]) == 4:
-            if paddings[0] + paddings[1] + paddings[6] + paddings[7] == 0:
-                new_padding = paddings[2:6]
-                transpose_name = gen_name("pad", "transpose")
-                self.paddle_graph.add_layer(
-                    kernel="paddle.transpose",
-                    inputs={"x": input.name},
-                    outputs=[transpose_name],
-                    perm=[0, 3, 1, 2])
-                self.paddle_graph.add_layer(
-                    kernel="paddle.nn.functional.pad",
-                    inputs={"x": transpose_name},
-                    outputs=[node.name],
-                    pad=new_padding)
-                self.paddle_graph.add_layer(
-                    kernel="paddle.transpose",
-                    inputs={"x": node.name},
-                    outputs=[node.name],
-                    perm=[0, 2, 3, 1])
-                return
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.pad",
@@ -658,26 +637,11 @@ class TFOpMapper(OpMapper):
             pad=paddings)
         
     def MirrorPad(self, node):
-        input = self.graph.get_input_node(node, 0)
-        paddings = self.graph.get_input_node(node, 1)
-        assert paddings.layer_type == "Const", "Padding should be Const"
-        new_paddings = numpy.flip(paddings.value, 0).flatten().tolist()
-        transpose_name = gen_name("pad", "transpose")
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": input.name},
-            outputs=[transpose_name],
-            perm=[0, 3, 1, 2])
-        self.paddle_graph.add_layer(
-            kernel="paddle.nn.functional.pad".format(dim),
-            inputs={"x": transpose_name},
-            outputs=[node.name],
-            pad=new_paddings)
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": node.name},
-            outputs=[node.name],
-            perm=[0, 2, 3, 1])
+        self.Pad(node)
+        
+        
+    def PadV2(self, node):
+        self.Pad(node)
 
     def Squeeze(self, node):
         input = self.graph.get_input_node(node, 0)

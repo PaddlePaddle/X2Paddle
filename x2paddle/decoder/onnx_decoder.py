@@ -31,6 +31,7 @@ import numpy as np
 from copy import deepcopy
 import logging as _logging
 import os
+import copy
 
 default_op_domain = 'ai.onnx'
 _logger = _logging.getLogger(__name__)
@@ -123,6 +124,17 @@ class ONNXGraphDataNode(GraphNode):
                     shape.append(-1)
                 else:
                     shape.append(dim.dim_value)
+            out_shapes.append(shape)
+            return out_shapes
+        elif isinstance(self.layer, TensorProto):
+            values = self.layer.dims
+            out_shapes = list()
+            shape = list()
+            for dim in values:
+                if dim == 0:
+                    shape.append(-1)
+                else:
+                    shape.append(dim)
             out_shapes.append(shape)
             return out_shapes
         else:
@@ -234,11 +246,12 @@ class ONNXGraph(Graph):
         """
         generate output_nodes node of ONNX model
         """
-        inner_nodes = self.get_inner_nodes()
         output_nodes = [value.name for value in self.graph.output]
         for opt_data in output_nodes:
-            if opt_data not in inner_nodes:
-                self.output_nodes.append(opt_data)
+            n = super(ONNXGraph, self).get_node(opt_data)
+            if n is None:
+                self.topo_sort.append(self.node_map[opt_data])
+            self.output_nodes.append(opt_data)
 
     def is_place_holder_nodes(self, layer):
         """
@@ -286,7 +299,7 @@ class ONNXGraph(Graph):
         #generate topo
         super(ONNXGraph, self).build()
 
-        self.input_nodes = self.place_holder_nodes
+        self.input_nodes = copy.deepcopy(self.place_holder_nodes)
 
     def build_connection(self, layer_name, node):
         """
@@ -403,10 +416,8 @@ class ONNXDecoder(object):
         check_model(onnx_model)
 
         onnx_model = self.optimize_model_skip_op(onnx_model)
-        onnx_model = self.optimize_model_strip_initializer(onnx_model)
         onnx_model = self.optimize_node_name(onnx_model)
         self.graph = ONNXGraph(onnx_model)
-        #self.onnx_model = onnx_model
 
     def build_value_refs(self, nodes):
         """

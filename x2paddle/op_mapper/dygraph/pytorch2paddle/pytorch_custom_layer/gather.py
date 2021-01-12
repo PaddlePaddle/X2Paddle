@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import paddle
-from itertools import product
-import numpy as np
 
 class Gather(object):
     def __init__(self, dim):
