@@ -94,19 +94,19 @@ class OpSet9():
         # reduce function
         'ReduceMean': ['paddle.mean',
                        dict(axes='axis', keepdims='keepdim'), 
-                       dict(keepdims=1)],
+                       dict(axes=None, keepdims=1)],
         'ReduceSum': ['paddle.sum', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdims=1)],
+                      dict(axes=None, keepdims=1)],
         'ReduceMin': ['paddle.min', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdims=1)],
         'ReduceMax': ['paddle.max', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdims=1)],
         'ReduceProd': ['paddle.prod', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdims=1)],
         # active function
         'Relu': ['paddle.nn.ReLU'],
         'LeakyRelu': ['paddle.nn.LeakyReLU', 
@@ -125,6 +125,7 @@ class OpSet9():
                      dict(threshold='threshold'), 
                      dict(threshold=float(sys.maxsize))],
         'Exp': ['paddle.exp'],
+        'Log': ['paddle.log'],
         'Softmax': ['paddle.nn.Softmax', 
                     dict(axis='axis'), 
                     dict(axis=1)],
@@ -225,6 +226,9 @@ class OpSet9():
                 shape=[1],
                 fill_value=node.weight)
         else:
+            if len(node.weight.shape) == 1 and node.weight.shape[0] == 1:
+                print(node.name)
+                print(node.weight)
             self.weights[node.name] = node.weight
             self.paddle_graph.add_layer(
                 "self.create_parameter",
@@ -990,13 +994,12 @@ class OpSet9():
         if len(value) == 1:
             value = value[0]
             layer_attrs = {
-                'shape': val_shape.name,
                 'dtype': string(dtype),
                 'fill_value': value
             }
             self.paddle_graph.add_layer(
                 "paddle.full", 
-                inputs={}, 
+                inputs={'shape': val_shape.name}, 
                 outputs=[node.name],
                 **layer_attrs)
 
@@ -1049,8 +1052,11 @@ class OpSet9():
         }
         outputs_list = list()
         if isinstance(split, list) or isinstance(split, tuple):
-            for i in range(len(split)):
-                outputs_list.append("{}_p{}".format(node.layer_name, i))
+            if len(split) == 1:
+                outputs_list.append(node.name)
+            else:
+                for i in range(len(split)):
+                    outputs_list.append("{}_p{}".format(node.layer_name, i))
         else:
             outputs_list.append(node.name)
         self.paddle_graph.add_layer(
@@ -1438,7 +1444,7 @@ class OpSet9():
             "paddle.greater_than",
             inputs={'x': val_x.name,
                     'y': val_y.name},
-            outputs=node,
+            outputs=[node.name],
             param_attr=None)
 
     @print_mapping_info
@@ -1495,7 +1501,7 @@ class OpSet9():
             self.paddle_graph.add_layer(
                 "paddle.transpose",
                 inputs={"x": val_x.name},
-                outputs=[node.layer_naem],
+                outputs=[node.layer_name],
                 perm=[1, 0])
         if val_x_dim > 1:
             self.paddle_graph.add_layer(
@@ -1836,3 +1842,52 @@ class OpSet9():
             "paddle.reciprocal", 
             inputs={"x": val_x.name}, 
             outputs=[node.name])
+        
+    @print_mapping_info
+    def NonMaxSuppression(self, node):
+        nn_op_name = name_generator("nms", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [nn_op_name, output_name]
+        boxes = self.graph.get_input_node(node, idx=0, copy=True)
+        scores = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs_len = len(node.layer.input)
+        layer_attrs = dict()
+        if inputs_len > 2:
+            max_output_boxes_per_class = self.graph.get_input_node(node, idx=2, copy=True)
+            layer_attrs["nms_top_k"] = _const_weight_or_none(max_output_boxes_per_class).tolist()[0]
+        else:
+            layer_attrs["nms_top_k"] = 0
+        if inputs_len > 3:
+            iou_threshold = self.graph.get_input_node(node, idx=3, copy=True)
+            layer_attrs["nms_threshold"] = _const_weight_or_none(iou_threshold).tolist()[0]
+        else:
+            layer_attrs["nms_threshold"] = 0.0
+        if inputs_len > 4:
+            score_threshold = self.graph.get_input_node(node, idx=4, copy=True)
+            layer_attrs["score_threshold"] = _const_weight_or_none(score_threshold).tolist()[0]
+        else:
+            layer_attrs["score_threshold"] = 0.0
+        self.paddle_graph.add_layer(
+            "custom_layer:NMS", 
+            inputs={"bboxes": boxes.name,
+                    "scores": scores.name}, 
+            outputs=layer_outputs,
+            **layer_attrs)
+        
+        
+    @print_mapping_info
+    def TopK(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_k = self.graph.get_input_node(node, idx=1, copy=True)
+        layer_attrs = dict()
+        layer_attrs["axis"] = node.get_attr('axis', -1)
+        layer_attrs["largest"] = True if node.get_attr('largest', 1) == 1 else False
+        layer_attrs["sorted"] = True if node.get_attr('sorted', 1) == 1 else False
+        self.paddle_graph.add_layer(
+            "paddle.topk", 
+            inputs={"x": val_x.name,
+                    "k": val_k.name}, 
+            outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
+            **layer_attrs)
+        
+        
