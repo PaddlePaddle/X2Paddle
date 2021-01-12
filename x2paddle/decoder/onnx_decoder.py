@@ -248,9 +248,6 @@ class ONNXGraph(Graph):
         """
         output_nodes = [value.name for value in self.graph.output]
         for opt_data in output_nodes:
-            n = super(ONNXGraph, self).get_node(opt_data)
-            if n is None:
-                self.topo_sort.append(self.node_map[opt_data])
             self.output_nodes.append(opt_data)
 
     def is_place_holder_nodes(self, layer):
