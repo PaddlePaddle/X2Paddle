@@ -521,7 +521,7 @@ class PaddleGraph(object):
                 gen_codes(
                     comment_list,
                     indent=1))
-            use_structured_name = False if self.source_type in ["tf", "onnx"] else True
+            use_structured_name = False if self.source_type in ["tf"] else True
             self.run_func.extend(
                 gen_codes(["paddle.disable_static()",
                            "params = paddle.load('{}/model.pdparams')".format(osp.abspath(code_dir)),
@@ -673,7 +673,7 @@ class PaddleGraph(object):
         paddle.disable_static()
         restore = paddle.load(osp.join(save_dir, "model.pdparams"))
         model = getattr(x2paddle_code, self.name)()
-        if self.source_type in ["tf", "onnx"]:
+        if self.source_type in ["tf"]:
             model.set_dict(restore, use_structured_name=False)
         else:
             model.set_dict(restore)
