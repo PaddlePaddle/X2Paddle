@@ -590,7 +590,7 @@ class PaddleGraph(object):
                 elif len(layer.outputs) == 2:
                     line = layer.outputs[1]
                 else:
-                    if layer.kernel in ["paddle.nn.LSTM", 'custom_layer:LSTM']:
+                    if layer.kernel in ["paddle.nn.LSTM"]:
                         line = "{}, ({})".format(layer.outputs[1], ', '.join(layer.outputs[-2:]))
                     else:
                         line = ','.join(layer.outputs[1:])

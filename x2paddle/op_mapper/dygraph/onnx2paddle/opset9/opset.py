@@ -611,8 +611,6 @@ class OpSet9():
         layer_attrs = {
             'num_features': node.out_shapes[0][1],
             'epsilon': epsilon,
-            #'weight_attr': string(val_scale.name),
-            #'bias_attr': string(val_b.name)
         }
         dim = len(val_x.out_shapes[0])
         if dim == 3:
@@ -1333,10 +1331,6 @@ class OpSet9():
             "momentum": momentum,
             "epsilon": epsilon,
             "is_test": True,
-            #"param_attr": string(val_scale.name),
-            #"bias_attr": string(val_b.name),
-            #"moving_mean_name": string(val_mean.name),
-            #"moving_variance_name": string(val_var.name),
             "use_global_stats": False,
         }
         self.paddle_graph.add_layer(
@@ -1402,7 +1396,6 @@ class OpSet9():
             if mode == 'channel':
                 slope_data = _const_weight_or_none(val_slope)
                 if len(shape_slope) > 1:
-                    #self.weights[val_slope.name] = np.reshape(slope_data, shape_slope[0])
                     self.weights[op_name+'._weight'] = np.reshape(slope_data, shape_slope[0])
                 num_parameters = val_x.out_shapes[0][1]
             else:
