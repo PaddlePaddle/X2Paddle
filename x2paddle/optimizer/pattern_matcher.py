@@ -130,8 +130,6 @@ class PatternMatcher(object):
                                 if is_pop:
                                     subgraph_id2layers.pop(layer_id)
                                     continue
-                    if layer_id not in subgraph_id2layers:
-                        continue
                     # 当为控制流时的处理
                     if layer.kernel == "prim.if" or layer.kernel == "prim.loop":
                         if len(pattern_layer.blocks) != len(layer.blocks):
@@ -156,7 +154,6 @@ class PatternMatcher(object):
                             if pattern_index == 0 or is_subblock:
                                 return False
                             else:
-                                print(subgraph_id2layers.keys())
                                 index = list(subgraph_id2layers.keys()).index(
                                     layer_id)
                                 for key in list(subgraph_id2layers.keys())[
