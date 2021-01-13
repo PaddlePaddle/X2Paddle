@@ -28,11 +28,11 @@ class GraphOptimizer(object):
                     "dygraph_constant_fuse_pass", 
                     "dygraph_batchnorm2d_fuse_pass",
                     "dygraph_interpolate_bilinear_fuse_pass", 
-                    "dygraph_fc_fuse_pass",
-                    "dygraph_adaptive_pool2d_fuse_pass", 
-                    "dygraph_reshape_fuse_pass",
-                    "dygraph_dropout_fuse_pass",
-                    "dygraph_if_fuse_pass"
+#                     "dygraph_fc_fuse_pass",
+#                     "dygraph_adaptive_pool2d_fuse_pass", 
+#                     "dygraph_reshape_fuse_pass",
+#                     "dygraph_dropout_fuse_pass",
+#                     "dygraph_if_fuse_pass"
                 ]
         elif source_frame == "caffe":
             if paddle_type == "dygraph":
