@@ -42,7 +42,7 @@ def _const_weight_or_none(node, necessary=False):
     return None
 
 
-def rename_or_remove_weight(weights, origin_name, target_name=None):
+def _rename_or_remove_weight(weights, origin_name, target_name=None):
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights))
     if target_name is None:
