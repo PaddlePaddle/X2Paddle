@@ -274,14 +274,12 @@ class OpSet9():
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length  
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length  
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 4:
                 # opset 11
@@ -934,10 +932,6 @@ class OpSet9():
             if starts_value is not None and ends_value is not None and axes is not None:
                 starts_value = starts_value.copy()
                 ends_value = ends_value.copy()
-                #for idx in range(len(ends_value)):
-                #    if ends_value[idx] > 2**31 - 1:
-                #        ends_value[idx] = 2**31 - 1
-                #print(val_x.out_shapes)
                 for idx in range(len(ends_value)):
                     if starts_value[idx] >= val_x.out_shapes[0][axes[idx]]:
                         starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
@@ -1337,11 +1331,6 @@ class OpSet9():
         _rename_or_remove_weight(self.weights, val_var.name, op_name+'._variance')
         _rename_or_remove_weight(self.weights, val_mean.name, op_name+'._mean')
 
-        #self.weights[op_name + '.weight'] =  self.weights[val_scale.name]
-        #self.weights[op_name + '.bias'] =  self.weights[val_b.name]
-        #self.weights[op_name + '._variance'] =  self.weights[val_var.name]
-        #self.weights[op_name + '._mean'] =  self.weights[val_mean.name]
-
         # Attribute: spatial is used in BatchNormalization-1,6,7
         spatial = bool(node.get_attr('spatial'))
         layer_attrs = {
@@ -1706,13 +1695,11 @@ class OpSet9():
         remove_weight = True if  val_w.name in self.done_weight_list else False
         if remove_weight:
             self.done_weight_list.append(val_w.name)
-        #self.weights[op_name + '.weight'] = self.weights[val_w.name]
         _rename_or_remove_weight(self.weights, val_w.name, op_name+'.weight', remove_weight)
         if has_bias:
             remove_bias = True if val_b.name in self.done_weight_list else False
             if remove_bias:
                 self.done_weight_list.append(val_b_name)
-            #self.weights[op_name + '.bias'] = self.weights[val_b.name]
             _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias', remove_bias)
         else:
             layer_attrs["bias_attr"] = False
@@ -1781,10 +1768,8 @@ class OpSet9():
             "groups": num_groups,
             "output_padding":out_padding}
             
-        #self.weights[op_name + '.weight'] = self.weights[val_w.name]
         _rename_or_remove_weight(self.weights, val_w.name, op_name+'.weight',)
         if val_b is not None:
-            #self.weights[op_name + '.bias'] = self.weights[val_b.name]
             _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias')
         self.paddle_graph.add_layer(
             kernel=paddle_op,
