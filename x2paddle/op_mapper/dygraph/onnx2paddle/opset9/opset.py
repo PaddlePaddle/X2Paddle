@@ -1748,7 +1748,7 @@ class OpSet9():
         output_size[1] = (val_x.out_shapes[0][3] - 1
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
-        output_padding = 
+
         # Conv2DTranspose缺少output_size，只能在forward里头传进output_size
         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name}
         layer_attrs = {
