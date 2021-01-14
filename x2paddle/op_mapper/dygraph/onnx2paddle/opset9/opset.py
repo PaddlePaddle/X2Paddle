@@ -721,11 +721,11 @@ class OpSet9():
                 op_name = name_generator("embedding", self.nn_name2id)
                 output_name = node.name
                 layer_outputs = [op_name, output_name]
+                self.weights['.weight'] = _const_weight_or_none(val_x.name)
                 self.paddle_graph.add_layer(
                     'paddle.nn.Embedding',
                     inputs={"x": indices_cast},
                     outputs=layer_outputs,
-                    weight_attr=string(val_x.name),
                     num_embeddings=val_x.out_shapes[0][0],
                     embedding_dim=val_x.out_shapes[0][1])
             else:
