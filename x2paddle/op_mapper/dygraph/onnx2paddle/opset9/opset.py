@@ -1394,6 +1394,18 @@ class OpSet9():
         else:
             if mode == 'channel':
                 slope_data = _const_weight_or_none(val_slope)
+                if slope_data is None:
+                    self.paddle_graph.add_layer(
+                        "paddle.reshape", 
+                        inputs={"x": val_slope.name}, 
+                        outputs=[val_slope.name],
+                        shape=[shape_slope[0]])
+                    self.paddle_graph.add_layer(
+                        "paddle.nn.functional.prelu", 
+                        inputs={"x": val_x.name,
+                                "weight": val_slope.name}, 
+                        outputs=[node.name])
+                    return
                 if len(shape_slope) > 1:
                     self.weights[val_slope.name] = np.reshape(slope_data, shape_slope[0])
                 num_parameters = val_x.out_shapes[0][1]

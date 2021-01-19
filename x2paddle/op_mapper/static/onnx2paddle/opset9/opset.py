@@ -1762,7 +1762,7 @@ class OpSet9():
             inputs={"x": val_x.name}, 
             outputs=[node.name])
         
-   @print_mapping_info
+    @print_mapping_info
     def NonMaxSuppression(self, node):
         nn_op_name = name_generator("nms", self.nn_name2id)
         output_name = node.name

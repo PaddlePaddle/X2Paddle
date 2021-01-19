@@ -4526,7 +4526,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
 #         outputs=[output_name + "_assert"],
 #         scope_name=scope_name,
 #         type="eq")
-    layer_inputs["scale_factor"] = inputs_name[3]
+    # layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("bilinear")
     graph.add_layer(
