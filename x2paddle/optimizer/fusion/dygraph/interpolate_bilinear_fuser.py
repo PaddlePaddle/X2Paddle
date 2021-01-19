@@ -186,7 +186,6 @@ class DygraphInterpolateBilinearFuser(FuseBase):
             inputs={
                 "input": "interpolate-input-0",
                 "size": "interpolate-input-3",
-                "scale_factor": gen_name(21)
             },
             outputs=[gen_name(23)])
         pattern_block_block.add_layer(
@@ -295,6 +294,5 @@ class DygraphInterpolateBilinearFuser(FuseBase):
         layer = matches[layers_id[9]]
         new_layer.outputs[0] = layer.outputs[0]
         new_layer.layer_id = layers_id[7]
-        new_layer.inputs.pop("scale_factor")
         new_layer.inputs["size"] = size
         return new_layer
