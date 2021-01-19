@@ -43,6 +43,17 @@ def _const_weight_or_none(node, necessary=False):
 
 
 def _rename_or_remove_weight(weights, origin_name, target_name=None, is_remove=True):
+    ''' 
+    Rename parameters by Paddle's naming rule of parameters.
+
+    Args:
+        weights(dict[String:np.ndarray]): Dict stored paramters, the key in weights is name of parameter.
+        origin_name(String): Name of parameter to eename or remove.
+        target_name(String, optional): if target_name is not None, add new key-value pair {target_name:weights[origin_name]} to weights, and target_name must follow paddle's naming rule of parameters. Default: None.
+        is_remove: if is_remove is True, remove origin key-value pair. Default: True.
+    Returns:
+        None
+    '''   
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights))
     if is_remove:
