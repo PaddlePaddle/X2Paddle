@@ -31,7 +31,7 @@ class StaticPReLUFuser(FuseBase):
             conv4_mul_1_y = paddle.full(dtype='float32', shape=[1], fill_value=0.5)
             conv4_Relu = paddle.nn.functional.relu(x=conv4_BiasAdd)
             conv4_Abs = paddle.abs(x=conv4_BiasAdd)
-            conv4_sub = fluid.layers.elementwise_sub(x=conv4_BiasAdd, y=conv4_Abs)
+            conv4_sub = paddle.subtract(x=conv4_BiasAdd, y=conv4_Abs)
             conv4_mul = paddle.multiply(x=conv4_alphas, y=conv4_sub)
             conv4_mul_1 = paddle.multiply(x=conv4_mul, y=conv4_mul_1_y)
             conv4_add = paddle.add(x=conv4_Relu, y=conv4_mul_1)
@@ -59,7 +59,7 @@ class StaticPReLUFuser(FuseBase):
             inputs={"x": "prelu-input-0"},
             outputs=[gen_name(3)])
         self.pattern.add_layer(
-            "fluid.layers.elementwise_sub",
+            "paddle.subtract",
             inputs={"x": "prelu-input-0",
                     "y": gen_name(3)},
             outputs=[gen_name(4)])
