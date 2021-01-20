@@ -74,7 +74,7 @@ class DygraphTFBatchNormFuser(FuseBase):
             inputs={},
             outputs=[gen_name(8)])
         pattern.add_layer(
-            "fluid.layers.elementwise_sub",
+            "paddle.subtract",
             inputs={"x": gen_name(8), "y": gen_name(7)},
             outputs=[gen_name(9)])
         pattern.add_layer(
@@ -131,7 +131,7 @@ class DygraphTFBatchNormFuser(FuseBase):
             inputs={},
             outputs=[gen_name(8)])
         pattern.add_layer(
-            "fluid.layers.elementwise_sub",
+            "paddle.subtract",
             inputs={"x": gen_name(8), "y": gen_name(7)},
             outputs=[gen_name(9)])
         pattern.add_layer(
@@ -180,7 +180,7 @@ class DygraphTFBatchNormFuser(FuseBase):
                 if matches[out_layer_id].kernel == "paddle.multiply":
                     gamma_layer_id = graph.edges_in[out_layer_id][1]
                     gamma_layer = matches[gamma_layer_id]
-            if layer.kernel == "fluid.layers.elementwise_sub":
+            if layer.kernel == "paddle.subtract":
                 in_layer_id = graph.edges_in[layer_id][0]
                 beta_layer = matches[in_layer_id]
                 in_layer_id = graph.edges_in[layer_id][1]

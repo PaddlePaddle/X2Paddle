@@ -1,7 +1,8 @@
 ---
 name: paddle2onnx
-about: Paddle模型转换至ONNX，请说明Paddle模型的来源，模型类型（例如图像分类、目标检测等）
+about: Paddle2ONNX相关问题请直接前往https://github.com/PaddlePaddle/Paddle2ONNX/issues 提问题
 ---
-Paddle模型转换至ONNX，请说明Paddle模型的来源，模型类型（例如图像分类、目标检测等）  
 
-如有原模型文件或github链接，如方便可一并附上，方便开发人员分析，同时建议说明模型转换的使用场景:)
+Paddle2ONNX的问题请在Paddle2ONNX的repo下提问
+
+Repo链接： [https://github.com/PaddlePaddle/Paddle2ONNX/issues](https://github.com/PaddlePaddle/Paddle2ONNX/issues)

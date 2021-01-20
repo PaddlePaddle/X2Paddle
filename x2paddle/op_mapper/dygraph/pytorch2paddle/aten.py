@@ -1310,7 +1310,6 @@ def aten_dim(mapper, graph, node):
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [output_name]
     layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
@@ -1322,9 +1321,9 @@ def aten_dim(mapper, graph, node):
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.shape", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+        "prim.shape", inputs=layer_inputs, outputs=[output_name], scope_name=scope_name)
     graph.add_layer(
-        "prim.len", inputs={"input": output_name}, outputs=layer_outputs, scope_name=scope_name)
+        "prim.len", inputs={"input": output_name}, outputs=[output_name], scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -4512,21 +4511,10 @@ def aten_upsample_bilinear2d(mapper, graph, node):
                             current_outputs, scope_name)
         layer_inputs["align_corners"] = inputs_name[2]
         current_inputs.append(inputs_name[2])
-#     # 处理输入3和4，构造assert
-#     list_layer_inputs = {}
-#     mapper._check_input(graph, inputs_node[3], inputs_name[3], current_outputs, scope_name)
-#     list_layer_inputs["key"] = inputs_name[3]
-#     current_inputs.append(inputs_name[3])
-#     mapper._check_input(graph, inputs_node[4], inputs_name[4], current_outputs, scope_name)
-#     list_layer_inputs["value"] = inputs_name[4]
-#     current_inputs.append(inputs_name[4])
-#     graph.add_layer(
-#         "prim.assert",
-#         inputs=list_layer_inputs,
-#         outputs=[output_name + "_assert"],
-#         scope_name=scope_name,
-#         type="eq")
-    layer_inputs["scale_factor"] = inputs_name[3]
+    if "size" in layer_attrs and layer_attrs["size"] is None:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("bilinear")
     graph.add_layer(
@@ -4592,7 +4580,10 @@ def aten_upsample_nearest2d(mapper, graph, node):
         block = PaddleGraph(source_type="pytorch", parent_layer=if_layer, graph_type="dygraph")
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
-    layer_inputs["scale_factor"] = inputs_name[3]
+    if "size" in layer_attrs and layer_attrs["size"] is None:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("nearest")
     graph.add_layer(
