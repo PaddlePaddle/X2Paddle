@@ -15,7 +15,6 @@
 
 from __future__ import print_function
 from __future__ import division
-import paddle.fluid as fluid
 import paddle
 from paddle.fluid.proto import framework_pb2
 import collections
@@ -258,22 +257,17 @@ class PaddleGraph(object):
         with paddle.static.scope_guard(scope):
             with paddle.static.program_guard(main_program, startup_program):
                 inputs, outputs = x2paddle_model.x2paddle_net()
-                exe = fluid.Executor(fluid.CPUPlace())
+                exe = paddle.static.Executor(paddle.CPUPlace())
                 exe.run(startup_program)
                 param_dir = osp.join(code_dir, 'weights')
                 for k, v in self.parameters.items():
                     if scope.find_var(k):
                         self.dump_parameter(k, v, param_dir)
-                def if_exist(var):
-                    b = osp.exists(
-                        osp.join(osp.join(param_dir, var.name)))
-                    return b
-                fluid.io.load_vars(
-                    exe, param_dir, main_program, predicate=if_exist)
-                fluid.io.save_inference_model(
-                    dirname=infer_dir,
-                    feeded_var_names=[i.name for i in inputs],
-                    target_vars=outputs,
+                paddle.static.load(main_program, param_dir, exe)
+                paddle.static.save_inference_model(
+                    path_prefix=osp.join(infer_dir, "model"),
+                    feed_vars=[i for i in inputs],
+                    fetch_vars=outputs,
                     executor=exe)
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
@@ -562,8 +556,7 @@ class PaddleGraph(object):
                 remove_default_attrs(layer.kernel, layer.attrs)
             if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel
                 ) or layer.kernel == "paddle.to_tensor" or \
-                layer.kernel.startswith("custom_layer") or \
-                layer.kernel.startswith("paddle.fluid.dygraph"):
+                layer.kernel.startswith("custom_layer"):
                 line = "{}".format(
                     layer.outputs[0]
                 ) if layer.kernel == "paddle.to_tensor" and not layer.attrs[
@@ -660,7 +653,6 @@ class PaddleGraph(object):
         paddle.save(self.parameters, save_path)
 
     def dygraph2static(self, save_dir, input_shapes=[], input_types=[]):
-        from paddle.fluid.dygraph.jit import declarative
         sepc_list = list()
         for i, name in enumerate(self.inputs):
             sepc_list.append(

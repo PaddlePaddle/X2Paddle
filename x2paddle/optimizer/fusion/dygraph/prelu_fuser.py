@@ -32,7 +32,7 @@ class DygraphPReLUFuser(FuseBase):
             conv2_mul_1_y = paddle.full(dtype='float32', shape=[1], fill_value=0.5)
             conv2_Relu = self.relu1(conv2_Conv2D)
             conv2_Abs = paddle.abs(x=conv2_Conv2D)
-            conv2_sub = fluid.layers.elementwise_sub(x=conv2_Conv2D, y=conv2_Abs)
+            conv2_sub = paddle.subtract(x=conv2_Conv2D, y=conv2_Abs)
             conv2_mul = paddle.multiply(x=conv2_alphas, y=conv2_sub, axis=1)
             conv2_mul_1 = paddle.multiply(x=conv2_mul, y=conv2_mul_1_y, axis=1)
             conv2_add = paddle.add(x=conv2_Relu, y=conv2_mul_1)
@@ -60,7 +60,7 @@ class DygraphPReLUFuser(FuseBase):
             inputs={"x": "prelu-input-0"},
             outputs=[gen_name(3)])
         self.pattern.add_layer(
-            "fluid.layers.elementwise_sub",
+            "paddle.subtract",
             inputs={"x": "prelu-input-0",
                     "y": gen_name(3)},
             outputs=[gen_name(4)])

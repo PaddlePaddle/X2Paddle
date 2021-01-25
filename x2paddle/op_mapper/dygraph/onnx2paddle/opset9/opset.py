@@ -119,19 +119,19 @@ class OpSet9():
         # reduce function
         'ReduceMean': ['paddle.mean',
                        dict(axes='axis', keepdims='keepdim'), 
-                       dict(keepdims=1)],
+                       dict(axes=None, keepdims=1)],
         'ReduceSum': ['paddle.sum', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdims=1)],
+                      dict(axes=None, keepdims=1)],
         'ReduceMin': ['paddle.min', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         'ReduceMax': ['paddle.max', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         'ReduceProd': ['paddle.prod', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         # active function
         'Relu': ['paddle.nn.ReLU'],
         'LeakyRelu': ['paddle.nn.LeakyReLU', 
@@ -150,6 +150,7 @@ class OpSet9():
                      dict(threshold='threshold'), 
                      dict(threshold=float(sys.maxsize))],
         'Exp': ['paddle.exp'],
+        'Log': ['paddle.log'],
         'LogSoftmax': ['paddle.nn.functional.log_softmax', 
                     dict(axis='axis'), 
                     dict(axis=1)],
@@ -320,8 +321,15 @@ class OpSet9():
                 return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            inputs['scale_factor'] = val_scales
-
+            self.paddle_graph.add_layer(
+                "paddle.slice",
+                inputs={"input": val_scales.name},
+                outputs=[val_scales.name],
+                axes=[0],
+                starts=[2],
+                ends=[4])
+            inputs['scale_factor'] = val_scales.name
+ 
         mode = node.get_attr('mode', 'nearest')
         attrs.update({"align_corners": False,
                       "mode": string(mode),
@@ -1013,13 +1021,12 @@ class OpSet9():
         if len(value) == 1:
             value = value[0]
             layer_attrs = {
-                'shape': val_shape.name,
                 'dtype': string(dtype),
                 'fill_value': value
             }
             self.paddle_graph.add_layer(
                 "paddle.full", 
-                inputs={}, 
+                inputs={'shape': val_shape.name}, 
                 outputs=[node.name],
                 **layer_attrs)
 
@@ -1072,8 +1079,11 @@ class OpSet9():
         }
         outputs_list = list()
         if isinstance(split, list) or isinstance(split, tuple):
-            for i in range(len(split)):
-                outputs_list.append("{}_p{}".format(node.layer_name, i))
+            if len(split) == 1:
+                outputs_list.append(node.name)
+            else:
+                for i in range(len(split)):
+                    outputs_list.append("{}_p{}".format(node.layer_name, i))
         else:
             outputs_list.append(node.name)
         self.paddle_graph.add_layer(
@@ -1415,6 +1425,18 @@ class OpSet9():
         else:
             if mode == 'channel':
                 slope_data = _const_weight_or_none(val_slope)
+                if slope_data is None:
+                    self.paddle_graph.add_layer(
+                        "paddle.reshape", 
+                        inputs={"x": val_slope.name}, 
+                        outputs=[val_slope.name],
+                        shape=[shape_slope[0]])
+                    self.paddle_graph.add_layer(
+                        "paddle.nn.functional.prelu", 
+                        inputs={"x": val_x.name,
+                                "weight": val_slope.name}, 
+                        outputs=[node.name])
+                    return
                 _rename_or_remove_weight(self.weights, val_slope.name)
                 if len(shape_slope) > 1:
                     self.weights[op_name+'._weight'] = np.reshape(slope_data, shape_slope[0])
@@ -1464,7 +1486,7 @@ class OpSet9():
             "paddle.greater_than",
             inputs={'x': val_x.name,
                     'y': val_y.name},
-            outputs=node,
+            outputs=[node.name],
             param_attr=None)
 
     @print_mapping_info
@@ -1521,7 +1543,7 @@ class OpSet9():
             self.paddle_graph.add_layer(
                 "paddle.transpose",
                 inputs={"x": val_x.name},
-                outputs=[node.layer_naem],
+                outputs=[node.layer_name],
                 perm=[1, 0])
         if val_x_dim > 1:
             self.paddle_graph.add_layer(
@@ -1977,3 +1999,18 @@ class OpSet9():
             outputs=[y_out],
             perm=[0,2,1,3]
             )
+        
+    @print_mapping_info
+    def TopK(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_k = self.graph.get_input_node(node, idx=1, copy=True)
+        layer_attrs = dict()
+        layer_attrs["axis"] = node.get_attr('axis', -1)
+        layer_attrs["largest"] = True if node.get_attr('largest', 1) == 1 else False
+        layer_attrs["sorted"] = True if node.get_attr('sorted', 1) == 1 else False
+        self.paddle_graph.add_layer(
+            "paddle.topk", 
+            inputs={"x": val_x.name,
+                    "k": val_k.name}, 
+            outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
+            **layer_attrs)
