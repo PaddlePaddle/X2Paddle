@@ -1738,7 +1738,6 @@ class OpSet9():
             _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias', remove_bias)
         else:
             layer_attrs["bias_attr"] = False
-        input_shape = val_x.out_shapes[0]
         if reduce(lambda x,y:x*y, input_shape) in [1, -1] and 1 not in input_shape:
             input_shape[1] = num_in_channels * num_groups
             input_shape[0] = 0

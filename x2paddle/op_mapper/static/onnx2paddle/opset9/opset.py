@@ -1627,12 +1627,11 @@ class OpSet9():
             "groups": num_groups,
         }
         layer_inputs = {
-            "x": val_x.name,
+            "x": val_x if isinstance(val_x, str) else val_x.name,
             "weight": val_w.name
         }
         if has_bias:
             layer_inputs["bias"] = val_b.name
-        input_shape = val_x.out_shapes[0]
         if reduce(lambda x,y:x*y, input_shape) in [1, -1] and 1 not in input_shape:
             input_shape[1] = num_in_channels * num_groups
             input_shape[0] = 0
