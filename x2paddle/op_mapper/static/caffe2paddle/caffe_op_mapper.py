@@ -855,7 +855,7 @@ class CaffeOpMapper(OpMapper):
         out_max_val = params.out_max_val if hasattr(params,
                                                     out_max_val) else False
         top_k = params.top_k if hasattr(params, top_k) else 1
-        axis = parmas.axis if hasattr(params, axis) else -1
+        axis = params.axis if hasattr(params, axis) else -1
         if axis < 0:
             axis += len(in_shapes)
         if out_max_val is True:
@@ -1090,17 +1090,17 @@ class CaffeOpMapper(OpMapper):
             print(
                 "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
                 .format(scale_name, node.layer_type))
-            self.parmas[scale_name] = \
-                np.zeros([1] if params.channel_shared else [1, 1, 1, node.in_shapes[0][1]]).astype("float32")
+            self.params[scale_name] = \
+                np.zeros([1] if params.channel_shared else [node.in_shapes[0][1]]).astype("float32")
         else:
-            self.parmas[scale_name] = _adjust_parameters(node)[0]
+            self.params[scale_name] = _adjust_parameters(node)[0]
         
         layer_attrs = {
             "axis": -1 if params.channel_shared else 1,
-            "param_name": scale_name,
-            "param_shape": self.parmas[scale_name].shape,
-            "param_dtype": str(self.parmas[scale_name].dtype)}
-        self.pd_pdgraph.add_layer(
+            "param_name": string(scale_name),
+            "param_shape": self.params[scale_name].shape,
+            "param_dtype": string(self.params[scale_name].dtype)}
+        self.paddle_graph.add_layer(
             "custom_layer:normalize",
             inputs={"x": input.name},
             outputs=[node.name],

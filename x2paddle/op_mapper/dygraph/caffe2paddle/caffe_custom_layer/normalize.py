@@ -16,17 +16,21 @@ import paddle
 import paddle.fluid as fluid
 
 class Normalize(object):
-    def __init__(self, axis, param_name, param_shape):
+    def __init__(self, axis):
         self.axis = axis
-        self.param_name = param_name
-        self.param_shape = param_shape
         
-    def __call__(self, x):
-        l2 = fluid.layers.prior_box(x=x, p=2, axis=1)
-        attr = fluid.ParamAttr(name=self.param_name, trainable=False)
-        param = paddle.nn.Layer.create_parameter(shape=self.param_shape,
-                                                 attr=atr)
-        out = paddle.multiply(x=l2, y=param, axis=self.axis)
+    def __call__(self, x, param):
+        l2_norm = fluid.layers.l2_normalize(x=x, axis=1)
+        param = paddle.reshape(param, [param.shape[-1]])
+        perm = list(range(len(l2_norm.shape)))
+        perm.pop(self.axis)
+        perm = perm + [self.axis]
+        l2_norm = paddle.transpose(l2_norm, perm=perm)
+        out = paddle.multiply(x=l2_norm, y=param)
+        perm = list(range(len(l2_norm.shape)))
+        dim = perm.pop(-1)
+        perm.insert(self.axis, dim)
+        out = paddle.transpose(out, perm=perm)
         return out
         
     

@@ -782,7 +782,7 @@ class CaffeOpMapper(OpMapper):
         out_max_val = params.out_max_val if hasattr(params,
                                                     out_max_val) else False
         top_k = params.top_k if hasattr(params, top_k) else 1
-        axis = parmas.axis if hasattr(params, axis) else -1
+        axis = params.axis if hasattr(params, axis) else -1
         if axis < 0:
             axis += len(input_shape)
         if out_max_val is True:
@@ -1018,22 +1018,30 @@ class CaffeOpMapper(OpMapper):
             node.inputs) == 1, "The count of Normalize node\'s input is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.norm_param
+        param_name = node.layer_name + "_scale"
         if node.data is None or len(node.data) != 1:
             print(
                 "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
                 .format(node.layer_name, node.layer_type))
-            self.parmas[node.layer_name + ".scale"] = \
-                np.zeros([1] if params.channel_shared else [1, 1, 1, node.in_shapes[0][1]]).astype("float32")
+            self.params[param_name] = \
+                np.zeros([1] if params.channel_shared else [node.in_shapes[0][1]]).astype("float32")
         else:
-            self.parmas[node.layer_name + ".scale"] = _adjust_parameters(node)[0]
+            self.params[param_name] = _adjust_parameters(node)[0]
         
+        
+        self.paddle_graph.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[param_name],
+            shape=self.params[param_name].shape,
+            attr=string(param_name))
+        inputs_dict = {}
         layer_attrs = {
-            "axis": -1 if params.channel_shared else 1,
-            "param_name": node.layer_name + ".scale",
-            "param_shape": self.parmas[node.layer_name + ".scale"].shape}
-        self.pd_pdgraph.add_layer(
+            "axis": -1 if params.channel_shared else 1}
+        self.paddle_graph.add_layer(
             "custom_layer:Normalize",
-            inputs={"x": input.name},
+            inputs={"x": input.name,
+                    "param": param_name},
             outputs=layer_outputs,
             **layer_attrs)
         
