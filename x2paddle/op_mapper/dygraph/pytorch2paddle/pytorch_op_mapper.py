@@ -137,7 +137,7 @@ class PyTorchOpMapper(OpMapper):
                 graph.outputs = inputs_name
         # 更新split参数
         for layer in graph.layers.values():
-            if layer.kernel == "paddle.split" and "num_or_sections" in layer.attrs:
+            if layer.kernel == "paddle.split" and "num_or_sections" in layer.attrs and len(set(layer.attrs["num_or_sections"])) == 1:
                 layer.attrs["num_or_sections"] = self.split_len[layer.outputs[
                     0]]
         return graph, graph_inputs
