@@ -358,7 +358,9 @@ class CaffeOpMapper(OpMapper):
         output_name = node.layer_name
         layer_outputs = [pool2d_name, output_name]
         params = node.layer.pooling_param
-        ceil_mode = getattr(params, "ceil_mod", True)
+        ceil_mode = getattr(params, "ceil_mode", True)
+        if not hasattr(params, 'ceil_mode'):
+            ceil_mode = True if getattr(params, "round_mode", 0) == 0 else False
         global_pool = getattr(params, "global_pooling", False)
         kernel_default = [1, 1]
         channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
@@ -635,7 +637,7 @@ class CaffeOpMapper(OpMapper):
                     "paddle.scale",
                     inputs={"x": input1_name},
                     outputs=[node.layer_name + '_mul1'],
-                    scale=coeff[2])
+                    scale=coeff[1])
                 inputs_dict = {}
                 inputs_dict['x'] = node.layer_name + '_mul0'
                 inputs_dict['y'] = node.layer_name + '_mul1'
@@ -972,12 +974,12 @@ class CaffeOpMapper(OpMapper):
         # operation = MEAN
         else: 
             layer_attrs = {
-                "dim": dim[axis:],
-                "keep_dim": False,
+                "axis": dim[axis:],
+                "keepdim": False,
             }
             self.paddle_graph.add_layer(
                 "paddle.mean",
-                inputs={"input": input.name},
+                inputs={"x": input.name},
                 outputs=[node.layer_name],
                 **layer_attrs)
         self.paddle_graph.add_layer(

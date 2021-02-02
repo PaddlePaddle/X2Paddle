@@ -115,6 +115,12 @@ def shape_pooling(layer, input_shape):
         method = math.ceil
     else:
         method = math.floor
+    if not hasattr(params, 'ceil_mode'):
+        round_mode = getattr(params, 'round_mode', 0)
+        if round_mode == 1:
+            method = math.floor
+        else:
+            method = math.ceil
     return get_strided_kernel_output_shape(params, input_shape[0], method)
 
 
@@ -240,7 +246,9 @@ def shape_reshape(layer, input_shape):
     params = layer.reshape_param
     axis = params.axis if hasattr(params, 'axis') else 0
     num_axes = params.num_axes if hasattr(params, 'num_axes') else -1
+    is_unknow_batch = False
     if inshape[0] == -1:
+        is_unknow_batch = True
         inshape[0] = 1
     input_count = count(inshape)
 
@@ -310,7 +318,8 @@ def shape_reshape(layer, input_shape):
     output_count = count(output_shape)
     assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
         output_count, input_count)
-    output_shape[0] = -1
+    if is_unknow_batch:
+        output_shape[0] = -1
     return [output_shape]
 
 
