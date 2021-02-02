@@ -164,10 +164,6 @@ class PaddleGraph(object):
     def build(self, inputs=None, outputs=None):
         self.clear_edges()
         outputs_from_nodes = dict()
-#         for layer_id, layer in self.layers.items():
-#             print(layer.kernel)
-#             print(layer.inputs)
-#             print(layer.outputs)
         for layer_id, layer in self.layers.items():
             for input_key, input_var in layer.inputs.items():
                 vs = input_var
