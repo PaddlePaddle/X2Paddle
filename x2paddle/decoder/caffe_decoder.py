@@ -258,7 +258,7 @@ class CaffeGraph(Graph):
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
         input_node = self.node_map[input_node_name]
-        if len(input_node.layer.top) > 1 and input_node.layer_type != "Input":
+        if len(input_node.layer.top) > 1 and input_node.layer_type not in ["Input", "MemoryData"]:
             need_idx = list(input_node.layer.top).index(node.layer.bottom[idx])
             name = input_node_name + ':' + str(need_idx)
         else:

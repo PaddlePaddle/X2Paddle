@@ -124,6 +124,8 @@ class CaffeOpMapper(OpMapper):
     def __init__(self, decoder):
         super(CaffeOpMapper, self).__init__()
         self.graph = decoder.caffe_graph
+        if not self.op_checker():
+            raise Exception("Model is not supported yet.")
         self.params = dict()
         resolver = decoder.resolver
         self.used_custom_layers = {}
@@ -190,7 +192,32 @@ class CaffeOpMapper(OpMapper):
             inputs={},
             outputs=[node.name],
             **layer_attrs)
-
+        
+    def MemoryData(self, node):
+        params = node.layer.memory_data_param
+        transform_params = node.layer.transform_param
+        
+        shape = list()
+        shape.append(params.batch_size)
+        shape.append(params.channels)
+        if hasattr(transform_params, "crop_size"):
+            shape.append(transform_params.crop_size)
+            shape.append(transform_params.crop_size)
+        else:
+            shape.append(params.width)
+            shape.append(params.height)
+        dtype = 'float32'
+        layer_attrs = {
+            "dtype": string(dtype),
+            "shape": shape,
+            "name": string(node.name)
+        }
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.data",
+            inputs={},
+            outputs=[node.name],
+            **layer_attrs)
+        
     def Convolution(self, node):
         data = node.data
         params = node.layer.convolution_param

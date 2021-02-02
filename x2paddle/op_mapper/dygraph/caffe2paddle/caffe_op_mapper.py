@@ -198,6 +198,26 @@ class CaffeOpMapper(OpMapper):
         shape = list(node.layer.input_param.shape[0].dim)[1:]
         self.inputs_info["x{}".format(self.input_index)] = [[-1] + shape, "float32"]
         self.input_index += 1
+        
+    def MemoryData(self, node):
+        params = node.layer.memory_data_param
+        transform_params = node.layer.transform_param
+        self.paddle_graph.add_layer(
+            "paddle.to_tensor",
+            inputs={},
+            outputs=[node.layer_name],
+            data="x{}".format(self.input_index))
+        shape = list()
+        shape.append(params.batch_size)
+        shape.append(params.channels)
+        if hasattr(transform_params, "crop_size"):
+            shape.append(transform_params.crop_size)
+            shape.append(transform_params.crop_size)
+        else:
+            shape.append(params.width)
+            shape.append(params.height)
+        self.inputs_info["x{}".format(self.input_index)] = [shape, "float32"]
+        self.input_index += 1
 
     def Convolution(self, node):
         conv2d_name = name_generator("conv", self.nn_name2id)
