@@ -918,12 +918,9 @@ class OpSet9():
                 #        ends_value[idx] = 2**31 - 1
                 #print(val_x.out_shapes)
                 for idx in range(len(ends_value)):
-                    if starts_value[idx] >= val_x.out_shapes[0][axes[idx]]:
+                    if starts_value[idx] >= val_x.out_shapes[0][axes[idx]] and val_x.out_shapes[0][axes[idx]] > 0:
                         starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
                         ends_value[idx] = val_x.out_shapes[0][axes[idx]]
-                        starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
-                    elif ends_value[idx] == 2**31 - 1:
-                        ends_value[idx] = node.out_shapes[0][axes[idx]] + 1 
                     elif ends_value[idx] > 2**31 - 1:
                         ends_value[idx] = 2**31 - 1
                 layer_attrs = {
