@@ -182,7 +182,7 @@ def prim_equal(layer, indent=1, init_func=[], forward_func=[], layer_id=None, di
 
 
 def prim_exception(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "raise RaiseException({})".format(get_value(layer, "input", different_attrs))
+    line = "raise Exception({})".format(get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -458,10 +458,12 @@ def prim_slice(layer, indent=1, init_func=[], forward_func=[], layer_id=None, di
     forward_func.extend(gen_codes([line], indent=indent))
     
     
-def prim_startswith(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_startswith(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
     line = "{} = {}.startswith({})".format(layer.outputs[0],
                                            get_value(layer, "input", different_attrs),
                                            get_value(layer, "start_str", different_attrs))
+    if is_return_line:
+        return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -471,7 +473,7 @@ def prim_str(layer, indent=1, init_func=[], forward_func=[], layer_id=None, diff
 
 
 def prim_sub(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    if int(get_value(layer, "alpha", different_attrs)) == 1:
+    if int(float(get_value(layer, "alpha", different_attrs))) == 1:
         line = "{} = {} - {}".format(layer.outputs[0],
                                      get_value(layer, "x", different_attrs), 
                                      get_value(layer, "y", different_attrs))

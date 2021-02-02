@@ -1,5 +1,5 @@
 # X2Paddle支持OP列表
-> 目前X2Paddle支持70+的TensorFlow OP，30+的Caffe Layer，覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
+> 目前X2Paddle支持80+的TensorFlow OP，30+的Caffe Layer，60+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
 
 **注：** 目前，部分OP暂未支持，如您在转换过程中出现OP不支持的情况，可自行添加或反馈给我们。欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
 
@@ -28,7 +28,7 @@
 | 73 | Greater | 74 | FloorMod | 75 | LogicalAdd | 76 | Prod |
 | 77 | Equal | 78 | Conv3D | 79 | Ceil | 80 | AddN |
 | 81 | DivNoNan | 82 | Where | 83 | MirrorPad | 84 | Size |
-| 85 | TopKv2 |  |  |  |  |  |  |
+| 85 | TopKv2 | 86 | SplitV |  |  |  |  |
 
 ## Caffe
 
@@ -42,7 +42,7 @@
 | 21 | Axpy      | 22 | ROIPolling   | 23 | Permute        | 24 | DetectionOutput      |
 | 25 | Normalize | 26 | Select       | 27 | ShuffleChannel | 28 | ConvolutionDepthwise |
 | 29 | ReLU      | 30 | AbsVal       | 31 | Sigmoid        | 32 | TanH                 |
-| 33 | ReLU6     | 34 | Upsample |
+| 33 | ReLU6     | 34 | Upsample | |          |   |                   |
 
 ## ONNX
 
@@ -61,7 +61,11 @@
 | 41 | MatMul   | 42 | Sum       | 43 | Transpose | 44 | BatchNormalization |
 | 45 | Squeeze  | 46 | Equal     | 47 | Identity  | 48 | GlobalAveragePool  |
 | 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
-| 53 | Abs      | 54 | Floor     | 52 | ArgMax    |
+| 53 | Abs      | 54 | Floor     | 56 | ArgMax    | 57 | Sign               |
+| 58 | Reciprocal  | 59 | Size     | 60 | OneHot    | 61 | ReduceProd       |
+| 62 | LogSoftmax  | 63 | LSTM     |  |     |  |        |
+
+
 
 ## PyTorch
 Aten:
@@ -95,6 +99,7 @@ Aten:
 | 101 | aten::upsample\_bilinear2d | 102 | aten::values |103|aten::view|104|aten::warn|
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
+| 113 | aten::upsample\_nearest2d ||  |||||
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |

@@ -41,13 +41,21 @@ class DygraphIfFuser(FuseBase):
             return 
         for id in graph.edges_in[layer_id]:
             input_layer = graph.layers[id]
+            input_layer_id = id
             if input_layer.outputs == [layer.inputs["input"]]:
                 if input_layer.kernel == "prim.if":
                     matches.pop(layer_id)
                     return
                 input_id = id
                 break
+        if list(layer.inputs.values()).count(input_layer.outputs[0]) > 1 or \
+               (input_layer_id in graph.edges_out and len(graph.edges_out[input_layer_id]) > 1):
+            matches.pop(layer_id)
+            return
         func_name = input_layer.kernel.replace(".", "_")
+        if func_name in ["prim_if", "prim_loop"]:
+            matches.pop(layer_id)
+            return
         from x2paddle.op_mapper.dygraph.pytorch2paddle import prim2code
         func = getattr(prim2code, func_name)
         line = func(input_layer, is_return_line=True)

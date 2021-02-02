@@ -42,6 +42,31 @@ def _const_weight_or_none(node, necessary=False):
     return None
 
 
+def _rename_or_remove_weight(weights, origin_name, target_name=None, is_remove=True):
+    ''' 
+    Rename parameters by Paddle's naming rule of parameters.
+
+    Args:
+        weights(dict[String:np.ndarray]): Dict stored paramters, the key in weights is name of parameter.
+        origin_name(String): Name of parameter to rename or remove.
+        target_name(String, optional): if target_name is not None, add new key-value pair 
+            {target_name:weights[origin_name]} to weights, and target_name must follow paddle's 
+            naming rule of parameters. Default: None.
+        is_remove: if is_remove is True, remove origin key-value pair. Default: True.
+    Returns:
+        None
+    '''   
+    if origin_name not in weights:
+        raise KeyError('{} not a key in {}'.format(origin_name, weights))
+    if is_remove:
+        # remove weight
+        data = weights.pop(origin_name)
+    else:
+        data = weights[origin_name]
+    if target_name is not None:
+        # rename weight
+        weights[target_name] = data
+
 def _is_static_shape(shape):
     negtive_dims = 0
     error_dims = 0
@@ -94,19 +119,19 @@ class OpSet9():
         # reduce function
         'ReduceMean': ['paddle.mean',
                        dict(axes='axis', keepdims='keepdim'), 
-                       dict(keepdims=1)],
+                       dict(axes=None, keepdims=1)],
         'ReduceSum': ['paddle.sum', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdims=1)],
+                      dict(axes=None, keepdims=1)],
         'ReduceMin': ['paddle.min', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         'ReduceMax': ['paddle.max', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         'ReduceProd': ['paddle.prod', 
                       dict(axes='axis', keepdims='keepdim'), 
-                      dict(keepdim=1)],
+                      dict(axes=None, keepdim=1)],
         # active function
         'Relu': ['paddle.nn.ReLU'],
         'LeakyRelu': ['paddle.nn.LeakyReLU', 
@@ -125,6 +150,10 @@ class OpSet9():
                      dict(threshold='threshold'), 
                      dict(threshold=float(sys.maxsize))],
         'Exp': ['paddle.exp'],
+        'Log': ['paddle.log'],
+        'LogSoftmax': ['paddle.nn.functional.log_softmax', 
+                    dict(axis='axis'), 
+                    dict(axis=1)],
         'Softmax': ['paddle.nn.Softmax', 
                     dict(axis='axis'), 
                     dict(axis=1)],
@@ -164,11 +193,12 @@ class OpSet9():
                     layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
                 else:
                     layer_attrs[pd_attr_name] = op_info[2][onnx_attr_name]
-        if paddle_op.startswith("paddle.nn"):
+        if paddle_op.startswith("paddle.nn") and 'functional' not in paddle_op:
             op_name = paddle_op[10:].lower()
             op_name = name_generator(op_name, self.nn_name2id)
             output_name = node.name
             layer_outputs = [op_name, output_name]
+
             self.paddle_graph.add_layer(
                 kernel=paddle_op,
                 inputs={"x": input.name},
@@ -258,14 +288,12 @@ class OpSet9():
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length  
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length  
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[2:]
             elif len(node.layer.input) == 4:
                 # opset 11
@@ -293,8 +321,15 @@ class OpSet9():
                 return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            inputs['scale_factor'] = val_scales
-
+            self.paddle_graph.add_layer(
+                "paddle.slice",
+                inputs={"input": val_scales.name},
+                outputs=[val_scales.name],
+                axes=[0],
+                starts=[2],
+                ends=[4])
+            inputs['scale_factor'] = val_scales.name
+ 
         mode = node.get_attr('mode', 'nearest')
         attrs.update({"align_corners": False,
                       "mode": string(mode),
@@ -602,11 +637,11 @@ class OpSet9():
         val_scale = self.graph.get_input_node(node, idx=1, copy=True)
         val_b = self.graph.get_input_node(node, idx=2, copy=True)
         epsilon = node.get_attr('epsilon', 1e-5)
+        self.weights[op_name+'.scale'] = self.weights[val_scale.name]
+        self.weights[op_name+'.bias'] = self.weights[val_b.name]
         layer_attrs = {
             'num_features': node.out_shapes[0][1],
             'epsilon': epsilon,
-            'weight_attr': string(val_scale.name),
-            'bias_attr': string(val_b.name)
         }
         dim = len(val_x.out_shapes[0])
         if dim == 3:
@@ -717,11 +752,11 @@ class OpSet9():
                 op_name = name_generator("embedding", self.nn_name2id)
                 output_name = node.name
                 layer_outputs = [op_name, output_name]
+                self.weights[op_name + '.weight'] = _const_weight_or_none(val_x)
                 self.paddle_graph.add_layer(
                     'paddle.nn.Embedding',
                     inputs={"x": indices_cast},
                     outputs=layer_outputs,
-                    weight_attr=string(val_x.name),
                     num_embeddings=val_x.out_shapes[0][0],
                     embedding_dim=val_x.out_shapes[0][1])
             else:
@@ -918,10 +953,6 @@ class OpSet9():
             if starts_value is not None and ends_value is not None and axes is not None:
                 starts_value = starts_value.copy()
                 ends_value = ends_value.copy()
-                #for idx in range(len(ends_value)):
-                #    if ends_value[idx] > 2**31 - 1:
-                #        ends_value[idx] = 2**31 - 1
-                #print(val_x.out_shapes)
                 for idx in range(len(ends_value)):
                     if starts_value[idx] >= val_x.out_shapes[0][axes[idx]]:
                         starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
@@ -990,13 +1021,12 @@ class OpSet9():
         if len(value) == 1:
             value = value[0]
             layer_attrs = {
-                'shape': val_shape.name,
                 'dtype': string(dtype),
                 'fill_value': value
             }
             self.paddle_graph.add_layer(
                 "paddle.full", 
-                inputs={}, 
+                inputs={'shape': val_shape.name}, 
                 outputs=[node.name],
                 **layer_attrs)
 
@@ -1049,8 +1079,11 @@ class OpSet9():
         }
         outputs_list = list()
         if isinstance(split, list) or isinstance(split, tuple):
-            for i in range(len(split)):
-                outputs_list.append("{}_p{}".format(node.layer_name, i))
+            if len(split) == 1:
+                outputs_list.append(node.name)
+            else:
+                for i in range(len(split)):
+                    outputs_list.append("{}_p{}".format(node.layer_name, i))
         else:
             outputs_list.append(node.name)
         self.paddle_graph.add_layer(
@@ -1161,7 +1194,7 @@ class OpSet9():
         }
         self.paddle_graph.add_layer(
             paddle_op, 
-            inputs={'x': val_x.name}, 
+            inputs={'x': val_x if isinstance(val_x, str) else val_x.name}, 
             outputs=layer_outputs, 
             **layer_attrs)
 
@@ -1316,6 +1349,11 @@ class OpSet9():
         epsilon = node.get_attr('epsilon', 1e-5)
         c = val_x.out_shapes[0][1]
 
+        _rename_or_remove_weight(self.weights, val_scale.name, op_name+'.weight')
+        _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias')
+        _rename_or_remove_weight(self.weights, val_var.name, op_name+'._variance')
+        _rename_or_remove_weight(self.weights, val_mean.name, op_name+'._mean')
+
         # Attribute: spatial is used in BatchNormalization-1,6,7
         spatial = bool(node.get_attr('spatial'))
         layer_attrs = {
@@ -1323,10 +1361,6 @@ class OpSet9():
             "momentum": momentum,
             "epsilon": epsilon,
             "is_test": True,
-            "param_attr": string(val_scale.name),
-            "bias_attr": string(val_b.name),
-            "moving_mean_name": string(val_mean.name),
-            "moving_variance_name": string(val_var.name),
             "use_global_stats": False,
         }
         self.paddle_graph.add_layer(
@@ -1358,7 +1392,7 @@ class OpSet9():
 
         mode = 'channel'
         shape_slope = val_slope.out_shapes[0]
-        if shape_slope == [1]:
+        if shape_slope == [1] * len(shape_slope):
             mode = 'all'
 
         if mode == "element":
@@ -1391,17 +1425,31 @@ class OpSet9():
         else:
             if mode == 'channel':
                 slope_data = _const_weight_or_none(val_slope)
+                if slope_data is None:
+                    self.paddle_graph.add_layer(
+                        "paddle.reshape", 
+                        inputs={"x": val_slope.name}, 
+                        outputs=[val_slope.name],
+                        shape=[shape_slope[0]])
+                    self.paddle_graph.add_layer(
+                        "paddle.nn.functional.prelu", 
+                        inputs={"x": val_x.name,
+                                "weight": val_slope.name}, 
+                        outputs=[node.name])
+                    return
+                _rename_or_remove_weight(self.weights, val_slope.name)
                 if len(shape_slope) > 1:
-                    self.weights[val_slope.name] = np.reshape(slope_data, shape_slope[0])
+                    self.weights[op_name+'._weight'] = np.reshape(slope_data, shape_slope[0])
                 num_parameters = val_x.out_shapes[0][1]
             else:
                 num_parameters = 1
+                _rename_or_remove_weight(self.weights, val_slope.name)
+                self.weights[op_name+'._weight'] = np.reshape(self.weights[val_slope.name], [1])
             self.paddle_graph.add_layer(
                 "paddle.nn.PReLU", 
                 inputs={"x": val_x.name}, 
                 outputs=layer_outputs, 
-                num_parameters=num_parameters,
-                weight_attr=string(val_slope.name))
+                num_parameters=num_parameters)
 
     @print_mapping_info
     def Squeeze(self, node):
@@ -1438,7 +1486,7 @@ class OpSet9():
             "paddle.greater_than",
             inputs={'x': val_x.name,
                     'y': val_y.name},
-            outputs=node,
+            outputs=[node.name],
             param_attr=None)
 
     @print_mapping_info
@@ -1495,7 +1543,7 @@ class OpSet9():
             self.paddle_graph.add_layer(
                 "paddle.transpose",
                 inputs={"x": val_x.name},
-                outputs=[node.layer_naem],
+                outputs=[node.layer_name],
                 perm=[1, 0])
         if val_x_dim > 1:
             self.paddle_graph.add_layer(
@@ -1679,22 +1727,17 @@ class OpSet9():
             "dilation": dilations,
             "groups": num_groups,
         }
-        val_w_name = val_w.name
-        while val_w_name in self.done_weight_list:
-            val_w_name += "__repeat"
-        self.done_weight_list.append(val_w_name)
-        layer_attrs["weight_attr"] = string(val_w_name)
-        self.weights[val_w_name] = self.weights[val_w.name]
+        remove_weight = True if  val_w.name in self.done_weight_list else False
+        if remove_weight:
+            self.done_weight_list.append(val_w.name)
+        _rename_or_remove_weight(self.weights, val_w.name, op_name+'.weight', remove_weight)
         if has_bias:
-            val_b_name = val_b.name
-            while val_b_name in self.done_weight_list:
-                val_b_name += "__repeat"
-            self.done_weight_list.append(val_b_name)
-            layer_attrs["bias_attr"] = string(val_b_name)
-            self.weights[val_b_name] = self.weights[val_b.name]
+            remove_bias = True if val_b.name in self.done_weight_list else False
+            if remove_bias:
+                self.done_weight_list.append(val_b_name)
+            _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias', remove_bias)
         else:
             layer_attrs["bias_attr"] = False
-        input_shape = val_x.out_shapes[0]
         if reduce(lambda x,y:x*y, input_shape) in [1, -1] and 1 not in input_shape:
             input_shape[1] = num_in_channels * num_groups
             input_shape[0] = 0
@@ -1712,6 +1755,9 @@ class OpSet9():
 
     @print_mapping_info
     def ConvTranspose(self, node):
+        op_name = name_generator("conv_trans", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [op_name, output_name]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_w = self.graph.get_input_node(node, idx=1, copy=True)
         val_b = None
@@ -1725,7 +1771,7 @@ class OpSet9():
         assert 2 <= convnd <= 3, 'only Conv2DTranspose and Conv3DTranspose supported'
         num_in_channels = val_w.out_shapes[0][0]
         num_out_channels = val_w.out_shapes[0][1]
-        paddle_op = 'paddle.nn.functional.conv{}d_transpose'.format(convnd)
+        paddle_op = 'paddle.nn.Conv{}DTranspose'.format(convnd)
 
         num_groups = node.get_attr('group', 1)
         strides = node.get_attr('strides', [1] * convnd)
@@ -1743,23 +1789,26 @@ class OpSet9():
         output_size[1] = (val_x.out_shapes[0][3] - 1
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
+
         # Conv2DTranspose缺少output_size，只能在forward里头传进output_size
-        inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name,
-                       "weight": val_w.name}
+        inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name}
         layer_attrs = {
+            "in_channels": num_in_channels,
+            "out_channels": num_out_channels,
+            "kernel_size": kernel_shape,
             "stride": strides,
             "dilation": dilations,
             "padding": paddings,
             "groups": num_groups,
-            "output_size": node.out_shapes[0][2:]}
+            "output_padding":out_padding}
+            
+        _rename_or_remove_weight(self.weights, val_w.name, op_name+'.weight',)
         if val_b is not None:
-            inputs_dict["bias"] = val_b.name
-        else:
-            layer_attrs["bias"] = None
+            _rename_or_remove_weight(self.weights, val_b.name, op_name+'.bias')
         self.paddle_graph.add_layer(
-            kernel="paddle.nn.functional.conv2d_transpose",
+            kernel=paddle_op,
             inputs=inputs_dict,
-            outputs=[node.name],
+            outputs=layer_outputs,
             **layer_attrs)
         
     @print_mapping_info
@@ -1774,6 +1823,7 @@ class OpSet9():
             inputs={"x": val_x.name}, 
             outputs=[node.name],
             **layer_attrs)
+
         
     @print_mapping_info
     def Size(self, node):
@@ -1836,3 +1886,130 @@ class OpSet9():
             "paddle.reciprocal", 
             inputs={"x": val_x.name}, 
             outputs=[node.name])
+
+    @print_mapping_info
+    def LSTM(self, node):
+        x = self.graph.get_input_node(node, idx=0, copy=True)
+        input_weight = self.graph.get_input_node(node, idx=1, copy=True)
+        hidden_weight = self.graph.get_input_node(node, idx=2, copy=True)
+
+        input_nums = len(node.layer.input)
+        exist_input_nums = 3
+        have_bias = False
+        if input_nums > 3 and node.layer.input[3] != '':
+            bias = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            have_bias = True
+            exist_input_nums += 1
+        if input_nums > 4 and node.layer.input[4] != '':
+            sequence_lens = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            exist_input_nums += 1
+        if input_nums > 5 and node.layer.input[5] != '':
+            init_h = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": init_h.name},
+                outputs=[init_h.name],
+                shape=init_h.out_shapes[0]
+                )
+            exist_input_nums += 1
+        if input_nums > 6 and node.layer.input[6] != '':
+            init_c = self.graph.get_input_node(node, idx=exist_input_nums, copy=True)
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": init_c.name},
+                outputs=[init_c.name],
+                shape=init_c.out_shapes[0]
+                )
+
+        input_weight_np = _const_weight_or_none(input_weight)
+        _rename_or_remove_weight(self.weights, input_weight.name)
+        hidden_size = node.get_attr('hidden_size', input_weight_np.shape[1]/4)
+        input_size = input_weight_np.shape[2]
+        hidden_weight_np = _const_weight_or_none(hidden_weight)
+        _rename_or_remove_weight(self.weights, hidden_weight.name)
+        bias_np = _const_weight_or_none(bias)
+        _rename_or_remove_weight(self.weights, bias.name)
+        input_bias_np = bias_np[:, :4*hidden_size]
+        hidden_bias_np = bias_np[:, 4*hidden_size:]
+
+        # parameters order in paddle:lstm:
+        # 1. gate order in paddle is: input, forget, cell, output.
+        # 2. gate orfer in onnx is: input, output, forget, cell.
+
+        def reform_weights(w, n, intervals):
+            slices = [w[:,x * n: y * n] for x, y in intervals]
+            return np.concatenate(slices, axis=1)
+
+        def transform_weight_with_bias(weights, n, intervals):
+            return [reform_weights(w, n, intervals) for w in weights]
+
+        reform_permutation = [(0, 1), (2, 4), (1, 2)]
+
+        weights = transform_weight_with_bias(
+            [input_weight_np, hidden_weight_np, input_bias_np, hidden_bias_np],
+            hidden_size, reform_permutation)
+
+        op_name = name_generator("lstm", self.nn_name2id)
+        y_out = node.output(0)
+        yh_out = node.output(1) 
+        yc_out = node.output(2)
+        direction = node.get_attr('direction', 'forward')
+
+        def generate_paddle_param_names(op_name, suffix=''):
+            param_names = []
+            param_names.extend(['{}.weight_ih_l0{}', '{}.weight_hh_l0{}'])
+            if have_bias != False: param_names.append('{}.bias_ih_l0{}')
+            if have_bias != False: param_names.append('{}.bias_hh_l0{}')
+            param_names = [x.format(op_name, suffix) for x in param_names]
+            return param_names
+
+        def assign_params(op_name, weights, weight_idx=0, suffix=''):
+            param_names = generate_paddle_param_names(op_name, suffix)
+            print(param_names)
+            for param_name, weight in zip(param_names, weights):
+                self.weights[param_name] = weight[weight_idx]
+
+        if direction == 'backward':
+            raise Exception("LSTM support 'forward' or 'bidirectional', except '{}'.".format(direction))
+        else:
+            assign_params(op_name, weights)
+            if direction == 'bidirectional':
+                assign_params(op_name, weights, 1, '_reverse')
+
+        self.paddle_graph.add_layer(
+            'paddle.nn.LSTM', 
+            inputs={'input': x.name, 'initial_states': (init_h.name, init_c.name)},
+            outputs=[op_name, y_out, yh_out, yc_out],
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=1,
+            direction=string(direction),
+            time_major=True)
+
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": y_out},
+            outputs=[y_out],
+            shape=[0, 0, -1, hidden_size]
+            )
+        self.paddle_graph.add_layer(
+            'paddle.transpose',
+            inputs={"x": y_out},
+            outputs=[y_out],
+            perm=[0,2,1,3]
+            )
+        
+    @print_mapping_info
+    def TopK(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_k = self.graph.get_input_node(node, idx=1, copy=True)
+        layer_attrs = dict()
+        layer_attrs["axis"] = node.get_attr('axis', -1)
+        layer_attrs["largest"] = True if node.get_attr('largest', 1) == 1 else False
+        layer_attrs["sorted"] = True if node.get_attr('sorted', 1) == 1 else False
+        self.paddle_graph.add_layer(
+            "paddle.topk", 
+            inputs={"x": val_x.name,
+                    "k": val_k.name}, 
+            outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
+            **layer_attrs)
