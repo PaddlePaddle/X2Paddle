@@ -205,24 +205,16 @@ class TFOpMapper(OpMapper):
 
     def Placeholder(self, node):
         shape = node.out_shapes[0]
+        assert len(shape) != 0, "Unknown shape of input nodes[{}].".format(
+            node.layer_name)
         dtype = node.dtype
-        if str(node.dtype) == "bool" and len(shape) == 0:
-            dtype = "int32"
         
         self.paddle_graph.add_layer(
             kernel="paddle.to_tensor",
             inputs={},
             outputs=[node.name],
             data="x{}".format(self.input_index))
-#         if str(node.dtype) == "bool" and len(shape) == 0:
-#             self.paddle_graph.add_layer(
-#                 kernel="paddle.cast",
-#                 inputs={"x": node.name},
-#                 outputs=[node.name],
-#                 dtype=string("bool"))
-        if len(shape) == 0:
-            shape = [1]
-        self.inputs_info["x{}".format(self.input_index)] = [shape, dtype]
+        self.inputs_info["x{}".format(self.input_index)] = [shape, node.dtype]
         self.input_index += 1
 
     def Const(self, node):
@@ -252,8 +244,7 @@ class TFOpMapper(OpMapper):
                 attr=string(node.name),
                 dtype=string(dtype),
                 default_initializer="paddle.nn.initializer.Constant(value=0.0)")
-            
-    
+      
     def Transpose(self, node):
         input = self.graph.get_input_node(node, 0)
         perm = self.graph.get_input_node(node, 1)

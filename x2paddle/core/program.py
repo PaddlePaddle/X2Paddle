@@ -224,7 +224,6 @@ class PaddleGraph(object):
             if len(self.outputs) == 0:
                 self.get_dygraph_outputs()
 
-
     def get_global_layers(self):
         # 该全局layers的信息是按照拓扑排序组成的
         def update(layers):
