@@ -184,7 +184,7 @@ class TFGraph(Graph):
         node = super(TFGraph, self).get_node(new_node_name, copy)
         if node is None:
             return None
-        if node.layer_type == "Switch":
+        if node.layer_type not in ["Unpack", "Split"]:
             if hasattr(node, 'index'):
                 del node.index
         if len(items) == 1 and node.layer_type in self.multi_out_ops:

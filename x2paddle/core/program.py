@@ -224,6 +224,7 @@ class PaddleGraph(object):
             if len(self.outputs) == 0:
                 self.get_dygraph_outputs()
 
+
     def get_global_layers(self):
         # 该全局layers的信息是按照拓扑排序组成的
         def update(layers):
@@ -426,7 +427,7 @@ class PaddleGraph(object):
         def update(layers):
             for layer_id, layer in layers.items():
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
-                        layer_id, 0) == 0:
+                        layer_id, 0) == 0 and layer.kernel != "paddle.to_tensor":
                     continue
                 if layer.kernel == "paddle.to_tensor":
                     data = layer.attrs["data"]
