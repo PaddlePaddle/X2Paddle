@@ -13,12 +13,21 @@
 # limitations under the License.
 
 import paddle
-import paddle.fluid as fluid
 
 def normalize(x, axis, param_name, param_shape, param_dtype):
-    l2 = fluid.layers.prior_box(x=x, p=2, axis=1)
+    l2_norm = paddle.fluid.layers.l2_normalize(x=x, axis=1)
     param = paddle.static.nn.create_parameter(shape=param_shape,
-                                              dtype=string(param_dtype),
-                                              name=string(param_name))
-    out = paddle.multiply(x=l2, y=param, axis=axis)
+                                              dtype=param_dtype,
+                                              name=param_name)
+    param = paddle.reshape(param, [param.shape[-1]])
+    perm = list(range(len(l2_norm.shape)))
+    perm.pop(axis)
+    perm = perm + [axis]
+    l2_norm = paddle.transpose(l2_norm, perm=perm)
+    out = paddle.multiply(x=l2_norm, y=param)
+    perm = list(range(len(l2_norm.shape)))
+    dim = perm.pop(-1)
+    perm.insert(axis, dim)
+    out = paddle.transpose(out, perm=perm)
+    
     return out

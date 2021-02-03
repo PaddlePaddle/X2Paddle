@@ -124,6 +124,8 @@ class CaffeOpMapper(OpMapper):
     def __init__(self, decoder):
         super(CaffeOpMapper, self).__init__()
         self.graph = decoder.caffe_graph
+        if not self.op_checker():
+            raise Exception("Model is not supported yet.")
         self.params = dict()
         resolver = decoder.resolver
         self.used_custom_layers = {}
@@ -190,7 +192,32 @@ class CaffeOpMapper(OpMapper):
             inputs={},
             outputs=[node.name],
             **layer_attrs)
-
+        
+    def MemoryData(self, node):
+        params = node.layer.memory_data_param
+        transform_params = node.layer.transform_param
+        
+        shape = list()
+        shape.append(params.batch_size)
+        shape.append(params.channels)
+        if hasattr(transform_params, "crop_size"):
+            shape.append(transform_params.crop_size)
+            shape.append(transform_params.crop_size)
+        else:
+            shape.append(params.width)
+            shape.append(params.height)
+        dtype = 'float32'
+        layer_attrs = {
+            "dtype": string(dtype),
+            "shape": shape,
+            "name": string(node.name)
+        }
+        self.paddle_graph.add_layer(
+            kernel="paddle.static.data",
+            inputs={},
+            outputs=[node.name],
+            **layer_attrs)
+        
     def Convolution(self, node):
         data = node.data
         params = node.layer.convolution_param
@@ -368,6 +395,8 @@ class CaffeOpMapper(OpMapper):
     def Pooling(self, node):
         params = node.layer.pooling_param
         ceil_mode = getattr(params, 'ceil_mode', True)
+        if not hasattr(params, 'ceil_mode'):
+            ceil_mode = True if getattr(params, "round_mode", 0) == 0 else False
         global_pool = getattr(params, 'global_pooling', False)
         kernel_default = [1, 1]
         channel, kernel, stride, pad, dilation, group = _get_kernel_parameters(
@@ -652,7 +681,7 @@ class CaffeOpMapper(OpMapper):
                     "paddle.scale",
                     inputs={"x": input1_name},
                     outputs=[node.name + '_mul1'],
-                    scale=coeff[2])
+                    scale=coeff[1])
                 inputs_dict = {}
                 inputs_dict['x'] = node.name + '_mul0'
                 inputs_dict['y'] = node.name + '_mul1'
@@ -855,7 +884,7 @@ class CaffeOpMapper(OpMapper):
         out_max_val = params.out_max_val if hasattr(params,
                                                     out_max_val) else False
         top_k = params.top_k if hasattr(params, top_k) else 1
-        axis = parmas.axis if hasattr(params, axis) else -1
+        axis = params.axis if hasattr(params, axis) else -1
         if axis < 0:
             axis += len(in_shapes)
         if out_max_val is True:
@@ -997,12 +1026,12 @@ class CaffeOpMapper(OpMapper):
         # operation = MEAN
         else: 
             layer_attrs = {
-                "dim": dim[axis:],
-                "keep_dim": False,
+                "axis": dim[axis:],
+                "keepdim": False,
             }
             self.paddle_graph.add_layer(
                 "paddle.mean",
-                inputs={"input": input.name},
+                inputs={"x": input.name},
                 outputs=[node.name],
                 **layer_attrs)
         self.paddle_graph.add_layer(
@@ -1090,17 +1119,17 @@ class CaffeOpMapper(OpMapper):
             print(
                 "The parameter of {} (type is {}) is not set. So we set the parameters as 0"
                 .format(scale_name, node.layer_type))
-            self.parmas[scale_name] = \
-                np.zeros([1] if params.channel_shared else [1, 1, 1, node.in_shapes[0][1]]).astype("float32")
+            self.params[scale_name] = \
+                np.zeros([1] if params.channel_shared else [node.in_shapes[0][1]]).astype("float32")
         else:
-            self.parmas[scale_name] = _adjust_parameters(node)[0]
+            self.params[scale_name] = _adjust_parameters(node)[0]
         
         layer_attrs = {
             "axis": -1 if params.channel_shared else 1,
-            "param_name": scale_name,
-            "param_shape": self.parmas[scale_name].shape,
-            "param_dtype": str(self.parmas[scale_name].dtype)}
-        self.pd_pdgraph.add_layer(
+            "param_name": string(scale_name),
+            "param_shape": self.params[scale_name].shape,
+            "param_dtype": string(self.params[scale_name].dtype)}
+        self.paddle_graph.add_layer(
             "custom_layer:normalize",
             inputs={"x": input.name},
             outputs=[node.name],
