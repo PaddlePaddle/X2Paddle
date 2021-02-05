@@ -229,6 +229,11 @@ def main():
     assert args.paddle_type in ["dygraph", "static"], "--paddle_type must be 'dygraph' or 'static'"
 
     try:
+        import platform
+        v0, v1, v2 = platform.python_version().split('.')
+        if not(int(v0) >= 3 and int(v1) >= 5):
+            print("[ERROR] python>=3.5 is required")
+            return
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
         print("paddle.__version__ = {}".format(paddle.__version__))
