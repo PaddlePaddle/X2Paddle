@@ -1797,7 +1797,7 @@ class OpSet9():
             'k': bias
         }
         self.paddle_graph.add_layer(
-            'paddle.nn.functional.local_response_norm', 
+            "custom_layer:local_response_norm", 
             inputs={"x": val_x.name}, 
             outputs=[node.name], 
             **layer_attrs)

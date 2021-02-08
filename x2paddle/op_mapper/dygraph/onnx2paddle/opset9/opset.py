@@ -542,7 +542,6 @@ class OpSet9():
                         value=value,
                         mode=string(mode))
             else:
-                print(pads_len)
                 raise Exception("The padding value is wrong!")   
             if not op_independent:
                 return node.name + '_paded'
@@ -2031,7 +2030,7 @@ class OpSet9():
             'k': bias
         }
         self.paddle_graph.add_layer(
-            "paddle.nn.LocalResponseNorm", 
+            "custom_layer:LocalResponseNorm", 
             inputs={"x": val_x.name}, 
             outputs=layer_outputs, 
             **layer_attrs)
