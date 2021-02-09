@@ -542,7 +542,6 @@ class OpSet9():
                         value=value,
                         mode=string(mode))
             else:
-                print(pads_len)
                 raise Exception("The padding value is wrong!")   
             if not op_independent:
                 return node.name + '_paded'
@@ -2012,4 +2011,26 @@ class OpSet9():
             inputs={"x": val_x.name,
                     "k": val_k.name}, 
             outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
+            **layer_attrs)
+        
+    @print_mapping_info
+    def LRN(self, node):
+        op_name = name_generator("lrn", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [op_name, output_name]
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        alpha = node.get_attr('alpha', 0.0001)
+        beta = node.get_attr('beta', 0.75)
+        bias = node.get_attr('bias', 1.0)
+        size = node.get_attr('size')
+        layer_attrs = {
+            'size': size,
+            'alpha': alpha,
+            'beta': beta,
+            'k': bias
+        }
+        self.paddle_graph.add_layer(
+            "custom_layer:LocalResponseNorm", 
+            inputs={"x": val_x.name}, 
+            outputs=layer_outputs, 
             **layer_attrs)

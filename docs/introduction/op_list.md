@@ -42,7 +42,7 @@
 | 21 | Axpy      | 22 | ROIPolling   | 23 | Permute        | 24 | DetectionOutput      |
 | 25 | Normalize | 26 | Select       | 27 | ShuffleChannel | 28 | ConvolutionDepthwise |
 | 29 | ReLU      | 30 | AbsVal       | 31 | Sigmoid        | 32 | TanH                 |
-| 33 | ReLU6     | 34 | Upsample | |          |   |                   |
+| 33 | ReLU6     | 34 | Upsample     | 35 | MemoryData     |    |                      |
 
 ## ONNX
 
@@ -63,7 +63,7 @@
 | 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
 | 53 | Abs      | 54 | Floor     | 56 | ArgMax    | 57 | Sign               |
 | 58 | Reciprocal  | 59 | Size     | 60 | OneHot    | 61 | ReduceProd       |
-| 62 | LogSoftmax  | 63 | LSTM     |  |     |  |        |
+| 62 | LogSoftmax  | 63 | LSTM     | 64 |   LRN  |  |        |
 
 
 
@@ -99,7 +99,7 @@ Aten:
 | 101 | aten::upsample\_bilinear2d | 102 | aten::values |103|aten::view|104|aten::warn|
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
-| 113 | aten::upsample\_nearest2d ||  |||||
+| 113 | aten::upsample\_nearest2d | 114 |aten::split\_with\_sizes  |||||
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |

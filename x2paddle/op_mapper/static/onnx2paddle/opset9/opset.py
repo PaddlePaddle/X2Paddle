@@ -1781,3 +1781,23 @@ class OpSet9():
                     "k": val_k.name}, 
             outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
             **layer_attrs)
+        
+    @print_mapping_info
+    def LRN(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        alpha = node.get_attr('alpha', 0.0001)
+        beta = node.get_attr('beta', 0.75)
+        bias = node.get_attr('bias', 1.0)
+        size = node.get_attr('size')
+        layer_attrs = {
+            'size': size,
+            'alpha': alpha,
+            'beta': beta,
+            'k': bias
+        }
+        self.paddle_graph.add_layer(
+            "custom_layer:local_response_norm", 
+            inputs={"x": val_x.name}, 
+            outputs=[node.name], 
+            **layer_attrs)
