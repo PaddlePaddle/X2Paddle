@@ -1793,7 +1793,7 @@ class OpSet9():
         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name}
         layer_attrs = {
             "in_channels": num_in_channels,
-            "out_channels": num_out_channels,
+            "out_channels": num_out_channels * num_groups,
             "kernel_size": kernel_shape,
             "stride": strides,
             "dilation": dilations,
