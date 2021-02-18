@@ -1193,7 +1193,7 @@ class OpSet9():
         }
         self.paddle_graph.add_layer(
             paddle_op, 
-            inputs={'x': val_x.name}, 
+            inputs={'x': val_x if isinstance(val_x, str) else val_x.name}, 
             outputs=layer_outputs, 
             **layer_attrs)
 
