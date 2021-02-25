@@ -697,11 +697,23 @@ class CaffeOpMapper(OpMapper):
             "weight_attr": False,
             "bias_attr": False,
         }
+        if len(node.in_shapes[0]) == 2:
+            self.paddle_graph.add_layer(
+                "paddle.unsqueeze",
+                inputs={"x": input.name},
+                outputs=[input.name],
+                axis=[2,3])
         self.paddle_graph.add_layer(
             "paddle.nn.BatchNorm2D",
             inputs={"input": input.name},
             outputs=layer_outputs,
             **layer_attrs)
+        if len(node.in_shapes[0]) == 2:
+            self.paddle_graph.add_layer(
+                "paddle.squeeze",
+                inputs={"x": node.layer_name},
+                outputs=[node.layer_name],
+                axis=[2,3])
    
     def Scale(self, node):
         if node.data is None:
@@ -717,8 +729,13 @@ class CaffeOpMapper(OpMapper):
         else:
             self.params[node.layer_name + "_cparam1"] = np.squeeze(node.data[
                 0]).astype("float32")
-            self.params[node.layer_name + "_cparam2"] = np.squeeze(node.data[
-                1]).astype("float32")
+            if not node.layer.scale_param.bias_term:
+                self.params[node.layer_name + "_cparam2"] = np.zeros([
+                    node.in_shapes[0][1],
+                ]).astype("float32")
+            else:
+                self.params[node.layer_name + "_cparam2"] = np.squeeze(node.data[
+                    1]).astype("float32")
         params = node.layer.scale_param
         axis = params.axis
         inputs = []
@@ -747,11 +764,17 @@ class CaffeOpMapper(OpMapper):
             inputs_dict = {}
             inputs_dict['x'] = input0_name
             inputs_dict['y'] = node.layer_name + "_cparam1"
-            self.paddle_graph.add_layer(
-                "paddle.multiply",
-                inputs=inputs_dict,
-                outputs=[node.layer_name + "_mul"],
-                axis=axis)
+            if len(node.in_shapes[0]) == 2:
+                self.paddle_graph.add_layer(
+                    "paddle.multiply",
+                    inputs=inputs_dict,
+                    outputs=[node.layer_name + "_mul"])
+            else:
+                self.paddle_graph.add_layer(
+                    "paddle.multiply",
+                    inputs=inputs_dict,
+                    outputs=[node.layer_name + "_mul"],
+                    axis=axis)
         self.paddle_graph.add_layer(
             "self.create_parameter",
             inputs={},
