@@ -445,6 +445,8 @@ class OpSet9():
         layer_outputs = [nn_op_name, output_name]
         if is_pads_attr:
             paddings = []
+            if len(pads) == 10 and sum(pads) == 0:
+                pads = pads[0: 6]
             if len(pads) in [2, 4, 6]:
                 if data_shape:
                     assume_pad |= data_shape and 2 * (len(data_shape) - 2) == len(pads) # NCHW

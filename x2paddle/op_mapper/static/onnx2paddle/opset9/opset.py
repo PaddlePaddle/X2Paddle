@@ -407,6 +407,8 @@ class OpSet9():
         if is_pads_attr:
             paddings = []
             paddle_op = 'paddle.nn.functional.pad'
+            if len(pads) == 10 and sum(pads) == 0:
+                pads = pads[0: 6]
             if len(pads) in [2, 4, 6]:
                 if data_shape:
                     assume_pad |= data_shape and 2 * (len(data_shape) - 2) == len(pads) # NCHW
@@ -424,7 +426,7 @@ class OpSet9():
                         (2, -1)).transpose().astype("int32")
                     paddings = np.flip(paddings, axis=0).flatten().tolist()
                     layer_attrs['pad'] = paddings
-                    layer_attrs['data_format'] = data_format
+                    layer_attrs['data_format'] = string(data_format)
                 else:
                     if data_shape:
                         assume_pad |= data_shape and 2 * len(data_shape) == len(pads) # NCHW
