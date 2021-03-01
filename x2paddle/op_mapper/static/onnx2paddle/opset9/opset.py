@@ -696,11 +696,14 @@ class OpSet9():
                 inputs={'x': name_trans,
                         'index': indices.name},
                 outputs=[node.name])
+            new_perm = [0] * len(perm)
+            for i in range(len(perm)):
+                new_perm[perm[i]] = i
             self.paddle_graph.add_layer(
                 'paddle.transpose', 
                 inputs={"x": node.name}, 
                 outputs=[node.name], 
-                perm=perm)
+                perm=new_perm)
             if len(indices_shape) < 1:
                 self.paddle_graph.add_layer(
                     'paddle.squeeze',
@@ -772,11 +775,15 @@ class OpSet9():
                         'index': indices_reshape},
                 outputs=[node.name])
             input_transpose = node.name + '_transpose'
+            new_perm = [0] * len(perm)
+            for i in range(len(perm)):
+                new_perm[perm[i]] = i
             self.paddle_graph.add_layer(
                 'paddle.transpose',
                 inputs={"x": node.name},
                 outputs=[input_transpose],
-                perm=perm)
+                perm=new_perm)
+            perm = new_perm
             val_x_shape = val_x.out_shapes[0]
             reshaped_shape = []
             for i in perm:
