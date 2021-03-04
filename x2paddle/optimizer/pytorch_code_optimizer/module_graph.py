@@ -354,7 +354,7 @@ class ModuleGraph(object):
                 run_func_list.append("    # {}: shape-{}，type-{}.".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
-                 "    params = paddle.load('{}/model.pdparams')".format(osp.abspath(save_dir)),
+                 "    params = paddle.load('{}')".format(osp.join(osp.abspath(save_dir), "model.pdparams")),
                  "    model = {}()".format(self.pd_graph.name),
                  "    model.set_dict(params)",
                  "    model.eval()",

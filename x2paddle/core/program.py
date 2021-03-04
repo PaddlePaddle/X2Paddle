@@ -518,7 +518,7 @@ class PaddleGraph(object):
             use_structured_name = False if self.source_type in ["tf"] else True
             self.run_func.extend(
                 gen_codes(["paddle.disable_static()",
-                           "params = paddle.load('{}/model.pdparams')".format(osp.abspath(code_dir)),
+                           "params = paddle.load('{}')".format(osp.join(osp.abspath(code_dir), "model.pdparams")),
                            "model = {}()".format(self.name),
                            "model.set_dict(params, use_structured_name={})".format(use_structured_name),
                            "model.eval()",
