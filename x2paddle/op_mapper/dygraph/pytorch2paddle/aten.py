@@ -3353,6 +3353,42 @@ def aten_pow(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_prelu(mapper, graph, node):
+    """ 构造prelu激活的PaddleLayer。
+
+    TorchScript示例:
+        %result.3 : aten::prelu(%input.150, %999)
+        参数含义:
+        %result.3 (Tensor): 输出，prelu后的结果。
+        %input.150 (Tensor): 需要prelu的Tensor。
+        %999 (Tnsor): 权重。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("relu", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.150
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%999
+    weight = mapper.pytorch_params[inputs_name[1]]
+    mapper.paddle_params[op_name + "._weight"] = weight
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.PReLU", 
+        inputs=layer_inputs, 
+        outputs=layer_outputs, 
+        scope_name=scope_name, 
+        num_parameters=weight.shape[0])
+    return current_inputs, current_outputs
+
+
 def aten_relu(mapper, graph, node):
     """ 构造ReLU激活的PaddleLayer。
 

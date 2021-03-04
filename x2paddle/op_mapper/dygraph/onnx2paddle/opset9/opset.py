@@ -445,6 +445,8 @@ class OpSet9():
         layer_outputs = [nn_op_name, output_name]
         if is_pads_attr:
             paddings = []
+            if len(pads) == 10 and sum(pads) == 0:
+                pads = pads[0: 6]
             if len(pads) in [2, 4, 6]:
                 if data_shape:
                     assume_pad |= data_shape and 2 * (len(data_shape) - 2) == len(pads) # NCHW
@@ -728,11 +730,14 @@ class OpSet9():
                 inputs={'x': name_trans,
                         'index': indices.name},
                 outputs=[node.name])
+            new_perm = [0] * len(perm)
+            for i in range(len(perm)):
+                new_perm[perm[i]] = i
             self.paddle_graph.add_layer(
                 'paddle.transpose', 
                 inputs={"x": node.name}, 
                 outputs=[node.name], 
-                perm=perm)
+                perm=new_perm)
             if len(indices_shape) < 1:
                 self.paddle_graph.add_layer(
                     'paddle.squeeze',
@@ -809,11 +814,15 @@ class OpSet9():
                         'index': indices_reshape},
                 outputs=[node.name])
             input_transpose = node.name + '_transpose'
+            new_perm = [0] * len(perm)
+            for i in range(len(perm)):
+                new_perm[perm[i]] = i
             self.paddle_graph.add_layer(
                 'paddle.transpose',
                 inputs={"x": node.name},
                 outputs=[input_transpose],
-                perm=perm)
+                perm=new_perm)
+            perm = new_perm
             val_x_shape = val_x.out_shapes[0]
             reshaped_shape = []
             for i in perm:

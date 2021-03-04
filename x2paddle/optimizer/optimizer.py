@@ -60,7 +60,7 @@ class GraphOptimizer(object):
     def optimize(self, graph):
         for pass_name in self.passes:
             pass_ = PassManager.lookup(pass_name)()
-            if pass_name.endswith("_eliminate_pass"):
+            if pass_name.endswith("_eliminate_pass") or pass_name.endswith("_conv2d_add_fuse_pass"):
                 pass_.apply(graph)
             else:
                 while True:
