@@ -571,7 +571,7 @@ class CaffeOpMapper(OpMapper):
         if params.HasField('negative_slope') and params.negative_slope != 0:
             negative_slope = float(params.negative_slope)
 
-            layer_attrs = {'alpha': negative_slope}
+            layer_attrs = {'negative_slope': negative_slope}
             self.paddle_graph.add_layer(
                 "paddle.nn.LeakyReLU",
                 inputs={"input": input.name},

@@ -27,6 +27,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Linear": "linear",
                   "paddle.nn.Conv2DTranspose": "conv",
                   "paddle.nn.LSTM": "lstm",
+                  "paddle.nn.PReLU": "prelu",
                   "paddle.nn.ReLU": "relu",
                   "paddle.nn.ReLU6": "relu",
                   "paddle.nn.Softmax": "softmax",
@@ -41,7 +42,7 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
-NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:7]
+NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:8]
 
 def rename_layers(layers, param_tree=None, is_rename_module=False):
     """ 对子模块的输入输出等进行重命名。
