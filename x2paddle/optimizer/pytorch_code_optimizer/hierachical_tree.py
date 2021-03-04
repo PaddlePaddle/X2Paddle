@@ -383,9 +383,9 @@ class HierarchicalTree(Tree):
             input_data_name = ', '.join(self.pd_graph.inputs)
             run_func_list = list()
             run_func_list.append("def main({}):".format(input_data_name))
-            run_func_list.append("    # 共{}个输入".format(len(self.pd_graph.inputs_info)))
+            run_func_list.append("    # There are {} inputs.".format(len(self.pd_graph.inputs_info)))
             for k, v in self.pd_graph.inputs_info.items():
-                run_func_list.append("    # {}: 形状为{}，类型为{}。".format(k, v[0], v[1]))
+                run_func_list.append("    # {}: shape-{}，type-{}。".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
                  "    params = paddle.load('{}/model.pdparams')".format(osp.abspath(save_dir)),
