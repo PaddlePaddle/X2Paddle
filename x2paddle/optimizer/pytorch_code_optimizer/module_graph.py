@@ -351,7 +351,7 @@ class ModuleGraph(object):
             run_func_list.append("def main({}):".format(input_data_name))
             run_func_list.append("    # There are {} inputs.".format(len(self.pd_graph.inputs_info)))
             for k, v in self.pd_graph.inputs_info.items():
-                run_func_list.append("    # {}: shape-{}，type-{}.".format(k, v[0], v[1]))
+                run_func_list.append("    # {}: shape-{}, type-{}.".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
                  "    params = paddle.load('{}')".format(osp.join(osp.abspath(save_dir), "model.pdparams")),

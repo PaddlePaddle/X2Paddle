@@ -510,7 +510,7 @@ class PaddleGraph(object):
             comment_list = list()
             comment_list.append("# There are {} inputs.".format(len(self.inputs_info)))
             for k, v in self.inputs_info.items():
-                comment_list.append("# {}: shape-{}，type-{}。".format(k, v[0], v[1]))
+                comment_list.append("# {}: shape-{}, type-{}.".format(k, v[0], v[1]))
             self.run_func.extend(
                 gen_codes(
                     comment_list,
