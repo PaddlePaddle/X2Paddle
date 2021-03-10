@@ -14,6 +14,7 @@ file2element = dict()
 def write_file(path, tree):
     codes = astor.to_source(tree)
     codes = codes.replace("(...)", "...")
+    codes = codes.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams")
     f = open(path, "w")
     f.write(codes)
     f.close()
@@ -48,12 +49,32 @@ def convert_code(folder_path, new_folder_path):
             continue
         else:
             shutil.copyfile(current_path, new_current_path)
+            
+def convert_params(params_path):
+    import torch
+    import paddle
+    params = torch.load(params_path, map_location=torch.device('cpu'))
+    new_params = dict()
+    bn_w_name_list = list()
+    for k, v in params.items():
+        if k.endswith(".running_mean"):
+            new_params[k.replace(".running_mean", "_mean")] = v.detach().numpy()
+        elif k.endswith(".running_var"):
+            new_params[k.replace(".running_var", "_variance")] = v.detach().numpy()
+            bn_w_name_list.append(k.replace(".running_var", ".weight"))
+        else:
+            new_params[k] = v.detach().numpy()
+    for k, v in new_params.items():
+        if len(v.shape) == 2 and k.endswith(".weight") and k not in bn_w_name_list:
+            new_params[k] = v.T
+    paddle.save(new_params, params_path.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams"))
 
-def main(project_path, new_project_path):
+def main(project_path, new_project_path, params_path=None):
     project_path = osp.abspath(project_path)
     generate_import_info(project_path)
     if not osp.exists(new_project_path):
         os.makedirs(new_project_path)
     convert_code(project_path, new_project_path)
-    
-main("/mnt/sunyanfang01/my_pytorch/real_face/", "/mnt/sunyanfang01/real_face2/")
+    if params_path is not None:
+        params_path = osp.abspath(params_path)
+        convert_params(params_path)

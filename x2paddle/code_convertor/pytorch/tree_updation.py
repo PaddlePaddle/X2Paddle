@@ -339,5 +339,8 @@ class Convertor(ast.NodeVisitor):
                 dim_nodes[i] = dim_node.value
             else:
                 self.visit(dim_node)
+                
+    def visit_Str(self, node):
+        setattr(node, "s", node.s.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams"))
 
             
