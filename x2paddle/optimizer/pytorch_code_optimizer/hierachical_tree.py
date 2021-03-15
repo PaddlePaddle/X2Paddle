@@ -336,8 +336,23 @@ class HierarchicalTree(Tree):
                     else:
                         module_name = module._get_name()
                     if module_name in module_name2sub_layers:
-                        module_name2sub_layers[module_name].append(sub_layers)
-                        module_name2sub_identifiers[module_name].append(sub_identifiers)
+                        if len(sub_layers[list(sub_layers.keys())[-1]].outputs) != \
+                                    len(module_name2sub_layers[module_name][0][list(module_name2sub_layers[module_name][0].keys())[-1]].outputs):
+                            while module_name in module_name2sub_layers:
+                                module_name = module_name + "__tmp"
+                                if module_name in module_name2sub_layers and \
+                                        len(sub_layers[list(sub_layers.keys())[-1]].outputs) == \
+                                        len(module_name2sub_layers[module_name][0][list(module_name2sub_layers[module_name][0].keys())[-1]].outputs):
+                                    break
+                            if module_name not in module_name2sub_layers:
+                                module_name2sub_layers[module_name] = [sub_layers]
+                                module_name2sub_identifiers[module_name] = [sub_identifiers]
+                            else:
+                                module_name2sub_layers[module_name].append(sub_layers)
+                                module_name2sub_identifiers[module_name].append(sub_identifiers)
+                        else:
+                            module_name2sub_layers[module_name].append(sub_layers)
+                            module_name2sub_identifiers[module_name].append(sub_identifiers)
                     else:
                         module_name2sub_layers[module_name] = [sub_layers]
                         module_name2sub_identifiers[module_name] = [sub_identifiers]

@@ -2174,12 +2174,16 @@ def aten_hardtanh_(mapper, graph, node):
     # 处理输入2，即%66
     layer_attrs["max"] = mapper.attrs[inputs_name[2]]
 
-    graph.add_layer(
-        'paddle.nn.Hardtanh',
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name,
-        **layer_attrs)
+    if layer_attrs["min"] ==0 and layer_attrs["max"] == 6:
+        graph.add_layer(
+        "paddle.nn.ReLU6", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+    else:
+        graph.add_layer(
+            'paddle.nn.Hardtanh',
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
     return current_inputs, current_outputs
 
 
