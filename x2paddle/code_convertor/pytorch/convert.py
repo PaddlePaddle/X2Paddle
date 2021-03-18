@@ -8,6 +8,29 @@ from dependency_statistics import run as run_dependency
 from ast_updation import run as run_ast
 
 
+def arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--project_path",
+        "-p",
+        type=_text_type,
+        default=None,
+        help="define project folder path for pytorch")
+    parser.add_argument(
+        "--save_path",
+        "-s",
+        type=_text_type,
+        default=None,
+        help="path to save translated code")
+    parser.add_argument(
+        "--params_path",
+        "-pa",
+        type=_text_type,
+        default=None,
+        help="weight file of pytorch model")
+    return parser
+
+
 def write_file(path, tree):
     codes = astor.to_source(tree)
     codes = codes.replace("(...)", "...")
@@ -73,3 +96,8 @@ def main(project_path, new_project_path, params_path=None):
     if params_path is not None:
         params_path = osp.abspath(params_path)
         convert_params(params_path)
+
+if __name__ == "__main__":
+    parser = arg_parser()
+    args = parser.parse_args()
+    main(args.project_path, args.save_path, args.params_path)        
