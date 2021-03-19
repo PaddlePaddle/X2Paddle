@@ -1,0 +1,1 @@
+from x2paddle.code_convertor.pytorch.torch2paddle import *

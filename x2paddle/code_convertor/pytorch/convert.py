@@ -3,9 +3,11 @@ import astor
 import os
 import os.path as osp
 import shutil
+import argparse
+from six import text_type as _text_type
 
 from dependency_statistics import run as run_dependency
-from ast_updation import run as run_ast
+from ast_update import run as run_ast
 
 
 def arg_parser():

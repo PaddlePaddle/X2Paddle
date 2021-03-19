@@ -1,8 +1,10 @@
 import paddle
 import PIL
+import numbers
 import numpy as np
 from PIL import Image
 from paddle.vision.transforms import BaseTransform
+from paddle.vision.transforms import functional as F
 
 class ToPILImage(BaseTransform):
     def __init__(self, mode=None, keys=None):
@@ -116,4 +118,32 @@ class ToTensor(BaseTransform):
         img = img.transpose((2, 0, 1)).astype("float32")
         img = paddle.to_tensor(img)
         return img
-            
+    
+class Normalize(BaseTransform):
+    """Normalize the input data with mean and standard deviation.
+    Given mean: ``(M1,...,Mn)`` and std: ``(S1,..,Sn)`` for ``n`` channels,
+    this transform will normalize each channel of the input data.
+    ``output[channel] = (input[channel] - mean[channel]) / std[channel]``
+    Args:
+        mean (int|float|list): Sequence of means for each channel.
+        std (int|float|list): Sequence of standard deviations for each channel.
+    """
+
+    def __init__(self,
+                 mean=0.0,
+                 std=1.0, 
+                 keys=None):
+        super(Normalize, self).__init__(keys)
+        if isinstance(mean, numbers.Number):
+            mean = [mean, mean, mean]
+
+        if isinstance(std, numbers.Number):
+            std = [std, std, std]
+
+        self.mean = mean
+        self.std = std
+
+    def _apply_image(self, img):
+        if isinstance(img, paddle.Tensor):
+            img = img.numpy()
+        return F.normalize(img, self.mean, self.std, 'CHW', False)    

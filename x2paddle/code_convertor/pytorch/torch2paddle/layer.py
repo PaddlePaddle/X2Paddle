@@ -14,6 +14,11 @@ setattr(paddle.nn.Layer, "module", module)
 
 @add_layer_function
 def load_state_dict(self, state_dict, strict=True):
+    for key, param in self.state_dict().items():
+        state = state_dict.get(key, None) 
+        if state is None:
+            if key.endswith(".scale"):
+                state_dict[key] = state_dict.pop(key[0: -5] + "weight")
     self.set_state_dict(state_dict)
 
 @add_layer_function

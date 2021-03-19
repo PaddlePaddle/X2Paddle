@@ -125,6 +125,10 @@ class AstUpdation(ast.NodeVisitor):
                                     dependency_info.PADDLE_IMPORT + paddle_api_seg[-1])
             else:
                 name = name.replace(pytorch_api_seg[-1], paddle_api_seg[-1])
+        elif "torch2paddle." in paddle_api:
+            name = "torch2paddle." + paddle_api.split("torch2paddle.")[-1]
+        else:
+            name = paddle_api
         return name
     
     def _generate_file_path(self, dependency_info):
@@ -278,8 +282,10 @@ class AstUpdation(ast.NodeVisitor):
         """ 对属性字符串满足以下4种情况时进行替换：
             情况1 —— Class A(nn.Module)：将nn.Module替换为nn.Layer；
             情况2 —— a = (1, 2, nn.Module)：将nn.Module替换为nn.Layer；
-            情况3 —— torch.float32：将torch.float32替换为"float32"；
-            情况4 —— isinstance(a, nn.Module)：将nn.Module替换为nn.Layer。
+            情况3 —— def a() -> torch.Tensor：将torch.Tensor替换为paddle.Tensor；
+            情况4 —— def a(x: torch.Tensor)：将torch.Tensor替换为paddle.Tensor；
+            情况5 —— torch.float32：将torch.float32替换为"float32"；
+            情况6 —— isinstance(a, nn.Module)：将nn.Module替换为nn.Layer。
         """
         value_node = node.value
         attr = node.attr
@@ -317,7 +323,14 @@ class AstUpdation(ast.NodeVisitor):
                     if v == node and pytorch_api in API_MAPPER:
                         father_node.k = ast.parse(paddle_api).body[0].value
                         break
-                return attr_str            
+                return attr_str 
+            elif isinstance(father_node, ast.Assign):
+                if pytorch_api in REMOVE_API:
+                    scope_node = self._get_scope_node()
+                    for i, n in enumerate(scope_node.body):
+                        if father_node == n:
+                            scope_node.body.pop[i]
+                            return None
         return attr_str
     
     def visit_Num(self, node):

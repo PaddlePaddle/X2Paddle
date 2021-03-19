@@ -67,7 +67,7 @@ TORCHVISION_MAPPER  = {"torchvision.transforms": ["paddle.vision.transforms", No
                        "torchvision.transforms.ToTensor": ["x2paddle.torch2paddle.ToTensor", None],
                        "torchvision.transforms.RandomHorizontalFlip": ["paddle.vision.transforms.RandomHorizontalFlip", None],
                        "torchvision.transforms.CenterCrop": ["paddle.vision.transforms.CenterCrop", None],
-                       "torchvision.transforms.Normalize": ["paddle.vision.transforms.Normalize", ClassNormalize],
+                       "torchvision.transforms.Normalize": ["x2paddle.torch2paddle.Normalize", ClassNormalize],
                        "torchvision.utils.save_image": ["x2paddle.torch2paddle.save_image", None],
                        "torchvision.datasets.ImageFolder": ["paddle.vision.datasets.ImageFolder", ClassImageFolder]}
 
@@ -93,6 +93,8 @@ API_MAPPER = {"torch": ["paddle", None],
               "torch.mean": ["paddle.mean", FuncMean],
               "torch.ones": ["paddle.ones", FunBuildTensor],
               "torch.zeros": ["paddle.zeros", FunBuildTensor],
+              "torch.full": ["paddle.full", FunFull],
+              "torch.full_like": ["paddle.full_like", FunFullLike],
               "torch.sqrt": ["paddle.sqrt", FunSqrt],
               "torch.arange": ["paddle.arange", FuncArange],
               "torch.matmul": ["paddle.matmul", FuncMatmul],
@@ -109,6 +111,7 @@ API_MAPPER = {"torch": ["paddle", None],
               "torch.randperm": ["paddle.randperm", FuncRandperm],
               "torch.rand": ["paddle.rand", FuncRand],
               "torch.abs": ["paddle.abs", FunAbs],
+              "torch.bitwise_or": ["paddle.logical_or", FuncLogical],
              }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)
@@ -117,3 +120,5 @@ API_MAPPER.update(UTILS_MAPPER)
 API_MAPPER.update(DTYPE_MAPPER) 
 API_MAPPER.update(TORCHVISION_MAPPER)
 API_MAPPER.update(AUTOGRAD_MAPPER)
+
+REMOVE_API =["torch.backends.cudnn.benchmark"]

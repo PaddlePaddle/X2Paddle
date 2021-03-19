@@ -1,4 +1,5 @@
 from .utils import *
+from x2paddle.utils import *
 
 class FuncSave(object):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
@@ -311,6 +312,20 @@ class FuncMaxMin(Mapper):
         self.process_attrs()
         self.delete_attrs()
         return [], generate_api_code(self.func_name, self.args, self.kwargs), []
+    
+class FuncLogical(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+        rename_key(self.kwargs, "other", "y")  
+        
+    def run(self):
+        self.check_attrs()
+        self.process_attrs()
+        self.delete_attrs()
+        return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         
         
 class FuncArgMaxMin(Mapper):
@@ -414,3 +429,31 @@ class ClassFloatTensor(Mapper):
     def run(self):
         insert_code = "{} = paddle.cast({}, dtype='float32')".format(self.target_name, self.target_name)
         return [], generate_api_code(self.func_name, self.args, self.kwargs), [insert_code]
+    
+class FunFull(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "size", "shape")
+                
+    def delete_attrs(self):
+        delete_key(self.kwargs, "out")
+        delete_key(self.kwargs, "layout")
+        delete_key(self.kwargs, "device")
+        delete_key(self.kwargs, "requires_grad")
+    
+    def run(self):
+        same_attr_count = 2
+        if len(self.args) > same_attr_count:
+            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
+            self.kwargs.update(new_kwargs)
+            self.args = self.args[:same_attr_count]
+        return super().run()
+
+class FunFullLike(FunFull):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")

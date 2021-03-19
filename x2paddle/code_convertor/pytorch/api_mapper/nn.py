@@ -1,4 +1,6 @@
 from .utils import *
+from x2paddle.utils import *
+
 
 class ClassConv2D(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
@@ -211,12 +213,22 @@ class FuncBinaryCrossEntropyLogits(Mapper):
     def process_attrs(self):
         rename_key(self.kwargs, "logit", "label")
         rename_key(self.kwargs, "target", "label")
-        if not self.kwargs["size_average"]:
+        if "size_average" in self.kwargs and str(self.kwargs["size_average"]).strip() == "False":
+            self.kwargs["reduction"] = string("sum")
+        if "reduce" in self.kwargs and str(self.kwargs["reduce"]).strip() == "False":
             self.kwargs["reduction"] = "sum"
     
     def delete_attrs(self):
         delete_key(self.kwargs, "size_average")
         delete_key(self.kwargs, "reduce")
+        
+    def run(self):
+        same_attr_count = 2
+        if len(self.args) > same_attr_count:
+            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
+            self.kwargs.update(new_kwargs)
+            self.args = self.args[:same_attr_count]
+        return super().run()
         
 class FuncSoftmax(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
