@@ -6,8 +6,8 @@ import shutil
 import argparse
 from six import text_type as _text_type
 
-from dependency_statistics import run as run_dependency
-from ast_update import run as run_ast
+from .dependency_analysis import run as run_dependency
+from .ast_update import run as run_ast
 
 
 def arg_parser():
@@ -88,18 +88,21 @@ def convert_params(params_path):
             new_params[k] = v.T
     paddle.save(new_params, params_path.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams"))
 
-def main(project_path, new_project_path, params_path=None):
+def main():
+    parser = arg_parser()
+    args = parser.parse_args()
+    project_path = args.project_path
+    save_path = args.save_path
+    params_path = args.params_path
     project_path = osp.abspath(project_path)
     file_dependency = dict()
     generate_dependency(project_path, file_dependency)
-    if not osp.exists(new_project_path):
-        os.makedirs(new_project_path)
-    convert_code(project_path, new_project_path, file_dependency)
+    if not osp.exists(save_path):
+        os.makedirs(save_path)
+    convert_code(project_path, save_path, file_dependency)
     if params_path is not None:
         params_path = osp.abspath(params_path)
         convert_params(params_path)
 
 if __name__ == "__main__":
-    parser = arg_parser()
-    args = parser.parse_args()
-    main(args.project_path, args.save_path, args.params_path)        
+    main()        

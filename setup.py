@@ -22,4 +22,24 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     license='Apache 2.0',
-    entry_points={'console_scripts': ['x2paddle=x2paddle.convert:main', ]})
+    entry_points={'console_scripts': ['x2paddle=x2paddle.convert:main']})
+
+setuptools.setup(
+    name="x2paddle_code",
+    version=x2paddle.__version__,
+    author="dltp-sz",
+    author_email="dltp-sz@baidu.com",
+    description="a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.",
+    long_description=long_description,
+    long_description_content_type="text/plain",
+    url="https://github.com/PaddlePaddle/x2paddle",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+    ],
+    license='Apache 2.0',
+    entry_points={'console_scripts': ['x2paddle_code=x2paddle.code_convertor.pytorch.convert:main',]})
+
+
