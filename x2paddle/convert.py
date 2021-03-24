@@ -49,7 +49,7 @@ def arg_parser():
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        help="define which deeplearning framework(tensorflow/caffe/onnx/pytorch_project/paddle2onnx)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -76,6 +76,20 @@ def arg_parser():
         type=_text_type,
         default="dygraph",
         help="define the paddle model type after converting(dygraph/static)"
+    )
+    parser.add_argument(
+        "--project_dir",
+        "-pd",
+        type=_text_type,
+        default=None,
+        help="define project folder path for pytorch"
+    )
+    parser.add_argument(
+        "--pretrain_model",
+        "-pm",
+        type=_text_type,
+        default=None,
+        help="pretrain model file of pytorch model"
     )
     
     return parser
@@ -262,6 +276,10 @@ def main():
     elif args.framework == "onnx":
         assert args.model is not None, "--model should be defined while translating onnx model"
         onnx2paddle(args.model, args.save_dir, args.paddle_type)
+    elif args.framework == "pytorch_project":
+        assert args.project_dir is not None, "--project_dir should be defined while translating pytorch project"
+        from x2paddle.code_convertor.pytorch.convert import main
+        main(args)
     elif args.framework == "paddle2onnx":
         print("Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx")
 
