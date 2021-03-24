@@ -1,28 +1,28 @@
 # 添加API映射方式
 需要添加的API映射有5种情况，本文档将对5种情况进行分别介绍，而需要修改的文件在[x2paddle/code_convertor/pytorch](./x2paddle/code_convertor/pytorch)，具体文件如下所示：
-> .
-> ├── api_mapper
-> │   ├── \_\_init\_\_.py
-> │   ├── learning_rate_scheduler.py
-> │   ├── nn.py
-> │   ├── ops.py
-> │   ├── torchvision.py
-> │   └── utils.py
-> ├── mapper.py
-> └── torch2paddle
->     ├── container.py
->     ├── device.py
->     ├── \_\_init\_\_.py
->     ├── io.py
->     ├── layer.py
->     ├── nn_functional.py
->     ├── nn_utils.py
->     ├── ops.py
->     ├── optimizer.py
->     ├── tensor.py
->     ├── varbase.py
->     ├── vision_transforms.py
->     └── vision_utils.py
+> .  
+> ├── api_mapper  
+> │   ├── \_\_init\_\_.py  
+> │   ├── learning_rate_scheduler.py  
+> │   ├── nn.py  
+> │   ├── ops.py  
+> │   ├── torchvision.py  
+> │   └── utils.py  
+> ├── mapper.py  
+> └── torch2paddle  
+>     ├── container.py  
+>     ├── device.py  
+>     ├── \_\_init\_\_.py  
+>     ├── io.py  
+>     ├── layer.py  
+>     ├── nn_functional.py  
+>     ├── nn_utils.py  
+>     ├── ops.py  
+>     ├── optimizer.py  
+>     ├── tensor.py  
+>     ├── varbase.py  
+>     ├── vision_transforms.py  
+>     └── vision_utils.py  
 
 其中，mapper.py的作用是存放PyTorch到Paddle的API名字映射，以及进行参数映射所需调用的类；api_mapper文件夹下的每个文件存放没每个类别API中参数需要进行的映射处理， learning_rate_scheduler.py中是学习率类API， nn.py中是组网、loss等神经网络类API，ops.py中是Tensor处理类API，torchvision.py指视觉类API，后期如有新的类别，用户可以根据需求自行添加；torch2paddle存放各个类别需要重新实现的API。
 ### 情况一
