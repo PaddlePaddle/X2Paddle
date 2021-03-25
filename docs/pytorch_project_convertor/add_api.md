@@ -1,5 +1,5 @@
 # 添加API映射方式
-需要添加的API映射有5种情况，本文档将对5种情况进行分别介绍，而需要修改的文件在[x2paddle/project_convertor/pytorch](./x2paddle/project_convertor/pytorch)，具体文件如下所示：
+需要添加的API映射有5种情况，本文档将对5种情况进行分别介绍，而需要修改的文件在[x2paddle/project_convertor/pytorch](../../x2paddle/project_convertor/pytorch)，具体文件如下所示：
 > .  
 > ├── api_mapper  
 > │   ├── \_\_init\_\_.py  
