@@ -81,9 +81,9 @@ class Solver(object):
                 # 如果为bool型，需要强转为int32，
                 # 在17-20行实现
                 is_bool = False
-                    if str(c_trg.dtype) == "VarType.BOOL":
-                        c_trg = c_trg.cast("int32")
-                        is_bool = True
+                if str(c_trg.dtype) == "VarType.BOOL":
+                    c_trg = c_trg.cast("int32")
+                    is_bool = True
                 c_trg[:, i] = (c_trg[:, i] == 0) 
                 # 如果为bool类型转换为原类型
                 # 在23-24行实现
@@ -122,25 +122,30 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 ...
 ```
 
-2. 使自定义的[`DataSet`](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/vision/datasets/voc_dataset.py#L10)继承`torch.utils.data.Dataset`，修改为如下代码：
+2. 使自定义的[`DataSet`](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/vision/datasets/voc_dataset.py#L10)继承`torch.utils.data.Dataset`，同时由于代码未导入torch，要添加相关导入的包，修改为如下代码：
 ``` python
+...
+# 导入torch
+import torch
 ...
 # class VOCDataset
 class VOCDataset(torch.utils.data.Dataset):
     ...
 ...
 ```
-3. 若需要使用GPU，DataLoader的`num_workers`设置为0，在[train-version-RFB.sh处](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
+
+### 转换
+```shell
+x2paddle --framework=pytorch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
+```
+### 转换后修改代码
+1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
 ```shell
 ...
   --num_workers \
   #4 \
   0 \
 ...
-```
-### 转换
-```shell
-x2paddle --framework=pytorch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
 ```
 ### 运行训练代码
 ``` shell
