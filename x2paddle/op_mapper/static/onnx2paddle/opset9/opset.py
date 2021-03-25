@@ -1810,3 +1810,50 @@ class OpSet9():
             inputs={"x": val_x.name}, 
             outputs=[node.name], 
             **layer_attrs)
+
+    @print_mapping_info
+    def DepthToSpace(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        blocksize = node.get_attr('blocksize')
+        mode = node.get_attr('mode', "DCR")
+        val_x_shape = val_x.out_shapes[0]
+        b, c, h, w = val_x_shape
+        if mode == "DCR":
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                shape=[b, blocksize, blocksize, c // (blocksize**2), h, w]
+                )
+            self.paddle_graph.add_layer(
+                'paddle.transpose',
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 3, 4, 1, 5, 2]
+                )
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": node.name},
+                outputs=[node.name],
+                shape=[b, c // (blocksize**2), h * blocksize, w * blocksize]
+                )
+        else:
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                shape=[b, c // (blocksize ** 2), blocksize, blocksize, h, w]
+                )
+            self.paddle_graph.add_layer(
+                'paddle.transpose',
+                inputs={"x": node.name},
+                outputs=[node.name],
+                perm=[0, 1, 4, 2, 5, 3]
+                )
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": node.name},
+                outputs=[node.name],
+                shape=[b, c // (blocksize ** 2), h * blocksize, w * blocksize]
+                )
+                
