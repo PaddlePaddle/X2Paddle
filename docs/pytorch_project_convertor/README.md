@@ -12,9 +12,9 @@ torch (版本由需转换的代码所需的运行环境决定)
 1. 去除TensorBoard相关的操作。
 
 2. 将PyTorch中Tensor逐位逻辑与、或、异或运算操作符替换为对应的API的操作：
-> | 替换为 torch.bitwise_or
-> & 替换为 torch.bitwise_and
-> ^ 替换为 toech.bitwise_xor
+> | 替换为 torch.bitwise_or  
+> & 替换为 torch.bitwise_and  
+> ^ 替换为 toech.bitwise_xor  
 
 3. 若自定义的`DataSet`（用于加载数据模块，作为`torch.utils.data.DataLoader`的参数）未继承`torch.utils.data.Dataset`，则需要添加该继承关系。
 
@@ -41,16 +41,16 @@ x2paddle --framework=pytorch_project --project_dir=torch_project --save_dir=padd
 ***[注意]*** 转换前后相应操作可以参考[转换示例](./demo.md)
 
 ## Q&A
-1. 出现如下提示如何处理？
-> The no support Api are: [torchvision.transforms.RandomErasing, torchvision.transforms.functional, torchvision.transforms.RandomCrop.get_params, torch.all, torch.as_tensor].
+1. 出现如下提示如何处理？  
+> The no support Api are: [torchvision.transforms.RandomErasing, torchvision.transforms.functional, torchvision.transforms.RandomCrop.get_params, torch.all, torch.as_tensor].  
 
 A：这一提示说明仍有API未支持转换，用户可自行添加相应API的支持，具体添加流程参照[添加示例](./add_api.md)，或及时提issue与我们联系。
 
-2. 运行时，出现DataLoader的报错异常，如何查找原因？
-A：
-步骤一：查看对应自定义Dataset中\_\_getiem\_\_的返回值是否为numpy；
-步骤二：如若当前的设备为GPU，是否未将`num_workers`设置为0；
-步骤三：查看图像预处理的transform中是否有使用出错。
+2. 运行时，出现DataLoader的报错异常，如何查找原因？  
+A：  
+步骤一：查看对应自定义Dataset中\_\_getiem\_\_的返回值是否为numpy；  
+步骤二：如若当前的设备为GPU，是否未将`num_workers`设置为0；  
+步骤三：查看图像预处理的transform中是否有使用出错。  
 
-3. 当前是否支持torch.jit的转换？
-A：不支持。
+3. 当前是否支持torch.jit的转换？  
+A：不支持。  
