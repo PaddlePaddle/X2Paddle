@@ -145,7 +145,7 @@ x2paddle --framework=pytorch_project --project_dir=Ultra-Light-Fast-Generic-Face
 ### 运行训练代码
 ``` shell
 cd paddle_project/Ultra-Light-Fast-Generic-Face-Detector-1MB
-
+sh train-version-RFB.sh
 ```
 
 

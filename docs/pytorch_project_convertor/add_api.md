@@ -1,28 +1,28 @@
 # 添加API映射方式
 需要添加的API映射有5种情况，本文档将对5种情况进行分别介绍，而需要修改的文件在[x2paddle/code_convertor/pytorch](./x2paddle/code_convertor/pytorch)，具体文件如下所示：
-> .
-> ├── api_mapper
-> │   ├── \_\_init\_\_.py
-> │   ├── learning_rate_scheduler.py
-> │   ├── nn.py
-> │   ├── ops.py
-> │   ├── torchvision.py
-> │   └── utils.py
-> ├── mapper.py
-> └── torch2paddle
->     ├── container.py
->     ├── device.py
->     ├── \_\_init\_\_.py
->     ├── io.py
->     ├── layer.py
->     ├── nn_functional.py
->     ├── nn_utils.py
->     ├── ops.py
->     ├── optimizer.py
->     ├── tensor.py
->     ├── varbase.py
->     ├── vision_transforms.py
->     └── vision_utils.py
+> .  
+> ├── api_mapper  
+> │   ├── \_\_init\_\_.py  
+> │   ├── learning_rate_scheduler.py  
+> │   ├── nn.py  
+> │   ├── ops.py  
+> │   ├── torchvision.py  
+> │   └── utils.py  
+> ├── mapper.py  
+> └── torch2paddle  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── container.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── device.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── \_\_init\_\_.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── io.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── layer.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── nn_functional.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── nn_utils.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── ops.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── optimizer.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── tensor.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── varbase.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── vision_transforms.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── vision_utils.py  
 
 其中，mapper.py的作用是存放PyTorch到Paddle的API名字映射，以及进行参数映射所需调用的类；api_mapper文件夹下的每个文件存放没每个类别API中参数需要进行的映射处理， learning_rate_scheduler.py中是学习率类API， nn.py中是组网、loss等神经网络类API，ops.py中是Tensor处理类API，torchvision.py指视觉类API，后期如有新的类别，用户可以根据需求自行添加；torch2paddle存放各个类别需要重新实现的API。
 ### 情况一
@@ -30,7 +30,7 @@
 ``` shell
 AttributeError: 'Tensor' object has no attribute 'XX'
 ```
-该情况下需要将PyTorch中Tensor的类内函数注册为Paddle中Tensor的内置函数，注册方式为，在[x2paddle/code_convertor/pytorch/torch2paddle/tensor.py](./x2paddle/code_convertor/pytorch/torch2paddle/tensor.py)添加相应代码，以item类内函数为例，需要添加如下代码：
+该情况下需要将PyTorch中Tensor的类内函数注册为Paddle中Tensor的内置函数，注册方式为，在[x2paddle/code_convertor/pytorch/torch2paddle/tensor.py](../../x2paddle/code_convertor/pytorch/torch2paddle/tensor.py)添加相应代码，以item类内函数为例，需要添加如下代码：
 ``` python
 # 添加注册装饰器
 @add_tensor_function
@@ -53,7 +53,7 @@ def reshape(self, *shape):
 ``` shell
 AttributeError: 'Layer' object has no attribute 'XX'
 ```
-该情况下需要将PyTorch中Layer的类内函数注册为Paddle中Layer的内置函数，注册方式为，在[x2paddle/code_convertor/pytorch/torch2paddle/layer.py](./x2paddle/code_convertor/pytorch/torch2paddle/layer.py)添加相应代码，以apply类内函数为例，需要添加如下代码：
+该情况下需要将PyTorch中Layer的类内函数注册为Paddle中Layer的内置函数，注册方式为，在[x2paddle/code_convertor/pytorch/torch2paddle/layer.py](../../x2paddle/code_convertor/pytorch/torch2paddle/layer.py)添加相应代码，以apply类内函数为例，需要添加如下代码：
 ``` python
 # 添加注册装饰器
 @add_layer_function
@@ -72,7 +72,7 @@ def train(self, mode=True):
     return train_tmp(self)
 ```
 ### 情况三
-当PyTorch的API与Paddle的API使用方式及参数一致，只是命名方式不一致时，直接在[x2paddle/code_convertor/pytorch/mapper.py](./x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，无需添加进行参数映射所需调用的类，具体实现如下：
+当PyTorch的API与Paddle的API使用方式及参数一致，只是命名方式不一致时，直接在[x2paddle/code_convertor/pytorch/mapper.py](../../x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，无需添加进行参数映射所需调用的类，具体实现如下：
 ``` python
 # key为PyTorch API字符串；
 # value为列表，由Paddle API字符串和None组合而成。
@@ -90,7 +90,7 @@ NN_MAPPER = {
 
 ### 情况四
 在Paddle中可以找到与PyTorch功能相似的API，但PyTorch的API与Paddle的API命名方式、部分使用方式及参数不一致，同时Paddle可以通过参数替换以及简单添加几行多余操作实现时，使用该方式进行映射，主要有以下几个步骤：
-1. 在[x2paddle/code_convertor/pytorch/mapper.py](./x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、参数映射等操作所需调用的类，具体实现如下：
+1. 在[x2paddle/code_convertor/pytorch/mapper.py](.../../x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、参数映射等操作所需调用的类，具体实现如下：
 ``` python
 # key为PyTorch API字符串；
 # value为列表，由Paddle API字符串和参数映射等操作所需调用的类组合而成。
@@ -108,7 +108,7 @@ NN_MAPPER = {
 # 类名以Class或Func开始，Class代表Paddle API为一个类，Func代表Paddle API为一个方法。
 ```
 
-2. 在[x2paddle/code_convertor/pytorch/api_mapper/](./x2paddle/code_convertor/pytorch/api_mapper)文件夹中找到对应的文件并在其中添加参数映射等操作所需调用的类，以`torch.matmul`和`paddle.matmul`的映射为例，需要添加的类如下所示：
+2. 在[x2paddle/code_convertor/pytorch/api_mapper/](../../x2paddle/code_convertor/pytorch/api_mapper)文件夹中找到对应的文件并在其中添加参数映射等操作所需调用的类，以`torch.matmul`和`paddle.matmul`的映射为例，需要添加的类如下所示：
 ``` python
 class FuncMatmul(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
@@ -197,7 +197,7 @@ class Mapper(object):
 ```
 参数映射等操作所需调用的类`FuncMatmul`重写了基类`Mapper`中的`process_attrs`、`delete_attrs`和`run`，最后`run`返回3个值，第一个值代表在paddle相关代码这一行之前需要添加的代码（为list），第二个值代表paddle相关代码（为str），第三行代表在paddle相关代码这一行之后需要添加的代码（为list）。
 
-3. 当PyTorch API传入的是可变参数或关键字参数，参数映射等操作所需调用的类无法对参数进行处理，此时只能调用x2paddle封装的API，所以需要在[x2paddle/code_convertor/pytorch/torch2paddle/](./x2paddle/code_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与torch2paddle_func_name中的命名一致，同样以`torch.matmul`和`paddle.matmul`的映射为例，其实现代码如下：
+3. 当PyTorch API传入的是可变参数或关键字参数，参数映射等操作所需调用的类无法对参数进行处理，此时只能调用x2paddle封装的API，所以需要在[x2paddle/code_convertor/pytorch/torch2paddle/](../../x2paddle/code_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与torch2paddle_func_name中的命名一致，同样以`torch.matmul`和`paddle.matmul`的映射为例，其实现代码如下：
 ``` python 
 def matmul(input, other, *, out=None):
     return paddle.matmul(input, other)
@@ -205,7 +205,7 @@ def matmul(input, other, *, out=None):
 
 ### 情况五
 在Paddle中无法找到与PyTorch功能相似的API，需要自行实现该API，使用该方式进行映射，主要有以下几个步骤：
-1.  在[x2paddle/code_convertor/pytorch/mapper.py](./x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，具体实现如下：
+1.  在[x2paddle/code_convertor/pytorch/mapper.py](../../x2paddle/code_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，具体实现如下：
 ``` python
 # key为PyTorch API字符串；
 # value为列表，由x2paddle自行实现API字符串和None组合而成。
@@ -222,7 +222,7 @@ UTILS_MAPPER = {
 ...
 ```
 
-2. 在[x2paddle/code_convertor/pytorch/torch2paddle/](./x2paddle/code_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与1.中字典 value值list的第一个值的命名一致，同样以`torch.utils.data.random_split`的实现为例，其实现代码如下：
+2. 在[x2paddle/code_convertor/pytorch/torch2paddle/](../../x2paddle/code_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与1.中字典 value值list的第一个值的命名一致，同样以`torch.utils.data.random_split`的实现为例，其实现代码如下：
 ``` python
 def random_split(dataset, lengths, generator=None):
     if sum(lengths) != len(dataset):
