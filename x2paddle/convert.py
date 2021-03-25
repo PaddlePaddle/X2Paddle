@@ -278,8 +278,8 @@ def main():
         onnx2paddle(args.model, args.save_dir, args.paddle_type)
     elif args.framework == "pytorch_project":
         assert args.project_dir is not None, "--project_dir should be defined while translating pytorch project"
-        from x2paddle.code_convertor.pytorch.convert import main
-        main(args)
+        from x2paddle.code_convertor.pytorch.convert import main as convert_torch
+        convert_torch(args)
     elif args.framework == "paddle2onnx":
         print("Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx")
 
