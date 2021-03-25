@@ -3,8 +3,8 @@
 支持将PyTorch代码及预训练模型转换为PaddlePaddle代码及预训练模型。
 
 ## 环境依赖
-python >= 3.5
-paddlepaddle >= 2.0.1 或者 develop
+python >= 3.5  
+paddlepaddle >= 2.0.1 或者 develop   
 torch (版本由需转换的代码所需的运行环境决定)
 
 ## 使用方法
