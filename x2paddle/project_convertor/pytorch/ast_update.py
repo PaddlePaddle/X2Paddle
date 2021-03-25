@@ -1,7 +1,7 @@
 import ast
 import astor
 import sys
-from x2paddle.code_convertor.pytorch.mapper import *
+from x2paddle.project_convertor.pytorch.mapper import *
 import copy
 import os.path as osp
 

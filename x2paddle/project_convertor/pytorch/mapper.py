@@ -1,4 +1,4 @@
-from x2paddle.code_convertor.pytorch.api_mapper import *
+from x2paddle.project_convertor.pytorch.api_mapper import *
 from x2paddle.utils import *
 
 
