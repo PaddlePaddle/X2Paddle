@@ -242,4 +242,5 @@ API_MAPPER.update(DTYPE_MAPPER)
 API_MAPPER.update(TORCHVISION_MAPPER)
 API_MAPPER.update(AUTOGRAD_MAPPER)
 
-REMOVE_API =["torch.backends.cudnn.benchmark"]
+REMOVE_API =["torch.backends.cudnn",
+             "torch.backends.cudnn.benchmark"]

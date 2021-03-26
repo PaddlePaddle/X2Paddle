@@ -5,7 +5,7 @@ TYPE_ORDER = ["bool", "int32", "int64", "float32", "float64"]
 TYPE_MAPPER = {"fp32": "float32",
                "fp64": "float64"}
 
-def binary_cross_entropy_with_inputs(input, 
+def binary_cross_entropy_with_logits(input, 
                                      target, 
                                      weight=None, 
                                      size_average=None, 
@@ -28,5 +28,5 @@ def binary_cross_entropy_with_inputs(input,
     else:
         real_type = TYPE_ORDER[input_index]
         target = target.cast(real_type)
-    return paddle.nn.functional.binary_cross_entropy_with_inputs(
+    return paddle.nn.functional.binary_cross_entropy_with_logits(
         input, target, weight, reduction, pos_weight)

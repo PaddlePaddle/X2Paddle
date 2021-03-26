@@ -24,7 +24,7 @@ main(config)
 ### 转换
 ``` shell
 cd ../
-x2paddle --framework=pytorch_project --project_dir=stargan --save_dir=paddle_project --pretrain_model=stargan/stargan_celeba_128/models/
+x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project --pretrain_model=stargan/stargan_celeba_128/models/
 ```
 ### 转换后代码修改
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在[config处](https://github.com/yunjey/stargan/blob/master/main.py#L109)设置强制设置`num_workers`，具体添加代码如下：
@@ -136,7 +136,7 @@ class VOCDataset(torch.utils.data.Dataset):
 
 ### 转换
 ```shell
-x2paddle --framework=pytorch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
+x2paddle --convert_torch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
 ```
 ### 转换后修改代码
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：

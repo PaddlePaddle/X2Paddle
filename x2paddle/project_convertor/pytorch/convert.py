@@ -39,9 +39,13 @@ def convert_code(folder_path, new_folder_path, file_dependency):
             if not osp.exists(new_current_path):
                 os.makedirs(new_current_path)
             convert_code(current_path, new_current_path, file_dependency)
+        elif osp.isfile(current_path) and osp.splitext(current_path)[-1] in [".pth", ".pt", ".ckpt"]:
+            continue
         elif osp.isfile(current_path) and current_path.endswith(".pyc"):
             continue
         elif osp.isdir(current_path) and current_path == "__pycache__":
+            continue
+        elif osp.isdir(current_path) and current_path == ".ipynb_checkpoints":
             continue
         else:
             shutil.copyfile(current_path, new_current_path)
@@ -69,12 +73,6 @@ def main(args):
     project_path = args.project_dir
     save_path = args.save_dir
     params_path = args.pretrain_model
-    project_path = osp.abspath(project_path)
-    file_dependency = dict()
-    generate_dependency(project_path, file_dependency)
-    if not osp.exists(save_path):
-        os.makedirs(save_path)
-    convert_code(project_path, save_path, file_dependency)
     if params_path is not None:
         params_path = osp.abspath(params_path)
         if osp.isdir(params_path):
@@ -83,4 +81,11 @@ def main(args):
                     convert_params(osp.join(params_path, file))
         else:
             convert_params(params_path)
+    project_path = osp.abspath(project_path)
+    file_dependency = dict()
+    generate_dependency(project_path, file_dependency)
+    if not osp.exists(save_path):
+        os.makedirs(save_path)
+    convert_code(project_path, save_path, file_dependency)
+    
   

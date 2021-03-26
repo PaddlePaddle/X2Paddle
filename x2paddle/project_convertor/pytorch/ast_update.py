@@ -85,8 +85,8 @@ class AstUpdation(ast.NodeVisitor):
             i = - (i + 1)
             dependency_info = self.scopes_and_dependencies[i]
             if isinstance(dependency_info, DependencyInfo):
-                if dependency_info.PADDLE_IMPORT is None:
-                    continue
+#                 if dependency_info.PADDLE_IMPORT is None:
+#                     continue
                 if dependency_info.AS is not None and api_part_name.startswith(dependency_info.AS):
                     if (dependency_info.PYTORCH_FROM is not None and "torch" in dependency_info.PYTORCH_FROM) or \
                             (dependency_info.PYTORCH_IMPORT is not None and "torch" in dependency_info.PYTORCH_IMPORT):
@@ -212,8 +212,9 @@ class AstUpdation(ast.NodeVisitor):
         for son_node in son_nodes:
             copy_node = copy.deepcopy(node)
             copy_node.names = [son_node]
-            self.visit_alias(son_node, copy_node)
-            scope_node.body.insert(current_id, copy_node)
+            is_remove = self.visit_alias(son_node, copy_node)
+            if not is_remove:
+                scope_node.body.insert(current_id, copy_node)
         self._from_name = None
         self._level = None
         
@@ -232,6 +233,7 @@ class AstUpdation(ast.NodeVisitor):
             如果import字符串为“*”，获取依赖包所在文件的依赖信息并转换为DependencyInfo加入当前的scopes_and_dependencies；
             反之，直接在scopes_and_dependencies中加入DependencyInfo。
         """
+        is_remove = False
         dependency_info = DependencyInfo()
         dependency_info.PYTORCH_FROM = self._from_name
         dependency_info.PYTORCH_IMPORT = getattr(node, "name")
@@ -260,6 +262,12 @@ class AstUpdation(ast.NodeVisitor):
                             else:
                                 current_dependency_info.PADDLE_IMPORT = \
                                 current_dependency_info.PADDLE_DEPENDENCY
+                        elif current_dependency_info.PYTORCH_DEPENDENCY in REMOVE_API:
+                            scope_node = self._get_scope_node()
+                            for i, n in enumerate(scope_node.body):
+                                if father_node == n:
+                                    scope_node.body.pop(i)
+                            is_remove = True
                         else:
                             self.no_support_apis.append(current_dependency_info.PYTORCH_DEPENDENCY)
                 else:
@@ -290,11 +298,18 @@ class AstUpdation(ast.NodeVisitor):
                 else:
                     setattr(node, "name", dependency_info.PADDLE_DEPENDENCY) 
                     dependency_info.PADDLE_IMPORT = dependency_info.PADDLE_DEPENDENCY
+            elif dependency_info.PYTORCH_DEPENDENCY in REMOVE_API:
+                scope_node = self._get_scope_node()
+                for i, n in enumerate(scope_node.body):
+                    if father_node == n:
+                        scope_node.body.pop(i)
+                is_remove = True
             elif dependency_info.PYTORCH_DEPENDENCY.startswith("torch"):
                 self.no_support_apis.append(dependency_info.PYTORCH_DEPENDENCY)
         else:
             dependency_info.PADDLE_DEPENDENCY = dependency_info.PYTORCH_DEPENDENCY   
         self.scopes_and_dependencies.append(dependency_info)
+        return is_remove
         
     def visit_Name(self, node):
         """ 获取字符串名字。
@@ -521,7 +536,7 @@ class AstUpdation(ast.NodeVisitor):
     def visit_Str(self, node):
         """ 修改模型参数的后缀名。
         """
-        setattr(node, "s", node.s.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams"))
+        setattr(node, "s", node.s.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams").replace(".ckpt", ".pdiparams"))
 
             
 def run(py_file_path, file_dependency):

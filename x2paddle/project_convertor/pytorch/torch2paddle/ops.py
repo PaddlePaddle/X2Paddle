@@ -70,30 +70,28 @@ def logical_xor(input, other, *, out=None):
 def matmul(input, other, *, out=None):
     return paddle.matmul(input, other)
 
-def max(input):
-    return paddle.max(input)
+def max(input, dim_other=None, keepdim=False, *, out=None):
+    if dim_other is None:
+        return paddle.max(input)
+    elif isinstance(dim_other, paddle.Tensor):
+        return paddle.maximum(input, dim_other)
+    else:
+        return paddle.max(input, axis=dim_other, keepdim=keepdim)
 
-def max(input, dim, keepdim=False, *, out=None):
-    return paddle.max(input, axis=dim, keepdim=keepdim)
+def mean(input, dim=None, keepdim=False, *, out=None):
+    if dim is None:
+        warnings.warn('The output of paddle.mean is not scalar!')
+        return paddle.mean(input)
+    else:
+        return paddle.mean(input, axis=dim, keepdim=keepdim)
 
-def max(input, other, *, out=None):
-    return paddle.maximum(input, other)
-
-def mean(input, *, dtype=None):
-    warnings.warn('The output of paddle.mean is not scalar!')
-    return paddle.mean(input, dtype=dtype)
-
-def mean(input, dim, keepdim=False, *, dtype=None):
-    return paddle.mean(input, axis=dim, dtype=dtype, keepdim=keepdim)
-
-def min(input):
-    return paddle.min(input)
-
-def min(input, dim, keepdim=False, *, out=None):
-    return paddle.min(input, axis=dim, keepdim=keepdim)
-
-def min(input, other, *, out=None):
-    return paddle.minimum(input, other)
+def min(input, dim_other=None, keepdim=False, *, out=None):
+    if dim_other is None:
+        return paddle.min(input)
+    elif isinstance(dim_other, paddle.Tensor):
+        return paddle.minimum(input, dim_other)
+    else:
+        return paddle.min(input, axis=dim_other, keepdim=keepdim)
 
 def ones(*size, out=None, dtype=None, layout=None, device=None, requires_grad=False):
     if len(size) == 1 and isinstance(size[0], (tuple, list)):
@@ -132,14 +130,14 @@ def sqrt(input, *, out=None):
     return paddle.sqrt(input)
 
 def stack(tensors, dim=0, *, out=None):
-    return paddle.stack(tensors, dim)
+    return paddle.stack(tensors, dim)    
 
-def sum(input, *, dtype=None):
-    warnings.warn('The output of paddle.sum is not scalar!')
-    return paddle.sum(input, dtype=dtype)
-
-def sum(input, dim, keepdim=False, *, dtype=None):
-    return paddle.sum(input, axis=dim, dtype=dtype, keepdim=keepdim)
+def sum(input, dim=None, keepdim=False, *, out=None):
+    if dim is None:
+        warnings.warn('The output of paddle.sum is not scalar!')
+        return paddle.sum(input)
+    else:
+        return paddle.sum(input, axis=dim, keepdim=keepdim)
 
 def unsqueeze(input, dim):
     return paddle.squeeze(input, dim)
