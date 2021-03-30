@@ -85,8 +85,8 @@ class AstUpdation(ast.NodeVisitor):
             i = - (i + 1)
             dependency_info = self.scopes_and_dependencies[i]
             if isinstance(dependency_info, DependencyInfo):
-#                 if dependency_info.PADDLE_IMPORT is None:
-#                     continue
+                if dependency_info.PYTORCH_IMPORT is None:
+                    continue
                 if dependency_info.AS is not None and api_part_name.startswith(dependency_info.AS):
                     if (dependency_info.PYTORCH_FROM is not None and "torch" in dependency_info.PYTORCH_FROM) or \
                             (dependency_info.PYTORCH_IMPORT is not None and "torch" in dependency_info.PYTORCH_IMPORT):
