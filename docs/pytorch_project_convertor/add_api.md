@@ -21,7 +21,7 @@
 > |   |── torchvision.py    # 图像处理相关的API映射操作  
 > |  └── utils.py    # 基础操作  
 > |── mapper.py    # 存放映射关系  
-> └── torch2paddle    # 存放需要重新封装实现的API 
+> └── torch2paddle    # 存放需要重新封装实现的API   
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|──\_\_init\_\_.py  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── device.py    # 实现设备相关的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── io.py    # 实现数据相关的操作  
@@ -31,7 +31,7 @@
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── ops.py    # 实现Tensor处理OP的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── optimizer.py    # 实现优化相关的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── tensor.py    # 实现paddle.Tensor类内方法/属性操作  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── varbase.py    # 实现paddle.Tensor取值的操作
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── varbase.py    # 实现paddle.Tensor取值的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── vision_transforms.py    # 实现视觉transform的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── vision_utils.py    # 实现视觉基础的操作  
 
