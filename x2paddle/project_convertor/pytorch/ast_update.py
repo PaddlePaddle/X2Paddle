@@ -161,13 +161,19 @@ class AstUpdation(ast.NodeVisitor):
                     import_file_path = osp.join(path, "__init__.py")
         else:
             if len(dependency_info.PYTORCH_FROM.split(".")) == 1:
+                current_abs_path = osp.dirname(self.py_file_path)
+                sys.path.append(current_abs_path)
                 exec("import {}".format(dependency_info.PYTORCH_FROM))
+                sys.path.pop(-1)
                 import_file_path = locals()[dependency_info.PYTORCH_FROM].__file__
             else:
                 from_seg = dependency_info.PYTORCH_FROM.split(".")
                 import_str = from_seg[-1]
                 from_str = ".".join(from_seg[0: -1])
+                current_abs_path = osp.dirname(self.py_file_path)
+                sys.path.append(current_abs_path)
                 exec("from {} import {}".format(from_str, import_str))
+                sys.path.pop(-1)
                 import_file_path = locals()[import_str].__file__
         return import_file_path
         
