@@ -35,6 +35,15 @@ class VocDataset(torch.utils.data.Dataset):
 
 4. 若预训练模型需要下载，去除下载预训练模型相关代码，在转换前将预训练模型下载至本地，并修改加载预训练模型参数相关代码的路径为预训练模型本地保存路径。
 
+5. 若在数据预处理中出现Tensor与float型/int型对比大小，则需要将float型/int型修改为Tensor，例如下面代码为一段未数据预处理中一段代码，修改如下：
+``` python
+# 原始代码：
+mask = best_target_per_prior < 0.5
+# 替换后代码
+threshold_tensor = torch.full_like(best_target_per_prior, 0.5)
+mask = best_target_per_prior < threshold_tensor
+```
+
 ### 转换
 ``` shell
 x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_project --pretrain_model=model.pth
@@ -45,6 +54,7 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 |--project_dir | PyTorch的项目路径 |
 |--save_dir | 指定转换后项目的保存路径 |
 |--pretrain_model | **[可选]**需要转换的预训练模型的路径(文件后缀名为“.pth”、“.pt”、“.ckpt”)或者包含预训练模型的文件夹路径，转换后的模型将将保在当前路径，后缀名为“.pdiparams” |
+
 
 ### 转换后操作
 1. 若需要使用GPU，`x2paddle.torch2paddle.DataLoader`中的`num_workers`必须设置为0。
@@ -86,6 +96,8 @@ c_trg = c_trg == 0
 if is_bool:
     c_trg = c_trg.cast("bool")
 ```
+
+4. 如若转换后的运行代码的入口为sh脚本文件去其中有预训练模型路径，应将其中的预训练模型的路径字符串中的“.pth”、“.pt”、“.ckpt”替换为“.pdiparams”。
 
 ***[注意]*** 转换前后相应操作可以参考[转换示例](./demo.md)
 

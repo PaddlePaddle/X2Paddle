@@ -82,6 +82,10 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --paddle_t
 `x2paddle_code.py`是转换后的python模型动态图代码。  
 `inference_model`中保存了序列化的模型结构和参数，可直接使用paddle的接口进行加载，见[paddle.static.load_inference_model](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc/api/paddle/static/load_inference_model_cn.html#load-inference-model)。
 
+## 架构设计
+X2Paddle的架构设计着重考虑了对多深度学习框架的的支持以及代码的易读性、易扩展性，并且在多个层面的对转换后OP进行优化处理。
+![](./docs/images/frame.png)
+
 ## 小工具
 X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README.md)
 1. 检测模型是否在PaddleLite中支持  
@@ -103,6 +107,9 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
 3. 新增TensorFlow op（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
+
+2020.03.31
+1. 新增支持PyTorch项目到PaddlePaddle项目的转换，从而支持训练代码的迁移。
 
 
 ## Acknowledgements
