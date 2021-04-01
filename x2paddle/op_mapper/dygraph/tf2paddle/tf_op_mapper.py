@@ -1526,3 +1526,21 @@ class TFOpMapper(OpMapper):
             inputs=inputs,
             outputs=[node.name],
             **attr)
+        
+    def ReverseV2(self, node):
+        x = self.graph.get_input_node(node, 0)
+        axis = self.graph.get_input_node(node, 1)
+        inputs = {"x": x.name}
+        attr = dict()
+        if axis.layer_type == 'Const':
+            axis = axis.value.tolist()
+            if not isinstance(axis, list):
+                axis = [axis]
+            attr['axis'] = axis
+        else:
+            inputs['axis'] = axis.name
+        self.paddle_graph.add_layer(
+            "paddle.flip",
+            inputs=inputs,
+            outputs=[node.name],
+            **attr)
