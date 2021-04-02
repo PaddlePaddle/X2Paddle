@@ -35,7 +35,13 @@
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── vision_transforms.py    # 实现视觉transform的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── vision_utils.py    # 实现视觉基础的操作  
 
-
+**【注意】** 如果需要添加相关映射，应使用克隆代码的方式安装x2paddle，在克隆的代码中添加映射相关代码后，重装x2paddle，重装方式如下：
+```
+cd X2Paddle # 进入克隆的X2Paddle代码路径
+pip uninstall x2paddle
+rm -rf ./x2paddle.egg-info/ ./build/ ./dist/
+python setup.pi install
+```
 
 ### <span id="situation1">情况一</span>
 
@@ -265,3 +271,4 @@ def random_split(dataset, lengths, generator=None):
     return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
 setattr(paddle.io, "random_split", random_split)
 ```
+
