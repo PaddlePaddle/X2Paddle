@@ -27,6 +27,7 @@ cd ../
 x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project --pretrain_model=stargan/stargan_celeba_128/models/
 ```
 ### 转换后代码修改
+**需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**  
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在[config处](https://github.com/yunjey/stargan/blob/master/main.py#L109)设置强制设置`num_workers`，具体添加代码如下：
 ``` python
 ...
@@ -153,6 +154,7 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
 x2paddle --convert_torch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
 ```
 ### 转换后修改代码
+**需要修改的文件位于paddle_project文件夹中，其中文件命名与原始Ultra-Light-Fast-Generic-Face-Detector-1MB文件夹中文件命名一致。**  
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
 ```shell
 ...
