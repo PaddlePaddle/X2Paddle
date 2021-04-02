@@ -103,19 +103,19 @@ class FuncMath(Mapper):
         delete_key(self.kwargs, "out")
         
     def run(self):
-        if self.func_name == "paddle.sqrt":
+        if self.pytorch_api_name == "torch.sqrt":
             if self.args_has_star("x2paddle.torch2paddle.sqrt"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.abs":
+        if self.pytorch_api_name == "torch.abs":
             if self.args_has_star("x2paddle.torch2paddle.abs"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.log":
+        if self.pytorch_api_name == "torch.log":
             if self.args_has_star("x2paddle.torch2paddle.log"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.exp":
+        if self.pytorch_api_name == "torch.exp":
             if self.args_has_star("x2paddle.torch2paddle.exp"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.clip":
+        if self.pytorch_api_name == "torch.clip":
             if self.args_has_star("x2paddle.torch2paddle.clip"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         return self.convert_to_paddle()
@@ -216,16 +216,16 @@ class FuncLogical(Mapper):
         rename_key(self.kwargs, "other", "y")  
         
     def run(self):
-        if self.func_name == "paddle.logical_or":
+        if self.pytorch_api_name == "torch.bitwise_or":
             if self.args_has_star("x2paddle.torch2paddle.logical_or"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.logical_and":
+        if self.pytorch_api_name == "torch.bitwise_and":
             if self.args_has_star("x2paddle.torch2paddle.logical_and"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.logical_xor":
+        if self.pytorch_api_name == "torch.bitwise_xor":
             if self.args_has_star("x2paddle.torch2paddle.logical_xor"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.logical_not":
+        if self.pytorch_api_name == "torch.bitwise_not":
             if self.args_has_star("x2paddle.torch2paddle.logical_not"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         return self.convert_to_paddle()
@@ -292,13 +292,13 @@ class FunTensorBuilder(Mapper):
         delete_key(self.kwargs, "requires_grad")
     
     def run(self):
-        if self.func_name == "paddle.full":
+        if self.pytorch_api_name == "torch.full":
             if self.args_has_star("x2paddle.torch2paddle.full"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.zeros":
+        if self.pytorch_api_name == "torch.zeros":
             if self.args_has_star("x2paddle.torch2paddle.zeros"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.ones":
+        if self.pytorch_api_name == "torch.ones":
             if self.args_has_star("x2paddle.torch2paddle.ones"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         out1, out2, out3 = self.convert_to_paddle()
@@ -323,13 +323,13 @@ class FunTensorLike(Mapper):
         delete_key(self.kwargs, "requires_grad")
         
     def run(self):
-        if self.func_name == "paddle.full_like":
+        if self.pytorch_api_name == "torch.full_like":
             if self.args_has_star("x2paddle.torch2paddle.full_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.zeros_like":
+        if self.pytorch_api_name == "torch.zeros_like":
             if self.args_has_star("x2paddle.torch2paddle.zeros_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        if self.func_name == "paddle.ones_like":
+        if self.pytorch_api_name == "torch.ones_like":
             if self.args_has_star("x2paddle.torch2paddle.ones_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         out1, out2, out3 = self.convert_to_paddle()

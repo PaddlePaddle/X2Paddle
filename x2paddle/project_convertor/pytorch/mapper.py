@@ -1,16 +1,15 @@
 from x2paddle.project_convertor.pytorch.api_mapper import *
 from x2paddle.utils import *
 
-
 OPTIMIZER_MAPPER = {
                     "torch.optim": 
                         ["paddle.optimizer", None],
                     "torch.optim.lr_scheduler.ReduceLROnPlateau":
-                        ["paddle.optimizer.lr.ReduceOnPlateau", ClassReduceOnPlateau],
+                        ["paddle.optimizer.lr.ReduceOnPlateau", ClassLRScheculer],
                     "torch.optim.lr_scheduler.CosineAnnealingLR": 
-                        ["paddle.optimizer.lr.CosineAnnealingDecay", ClassCosineAnnealingDecay],
+                        ["paddle.optimizer.lr.CosineAnnealingDecay", ClassLRScheculer],
                     "torch.optim.lr_scheduler.MultiStepLR": 
-                        ["paddle.optimizer.lr.MultiStepDecay", ClassMultiStepDecay],
+                        ["paddle.optimizer.lr.MultiStepDecay", ClassLRScheculer],
                     "torch.optim.Adam": 
                         ["x2paddle.torch2paddle.Adam", None],
                     "torch.optim.SGD": 
@@ -18,83 +17,105 @@ OPTIMIZER_MAPPER = {
                    }
 
 NN_MAPPER = {
+             # basic
              "torch.nn": 
                  ["paddle.nn", None],
-             "torch.nn.DataParallel": 
-                 ["paddle.DataParallel", ClassDataParallel],
              "torch.nn.Module": 
                  ["paddle.nn.Layer", None],
              "torch.nn.ModuleList": 
                  ["paddle.nn.LayerList", None],
-             "torch.nn.Conv2d": 
-                 ["paddle.nn.Conv2D", ClassConv2D],
-             "torch.nn.ConvTranspose2d": 
-                 ["paddle.nn.Conv2DTranspose", ClassConv2DConv2DTranspose],
-             "torch.nn.Linear": 
-                 ["paddle.nn.Linear", ClassLinear],
-             "torch.nn.BatchNorm2d": 
-                 ["paddle.nn.BatchNorm2D", ClassBatchNorm],
-             "torch.nn.BatchNorm1d": 
-                 ["paddle.nn.BatchNorm", ClassBatchNorm],
-             "torch.nn.InstanceNorm2d": 
-                 ["paddle.nn.InstanceNorm2D", ClassBatchNorm],
-             "torch.nn.MaxPool2d": 
-                 ["paddle.nn.MaxPool2D", ClassMaxPool2D],
-             "torch.nn.Upsample": 
-                 ["paddle.nn.Upsample", None],
-             "torch.nn.Embedding": 
-                 ["paddle.nn.Embedding", ClassEmbedding],
-             "torch.nn.Dropout": 
-                 ["paddle.nn.Dropout", ClassDropout],
-             "torch.nn.ReLU": 
-                 ["paddle.nn.ReLU", ClassReLU],
-             "torch.nn.LeakyReLU": 
-                 ["paddle.nn.LeakyReLU", None],
-             "torch.nn.Softmax": 
-                 ["paddle.nn.Softmax", ClassSoftmax],
-             "torch.nn.Sigmoid": 
-                 ["paddle.nn.Sigmoid", None],
-             "torch.nn.Tanh": 
-                 ["paddle.nn.Tanh", None],
-             "torch.nn.CrossEntropyLoss": 
-                 ["paddle.nn.CrossEntropyLoss", ClassCrossEntropyLoss],
-             "torch.nn.BCEWithLogitsLoss": 
-                 ["paddle.nn.BCEWithLogitsLoss", ClassBCEWithLogitsLoss],
-             "torch.nn.BCELoss": 
-                 ["paddle.nn.BCELoss", None],
              "torch.nn.Sequential":
                  ["paddle.nn.Sequential", None],
              "torch.nn.utils": 
                  ["paddle.nn.utils", None],
              "torch.nn.utils.clip_grad_value_": 
                  ["x2paddle.torch2paddle.clip_grad_value_", None],
+             "torch.nn.Parameter": 
+                 ["paddle.create_parameter", FuncCreateParam],
+             "torch.nn.DataParallel": 
+                 ["paddle.DataParallel", ClassDataParallel],
              "torch.nn.functional": 
                  ["paddle.nn.functional", None],
-             "torch.nn.functional.pad": 
-                 ["paddle.nn.functional.pad", FuncPad],
-             "torch.nn.functional.avg_pool2d": 
-                 ["paddle.nn.functional.avg_pool2d", FuncAvgPool2d],
-             "torch.nn.functional.cross_entropy": 
-                 ["paddle.nn.functional.cross_entropy", FuncCrossEntropy],
-             "torch.nn.functional.binary_cross_entropy_with_logits": 
-                 ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
-             "torch.nn.functional.softmax": 
-                 ["paddle.nn.functional.softmax", FuncSoftmax],
+             # nn_net
+             "torch.nn.BatchNorm1d": 
+                 ["paddle.nn.BatchNorm1D", ClassBatchNorm],
+             "torch.nn.BatchNorm2d": 
+                 ["paddle.nn.BatchNorm2D", ClassBatchNorm],
+             "torch.nn.BatchNorm3d": 
+                 ["paddle.nn.BatchNorm3D", ClassBatchNorm],
+             "torch.nn.Conv1d": 
+                 ["paddle.nn.Conv1D", ClassConv],
+             "torch.nn.Conv2d": 
+                 ["paddle.nn.Conv2D", ClassConv],
+             "torch.nn.Conv3d": 
+                 ["paddle.nn.Conv3D", ClassConv],
+             "torch.nn.ConvTranspose2d": 
+                 ["x2paddle.torch2paddle.Conv2DTranspose", None],
+             "torch.nn.Dropout": 
+                 ["paddle.nn.Dropout", ClassDropout],
+             "torch.nn.Embedding": 
+                 ["paddle.nn.Embedding", ClassEmbedding],
+             "torch.nn.InstanceNorm2d": 
+                 ["paddle.nn.InstanceNorm2D", ClassBatchNorm],
+             "torch.nn.LeakyReLU": 
+                 ["paddle.nn.LeakyReLU", None],
+             "torch.nn.Linear": 
+                 ["paddle.nn.Linear", ClassLinear],
+             "torch.nn.MaxPool1d": 
+                 ["paddle.nn.MaxPool1D", ClassMaxPool],
+             "torch.nn.MaxPool2d": 
+                 ["paddle.nn.MaxPool2D", ClassMaxPool],
+             "torch.nn.MaxPool3d": 
+                 ["paddle.nn.MaxPool3D", ClassMaxPool],
+             "torch.nn.ReLU": 
+                 ["paddle.nn.ReLU", ClassReLU],
+             "torch.nn.Sigmoid": 
+                 ["paddle.nn.Sigmoid", None],
+             "torch.nn.Softmax": 
+                 ["paddle.nn.Softmax", ClassSoftmax],
+             "torch.nn.Tanh": 
+                 ["paddle.nn.Tanh", None],
+             "torch.nn.Upsample": 
+                 ["paddle.nn.Upsample", None],
+             # nn_loss
+             "torch.nn.CrossEntropyLoss": 
+                 ["paddle.nn.CrossEntropyLoss", ClassLoss],
+             "torch.nn.BCEWithLogitsLoss": 
+                 ["paddle.nn.BCEWithLogitsLoss", ClassLoss],
+             "torch.nn.BCELoss": 
+                 ["paddle.nn.BCELoss", None],
+             # functional_net
+            "torch.nn.functional.avg_pool1d": 
+                 ["paddle.nn.functional.avg_pool1d", FuncAvgPool],
+            "torch.nn.functional.avg_pool2d": 
+                 ["paddle.nn.functional.avg_pool2d", FuncAvgPool],
+            "torch.nn.functional.avg_pool3d": 
+                 ["paddle.nn.functional.avg_pool3d", FuncAvgPool],
+            "torch.nn.functional.dropout": 
+                 ["paddle.nn.functional.dropout", FuncDropout],
              "torch.nn.functional.log_softmax": 
                  ["paddle.nn.functional.log_softmax", FuncLogSoftmax],
-             "torch.nn.functional.relu": 
-                 ["paddle.nn.functional.relu", FuncRelu],
-             "torch.nn.functional.dropout": 
-                 ["paddle.nn.functional.dropout", FuncDropout],
-             "torch.nn.functional.smooth_l1_loss": 
-                 ["paddle.nn.functional.smooth_l1_loss", FuncSmoothL1Loss],
+             "torch.nn.functional.pad": 
+                 ["paddle.nn.functional.pad", FuncPad],
              "torch.sigmoid": 
                  ["paddle.nn.functional.sigmoid", FuncSigmoid],
+             "torch.nn.functional.sigmoid":
+                 ["paddle.nn.functional.sigmoid", FuncSigmoid],
+             "torch.nn.functional.softmax": 
+                 ["paddle.nn.functional.softmax", FuncSoftmax],
              "torch.nn.init.xavier_uniform_": 
                  ["x2paddle.torch2paddle.xavier_uniform_", FuncXavierUniform],
-             "torch.nn.Parameter": 
-                 ["paddle.create_parameter", FuncCreateParam]
-            }
+            # functional_loss
+             "torch.nn.functional.binary_cross_entropy_with_logits": 
+                 ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
+             "torch.nn.functional.cross_entropy": 
+                 ["paddle.nn.functional.cross_entropy", FuncCrossEntropy],
+             "torch.nn.functional.dropout":
+                 ["paddle.nn.functional.dropout", FuncDropout],
+             "torch.nn.functional.relu": 
+                 ["paddle.nn.functional.relu", FuncRelu],
+             "torch.nn.functional.smooth_l1_loss": 
+                 ["paddle.nn.functional.smooth_l1_loss", FuncSmoothL1Loss],}
 
 UTILS_MAPPER = {
                 "torch.utils.data": 
