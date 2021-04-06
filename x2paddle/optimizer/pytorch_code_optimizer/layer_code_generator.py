@@ -27,6 +27,8 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Linear": "linear",
                   "paddle.nn.Conv2DTranspose": "conv",
                   "paddle.nn.LSTM": "lstm",
+                  "paddle.nn.GRU": "gru",
+                  "custom_layer:InstanceNorm": "instance_norm",
                   "paddle.nn.PReLU": "prelu",
                   "paddle.nn.ReLU": "relu",
                   "paddle.nn.ReLU6": "relu",
@@ -35,14 +37,14 @@ NN_KERNEL_NAME = {"paddle.nn.BatchNorm": "bn",
                   "paddle.nn.Tanh": "tanh",
                   "paddle.nn.AvgPool2D": "avgpool",
                   "paddle.nn.MaxPool2D": "maxpool",
-                  "paddle.nn.Pad1D": "pad",
-                  "paddle.nn.Pad2D": "pad",
-                  "paddle.nn.Pad3D": "pad",
+                  "paddle.nn.Pad1D": "pad1d",
+                  "paddle.nn.Pad2D": "pad2d",
+                  "paddle.nn.Pad3D": "pad3d",
                   "paddle.nn.Dropout": "dropout",
                   "paddle.nn.GELU": "gelu",
                   "paddle.nn.Hardtanh": "tanh",
                   "paddle.nn.LeakyReLU": "leakly_relu"}
-NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:8]
+NN_KERNEL_WITH_PARAMS = list(NN_KERNEL_NAME.keys())[:10]
 
 def rename_layers(layers, param_tree=None, is_rename_module=False):
     """ 对子模块的输入输出等进行重命名。
@@ -143,7 +145,10 @@ def _update_attrs(layer, different_attrs):
         if key_name in different_attrs:
             common_attrs.pop(k)
             special_attrs[k] = v
-    remove_default_attrs(layer.kernel, common_attrs)
+    remove_kernel = layer.kernel
+    if remove_kernel == "custom_layer:InstanceNorm":
+        remove_kernel = "paddle.nn.InstanceNorm2D"
+    remove_default_attrs(remove_kernel, common_attrs)
     common_attrs.update(special_attrs)
     layer.attrs = common_attrs
 

@@ -569,15 +569,19 @@ def prim_TupleUnpack(mapper, graph, node):
     outputs_name = mapper._get_outputs_name(node)
     layer_outputs = outputs_name
     layer_inputs = {}
+    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
+    if inputs_node[0].kind() == "prim::GetAttr":
+        layer_attrs["input"] = list(mapper.pytorch_params[inputs_name[0]])
+    else:
+        layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输出的list
     current_outputs = outputs_name
-    layer_inputs["input"] = inputs_name[0]
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
-        "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name)
+        "prim.tuple_unpack", inputs=layer_inputs, outputs=layer_outputs, scope_name=scope_name, **layer_attrs)
     return current_inputs, current_outputs
 
 

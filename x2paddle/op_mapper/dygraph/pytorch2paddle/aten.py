@@ -927,10 +927,13 @@ def aten_constant_pad_nd(mapper, graph, node):
         if_layer.inputs["input-1"] = inputs_name[0] + "_len"
 
     if len(layer_attrs["padding"]) == 2:
+        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad1d")
         add_pad_layers("paddle.nn.Pad1D", 3)
     elif len(layer_attrs["padding"]) == 4:
+        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad2d")
         add_pad_layers("paddle.nn.Pad2D", 4)
     elif len(layer_attrs["padding"]) == 6:
+        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad3d")
         add_pad_layers("paddle.nn.Pad3D", 5)
     else:
         raise Exception("The lenght of padding list must be 2, 4 or 6!")
@@ -2144,6 +2147,88 @@ def aten_gt(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_gru(mapper, graph, node):
+    """ 构造门控循环单元网络（GRU）的PaddleLayer。
+
+    TorchScript示例:
+        %21, %22 = aten::gru(%input, %hx, %20, %11, %10, %9, %11, %8, %11)
+        参数含义:
+        %21 (Tensor): 输出，由前向和后向cell的输出拼接得到。
+        %22 (Tensor): 输出，最终状态。
+        %input (Tensor): 网络输入。
+        %hx (Tensor): 网络的初始状态。
+        %20 (list): 所有权重组合成的list。
+        %11 (bool): 是否使用bias。
+        %10 (int): 网络层数。
+        %9 (float): dropout概率。
+        %11 (bool): 是否为训练阶段。
+        %8 (bool): 是否使用双向LSTM。
+        %11 (bool): 第一个维度是否为batch size。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("gru", mapper.nn_name2id)
+    output_names = mapper._get_outputs_name(node)
+    layer_outputs = [op_name]
+    layer_outputs.extend(output_names)
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = output_names
+    # 处理输入0，即%input.95
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input0"] = inputs_name[0]
+    # 处理输入1，即%734
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs, scope_name)
+    layer_inputs["input1"] = inputs_name[1]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入2，即%734
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs, scope_name)
+    graph.layers.pop(mapper.output2id[inputs_name[2]])
+    param_inputs_name, _ = mapper._get_inputs_name(inputs_node[2])
+    new_param_inputs_name = list()
+    for i, param_name in enumerate(param_inputs_name):
+        if i == 0:
+            layer_attrs["hidden_size"] = int(mapper.paddle_params[param_name].shape[0] / 3)
+            layer_attrs["input_size"] = int(mapper.paddle_params[param_name].shape[1])
+        if len(mapper.paddle_params[param_name].shape) > 1:
+            part_name = param_name.split("_weight_")[-1]
+            mapper.paddle_params["{}.weight_{}".format(op_name, part_name)] = mapper.paddle_params[param_name]
+            new_param_inputs_name.append("{}.weight_{}".format(op_name, part_name))
+        else:
+            part_name = param_name.split("_bias_")[-1]
+            mapper.paddle_params["{}.bias_{}".format(op_name, part_name)] = mapper.paddle_params[param_name]
+        mapper.paddle_params.pop(param_name)
+        
+    # 处理输入3，即%526
+    is_bias = mapper.attrs[inputs_name[3]]
+    if not is_bias:
+        for param_name in new_param_inputs_name:
+            bias_name = param_name.replace("weight", "bias")
+            bias_shape= mapper.paddle_params[param_name].shape[:1]
+            mapper.paddle_params[bias_name] = np.zeros(bias_shape).astype("float32")
+    # 处理输入4，即%525
+    layer_attrs["num_layers"] = mapper.attrs[inputs_name[4]]
+    # 处理输入5，即%524
+    layer_attrs["dropout"] = mapper.attrs[inputs_name[5]]
+    # 处理输入7，即%526
+    is_bidirectional = mapper.attrs[inputs_name[7]]
+    if is_bidirectional:
+        layer_attrs["direction"] = string("bidirectional")
+    # 处理输入8，即%526
+    batch_first = mapper.attrs[inputs_name[8]]
+    if not batch_first:
+        layer_attrs["time_major"] = True
+    graph.add_layer(
+        "paddle.nn.GRU",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_hardtanh_(mapper, graph, node):
     """ 构造hardtanh激活的PaddleLayer。
 
@@ -2227,6 +2312,68 @@ def aten_index_select(mapper, graph, node):
         "prim.index_select",
         inputs=layer_inputs,
         outputs=current_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_instance_norm(mapper, graph, node):
+    """构造InstanceNorm的PaddleLayer
+    
+    TorchScript示例:
+        %res.7 : Tensor = aten::instance_norm(%res.5, %88, %85, %84, %83, %87, %91, %92, %87)
+        参数含义:
+        %res.7 (Tensor): 输出，InstanceNorm的结果。
+        %res.5 (Tensor): 需要进行InstanceNorm的特征层。
+        %88 (Tensor): weights。
+        %85 (Tensor): bias。
+        %84 (Tensor): 全局均值。
+        %83 (Tensor): 全局方差。
+        %87 (bool): 是否使用输入的统计。
+        %91 (float): momentum。
+        %92 (float): eps。
+        %87 (bool): 是否启用cudnn。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("instance_norm", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.80
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%88
+    if inputs_name[1] in mapper.pytorch_params:
+        weights = mapper.pytorch_params[inputs_name[1]]
+        mapper.paddle_params[op_name + ".weight"] = weights
+        layer_attrs['num_features'] = weights.shape[0]
+    # 处理输入2，即%85
+    if inputs_name[2] in mapper.pytorch_params:
+        bias = mapper.pytorch_params[inputs_name[2]]
+        mapper.paddle_params[op_name + ".bias"] = bias
+    # 处理输入3，即%84
+    if inputs_name[3] in mapper.pytorch_params:
+        mean = mapper.pytorch_params[inputs_name[3]]
+        mapper.paddle_params[op_name + "._mean"] = mean
+    # 处理输入4，即%83
+    if inputs_name[4] in mapper.pytorch_params:
+        var = mapper.pytorch_params[inputs_name[4]]
+        mapper.paddle_params[op_name + "._variance"] = var
+    # 处理输入6，即%91
+    layer_attrs["momentum"] = 1 - mapper.attrs[inputs_name[6]]
+    # 处理输入7，即%92
+    layer_attrs["epsilon"] = mapper.attrs[inputs_name[7]]
+
+    graph.add_layer(
+        "custom_layer:InstanceNorm",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
@@ -3390,6 +3537,98 @@ def aten_prelu(mapper, graph, node):
         outputs=layer_outputs, 
         scope_name=scope_name, 
         num_parameters=weight.shape[0])
+    return current_inputs, current_outputs
+
+
+def aten_reflection_pad1d(mapper, graph, node):
+    """ 构造1维映射填充的PaddleLayer。
+
+    TorchScript示例:
+        %6 = aten::reflection_pad1d(%input, %7)
+        参数含义:
+        %6 (Tensor): 输出，填充后的Tensor。
+        %input (Tensor): 需要填充的Tensor。
+        %7 (list|Tensor): 填充大小。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad1d", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%7
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        ipt_node = inputs_node[1]
+        while ipt_node.kind() != "prim::GetAttr":
+            inputs_name, inputs_node = mapper._get_inputs_name(ipt_node)
+            ipt_node = inputs_node[0]
+        layer_attrs["padding"] = list(mapper.pytorch_params[inputs_name[0]])
+    layer_attrs["mode"] = string("reflect")
+    
+    graph.add_layer(
+        "paddle.nn.Pad1D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_reflection_pad2d(mapper, graph, node):
+    """ 构造2维映射填充的PaddleLayer。
+
+    TorchScript示例:
+        %6 = aten::reflection_pad2d(%input, %7)
+        参数含义:
+        %6 (Tensor): 输出，填充后的Tensor。
+        %input (Tensor): 需要填充的Tensor。
+        %7 (list|Tensor): 填充大小。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad2d", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs, scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%7
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        ipt_node = inputs_node[1]
+        while ipt_node.kind() != "prim::GetAttr":
+            inputs_name, inputs_node = mapper._get_inputs_name(ipt_node)
+            ipt_node = inputs_node[0]
+        layer_attrs["padding"] = list(mapper.pytorch_params[inputs_name[0]])
+    layer_attrs["mode"] = string("reflect")
+    
+    graph.add_layer(
+        "paddle.nn.Pad2D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 
