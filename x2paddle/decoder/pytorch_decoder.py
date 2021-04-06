@@ -64,6 +64,5 @@ class TraceDecoder(Decoder):
                 print(e)
                 exit(0)
         self.graph = self._optimize_graph(self.script.inlined_graph)
-        self.input_examples = input_examples
-        
+        self.input_examples = input_examples        
             

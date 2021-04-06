@@ -510,7 +510,7 @@ class PaddleGraph(object):
             comment_list = list()
             comment_list.append("# There are {} inputs.".format(len(self.inputs_info)))
             for k, v in self.inputs_info.items():
-                comment_list.append("# {}: shape-{}，type-{}。".format(k, v[0], v[1]))
+                comment_list.append("# {}: shape-{}, type-{}.".format(k, v[0], v[1]))
             self.run_func.extend(
                 gen_codes(
                     comment_list,
@@ -518,7 +518,7 @@ class PaddleGraph(object):
             use_structured_name = False if self.source_type in ["tf"] else True
             self.run_func.extend(
                 gen_codes(["paddle.disable_static()",
-                           "params = paddle.load('{}/model.pdparams')".format(osp.abspath(code_dir)),
+                           "params = paddle.load('{}')".format(osp.join(osp.abspath(code_dir), "model.pdparams")),
                            "model = {}()".format(self.name),
                            "model.set_dict(params, use_structured_name={})".format(use_structured_name),
                            "model.eval()",

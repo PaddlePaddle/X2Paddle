@@ -336,8 +336,23 @@ class HierarchicalTree(Tree):
                     else:
                         module_name = module._get_name()
                     if module_name in module_name2sub_layers:
-                        module_name2sub_layers[module_name].append(sub_layers)
-                        module_name2sub_identifiers[module_name].append(sub_identifiers)
+                        if len(sub_layers[list(sub_layers.keys())[-1]].outputs) != \
+                                    len(module_name2sub_layers[module_name][0][list(module_name2sub_layers[module_name][0].keys())[-1]].outputs):
+                            while module_name in module_name2sub_layers:
+                                module_name = module_name + "__tmp"
+                                if module_name in module_name2sub_layers and \
+                                        len(sub_layers[list(sub_layers.keys())[-1]].outputs) == \
+                                        len(module_name2sub_layers[module_name][0][list(module_name2sub_layers[module_name][0].keys())[-1]].outputs):
+                                    break
+                            if module_name not in module_name2sub_layers:
+                                module_name2sub_layers[module_name] = [sub_layers]
+                                module_name2sub_identifiers[module_name] = [sub_identifiers]
+                            else:
+                                module_name2sub_layers[module_name].append(sub_layers)
+                                module_name2sub_identifiers[module_name].append(sub_identifiers)
+                        else:
+                            module_name2sub_layers[module_name].append(sub_layers)
+                            module_name2sub_identifiers[module_name].append(sub_identifiers)
                     else:
                         module_name2sub_layers[module_name] = [sub_layers]
                         module_name2sub_identifiers[module_name] = [sub_identifiers]
@@ -385,10 +400,10 @@ class HierarchicalTree(Tree):
             run_func_list.append("def main({}):".format(input_data_name))
             run_func_list.append("    # There are {} inputs.".format(len(self.pd_graph.inputs_info)))
             for k, v in self.pd_graph.inputs_info.items():
-                run_func_list.append("    # {}: shape-{}，type-{}。".format(k, v[0], v[1]))
+                run_func_list.append("    # {}: shape-{}, type-{}.".format(k, v[0], v[1]))
             run_func_list.extend(
                 ["    paddle.disable_static()",
-                 "    params = paddle.load('{}/model.pdparams')".format(osp.abspath(save_dir)),
+                 "    params = paddle.load('{}')".format(osp.join(osp.abspath(save_dir), "model.pdparams")),
                  "    model = {}()".format(self.pd_graph.name),
                  "    model.set_dict(params)",
                  "    model.eval()",
