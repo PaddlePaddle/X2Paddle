@@ -550,7 +550,7 @@ def run(py_file_path, file_dependency):
     updation.run()
     if len(updation.no_support_apis) > 0:
         print("Can not convert the file {}.".format(py_file_path))
-        print("The no support Api are: [{}].".format(", ".join(set(updation.no_support_apis))))
+        print("The unsupported packages or operators are: [{}].".format(", ".join(set(updation.no_support_apis))))
         return None
     else:
         return updation.root

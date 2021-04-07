@@ -22,20 +22,16 @@ class ClassBatchNorm(Mapper):
         delete_key(self.kwargs, "affine")
     
     def run(self):
-        if self.pytorch_api_name == "torch.nn.BatchNorm1d" and self.args_has_star("x2paddle.torch2paddle.BatchNorm1D"):
+        if self.pytorch_api_name == "torch.nn.BatchNorm1d" and self.rename_func_name("x2paddle.torch2paddle.BatchNorm1D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.BatchNorm2d" and self.args_has_star("x2paddle.torch2paddle.BatchNorm2D"):
+        elif self.pytorch_api_name == "torch.nn.BatchNorm2d" and self.rename_func_name("x2paddle.torch2paddle.BatchNorm2D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.BatchNorm3d" and self.args_has_star("x2paddle.torch2paddle.BatchNorm3D"):
+        elif self.pytorch_api_name == "torch.nn.BatchNorm3d" and self.rename_func_name("x2paddle.torch2paddle.BatchNorm3D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.InstanceNorm2d" and self.args_has_star("x2paddle.torch2paddle.InstanceNorm2D"):
+        elif self.pytorch_api_name == "torch.nn.InstanceNorm2d" and self.rename_func_name("x2paddle.torch2paddle.InstanceNorm2D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), [] 
         else:
-            same_attr_count = 1
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(1)
             if "affine" in self.kwargs and not (isinstance(self.kwargs["affine"], bool) \
                            or (isinstance(self.kwargs["affine"], str) and self.kwargs["affine"].strip() in ["True", "False"])):
                 print(self.kwargs["affine"], self.func_name)
@@ -59,18 +55,14 @@ class ClassConv(Mapper):
         rename_key(self.kwargs, "bias", "bias_attr")
     
     def run(self):
-        if self.pytorch_api_name == "torch.nn.Conv1d" and self.args_has_star("x2paddle.torch2paddle.Conv1D"):
+        if self.pytorch_api_name == "torch.nn.Conv1d" and self.rename_func_name("x2paddle.torch2paddle.Conv1D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.Conv2d" and self.args_has_star("x2paddle.torch2paddle.Conv2D"):
+        elif self.pytorch_api_name == "torch.nn.Conv2d" and self.rename_func_name("x2paddle.torch2paddle.Conv2D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.Conv3d" and self.args_has_star("x2paddle.torch2paddle.Conv3D"):
+        elif self.pytorch_api_name == "torch.nn.Conv3d" and self.rename_func_name("x2paddle.torch2paddle.Conv3D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 7
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(7)
             return self.convert_to_paddle()
         
 class ClassDropout(Mapper):
@@ -95,14 +87,10 @@ class ClassEmbedding(Mapper):
         assert "scale_grad_by_freq" not in self.kwargs or not self.kwargs["scale_grad_by_freq"], "The scale_grad_by_freq must be False in Embedding!"
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.Embedding"):
+        if self.rename_func_name("x2paddle.torch2paddle.Embedding"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 3
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(3)
             return self.convert_to_paddle()
 
     
@@ -111,14 +99,10 @@ class ClassLinear(ClassConv):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.Linear"):
+        if self.rename_func_name("x2paddle.torch2paddle.Linear"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
         
         
@@ -135,17 +119,13 @@ class ClassLoss(Mapper):
     
     def run(self):
         if self.pytorch_api_name == "torch.nn.CrossEntropyLoss" and \
-        self.args_has_star("x2paddle.torch2paddle.CrossEntropyLoss"):
+        self.rename_func_name("x2paddle.torch2paddle.CrossEntropyLoss"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         elif self.pytorch_api_name == "torch.nn.BCEWithLogitsLoss" and \
-        self.args_has_star("x2paddle.torch2paddle.BCEWithLogitsLoss"):
+        self.rename_func_name("x2paddle.torch2paddle.BCEWithLogitsLoss"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 1
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(1)
             return self.convert_to_paddle()
     
     
@@ -160,18 +140,14 @@ class ClassMaxPool(Mapper):
         assert "dilation" not in self.kwargs, "The dilation is not supported yet in MaxPool!"
     
     def run(self):
-        if self.pytorch_api_name == "torch.nn.MaxPool1d" and self.args_has_star("x2paddle.torch2paddle.MaxPool1D"):
+        if self.pytorch_api_name == "torch.nn.MaxPool1d" and self.rename_func_name("x2paddle.torch2paddle.MaxPool1D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.MaxPool2d" and self.args_has_star("x2paddle.torch2paddle.MaxPool12D"):
+        elif self.pytorch_api_name == "torch.nn.MaxPool2d" and self.rename_func_name("x2paddle.torch2paddle.MaxPool12D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.MaxPool3d" and self.args_has_star("x2paddle.torch2paddle.MaxPool13D"):
+        elif self.pytorch_api_name == "torch.nn.MaxPool3d" and self.rename_func_name("x2paddle.torch2paddle.MaxPool13D"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 3
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(3)
             return self.convert_to_paddle()
         
         
@@ -210,18 +186,14 @@ class FuncAvgPool(Mapper):
         delete_key(self.kwargs, "count_include_pad")
     
     def run(self):
-        if self.pytorch_api_name == "torch.nn.functional.avg_pool1d" and self.args_has_star("x2paddle.torch2paddle.avg_pool1d"):
+        if self.pytorch_api_name == "torch.nn.functional.avg_pool1d" and self.rename_func_name("x2paddle.torch2paddle.avg_pool1d"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.functional.avg_pool2d" and self.args_has_star("x2paddle.torch2paddle.avg_pool2d"):
+        elif self.pytorch_api_name == "torch.nn.functional.avg_pool2d" and self.rename_func_name("x2paddle.torch2paddle.avg_pool2d"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-        elif self.pytorch_api_name == "torch.nn.functional.avg_pool3d" and self.args_has_star("x2paddle.torch2paddle.avg_pool3d"):
+        elif self.pytorch_api_name == "torch.nn.functional.avg_pool3d" and self.rename_func_name("x2paddle.torch2paddle.avg_pool3d"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 4
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(4)
             return self.convert_to_paddle()
     
         
@@ -244,14 +216,10 @@ class FuncDropout(Mapper):
         delete_key(self.kwargs, "inplace") 
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.dropout"):
+        if self.rename_func_name("x2paddle.torch2paddle.dropout"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
         
         
@@ -264,14 +232,10 @@ class FuncLogSoftmax(Mapper):
         rename_key(self.kwargs, "input", "x")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.log_softmax"):
+        if self.rename_func_name("x2paddle.torch2paddle.log_softmax"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
         
         
@@ -294,14 +258,10 @@ class FuncRelu(Mapper):
         delete_key(self.kwargs, "inplace")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.relu"):
+        if self.rename_func_name("x2paddle.torch2paddle.relu"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 1
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(1)
             return self.convert_to_paddle()
         
         
@@ -326,14 +286,10 @@ class FuncSmoothL1Loss(Mapper):
         delete_key(self.kwargs, "reduce")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.smooth_l1_loss"):
+        if self.rename_func_name("x2paddle.torch2paddle.smooth_l1_loss"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
     
         
@@ -349,14 +305,10 @@ class FuncSoftmax(Mapper):
         delete_key(self.kwargs, "_stacklevel")
     
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.softmax"):
+        if self.rename_func_name("x2paddle.torch2paddle.softmax"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()        
               
             

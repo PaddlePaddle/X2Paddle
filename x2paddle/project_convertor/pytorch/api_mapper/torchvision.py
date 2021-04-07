@@ -9,12 +9,8 @@ class ClassImageFolder(Mapper):
     
     def run(self):
         if self.pytorch_api_name == "torchvision.datasets.ImageFolder" and \
-        self.args_has_star("x2paddle.torch2paddle.ImageFolder"):
+        self.rename_func_name("x2paddle.torch2paddle.ImageFolder"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 1
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(1)
             return self.convert_to_paddle()

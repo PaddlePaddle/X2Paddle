@@ -37,4 +37,7 @@ def apply(self, func):
 train_tmp = partial(paddle.nn.Layer.train)
 @add_layer_function
 def train(self, mode=True):
-    return train_tmp(self)
+    if mode:
+        return train_tmp(self)
+    else:
+        return paddle.nn.Layer.eval(self)

@@ -9,14 +9,10 @@ class FuncSave(Mapper):
         delete_key(self.kwargs, "pickle_module")
     
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.save"):
+        if self.rename_func_name("x2paddle.torch2paddle.save"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
 
 class FuncLoad(Mapper):
@@ -28,14 +24,10 @@ class FuncLoad(Mapper):
         delete_key(self.kwargs, "map_location")
     
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.load"):
+        if self.rename_func_name("x2paddle.torch2paddle.load"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
         
 
@@ -66,7 +58,7 @@ class ClassDataParallel(Mapper):
         delete_key(self.kwargs, "dim")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.DataParallel"):
+        if self.rename_func_name("x2paddle.torch2paddle.DataParallel"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
             return self.convert_to_paddle()
@@ -81,14 +73,10 @@ class FuncUnSqueeze(Mapper):
         rename_key(self.kwargs, "dim", "axis") 
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.unsqueeze"):
+        if self.rename_func_name("x2paddle.torch2paddle.unsqueeze"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(2)
             return self.convert_to_paddle()
         
         
@@ -104,19 +92,19 @@ class FuncMath(Mapper):
         
     def run(self):
         if self.pytorch_api_name == "torch.sqrt":
-            if self.args_has_star("x2paddle.torch2paddle.sqrt"):
+            if self.rename_func_name("x2paddle.torch2paddle.sqrt"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.abs":
-            if self.args_has_star("x2paddle.torch2paddle.abs"):
+            if self.rename_func_name("x2paddle.torch2paddle.abs"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.log":
-            if self.args_has_star("x2paddle.torch2paddle.log"):
+            if self.rename_func_name("x2paddle.torch2paddle.log"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.exp":
-            if self.args_has_star("x2paddle.torch2paddle.exp"):
+            if self.rename_func_name("x2paddle.torch2paddle.exp"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.clip":
-            if self.args_has_star("x2paddle.torch2paddle.clip"):
+            if self.rename_func_name("x2paddle.torch2paddle.clip"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         return self.convert_to_paddle()
         
@@ -131,14 +119,10 @@ class FuncArange(Mapper):
         delete_key(self.kwargs, "requires_grad")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.arange"):
+        if self.rename_func_name("x2paddle.torch2paddle.arange"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 3
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs(3)
             return self.convert_to_paddle()
     
 class FuncMatmul(Mapper):
@@ -153,14 +137,10 @@ class FuncMatmul(Mapper):
         delete_key(self.kwargs, "out")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.matmul"):
+        if self.rename_func_name("x2paddle.torch2paddle.matmul"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
-            same_attr_count = 2
-            if len(self.args) > same_attr_count:
-                new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
-                self.kwargs.update(new_kwargs)
-                self.args = self.args[:same_attr_count]
+            self.convert_args2kwargs()
             return self.convert_to_paddle()
         
         
@@ -178,7 +158,7 @@ class FuncCreateParam(Mapper):
         assert "requires_grad" not in self.kwargs or self.kwargs["requires_grad"], "The requires_grad must be True in Parameter!"
         
     def run(self):
-        if self.args_has_star(self.func_name):
+        if self.rename_func_name(self.func_name):
             if "*" in self.args[0] and "**" not in self.args[0]:
                 param_name = self.args[0][1:]
             elif "**" in self.args[0]:
@@ -217,16 +197,16 @@ class FuncLogical(Mapper):
         
     def run(self):
         if self.pytorch_api_name == "torch.bitwise_or":
-            if self.args_has_star("x2paddle.torch2paddle.logical_or"):
+            if self.rename_func_name("x2paddle.torch2paddle.logical_or"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.bitwise_and":
-            if self.args_has_star("x2paddle.torch2paddle.logical_and"):
+            if self.rename_func_name("x2paddle.torch2paddle.logical_and"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.bitwise_xor":
-            if self.args_has_star("x2paddle.torch2paddle.logical_xor"):
+            if self.rename_func_name("x2paddle.torch2paddle.logical_xor"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.bitwise_not":
-            if self.args_has_star("x2paddle.torch2paddle.logical_not"):
+            if self.rename_func_name("x2paddle.torch2paddle.logical_not"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         return self.convert_to_paddle()
         
@@ -243,7 +223,7 @@ class FuncStack(Mapper):
         delete_key(self.kwargs, "out") 
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.stack"):
+        if self.rename_func_name("x2paddle.torch2paddle.stack"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
             return self.convert_to_paddle()
@@ -261,7 +241,7 @@ class FuncRandperm(Mapper):
         delete_key(self.kwargs, "pin_memory")
         
     def run(self):
-        if self.args_has_star("x2paddle.torch2paddle.randperm"):
+        if self.rename_func_name("x2paddle.torch2paddle.randperm"):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
             return self.convert_to_paddle()
@@ -293,13 +273,13 @@ class FunTensorBuilder(Mapper):
     
     def run(self):
         if self.pytorch_api_name == "torch.full":
-            if self.args_has_star("x2paddle.torch2paddle.full"):
+            if self.rename_func_name("x2paddle.torch2paddle.full"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.zeros":
-            if self.args_has_star("x2paddle.torch2paddle.zeros"):
+            if self.rename_func_name("x2paddle.torch2paddle.zeros"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.ones":
-            if self.args_has_star("x2paddle.torch2paddle.ones"):
+            if self.rename_func_name("x2paddle.torch2paddle.ones"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         out1, out2, out3 = self.convert_to_paddle()
         if isinstance(self.useful_attrs["requires_grad"], str) or not self.useful_attrs["requires_grad"]:
@@ -324,13 +304,13 @@ class FunTensorLike(Mapper):
         
     def run(self):
         if self.pytorch_api_name == "torch.full_like":
-            if self.args_has_star("x2paddle.torch2paddle.full_like"):
+            if self.rename_func_name("x2paddle.torch2paddle.full_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.zeros_like":
-            if self.args_has_star("x2paddle.torch2paddle.zeros_like"):
+            if self.rename_func_name("x2paddle.torch2paddle.zeros_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         if self.pytorch_api_name == "torch.ones_like":
-            if self.args_has_star("x2paddle.torch2paddle.ones_like"):
+            if self.rename_func_name("x2paddle.torch2paddle.ones_like"):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         out1, out2, out3 = self.convert_to_paddle()
         if isinstance(self.useful_attrs["requires_grad"], str) or not self.useful_attrs["requires_grad"]:

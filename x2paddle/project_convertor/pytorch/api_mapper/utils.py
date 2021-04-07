@@ -1,11 +1,12 @@
 import inspect
 
-def api_args2kwargs(pytorch_api_name, args, same_attr_count):
+def api_args2kwargs(pytorch_api_name, args, first_same_attr_count):
     """ 将每个OP的args转为kwargs。
     
     Args:
         pytorch_api_name (str): OP的类型名字。
         args (list): 参数列表。
+        first_same_attr_count (int): PyTorch与Paddle前first_same_attr_count个完全相同的参数。
     """
     def get_default_args(func):
         signature = inspect.signature(func)
@@ -33,7 +34,7 @@ def api_args2kwargs(pytorch_api_name, args, same_attr_count):
     default_attrs = get_default_args(func)
     new_kwargs = dict()
     for i, (default_k, default_v) in enumerate(default_attrs.items()):
-        if i >= same_attr_count and i < len(args):
+        if i >= first_same_attr_count and i < len(args):
             new_kwargs[default_k] = args[i]
     return new_kwargs
     
@@ -85,7 +86,7 @@ class Mapper(object):
         """
         pass
     
-    def args_has_star(self, torch2paddle_func_name=None):
+    def rename_func_name(self, torch2paddle_func_name=None):
         """ 判断是否为可变参数或者关键字参数,
             若为可变参数或者关键字参数，则替换参数名。
         """
@@ -105,12 +106,20 @@ class Mapper(object):
         self.process_attrs()
         self.delete_attrs()
         return [], generate_api_code(self.func_name, self.args, self.kwargs), []
+    
+    def convert_args2kwargs(self, first_same_attr_count=0):
+        """ 将args转换为kwargs。
+        """
+        if len(self.args) > first_same_attr_count:
+            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, first_same_attr_count)
+            self.kwargs.update(new_kwargs)
+            self.args = self.args[:first_same_attr_count]
         
     def run(self, torch2paddle_func_name=None):
         """ 如果存在可变参数或者关键字参数，直接替换函数名为x2paddle的API；
             反之，调用convert_to_paddle。
         """
-        if self.args_has_star(torch2paddle_func_name):
+        if self.rename_func_name(torch2paddle_func_name):
             return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         else:
             return self.convert_to_paddle()
