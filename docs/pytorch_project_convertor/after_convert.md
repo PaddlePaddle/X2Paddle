@@ -1,4 +1,4 @@
-# 转换后须知
+# 转换后代码后处理
 1. 若需要使用GPU，且预处理中使用了Tensor，`x2paddle.torch2paddle.DataLoader`中的`num_workers`必须设置为0。
 
 2. 修改自定义Dataset（继承自`paddle.io.Dataset`）中的`__getitem__`的返回值，若返回值中存在Tensor，需添加相应代码将Tensor修改为numpy。
