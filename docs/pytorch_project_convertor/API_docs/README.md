@@ -1,0 +1,12 @@
+# PyTorch-PaddlePaddle API对应表
+本文档基于PyTorch 1.8.1梳理了常用API与PaddlePaddle API对应关系和差异分析。根据文档对应关系，有PyTorch使用经验的用户，可根据对应关系，快速熟悉PaddlePaddle的API使用。
+
+| 序号 | TensorFlow接口                                               | PaddlePaddle接口                                             | 备注                            |
+| ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------- |
+| 1    | [torch.set\_default\_dtype](https://pytorch.org/docs/stable/generated/torch.set_default_dtype.html) | [paddle.set\_default\_dtype](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/framework/set_default_dtype_cn.html) | 功能一致                        |
+| 2    | [torch.get\_default\_dtype](https://pytorch.org/docs/stable/generated/torch.get_default_dtype.html) | [paddle.get\_default\_dtype](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/framework/get_default_dtype_cn.html#get-default-dtype) | 功能一致                        |
+| 3    | [torch.numel](https://pytorch.org/docs/stable/generated/torch.numel.html) | [paddle.numel](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/stat/numel_cn.html#numel) | 功能一致，参数名不一致          |
+| 4    | [torch.tensor](https://pytorch.org/docs/stable/generated/torch.tensor.html?highlight=tensor#torch.tensor) | [paddle.to\_tensor](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/to_tensor_cn.html#to-tensor) | [差异对比](torch.tensor.md)     |
+| 5    | [torch.from\_numpy](https://pytorch.org/docs/stable/generated/torch.from_numpy.html?highlight=from_numpy#torch.from_numpy) | [paddle.to\_tensor](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/to_tensor_cn.html#to-tensor) | [差异对比](torch.from_numpy.md) |
+| 6    | [torch.zeros](https://pytorch.org/docs/stable/generated/torch.zeros.html?highlight=zeros#torch.zeros) | [paddle.zeros](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_cn.html#zeros) | [差异对比](torch.zeros.md)      |
+| 7    | [torch.zeros_like](https://pytorch.org/docs/stable/generated/torch.zeros_like.html?highlight=zeros_like#torch.zeros_like) | [paddle.zeros_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_like_cn.html#zeros-like) | [差异对比](torch.zeros_like.md) |

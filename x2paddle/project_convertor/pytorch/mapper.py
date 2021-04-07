@@ -138,7 +138,7 @@ DTYPE_MAPPER = {
                 }
 
 TORCHVISION_MAPPER  = {
-                        "torchvision.transforms": 
+                       "torchvision.transforms": 
                            ["paddle.vision.transforms", None],
                        "torchvision.transforms.Compose": 
                            ["paddle.vision.transforms.Compose", None],
@@ -198,10 +198,6 @@ API_MAPPER = {
                   ["x2paddle.torch2paddle.sum", None],
               "torch.mean": 
                   ["x2paddle.torch2paddle.mean", None],
-              "torch.ones": 
-                  ["x2paddle.torch2paddle.ones", None],
-              "torch.zeros": 
-                  ["x2paddle.torch2paddle.zeros", None],
               "torch.full": 
                   ["paddle.full", FunTensorBuilder],
               "torch.full_like": 
