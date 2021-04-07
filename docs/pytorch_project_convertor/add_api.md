@@ -187,11 +187,11 @@ def matmul(input, other, *, out=None):
 
 ### <span id="situation3.3">3.3</span> PaddlePaddle不存在对应API
 
-### 3.3.1 API在PaddlePaddle中必须存在
+### 3.3.1 API代码为必要代码
 
-该情况需要完成以下几个步骤：
+当前API在代码中必须存在，需要添加转换，因此要完成以下2个步骤：
 
-1. 在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，具体实现如下：
+***步骤1*** 在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，具体实现如下：
 
 ```python
 # key为PyTorch API字符串；
@@ -209,7 +209,7 @@ UTILS_MAPPER = {
 ...
 ```
 
-2. 在[x2paddle/project_convertor/pytorch/torch2paddle/](../../x2paddle/project_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与步骤1中字典 value值中list的第一个值一致，以`torch.utils.data.random_split`的实现为例，其作用为划分数据集，因此需要添加的代码如下所示：
+***步骤2*** 在[x2paddle/project_convertor/pytorch/torch2paddle/](../../x2paddle/project_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与步骤1中字典 value值中list的第一个值一致，以`torch.utils.data.random_split`的实现为例，其作用为划分数据集，因此需要添加的代码如下所示：
 
 ```python
 def random_split(dataset, lengths, generator=None):
@@ -220,16 +220,16 @@ def random_split(dataset, lengths, generator=None):
 setattr(paddle.io, "random_split", random_split)
 ```
 
-### 3.3.2  API在PaddlePaddle中可以去除
+### 3.3.2  API代码为不必要代码
 
-在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中REMOVE_API中添加需要去除的PyTorch API，具体实现如下：
+当前API为PaddlePaddle不需要的代码，应进行删除，因此需要在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中REMOVE_API中添加需要去除的PyTorch API，具体实现如下：
 
 ```python
 REMOVE_API =["torch.backends.cudnn",
              "torch.backends.cudnn.benchmark"]
 ```
 
-### 3.3.3  API可用已经映射的API实现
+### 3.3.3  API代码为可替换代码
 
-若当前API X的功能与已经映射的API Y较为一致，且替换为Y后精度影响不大，可在原PyTorch代码中将X替换为Y，再进行转换。
+若当前API可用其他PyTorch API`torch.YY`（`torch.YY`在[已支持映射列表](./supported_API.md)中）代替且替换后精度影响不大，可在原PyTorch代码中将当前API替换为`torch.YY`，再进行转换。
 
