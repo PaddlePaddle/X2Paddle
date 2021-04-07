@@ -93,7 +93,7 @@ def train(self, mode=True):
 
 ### <span id="situation3">情况3</span>
 
-### <span id="situation3.1">3.1</span>
+### <span id="situation3.1">3.1</span> PaddlePaddle存在对应API，功能完全一致，参数一致
 
 该情况直接在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串，无需添加进行参数映射所需调用的类，具体实现如下：
 
@@ -112,7 +112,7 @@ NN_MAPPER = {
 ...
 ```
 
-### <span id="situation3.2">3.2</span>
+### <span id="situation3.2">3.2</span> PaddlePaddle存在对应API，功能基本一致，参数不一致
 
 该情况需要完成以下几个步骤：
 
@@ -185,7 +185,7 @@ def matmul(input, other, *, out=None):
     return paddle.matmul(input, other)
 ```
 
-### <span id="situation3.3">3.3</span>
+### <span id="situation3.3">3.3</span> PaddlePaddle不存在对应API
 
 ### 3.3.1 API在PaddlePaddle中必须存在
 
