@@ -116,7 +116,7 @@ NN_MAPPER = {
 
 该情况需要完成以下几个步骤：
 
-1. 在[x2paddle/project_convertor/pytorch/mapper.py](.../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、映射处理类，具体实现如下：
+***步骤1*** 在[x2paddle/project_convertor/pytorch/mapper.py](.../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、映射处理类，具体实现如下：
 
 ```python
 # key为PyTorch API字符串；
@@ -135,7 +135,7 @@ NN_MAPPER = {
 # 类名以Class或Func开始，Class代表Paddle API为一个类，Func代表Paddle API为一个方法。
 ```
 
-2. 在[x2paddle/project_convertor/pytorch/api_mapper/](../../x2paddle/project_convertor/pytorch/api_mapper)文件夹中找到对应的文件并在其中添加映射处理类，类型中用户需要重写process_attrs、delete_attrs、check_attrs以及run这三个函数，其中run只需要修改对应的x2paddle封装的API命名即可。以`torch.matmul`和`paddle.matmul`的映射为例，二者的参数名不一致，因此需要添加的代码如下所示：
+***步骤2*** 在[x2paddle/project_convertor/pytorch/api_mapper/](../../x2paddle/project_convertor/pytorch/api_mapper)文件夹中找到对应的文件并在其中添加映射处理类，类型中用户需要重写process_attrs、delete_attrs、check_attrs以及run这三个函数，其中run只需要修改对应的x2paddle封装的API命名即可。以`torch.matmul`和`paddle.matmul`的映射为例，二者的参数名不一致，因此需要添加的代码如下所示：
 
 ```python
 class FuncMatmul(Mapper):
@@ -178,7 +178,7 @@ class FuncMatmul(Mapper):
 
 
 
-3. 当PyTorch API传入的是可变参数或关键字参数，映射处理类无法对参数进行处理，此时只能调用x2paddle封装的API，所以需要在[x2paddle/project_convertor/pytorch/torch2paddle/](../../x2paddle/project_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与步骤2中的`torch2paddle_func_name`命名一致，同样以`torch.matmul`和`paddle.matmul`的映射为例，其实现代码如下：
+***步骤3*** 当PyTorch API传入的是可变参数或关键字参数，映射处理类无法对参数进行处理，此时只能调用x2paddle封装的API，所以需要在[x2paddle/project_convertor/pytorch/torch2paddle/](../../x2paddle/project_convertor/pytorch/torch2paddle)文件夹中找到对应的文件并在其中添加x2paddle API实现，其函数名或类名与步骤2中的`torch2paddle_func_name`命名一致，同样以`torch.matmul`和`paddle.matmul`的映射为例，其实现代码如下：
 
 ```python 
 def matmul(input, other, *, out=None):
