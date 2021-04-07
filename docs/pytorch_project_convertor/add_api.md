@@ -1,6 +1,6 @@
 # 添加API映射方式
 
-在5种情况下需要添加的API映射，本文档将对添加方式逐一进行介绍，5种情况如下表所示：
+在3种情况下需要添加的API映射，本文档将对添加方式逐一进行介绍，3种情况如下表所示：
 
 |                      | 对应情况                                                     |
 | -------------------- | ------------------------------------------------------------ |
@@ -12,12 +12,12 @@
 
 > .  
 > |── api_mapper     # 存放映射处理相关操作  
-> |   |── \_\_init\_\_.py  
-> |   |── learning_rate_scheduler.py    # 学习率类API映射操作  
-> |   |── nn.py    # 组网、损失相关类API映射操作  
-> |   |── ops.py    # paddle.Tensor处理类API映射操作  
-> |   |── torchvision.py    # 图像处理相关的API映射操作  
-> |  └── utils.py    # 基础操作  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|   |── \_\_init\_\_.py  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|   |── learning_rate_scheduler.py    # 学习率类API映射操作  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|   |── nn.py    # 组网、损失相关类API映射操作  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|   |── ops.py    # paddle.Tensor处理类API映射操作  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|   |── torchvision.py    # 图像处理相关的API映射操作  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|  └── utils.py    # 基础操作  
 > |── mapper.py    # 存放映射关系  
 > └── torch2paddle    # 存放需要重新封装实现的API   
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|──\_\_init\_\_.py  
@@ -33,7 +33,13 @@
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── vision_transforms.py    # 实现视觉transform的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── vision_utils.py    # 实现视觉基础的操作  
 
-
+***[注意]***添加完映射后，需要重新安装X2Paddle：
+```
+cd X2Paddle
+rm -rf bulid dist x2paddle.egg-info
+pip uninstall x2paddle
+python setup.py install
+```
 
 ### <span id="situation1">情况1</span>
 
