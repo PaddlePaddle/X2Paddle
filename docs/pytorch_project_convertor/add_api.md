@@ -33,7 +33,7 @@
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|── vision_transforms.py    # 实现视觉transform的操作  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── vision_utils.py    # 实现视觉基础的操作  
 
-***[注意]***添加完映射后，需要重新安装X2Paddle：
+***[注意]*** 添加完映射后，需要重新安装X2Paddle：
 ```
 cd X2Paddle
 rm -rf bulid dist x2paddle.egg-info
