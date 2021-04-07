@@ -6,7 +6,7 @@
 | -------------------- | ------------------------------------------------------------ |
 | [情况1](#situation1) | 在运行代码时出现错误：`AttributeError: 'Tensor' object has no attribute 'XX'`。 |
 | [情况2](#situation2) | 在运行代码时出现错误：`AttributeError: 'Layer' object has no attribute 'XX'`。 |
-| [情况3](#situation3) | 在转换代码时出现提示：`Can not convert the file XX.py. The unsupported packages or operators are: [torch.nn.Tanh, torch.nn.utils.spectral_norm].<br/>[3.1](#situation3.1) PaddlePaddle存在对应API，功能完全一致，参数一致。 <br/>[3.2](#situation3.2) PaddlePaddle存在对应API，功能基本一致，参数不一致。 <br/>[3.3](#situation3.3) PaddlePaddle不存在对应API。 |
+| [情况3](#situation3) | 在转换代码时出现提示：`Can not convert the file XX.py. The unsupported packages or operators are: [torch.nn.Tanh, torch.nn.utils.spectral_norm].`。<br/>[3.1](#situation3.1) PaddlePaddle存在对应API，功能完全一致，参数一致。 <br/>[3.2](#situation3.2) PaddlePaddle存在对应API，功能基本一致，参数不一致。 <br/>[3.3](#situation3.3) PaddlePaddle不存在对应API。 |
 
 需要修改的文件在[x2paddle/project_convertor/pytorch](../../x2paddle/project_convertor/pytorch)中，具体文件如下所示：
 
