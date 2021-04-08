@@ -10,7 +10,7 @@ bash download.sh pretrained-celeba-128x128
 # 下载数据集
 bash download.sh celeba
 ```
-### 转换前修改代码
+### 第一步：转换前代码预处理
 1. 规避使用TensorBoard，在[config处](https://github.com/yunjey/stargan/blob/master/main.py#L109)设置不使用tensorboard，具体添加代码如下：
 ``` python
 ...
@@ -21,12 +21,12 @@ config.use_tensorboard = False
 print(config)
 main(config)
 ```
-### 转换
+###  第二步：转换
 ``` shell
 cd ../
 x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project --pretrain_model=stargan/stargan_celeba_128/models/
 ```
-### 转换后代码修改
+### 第三步：转换后代码后处理
 **需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**  
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在[config处](https://github.com/yunjey/stargan/blob/master/main.py#L109)设置强制设置`num_workers`，具体添加代码如下：
 ``` python
@@ -112,7 +112,7 @@ python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample
 git clone https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB.git
 ```
 2. 根据Generate VOC format training data set and training process的README.md所示下载数据集，并存放于Ultra-Light-Fast-Generic-Face-Detector-1MB/data/文件夹下。
-### 转换前修改代码
+### 第一步：转换前代码预处理
 1. 将代码中的[或操作符](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/vision/utils/box_utils.py#L153)替换为如下代码：
 ``` python
 ...
@@ -149,11 +149,11 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
 ...
 ```
 
-### 转换
+### 第二步：转换
 ```shell
 x2paddle --convert_torch_project --project_dir=Ultra-Light-Fast-Generic-Face-Detector-1MB --save_dir=paddle_project 
 ```
-### 转换后修改代码
+### 第三步：转换后代码后处理
 **需要修改的文件位于paddle_project文件夹中，其中文件命名与原始Ultra-Light-Fast-Generic-Face-Detector-1MB文件夹中文件命名一致。**  
 1. 若需要使用GPU，DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
 ```shell

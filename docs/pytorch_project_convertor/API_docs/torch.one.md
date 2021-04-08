@@ -1,20 +1,20 @@
-## torch.zeros
-### [torch.zeros](https://pytorch.org/docs/stable/generated/torch.zeros.html?highlight=zeros#torch.zeros)
+## torch.ones
+### [torch.ones](https://pytorch.org/docs/stable/generated/torch.ones.html?highlight=ones#torch.ones)
 
 ```python
-torch.zeros(*size, 
-            *, 
-            out=None, 
-            dtype=None, 
-            layout=torch.strided, 
-            device=None, 
-            requires_grad=False)
+torch.ones(*size, 
+           *, 
+           out=None, 
+           dtype=None, 
+           layout=torch.strided, 
+           device=None, 
+           requires_grad=False)
 ```
 
-### [paddle.zeros](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_cn.html#zeros)
+### [paddle.ones](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/ones_cn.html#ones)
 
 ```python
-paddle.zeros(shape, 
+paddle.ones(shape, 
              dtype=None, 
              name=None)
 ```
@@ -39,17 +39,17 @@ PaddlePaddle：无此功能。
 ### 代码示例
 ``` python
 # PyTorch示例：
-torch.zeros(2, 3)
+torch.ones(2, 3)
 # 输出
-# tensor([[ 0.,  0.,  0.],
-#         [ 0.,  0.,  0.]])
+# tensor([[ 1.,  1.,  1.],
+#         [ 1.,  1.,  1.]])
 ```
 
 ``` python
 # PaddlePaddle示例：
-paddle.zeros([2, 3])
+paddle.ones([2, 3])
 # 输出
 # Tensor(shape=[2, 3], dtype=float32, place=CPUPlace, stop_gradient=True,
-#        [[0., 0., 0.],
-#         [0., 0., 0.]])
+#        [[1., 1., 1.],
+#         [1., 1., 1.]])
 ```

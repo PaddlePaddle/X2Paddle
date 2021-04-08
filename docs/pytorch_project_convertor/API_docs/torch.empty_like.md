@@ -1,8 +1,8 @@
-## torch.zeros_like
-### [torch.zeros_like](https://pytorch.org/docs/stable/generated/torch.zeros_like.html?highlight=zeros_like#torch.zeros_like)
+## torch.empty_like
+### [torch.empty_like](https://pytorch.org/docs/stable/generated/torch.empty_like.html?highlight=empty_like#torch.empty_like)
 
 ```python
-torch.zeros_like(input, 
+torch.empty_like(input, 
                  *, 
                  dtype=None, 
                  layout=None, 
@@ -11,10 +11,10 @@ torch.zeros_like(input,
                  memory_format=torch.preserve_format)
 ```
 
-### [paddle.zeros_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_like_cn.html#zeros-like)
+### [paddle.empty_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/empty_like_cn.html#empty-like)
 
 ```python
-paddle.zeros_like(x, dtype=None, name=None)
+paddle.empty_like(x, dtype=None, name=None)
 ```
 
 ### 功能差异
