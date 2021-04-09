@@ -101,6 +101,7 @@ class TFGraphNode(GraphNode):
     @property
     def name(self):
         if hasattr(self, 'index'):
+            print(self.layer_type)
             return self.layer_name + "_p{}".format(self.index)
         return self.layer_name
 
@@ -184,7 +185,7 @@ class TFGraph(Graph):
         node = super(TFGraph, self).get_node(new_node_name, copy)
         if node is None:
             return None
-        if node.layer_type == "Switch":
+        if node.layer_type in ["Switch", "Reshape", "Sub"]:
             if hasattr(node, 'index'):
                 del node.index
         if len(items) == 1 and node.layer_type in self.multi_out_ops:
@@ -284,6 +285,11 @@ class TFGraph(Graph):
             if node_name in self.output_nodes:
                 idx = self.output_nodes.index(node_name)
                 self.output_nodes[idx] = input_node.layer_name
+                if len(input_node.outputs) > 0:
+                    self.output_nodes.pop(idx)
+                else:
+                    self.output_nodes[idx] = input_node.layer_name
+                
 
     def _remove_cast_node(self):
         cast_node = list()
