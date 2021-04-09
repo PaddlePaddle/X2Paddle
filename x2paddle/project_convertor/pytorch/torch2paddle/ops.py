@@ -34,6 +34,12 @@ def concat(tensors, dim=0):
         x[i] = x[i].cast(real_type)
     return paddle.concat(x, dim)
 
+def create_tensor(*size):
+    if len(size) > 1:
+        return paddle.zeros(size, dtype="float32")
+    else:
+        return paddle.Tensor(size)
+
 def exp(input, *, out=None):
     return paddle.exp(input)
 
@@ -162,4 +168,5 @@ def zeros_like(input, *, dtype=None, layout=None, device=None, requires_grad=Fal
 class DataParallel(Base_DataParallel):
     def __init__(self, module, device_ids=None, output_device=None, dim=0):
         super().__init__(module)
+
 

@@ -169,7 +169,7 @@ API_MAPPER = {
               "torch": 
                   ["paddle", None],
               "torch.Tensor": 
-                  ["paddle.Tensor", None],
+                  ["x2paddle.torch2paddle.create_tensor", None],
               "torch.FloatTensor": 
                   ["paddle.Tensor", ClassFloatTensor],
               "torch.load": 

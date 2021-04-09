@@ -173,8 +173,8 @@ class FuncCreateParam(Mapper):
                 param_name = self.args[0]
             else:
                 param_name = self.kwargs["value"]
-        code = "paddle.create_parameter(shape={}.shape, dtype={}.dtype, default_initializer = {}({}))".format(
-            param_name, param_name, self.func_name, param_name)
+        code = "paddle.create_parameter(shape={}.shape, dtype=str({}.numpy().dtype), default_initializer = psddle.nn.initializer.Assign({}))".format(
+            param_name, param_name, param_name)
         return [], code, []      
     
     

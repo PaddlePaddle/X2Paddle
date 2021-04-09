@@ -108,7 +108,10 @@ def index_fill_(self, dim, index, val):
         perm_list.insert(dim, 0)
         out = paddle.transpose(out, perm=perm_list)
     paddle.assign(out, output=self)
-
+    
+@add_tensor_function    
+def fill_(self, value):
+    paddle.assign(paddle.full_like(self, value, dtype="float32").cast(self.dtype), output=self)
 
 sum_tmp = partial(paddle.Tensor.sum)
 @add_tensor_function
