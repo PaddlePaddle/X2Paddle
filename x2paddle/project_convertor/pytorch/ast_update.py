@@ -369,18 +369,12 @@ class AstUpdation(ast.NodeVisitor):
                         break
                 return attr_str 
         elif pytorch_api in REMOVE_API:
-            if isinstance(father_node, (ast.Assign, ast.If)):
+            if isinstance(father_node, ast.Assign):
                 scope_node = self._get_scope_node()
                 for i, n in enumerate(scope_node.body):
                     if father_node == n:
                         scope_node.body.pop(i)
                         return None
-            elif isinstance(father_node, ast.BoolOp):
-                for i, n in enumerate(father_node.values):
-                    if node == n:
-                        father_node.values[i] = ast.parse("False").body[0].value
-                        return None
-                    
         else: 
             if isinstance(pytorch_api, str) and pytorch_api.startswith("torch") and "(" not in pytorch_api:
                 if not isinstance(father_node, ast.Attribute):
