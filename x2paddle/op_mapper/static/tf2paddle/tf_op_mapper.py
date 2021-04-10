@@ -631,12 +631,18 @@ class TFOpMapper(OpMapper):
         paddings = self.graph.get_input_node(node, 1)
         assert paddings.layer_type == "Const", "Padding should be Const"
         paddings = paddings.value.flatten().tolist()
+        constant_values = 0
+        if len(node.layer.input) > 2:
+            constant_values = self.graph.get_input_node(node, 2)
+            assert constant_values.layer_type == "Const", "Padding should be Const"
+            constant_values = constant_values.value
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.pad",
             inputs={"x": input.name},
             outputs=[node.name],
-            pad=paddings)
+            pad=paddings,
+            value=constant_values)
         
     def MirrorPad(self, node):
         self.Pad(node)
