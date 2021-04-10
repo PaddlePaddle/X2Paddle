@@ -33,7 +33,6 @@ class DependencyAnalysis(ast.NodeVisitor):
         self.file_dependency = file_dependency
         self.root = ast.parse(open(py_file_path, "rb").read())
         self.scopes_and_dependencies = list()    # 作用域和依赖组成的stack
-        self.nodes = list()    # ast节点组成的stack
         self.dependencies = list()    # 依赖组成的list
         
     def _get_scope_node(self):
@@ -90,9 +89,7 @@ class DependencyAnalysis(ast.NodeVisitor):
         self.file_dependency[self.py_file_path] = self.dependencies                
         
     def visit(self, node):
-        self.nodes.append(node)
         out = super(DependencyAnalysis, self).visit(node)
-        self.nodes.pop()
         
     def visit_ImportFrom(self, node):
         """ 遍历子节点。
