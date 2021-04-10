@@ -328,8 +328,8 @@ class AstUpdation(ast.NodeVisitor):
             情况2 —— a = (1, 2, nn.Module)：将nn.Module替换为nn.Layer；
             情况3 —— def a() -> torch.Tensor：将torch.Tensor替换为paddle.Tensor；
             情况4 —— def a(x: torch.Tensor)：将torch.Tensor替换为paddle.Tensor；
-            情况5 —— torch.float32：将torch.float32替换为"float32"；
-            情况6 —— isinstance(a, nn.Module)：将nn.Module替换为nn.Layer。
+            情况5 —— isinstance(a, nn.Module)：将nn.Module替换为nn.Layer;
+            情况6 —— torch.float32：将torch.float32替换为"float32"；
         """
         value_node = node.value
         attr = node.attr
@@ -345,11 +345,13 @@ class AstUpdation(ast.NodeVisitor):
                     father_node.bases[0] = ast.parse(attr_str).body[0].value
                 return attr_str
             elif isinstance(father_node, ast.Tuple):
+                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
                 for i, elts_node in enumerate(father_node.elts):
                     if astor.to_source(elts_node).strip() == attr_str:
                         father_node.elts[i] = ast.parse(paddle_api).body[0].value
                 return paddle_api
             elif isinstance(father_node, ast.FunctionDef):
+                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
                 father_node.returns = ast.parse(paddle_api).body[0].value
                 return paddle_api
             elif isinstance(father_node, ast.arg):
@@ -357,6 +359,7 @@ class AstUpdation(ast.NodeVisitor):
                 father_node.annotation = ast.parse(attr_str).body[0].value
                 return attr_str
             elif isinstance(father_node, ast.Call) and getattr(father_node.func, "id", None) == "isinstance":
+                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
                 for i, arg_node in enumerate(father_node.args):
                     if astor.to_source(arg_node).strip() == attr_str:
                         father_node.args[i] = ast.parse(paddle_api).body[0].value
@@ -369,12 +372,18 @@ class AstUpdation(ast.NodeVisitor):
                         break
                 return attr_str 
         elif pytorch_api in REMOVE_API:
-            if isinstance(father_node, ast.Assign):
+            if isinstance(father_node, (ast.Assign, ast.If)):
                 scope_node = self._get_scope_node()
                 for i, n in enumerate(scope_node.body):
                     if father_node == n:
                         scope_node.body.pop(i)
                         return None
+            elif isinstance(father_node, ast.BoolOp):
+                for i, n in enumerate(father_node.values):
+                    if node == n:
+                        father_node.values[i] = ast.parse("False").body[0].value
+                        return None
+                    
         else: 
             if isinstance(pytorch_api, str) and pytorch_api.startswith("torch") and "(" not in pytorch_api:
                 if not isinstance(father_node, ast.Attribute):
