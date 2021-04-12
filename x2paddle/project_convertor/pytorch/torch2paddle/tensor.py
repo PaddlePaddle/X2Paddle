@@ -113,26 +113,26 @@ def index_fill_(self, dim, index, val):
 def fill_(self, value):
     paddle.assign(paddle.full_like(self, value, dtype="float32").cast(self.dtype), output=self)
 
-sum_tmp = partial(paddle.Tensor.sum)
+pd_sum = partial(paddle.Tensor.sum)
 @add_tensor_function
 def sum(self, dim, keepdim=False, dtype=None):
-    return sum_tmp(self, axis=dim, dtype=dtype, keepdim=keepdim)
+    return pd_sum(self, axis=dim, dtype=dtype, keepdim=keepdim)
 
-sort_tmp = partial(paddle.Tensor.sort)
+pd_sort = partial(paddle.Tensor.sort)
 @add_tensor_function
 def sort(self, dim=-1, descending=False, out=None):
-    return sort_tmp(self, axis=dim, descending=descending), paddle.argsort(self, axis=dim, descending=descending)
+    return pd_sort(self, axis=dim, descending=descending), paddle.argsort(self, axis=dim, descending=descending)
 
-reshape_tmp = partial(paddle.Tensor.reshape)
+pd_reshape = partial(paddle.Tensor.reshape)
 @add_tensor_function
 def reshape(self, *shape):
-    return reshape_tmp(self, shape)
+    return pd_reshape(self, shape)
 
-transpose_tmp = partial(paddle.Tensor.transpose)
+pd_transpose = partial(paddle.Tensor.transpose)
 @add_tensor_function
 def transpose(self, dim0, dim1=None):
     if dim1 is None:
-        return transpose_tmp(self, dim0)
+        return pd_transpose(self, dim0)
     else:
         shape = self.shape
         perm = list(range(len(shape)))
@@ -140,15 +140,19 @@ def transpose(self, dim0, dim1=None):
         dim1 = (dim1 + len(shape)) if dim1 < 0 else dim1
         perm[dim0] = dim1
         perm[dim1] = dim0
-        return transpose_tmp(self, perm)
+        return pd_transpose(self, perm)
     
-transpose_max = partial(paddle.Tensor.max)
+pd_max = partial(paddle.Tensor.max)
 @add_tensor_function
 def max(self, dim, keepdim=None):
-    return transpose_max(self, dim, keepdim), paddle.argmax(self, dim, keepdim)
+    return pd_max(self, dim, keepdim), paddle.argmax(self, dim, keepdim)
     
-transpose_min = partial(paddle.Tensor.min)
+pd_min = partial(paddle.Tensor.min)
 @add_tensor_function
 def min(self, dim, keepdim=None):
-    return transpose_min(self, dim, keepdim), paddle.argmin(self, dim, keepdim)
+    return pd_min(self, dim, keepdim), paddle.argmin(self, dim, keepdim)
     
+pd_expand = partial(paddle.Tensor.expand)
+@add_tensor_function
+def expand(self, *sizes):
+    return pd_expand(self, sizes)

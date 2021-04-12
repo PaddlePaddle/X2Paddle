@@ -33,7 +33,7 @@ class DependencyAnalysis(ast.NodeVisitor):
         self.file_dependency = file_dependency
         self.root = ast.parse(open(py_file_path, "rb").read())
         self.scopes_and_dependencies = list()    # 作用域和依赖组成的stack
-        self.dependencies = list()    # 依赖组成的list
+        self.file_dependency[self.py_file_path] = list()
         
     def _get_scope_node(self):
         """ 获取当前节点的作用域。
@@ -86,7 +86,6 @@ class DependencyAnalysis(ast.NodeVisitor):
     def run(self):
         self.scopes_and_dependencies.append(self.root)
         self.visit(self.root)
-        self.file_dependency[self.py_file_path] = self.dependencies                
         
     def visit(self, node):
         out = super(DependencyAnalysis, self).visit(node)
@@ -125,7 +124,7 @@ class DependencyAnalysis(ast.NodeVisitor):
             if import_file_path not in self.file_dependency:
                 module_sta = DependencyAnalysis(import_file_path, self.file_dependency)
                 module_sta.run()
-            self.dependencies.extend(self.file_dependency[import_file_path])
+            self.file_dependency[self.py_file_path].extend(self.file_dependency[import_file_path])
         else:
             dependency_str_list = list()
             if dependency_info.FROM is None and self._level is not None:
@@ -134,7 +133,7 @@ class DependencyAnalysis(ast.NodeVisitor):
                 dependency_str_list.append(dependency_info.FROM)
             dependency_str_list.append(dependency_info.IMPORT)
             dependency_info.DEPENDENCY = ".".join(dependency_str_list)
-            self.dependencies.append(dependency_info)
+            self.file_dependency[self.py_file_path].append(dependency_info)
         self.scopes_and_dependencies.append(dependency_info)
         
     def visit_FunctionDef(self, node):
@@ -142,14 +141,14 @@ class DependencyAnalysis(ast.NodeVisitor):
         """
         if isinstance(self._get_scope_node(), ast.Module):
             self.scopes_and_dependencies.append(node)
-            self.dependencies.append(node.name)
+            self.file_dependency[self.py_file_path].append(node.name)
         
     def visit_ClassDef(self, node):
         """ 当作用域为ast的根节点时，把类名放入dependencies。
         """
         if isinstance(self._get_scope_node(), ast.Module):
             self.scopes_and_dependencies.append(node)
-            self.dependencies.append(node.name)
+            self.file_dependency[self.py_file_path].append(node.name)
     
     def visit_Assign(self, node):
         """ 当作用域为ast的根节点时，把赋值名放入dependencies。
@@ -159,9 +158,9 @@ class DependencyAnalysis(ast.NodeVisitor):
             for target in node.targets:
                 if isinstance(target, ast.Tuple):
                     for ele in target.elts:
-                        self.dependencies.append(ele.id)
+                        self.file_dependency[self.py_file_path].append(ele.id)
                 elif isinstance(target, ast.Name):
-                    self.dependencies.append(target.id)
+                    self.file_dependency[self.py_file_path].append(target.id)
 
 def run(py_file_path, file_dependency):
     analysis = DependencyAnalysis(py_file_path, file_dependency)

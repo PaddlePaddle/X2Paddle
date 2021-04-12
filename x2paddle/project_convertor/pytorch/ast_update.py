@@ -128,12 +128,15 @@ class AstUpdation(ast.NodeVisitor):
         if paddle_api.startswith(dependency_info.PADDLE_IMPORT + ".") or \
                 paddle_api.endswith("." + dependency_info.PADDLE_IMPORT) or  \
                 "." + dependency_info.PADDLE_IMPORT + "." in paddle_api:
-            paddle_api_seg = paddle_api.split(dependency_info.PADDLE_IMPORT)
+            paddle_api_seg = paddle_api.split(dependency_info.PADDLE_IMPORT)                
             if dependency_info.AS is None:
                 name = name.replace(dependency_info.PYTORCH_IMPORT + pytorch_api_seg[-1], 
                                     dependency_info.PADDLE_IMPORT + paddle_api_seg[-1])
             else:
                 name = name.replace(pytorch_api_seg[-1], paddle_api_seg[-1])
+                name_seg = name.split(dependency_info.AS)
+                if len(name_seg[0]) > 0:
+                    name = name.replace(name_seg[0], "")
         elif "torch2paddle." in paddle_api:
             name = "torch2paddle." + paddle_api.split("torch2paddle.")[-1]
             self.is_import_torch2paddle = True
@@ -313,7 +316,7 @@ class AstUpdation(ast.NodeVisitor):
             elif dependency_info.PYTORCH_DEPENDENCY.startswith("torch"):
                 self.no_support_apis.append(dependency_info.PYTORCH_DEPENDENCY)
         else:
-            dependency_info.PADDLE_DEPENDENCY = dependency_info.PYTORCH_DEPENDENCY   
+            dependency_info.PADDLE_DEPENDENCY = dependency_info.PYTORCH_DEPENDENCY 
         self.scopes_and_dependencies.append(dependency_info)
         return is_remove
         
@@ -383,7 +386,6 @@ class AstUpdation(ast.NodeVisitor):
                     if node == n:
                         father_node.values[i] = ast.parse("False").body[0].value
                         return None
-                    
         else: 
             if isinstance(pytorch_api, str) and pytorch_api.startswith("torch") and "(" not in pytorch_api:
                 if not isinstance(father_node, ast.Attribute):

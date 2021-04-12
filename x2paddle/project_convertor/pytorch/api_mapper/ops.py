@@ -146,7 +146,7 @@ class FuncMatmul(Mapper):
         
 class FuncCreateParam(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
-        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
         
     def process_attrs(self):
         rename_key(self.kwargs, "data", "value")
@@ -175,7 +175,7 @@ class FuncCreateParam(Mapper):
                 param_name = self.kwargs["value"]
         code = "paddle.create_parameter(shape={}.shape, dtype=str({}.numpy().dtype), default_initializer = psddle.nn.initializer.Assign({}))".format(
             param_name, param_name, param_name)
-        return [], code, []      
+        return [], code, ["{}.stop_gradient = True".format(self.target_name)]      
     
     
 class FuncNoGrad(Mapper):

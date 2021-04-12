@@ -2,8 +2,6 @@ from collections import defaultdict
 import warnings
 
 import paddle
-from paddle.optimizer import Momentum as Base_Momentum
-from paddle.optimizer import Adam as Base_Adam
 from paddle.regularizer import L2Decay
 
 
@@ -35,7 +33,7 @@ def update_parameters(parameters, lr, weight_decay):
     return parameters_list
                     
 
-class Momentum(Base_Momentum):
+class Momentum(paddle.optimizer.Momentum):
     def __init__(self, 
                  params, 
                  lr=0.001, 
@@ -114,7 +112,7 @@ class Momentum(Base_Momentum):
         return self.clear_grad()
         
         
-class Adam(Base_Adam):
+class Adam(paddle.optimizer.Adam):
     def __init__(self, 
                  params, 
                  lr=0.001, 
@@ -122,7 +120,7 @@ class Adam(Base_Adam):
                  eps=1e-08, 
                  weight_decay=0, 
                  amsgrad=False):
-        parameters_list = update_parameters(params)
+        parameters_list = update_parameters(params, lr, weight_decay)
         super().__init__(
             learning_rate=lr,
             beta1=betas[0],
@@ -141,8 +139,9 @@ class Adam(Base_Adam):
         self.state = defaultdict(dict)
         self.param_groups = []
 
-        param_groups = list(params)
+        param_groups = list(parameters_list)
         if len(param_groups) == 0:
+            print(param_groups)
             raise ValueError("optimizer got an empty parameter list")
         if not isinstance(param_groups[0], dict):
             param_groups = [{'params': param_groups}]
