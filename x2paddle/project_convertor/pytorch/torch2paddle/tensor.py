@@ -109,6 +109,9 @@ def index_fill_(self, dim, index, val):
         out = paddle.transpose(out, perm=perm_list)
     paddle.assign(out, output=self)
 
+@add_tensor_function    
+def fill_(self, value):
+    paddle.assign(paddle.full_like(self, value, dtype="float32").cast(self.dtype), output=self)
 
 sum_tmp = partial(paddle.Tensor.sum)
 @add_tensor_function
@@ -149,3 +152,7 @@ transpose_min = partial(paddle.Tensor.min)
 def min(self, dim, keepdim=None):
     return transpose_min(self, dim, keepdim), paddle.argmin(self, dim, keepdim)
     
+pd_expand = partial(paddle.Tensor.expand)
+@add_tensor_function
+def expand(self, *sizes):
+    return pd_expand(self, sizes)

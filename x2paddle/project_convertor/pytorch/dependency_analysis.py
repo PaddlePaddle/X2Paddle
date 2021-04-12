@@ -33,7 +33,6 @@ class DependencyAnalysis(ast.NodeVisitor):
         self.file_dependency = file_dependency
         self.root = ast.parse(open(py_file_path, "rb").read())
         self.scopes_and_dependencies = list()    # 作用域和依赖组成的stack
-        self.nodes = list()    # ast节点组成的stack
         self.dependencies = list()    # 依赖组成的list
         
     def _get_scope_node(self):
@@ -47,16 +46,6 @@ class DependencyAnalysis(ast.NodeVisitor):
                 scope_node = sd
                 break
         return scope_node 
-    
-    def _get_current_index(self, scope_node, node):
-        """ 获取当前节点在其作用域中的索引序号。
-        """
-        current_id = 0
-        for i, n in enumerate(scope_node.body):
-            if node == n:
-                current_id = i
-                break
-        return current_id
     
     def _generate_file_path(self, dependency_info):
         """ 根据from信息获取依赖包所在文件。如果from字符串中存在相对路径（出现"."），
@@ -100,16 +89,11 @@ class DependencyAnalysis(ast.NodeVisitor):
         self.file_dependency[self.py_file_path] = self.dependencies                
         
     def visit(self, node):
-        self.nodes.append(node)
         out = super(DependencyAnalysis, self).visit(node)
-        self.nodes.pop()
         
     def visit_ImportFrom(self, node):
         """ 遍历子节点。
         """
-        scope_node = self._get_scope_node()
-        current_id = self._get_current_index(scope_node, node)
-        scope_node.body.pop(current_id)
         self._from_name = node.module
         self._level = node.level
         son_nodes = node.names

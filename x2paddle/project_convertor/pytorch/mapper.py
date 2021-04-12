@@ -32,6 +32,8 @@ NN_MAPPER = {
                  ["x2paddle.torch2paddle.clip_grad_value_", None],
              "torch.nn.Parameter": 
                  ["paddle.create_parameter", FuncCreateParam],
+             "torch.nn.parameter.Parameter":
+                 ["paddle.create_parameter", FuncCreateParam],
              "torch.nn.DataParallel": 
                  ["paddle.DataParallel", ClassDataParallel],
              "torch.nn.functional": 
@@ -77,11 +79,17 @@ NN_MAPPER = {
                  ["paddle.nn.Tanh", None],
              "torch.nn.Upsample": 
                  ["paddle.nn.Upsample", None],
+             "torch.nn.ReflectionPad2d":
+                 ["paddle.nn.Pad2D",ClassReflectionPad2d],
              # nn_loss
              "torch.nn.CrossEntropyLoss": 
                  ["paddle.nn.CrossEntropyLoss", ClassLoss],
              "torch.nn.BCEWithLogitsLoss": 
                  ["paddle.nn.BCEWithLogitsLoss", ClassLoss],
+             "torch.nn.MSELoss": 
+                 ["paddle.nn.MSELoss", ClassMSELoss],
+             "torch.nn.L1Loss": 
+                 ["paddle.nn.L1Loss", ClassL1Loss],
              "torch.nn.BCELoss": 
                  ["paddle.nn.BCELoss", None],
              # functional_net
@@ -105,6 +113,10 @@ NN_MAPPER = {
                  ["paddle.nn.functional.softmax", FuncSoftmax],
              "torch.nn.init.xavier_uniform_": 
                  ["x2paddle.torch2paddle.xavier_uniform_", FuncXavierUniform],
+            "torch.nn.functional.adaptive_max_pool2d":
+                 ["paddle.nn.functional.adaptive_max_pool2d", FuncAdaptiveMaxPool2d],
+            "torch.nn.functional.adaptive_avg_pool2d":
+                 ["paddle.nn.functional.adaptive_avg_pool2d", FuncAdaptiveAvgPool2d],
             # functional_loss
              "torch.nn.functional.binary_cross_entropy_with_logits": 
                  ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
@@ -152,6 +164,8 @@ TORCHVISION_MAPPER  = {
                            ["paddle.vision.transforms.RandomHorizontalFlip", None],
                        "torchvision.transforms.CenterCrop": 
                            ["paddle.vision.transforms.CenterCrop", None],
+                        "torchvision.transforms.RandomCrop": 
+                           ["paddle.vision.transforms.RandomCrop", None],
                        "torchvision.transforms.Normalize": 
                            ["x2paddle.torch2paddle.Normalize", None],
                        "torchvision.utils.save_image": 
@@ -169,7 +183,7 @@ API_MAPPER = {
               "torch": 
                   ["paddle", None],
               "torch.Tensor": 
-                  ["paddle.Tensor", None],
+                  ["x2paddle.torch2paddle.create_tensor", None],
               "torch.FloatTensor": 
                   ["paddle.Tensor", ClassFloatTensor],
               "torch.load": 
@@ -250,6 +264,8 @@ API_MAPPER = {
                   ["paddle.logical_and", FuncLogical],
               "torch.bitwise_not": 
                   ["paddle.logical_not", FuncLogical],
+              "torch.var": 
+                  ["paddle.var", FuncVar],
              }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)
@@ -260,4 +276,5 @@ API_MAPPER.update(TORCHVISION_MAPPER)
 API_MAPPER.update(AUTOGRAD_MAPPER)
 
 REMOVE_API =["torch.backends.cudnn",
-             "torch.backends.cudnn.benchmark"]
+             "torch.backends.cudnn.benchmark",
+             "torch.backends.cudnn.enabled"]

@@ -173,8 +173,8 @@ class FuncCreateParam(Mapper):
                 param_name = self.args[0]
             else:
                 param_name = self.kwargs["value"]
-        code = "paddle.create_parameter(shape={}.shape, dtype={}.dtype, default_initializer = {}({}))".format(
-            param_name, param_name, self.func_name, param_name)
+        code = "paddle.create_parameter(shape={}.shape, dtype=str({}.numpy().dtype), default_initializer = paddle.nn.initializer.Assign({}))".format(
+            param_name, param_name, param_name)
         return [], code, []      
     
     
@@ -316,3 +316,10 @@ class FunTensorLike(Mapper):
         if isinstance(self.useful_attrs["requires_grad"], str) or not self.useful_attrs["requires_grad"]:
             out2 = "{}.requires_grad_({})".format(out2, self.useful_attrs["requires_grad"])
         return out1, out2, out3
+
+class FuncVar(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "dim", "axis")

@@ -128,7 +128,28 @@ class ClassLoss(Mapper):
             self.convert_args2kwargs(1)
             return self.convert_to_paddle()
     
-    
+class ClassMSELoss(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)   
+
+    def delete_attrs(self):
+        delete_key(self.kwargs, "size_average")
+        delete_key(self.kwargs, "reduce")
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "target", "label")
+
+class ClassL1Loss(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)   
+
+    def delete_attrs(self):
+        delete_key(self.kwargs, "size_average")
+        delete_key(self.kwargs, "reduce")
+        
+    def process_attrs(self):
+        rename_key(self.kwargs, "target", "label")
+
 class ClassMaxPool(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
@@ -331,4 +352,58 @@ class FuncXavierUniform(Mapper):
                                          gain)
         return [], code, []        
 
-    
+class FuncAdaptiveMaxPool2d(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        print("func_name:",func_name)
+        print(pytorch_api_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+        rename_key(self.kwargs, "return_indices", "return_mask")
+
+    # def run(self):
+    #     same_attr_count = 1
+    #     if len(self.args) > same_attr_count:
+    #         new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
+    #         self.kwargs.update(new_kwargs)
+    #         self.args = self.args[:same_attr_count]
+    #     return self.convert_to_paddle()
+
+
+class FuncAdaptiveAvgPool2d(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        print("func_name:",func_name)
+        print(pytorch_api_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+
+    # def run(self):
+    #     same_attr_count = 1
+    #     if len(self.args) > same_attr_count:
+    #         new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
+    #         self.kwargs.update(new_kwargs)
+    #         self.args = self.args[:same_attr_count]
+    #     return self.convert_to_paddle()
+
+
+class ClassReflectionPad2d(Mapper):
+    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        self.kwargs['mode'] = string("reflect")
+        if isinstance(self.args[0],tuple):
+            self.args[0] = list(self.args)
+        if isinstance(self.args[0],int):
+            temp = self.args[0]
+            self.args[0] = [temp,temp,temp,temp]
+    def run(self):
+        same_attr_count = 1
+        if len(self.args) > same_attr_count:
+            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, same_attr_count)
+            self.kwargs.update(new_kwargs)
+            self.args = self.args[:same_attr_count]
+        return self.convert_to_paddle()

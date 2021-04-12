@@ -5,7 +5,7 @@ import paddle
 from paddle.optimizer import Momentum as Base_Momentum
 from paddle.optimizer import Adam as Base_Adam
 from paddle.regularizer import L2Decay
-
+import itertools
 
 class _RequiredParameter(object):
     """Singleton class representing a required parameter for an Optimizer."""
@@ -44,6 +44,12 @@ class Momentum(Base_Momentum):
                  weight_decay=0.0, 
                  nesterov=False):
         assert dampening == 0, "The dampening must be 0 in Momentum!"
+        #itertools.chain判断
+        if isinstance(params,itertools.chain):
+            params_list = list()
+            for param in params:
+                params_list.append(param)
+            params = params_list
         parameters_list = update_parameters(params, lr, weight_decay)
         super().__init__(
              learning_rate=lr, 
@@ -122,7 +128,13 @@ class Adam(Base_Adam):
                  eps=1e-08, 
                  weight_decay=0, 
                  amsgrad=False):
-        parameters_list = update_parameters(params)
+        #itertools.chain判断
+        if isinstance(params,itertools.chain):
+            params_list = list()
+            for param in params:
+                params_list.append(param)
+            params = params_list
+        parameters_list = update_parameters(params,lr,weight_decay)
         super().__init__(
             learning_rate=lr,
             beta1=betas[0],
@@ -140,7 +152,6 @@ class Adam(Base_Adam):
         
         self.state = defaultdict(dict)
         self.param_groups = []
-
         param_groups = list(params)
         if len(param_groups) == 0:
             raise ValueError("optimizer got an empty parameter list")
