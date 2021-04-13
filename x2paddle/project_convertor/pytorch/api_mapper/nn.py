@@ -476,5 +476,6 @@ class XavierUniformFuncMapper(Mapper):
         else:
             param_name = self.kwargs["tensor"]
             gain = self.kwargs["gain"] if "gain" in self.kwargs else 1.0
+        param_name = param_name.strip()
         code = "{} = {}(gain={})".format(param_name, self.func_name, gain)
         return [], code, []

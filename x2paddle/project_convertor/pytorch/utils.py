@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os.path as osp
+import sys
 
 
 def get_dep_file_path(current_file_path, from_level, from_str):
@@ -38,6 +39,7 @@ def get_dep_file_path(current_file_path, from_level, from_str):
                 import_file_path = osp.join(current_file_path, "__init__.py")
     else:
         current_abs_path = osp.dirname(current_file_path)
+        print(current_abs_path)
         sys.path.append(current_abs_path)
         if len(from_str.split(".")) == 1:
             key_str = from_str

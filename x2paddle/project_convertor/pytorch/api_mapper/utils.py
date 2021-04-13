@@ -24,13 +24,24 @@ def api_args2kwargs(pytorch_api_name, args, first_same_attr_count):
         first_same_attr_count (int): PyTorch与Paddle前first_same_attr_count个完全相同的参数。
     """
 
-    def get_default_args(func):
-        signature = inspect.signature(func)
-        return {k: v.default for k, v in signature.parameters.items()}
+    def get_default_args(obj):
+        if inspect.isbuiltin(obj):
+            demp_str = obj.__doc__.split("->")[0].strip()[:-1]
+            demp_str = demp_str.split("(")[-1]
+            demp_str_seg = demp_str.split(",")
+            default_args = list()
+            for seg in demp_str_seg:
+                seg = seg.strip().replace("*", "")
+                if seg == "":
+                    continue
+                if "=" in seg:
+                    seg = seg.split("=")[0]
+                default_args.append(seg)
+            return default_args
+        else:
+            signature = inspect.signature(obj)
+            return [k for k, v in signature.parameters.items()]
 
-    is_func = True
-    if "torch.nn" in pytorch_api_name and "functional" not in pytorch_api_name:
-        is_func = False
     if pytorch_api_name.startswith("torchvision"):
         import torchvision
         obj = torchvision
@@ -41,13 +52,9 @@ def api_args2kwargs(pytorch_api_name, args, first_same_attr_count):
         if i == 0:
             continue
         obj = getattr(obj, part)
-    if is_func:
-        func = obj
-    else:
-        func = obj.__init__
-    default_attrs = get_default_args(func)
+    default_args = get_default_args(obj)
     new_kwargs = dict()
-    for i, (default_k, default_v) in enumerate(default_attrs.items()):
+    for i, default_k in enumerate(default_args):
         if i >= first_same_attr_count and i < len(args):
             new_kwargs[default_k] = args[i]
     return new_kwargs
