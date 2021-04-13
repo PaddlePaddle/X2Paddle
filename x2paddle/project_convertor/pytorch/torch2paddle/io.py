@@ -1,5 +1,4 @@
 from paddle.io import Dataset, IterableDataset
-from paddle.io import DataLoader as Base_DataLoader
 import paddle
 import warnings
 import bisect
@@ -104,7 +103,7 @@ setattr(paddle.io, "random_split", random_split)
 
 
 
-class DataLoader(Base_DataLoader):
+class DataLoader(paddle.io.DataLoader):
     def __init__(self,
                  dataset,
                  batch_size=1, 
