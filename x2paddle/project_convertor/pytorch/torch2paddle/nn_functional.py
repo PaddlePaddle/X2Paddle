@@ -1,16 +1,30 @@
+# Copyright (c) 2021  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import paddle
 import copy
 
 TYPE_ORDER = ["bool", "int32", "int64", "float32", "float64"]
-TYPE_MAPPER = {"fp32": "float32",
-               "fp64": "float64"}
+TYPE_MAPPER = {"fp32": "float32", "fp64": "float64"}
 
-def binary_cross_entropy_with_logits(input, 
-                                     target, 
-                                     weight=None, 
-                                     size_average=None, 
-                                     reduce=None, 
-                                     reduction='mean', 
+
+def binary_cross_entropy_with_logits(input,
+                                     target,
+                                     weight=None,
+                                     size_average=None,
+                                     reduce=None,
+                                     reduction='mean',
                                      pos_weight=None):
     if not reduce or not size_average:
         reduction = "sum"
@@ -32,36 +46,76 @@ def binary_cross_entropy_with_logits(input,
         input, target, weight, reduction, pos_weight)
 
 
-def avg_pool1d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True):
-    return paddle.nn.functional.avg_pool1d(input, kernel_size, stride=stride, 
-                                           padding=padding, ceil_mode=ceil_mode, 
-                                           exclusive=not count_include_pad)
-    
-def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
-               count_include_pad=True, divisor_override=None):
-    return paddle.nn.functional.avg_pool2d(input, kernel_size, stride=stride, 
-                                           padding=padding, ceil_mode=ceil_mode, 
-                                           exclusive=not count_include_pad, 
-                                           divisor_override=divisor_override)
+def avg_pool1d(input,
+               kernel_size,
+               stride=None,
+               padding=0,
+               ceil_mode=False,
+               count_include_pad=True):
+    return paddle.nn.functional.avg_pool1d(
+        input,
+        kernel_size,
+        stride=stride,
+        padding=padding,
+        ceil_mode=ceil_mode,
+        exclusive=not count_include_pad)
 
-def avg_pool3d(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
-               count_include_pad=True, divisor_override=None):
-    return paddle.nn.functional.avg_pool3d(input, kernel_size, stride=stride, 
-                                           padding=padding, ceil_mode=ceil_mode, 
-                                           exclusive=not count_include_pad, 
-                                           divisor_override=divisor_override)
+
+def avg_pool2d(input,
+               kernel_size,
+               stride=None,
+               padding=0,
+               ceil_mode=False,
+               count_include_pad=True,
+               divisor_override=None):
+    return paddle.nn.functional.avg_pool2d(
+        input,
+        kernel_size,
+        stride=stride,
+        padding=padding,
+        ceil_mode=ceil_mode,
+        exclusive=not count_include_pad,
+        divisor_override=divisor_override)
+
+
+def avg_pool3d(input,
+               kernel_size,
+               stride=None,
+               padding=0,
+               ceil_mode=False,
+               count_include_pad=True,
+               divisor_override=None):
+    return paddle.nn.functional.avg_pool3d(
+        input,
+        kernel_size,
+        stride=stride,
+        padding=padding,
+        ceil_mode=ceil_mode,
+        exclusive=not count_include_pad,
+        divisor_override=divisor_override)
+
 
 def dropout(input, p=0.5, training=True, inplace=False):
     return paddle.nn.functional.dropout(input, p=p, training=training)
 
+
 def log_softmax(input, dim=None, _stacklevel=3, dtype=None):
     return paddle.nn.functional.log_softmax(input, axis=dim, dtype=None)
+
 
 def relu(input, inplace=False):
     return paddle.nn.functional.relu(input)
 
-def smooth_l1_loss(input, target, size_average=None, reduce=None, reduction='mean', beta=1.0):
-    paddle.nn.functional.smooth_l1_loss(input, target, reduction=reduction, delta=beta)
+
+def smooth_l1_loss(input,
+                   target,
+                   size_average=None,
+                   reduce=None,
+                   reduction='mean',
+                   beta=1.0):
+    paddle.nn.functional.smooth_l1_loss(
+        input, target, reduction=reduction, delta=beta)
+
 
 def softmax(input, dim=None, _stacklevel=3, dtype=None):
     return paddle.nn.functional.softmax(input, axis=dim, dtype=dtype)

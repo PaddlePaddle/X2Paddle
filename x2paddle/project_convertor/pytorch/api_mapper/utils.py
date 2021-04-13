@@ -1,21 +1,35 @@
+# Copyright (c) 2021  PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import inspect
+
 
 def api_args2kwargs(pytorch_api_name, args, first_same_attr_count):
     """ 将每个OP的args转为kwargs。
-    
+
     Args:
         pytorch_api_name (str): OP的类型名字。
         args (list): 参数列表。
         first_same_attr_count (int): PyTorch与Paddle前first_same_attr_count个完全相同的参数。
     """
+
     def get_default_args(func):
         signature = inspect.signature(func)
-        return {
-            k: v.default
-            for k, v in signature.parameters.items()
-        }
+        return {k: v.default for k, v in signature.parameters.items()}
+
     is_func = True
-    if "torch.nn" in pytorch_api_name and "functional"not in pytorch_api_name:
+    if "torch.nn" in pytorch_api_name and "functional" not in pytorch_api_name:
         is_func = False
     if pytorch_api_name.startswith("torchvision"):
         import torchvision
@@ -30,22 +44,25 @@ def api_args2kwargs(pytorch_api_name, args, first_same_attr_count):
     if is_func:
         func = obj
     else:
-        func = obj.__init__ 
+        func = obj.__init__
     default_attrs = get_default_args(func)
     new_kwargs = dict()
     for i, (default_k, default_v) in enumerate(default_attrs.items()):
         if i >= first_same_attr_count and i < len(args):
             new_kwargs[default_k] = args[i]
     return new_kwargs
-    
+
+
 def rename_key(kwargs, old_key, new_key):
     if old_key in kwargs:
         v = kwargs.pop(old_key)
         kwargs[new_key] = v
 
+
 def delete_key(kwargs, old_key):
     if old_key in kwargs:
         kwargs.pop(old_key)
+
 
 def generate_api_code(func_name, args, kwargs):
     for i, arg in enumerate(args):
@@ -64,28 +81,33 @@ def generate_api_code(func_name, args, kwargs):
 
 
 class Mapper(object):
-    def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
         self.func_name = func_name
         self.pytorch_api_name = pytorch_api_name
         self.args = args
-        self.kwargs = kwargs  
+        self.kwargs = kwargs
         self.target_name = target_name
-        
+
     def process_attrs(self):
         """ 更新参数。
         """
         pass
-     
+
     def delete_attrs(self):
         """ 删除参数。
         """
         pass
-    
+
     def check_attrs(self):
         """ 确认参数的值。
         """
         pass
-    
+
     def rename_func_name(self, torch2paddle_func_name=None):
         """ 判断是否为可变参数或者关键字参数,
             若为可变参数或者关键字参数，则替换参数名。
@@ -97,7 +119,7 @@ class Mapper(object):
             return True
         else:
             return False
-    
+
     def convert_to_paddle(self):
         """ 1. 通过执行check、process、delete转换为paddle的参数；
             2. 生成paddle相关代码。
@@ -106,22 +128,22 @@ class Mapper(object):
         self.process_attrs()
         self.delete_attrs()
         return [], generate_api_code(self.func_name, self.args, self.kwargs), []
-    
+
     def convert_args2kwargs(self, first_same_attr_count=0):
         """ 将args转换为kwargs。
         """
         if len(self.args) > first_same_attr_count:
-            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args, first_same_attr_count)
+            new_kwargs = api_args2kwargs(self.pytorch_api_name, self.args,
+                                         first_same_attr_count)
             self.kwargs.update(new_kwargs)
             self.args = self.args[:first_same_attr_count]
-        
+
     def run(self, torch2paddle_func_name=None):
         """ 如果存在可变参数或者关键字参数，直接替换函数名为x2paddle的API；
             反之，调用convert_to_paddle。
         """
         if self.rename_func_name(torch2paddle_func_name):
-            return [], generate_api_code(self.func_name, self.args, self.kwargs), []
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
         else:
             return self.convert_to_paddle()
-        
-        
