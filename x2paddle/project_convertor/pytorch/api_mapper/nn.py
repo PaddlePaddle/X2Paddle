@@ -1,7 +1,7 @@
 from .utils import *
 from x2paddle.utils import *
 
-class ClassBatchNorm(Mapper):
+class BatchNormModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -47,7 +47,7 @@ class ClassBatchNorm(Mapper):
             return self.convert_to_paddle()
 
 
-class ClassConv(Mapper):
+class ConvModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -65,7 +65,7 @@ class ClassConv(Mapper):
             self.convert_args2kwargs(7)
             return self.convert_to_paddle()
         
-class ClassDropout(Mapper):
+class DropoutModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
 
@@ -73,7 +73,7 @@ class ClassDropout(Mapper):
         delete_key(self.kwargs, "inplace")
         
         
-class ClassEmbedding(Mapper):
+class EmbeddingModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
         
@@ -94,7 +94,7 @@ class ClassEmbedding(Mapper):
             return self.convert_to_paddle()
 
     
-class ClassLinear(ClassConv):
+class LinearModuleMapper(ConvModuleMapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -106,7 +106,7 @@ class ClassLinear(ClassConv):
             return self.convert_to_paddle()
         
         
-class ClassLoss(Mapper):
+class LossModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)   
 
@@ -129,7 +129,7 @@ class ClassLoss(Mapper):
             return self.convert_to_paddle()
     
     
-class ClassMaxPool(Mapper):
+class MaxPoolModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -151,7 +151,7 @@ class ClassMaxPool(Mapper):
             return self.convert_to_paddle()
         
         
-class ClassReLU(Mapper):
+class ReLUModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)   
     
@@ -161,7 +161,7 @@ class ClassReLU(Mapper):
             self.args.clear()
             
             
-class ClassSoftmax(Mapper):
+class SoftmaxModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -170,7 +170,7 @@ class ClassSoftmax(Mapper):
         
         
         
-class FuncAvgPool(Mapper):
+class AvgPoolFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -197,7 +197,7 @@ class FuncAvgPool(Mapper):
             return self.convert_to_paddle()
     
         
-class FuncCrossEntropy(Mapper):
+class CrossEntropyFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -205,7 +205,7 @@ class FuncCrossEntropy(Mapper):
         rename_key(self.kwargs, "target", "label")         
         
         
-class FuncDropout(Mapper):
+class DropoutFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
         
@@ -223,7 +223,7 @@ class FuncDropout(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncLogSoftmax(Mapper):
+class LogSoftmaxFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -239,7 +239,7 @@ class FuncLogSoftmax(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncPad(Mapper):
+class PadFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -247,7 +247,7 @@ class FuncPad(Mapper):
         rename_key(self.kwargs, "input", "x")
         
         
-class FuncRelu(Mapper):
+class ReluFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
         
@@ -265,7 +265,7 @@ class FuncRelu(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncSigmoid(Mapper):
+class SigmoidFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -273,7 +273,7 @@ class FuncSigmoid(Mapper):
         rename_key(self.kwargs, "input", "x")
         
         
-class FuncSmoothL1Loss(Mapper):
+class SmoothL1LossFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -293,7 +293,7 @@ class FuncSmoothL1Loss(Mapper):
             return self.convert_to_paddle()
     
         
-class FuncSoftmax(Mapper):
+class SoftmaxFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -312,7 +312,7 @@ class FuncSoftmax(Mapper):
             return self.convert_to_paddle()        
               
             
-class FuncXavierUniform(Mapper):
+class XavierUniformFuncMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         

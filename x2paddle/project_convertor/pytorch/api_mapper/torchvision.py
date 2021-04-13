@@ -1,6 +1,6 @@
 from .utils import *
 
-class ClassImageFolder(Mapper):
+class ImageFolderMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         

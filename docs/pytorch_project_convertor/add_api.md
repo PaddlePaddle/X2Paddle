@@ -125,20 +125,21 @@ NN_MAPPER = {
 NN_MAPPER = {
       ...
       "torch.nn.Conv2d": 
-          ["paddle.nn.Conv2D", ClassConv2D],
+          ["paddle.nn.Conv2D", Conv2DModuleMapper],
        ...
        "torch.nn.functional.relu": 
-          ["paddle.nn.functional.relu", FuncRelu],
+          ["paddle.nn.functional.relu", ReluFuncMapper],
        ...
        }
 ...
-# 类名以Class或Func开始，Class代表Paddle API为一个类，Func代表Paddle API为一个方法。
+# 类名中的Module和Func分别代表torch.nn中的类和torch.nn中的方法，
+# 不带Module和Func则非torch.nn中的操作。
 ```
 
 ***步骤2*** 在[x2paddle/project_convertor/pytorch/api_mapper/](../../x2paddle/project_convertor/pytorch/api_mapper)文件夹中找到对应的文件并在其中添加映射处理类，类型中用户需要重写process_attrs、delete_attrs、check_attrs以及run这三个函数，其中run只需要修改对应的x2paddle封装的API命名即可。以`torch.matmul`和`paddle.matmul`的映射为例，二者的参数名不一致，因此需要添加的代码如下所示：
 
 ```python
-class FuncMatmul(Mapper):
+class MatmulMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         

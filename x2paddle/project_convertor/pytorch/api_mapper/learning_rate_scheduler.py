@@ -1,6 +1,6 @@
 from .utils import *
 
-class ClassLRScheculer(Mapper):
+class LRScheculerMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         self.useful_attrs = dict()

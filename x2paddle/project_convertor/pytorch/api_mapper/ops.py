@@ -1,7 +1,7 @@
 from .utils import *
 from x2paddle.utils import *
 
-class FuncSave(Mapper):
+class SaveMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
 
@@ -15,7 +15,7 @@ class FuncSave(Mapper):
             self.convert_args2kwargs(2)
             return self.convert_to_paddle()
 
-class FuncLoad(Mapper):
+class LoadMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -31,7 +31,7 @@ class FuncLoad(Mapper):
             return self.convert_to_paddle()
         
 
-class FuncSetDevice(Mapper):
+class SetDeviceMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         self.useful_attrs = dict()
@@ -48,7 +48,7 @@ class FuncSetDevice(Mapper):
         return insert_codes, generate_api_code(self.func_name, self.args, self.kwargs), []
     
     
-class ClassDataParallel(Mapper):
+class DataParallelModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -64,7 +64,7 @@ class ClassDataParallel(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncUnSqueeze(Mapper):
+class UnSqueezeMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -80,7 +80,7 @@ class FuncUnSqueeze(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncMath(Mapper):
+class MathMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -108,7 +108,7 @@ class FuncMath(Mapper):
                 return [], generate_api_code(self.func_name, self.args, self.kwargs), []
         return self.convert_to_paddle()
         
-class FuncArange(Mapper):
+class ArangeMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -125,7 +125,7 @@ class FuncArange(Mapper):
             self.convert_args2kwargs(3)
             return self.convert_to_paddle()
     
-class FuncMatmul(Mapper):
+class MatmulMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -144,7 +144,7 @@ class FuncMatmul(Mapper):
             return self.convert_to_paddle()
         
         
-class FuncCreateParam(Mapper):
+class CreateParamModuleMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name) 
         
@@ -178,7 +178,7 @@ class FuncCreateParam(Mapper):
         return [], code, ["{}.stop_gradient = True".format(self.target_name)]      
     
     
-class FuncNoGrad(Mapper):
+class NoGradMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)  
         
@@ -187,7 +187,7 @@ class FuncNoGrad(Mapper):
         self.kwargs.clear()
         
     
-class FuncLogical(Mapper):
+class LogicalMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -211,7 +211,7 @@ class FuncLogical(Mapper):
         return self.convert_to_paddle()
         
         
-class FuncStack(Mapper):
+class StackMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
     
@@ -229,7 +229,7 @@ class FuncStack(Mapper):
             return self.convert_to_paddle()
     
     
-class FuncRandperm(Mapper):
+class RandpermMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         
@@ -247,7 +247,7 @@ class FuncRandperm(Mapper):
             return self.convert_to_paddle()
         
     
-class ClassFloatTensor(Mapper):
+class FloatTensorMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
     
@@ -256,7 +256,7 @@ class ClassFloatTensor(Mapper):
         return [], generate_api_code(self.func_name, self.args, self.kwargs), [insert_code]
     
     
-class FunTensorBuilder(Mapper):
+class TensorBuilderMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         self.useful_attrs = dict()
@@ -287,7 +287,7 @@ class FunTensorBuilder(Mapper):
         return out1, out2, out3
     
         
-class FunTensorLike(Mapper):
+class TensorLikeMapper(Mapper):
     def __init__(self, func_name, pytorch_api_name, args, kwargs, target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
         self.useful_attrs = dict()

@@ -40,7 +40,7 @@ PaddlePaddle在使用上有部分限制（例如：自定义Dataset必须继承�
 
 ## Q&A
 1.出现如下提示如何处理？  
-> The no support Api are: [torchvision.transforms.RandomErasing, torchvision.transforms.functional, torchvision.transforms.RandomCrop.get_params, torch.all, torch.as_tensor].  
+> The unsupported packages or operators are: [torchvision.transforms.RandomErasing, torchvision.transforms.functional, torchvision.transforms.RandomCrop.get_params, torch.all, torch.as_tensor].  
 
 A：这一提示说明仍有API未支持转换，用户可自行添加相应API的支持，具体添加流程参照[添加示例](./add_api.md)，或及时提issue与我们联系。 
 

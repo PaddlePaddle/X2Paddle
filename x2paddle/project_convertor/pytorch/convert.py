@@ -6,8 +6,8 @@ import shutil
 import argparse
 from six import text_type as _text_type
 
-from .dependency_analysis import run as run_dependency
-from .ast_update import run as run_ast
+from .dependency_analyzer import analyze
+from .ast_update import update
 
 def write_file(path, tree):
     codes = astor.to_source(tree)
@@ -16,29 +16,29 @@ def write_file(path, tree):
     f.write(codes)
     f.close()
     
-def generate_dependency(folder_path, file_dependency):
+def generate_dependencies(folder_path, file_dependencies):
     for name in os.listdir(folder_path):
         current_path = osp.join(folder_path, name)
         if osp.isfile(current_path) and current_path.endswith(".py"):
-            if current_path in file_dependency:
+            if current_path in file_dependencies:
                 break
-            run_dependency(current_path, file_dependency)
+            analyze(current_path, file_dependencies)
         elif osp.isdir(current_path):
-            generate_dependency(current_path, file_dependency)
+            generate_dependencies(current_path, file_dependencies)
 
-def convert_code(folder_path, new_folder_path, file_dependency):
+def convert_code(folder_path, new_folder_path, file_dependencies):
     for name in os.listdir(folder_path):
         current_path = osp.join(folder_path, name)
         print(current_path)
         new_current_path = osp.join(new_folder_path, name)
         if osp.isfile(current_path) and current_path.endswith(".py"):
-            root = run_ast(current_path, file_dependency)
+            root = update(current_path, file_dependencies)
             if root is not None:
                 write_file(new_current_path, root)
         elif osp.isdir(current_path):
             if not osp.exists(new_current_path):
                 os.makedirs(new_current_path)
-            convert_code(current_path, new_current_path, file_dependency)
+            convert_code(current_path, new_current_path, file_dependencies)
         elif osp.isfile(current_path) and osp.splitext(current_path)[-1] in [".pth", ".pt", ".ckpt"]:
             continue
         elif osp.isfile(current_path) and current_path.endswith(".pyc"):
@@ -82,10 +82,10 @@ def main(args):
         else:
             convert_params(params_path)
     project_path = osp.abspath(project_path)
-    file_dependency = dict()
-    generate_dependency(project_path, file_dependency)
+    file_dependencies = dict()
+    generate_dependencies(project_path, file_dependencies)
     if not osp.exists(save_path):
         os.makedirs(save_path)
-    convert_code(project_path, save_path, file_dependency)
+    convert_code(project_path, save_path, file_dependencies)
     
   

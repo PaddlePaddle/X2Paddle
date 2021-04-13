@@ -4,40 +4,41 @@ import sys
 from x2paddle.project_convertor.pytorch.mapper import *
 import copy
 import os.path as osp
+from .utils import get_dep_file_path
 
 
-class DependencyInfo:
+class DepInfo:
     """
     依赖包信息。
-    PYTORCH_FROM代表pytorch from信息的字符串，例如：torch；
-    PADDLE_FROM代表paddle from信息的字符串，例如：paddle；
-    PYTORCH_IMPORT代表pytorch import信息系的字符串，例如：nn.functional；
-    PADDLE_IMPORT代表paddle import信息系的字符串，例如：nn.functional；
+    PT_FROM代表pytorch from信息的字符串，例如：torch；
+    PD_FROM代表paddle from信息的字符串，例如：paddle；
+    PT_IMPORT代表pytorch import信息系的字符串，例如：nn.functional；
+    PD_IMPORT代表paddle import信息系的字符串，例如：nn.functional；
     AS代表as信息的字符串，例如：F；
-    PYTORCH_DEPENDENCY代表由PYTORCH_FROM、PYTORCH_IMPORT、AS三者组成的字符串，例如：from torch import nn.functional as F。
-    PADDLE_DEPENDENCY代表由PADDLE_FROM、PADDLE_IMPORT、AS三者组成的字符串，例如：from paddle import nn.functional as F。
+    PT_DEPENDENCY代表由PT_FROM、PT_IMPORT、AS三者组成的字符串，例如：from torch import nn.functional as F。
+    PD_DEPENDENCY代表由PD_FROM、PD_IMPORT、AS三者组成的字符串，例如：from paddle import nn.functional as F。
     """
-    PYTORCH_FROM = None
-    PADDLE_FROM = None
-    PYTORCH_IMPORT = None
-    PADDLE_IMPORT = None
+    PT_FROM = None
+    PD_FROM = None
+    PT_IMPORT = None
+    PD_IMPORT = None
     AS = None
-    PYTORCH_DEPENDENCY = None
-    PADDLE_DEPENDENCY = None
+    PT_DEPENDENCY = None
+    PD_DEPENDENCY = None
 
     
-class AstUpdation(ast.NodeVisitor):
+class AstUpdater(ast.NodeVisitor):
     """ 更新ast树，将ast树中PyTorch相关的节点转为Paddle相关的节点。
         
     Args:
         py_file_path (str): python文件的绝对值路径。
-        file_dependency (dict): 当前已经统计的依赖信息，key为python文件的绝对值路径，
+        file_dependencies (dict): 当前已经统计的依赖信息，key为python文件的绝对值路径，
                                 value为key文件所对应的依赖信息组成的list。
     """
-    def __init__(self, py_file_path, file_dependency):
+    def __init__(self, py_file_path, file_dependencies):
         self.py_file_path = py_file_path
         self.root = ast.parse(open(py_file_path, "rb").read())
-        self.file_dependency = file_dependency
+        self.file_dependencies = file_dependencies
         self.scopes_and_dependencies = list()    # 作用域和依赖组成的stack
         self.nodes = list()    # ast节点组成的stack
         self.no_support_apis = list() # 不支持的API列表
@@ -51,7 +52,7 @@ class AstUpdation(ast.NodeVisitor):
         for i in range(len(self.scopes_and_dependencies)):
             i = - (i + 1)
             sd = self.scopes_and_dependencies[i]
-            if not isinstance(sd, DependencyInfo) and not isinstance(sd, ast.Assign):
+            if not isinstance(sd, DepInfo) and not isinstance(sd, ast.Assign):
                 scope_node = sd
                 break
         return scope_node 
@@ -73,112 +74,64 @@ class AstUpdation(ast.NodeVisitor):
     
     def _get_complete_api(self, api_part_name):
         """ 根据部分api名字获取PyTorch的api全名。
-            情况1：依赖是DependencyInfo，但其PADDLE_IMPORT为None（非PyTorch的依赖），则pytorch_api为None。
-            情况2：依赖是DependencyInfo，且DependencyInfo的部分PyTorch属性以“torch”开头，则pytorch_api为完整api。
+            情况1：依赖是DepInfo，但其PD_IMPORT为None（非PyTorch的依赖），则pytorch_api为None。
+            情况2：依赖是DepInfo，且DepInfo的部分PyTorch属性以“torch”开头，则pytorch_api为完整api。
             情况3：依赖是ast.Assign节点，则pytorch_api为None。
         """
         pytorch_api = None
-        dependency_info = None
+        dep_info = None
         if api_part_name is None:
-            return pytorch_api, dependency_info 
+            return pytorch_api, dep_info 
         for i in range(len(self.scopes_and_dependencies)):
             i = - (i + 1)
-            dependency_info = self.scopes_and_dependencies[i]
-            if isinstance(dependency_info, DependencyInfo):
-                if dependency_info.PYTORCH_IMPORT is None:
+            dep_info = self.scopes_and_dependencies[i]
+            if isinstance(dep_info, DepInfo):
+                if dep_info.PT_IMPORT is None:
                     continue
-                if dependency_info.AS is not None and api_part_name.startswith(dependency_info.AS):
-                    if (dependency_info.PYTORCH_FROM is not None and "torch" in dependency_info.PYTORCH_FROM) or \
-                            (dependency_info.PYTORCH_IMPORT is not None and "torch" in dependency_info.PYTORCH_IMPORT):
-                        if api_part_name.endswith(dependency_info.AS):
-                            pytorch_api = api_part_name.replace(dependency_info.AS, dependency_info.PYTORCH_DEPENDENCY)
-                        else:
-                            pytorch_api = api_part_name.replace(dependency_info.AS + ".", 
-                                                                dependency_info.PYTORCH_DEPENDENCY + ".")
-                        if "torch2paddle" in pytorch_api or "(" in pytorch_api:
+                if (dep_info.PT_FROM is not None and "torch" in dep_info.PT_FROM) or \
+                        (dep_info.PT_IMPORT is not None and "torch" in dep_info.PT_IMPORT):
+                    replace_str = None
+                    if dep_info.AS is not None and api_part_name.startswith(dep_info.AS):
+                        replace_str = dep_info.AS
+                    elif dep_info.AS is None and api_part_name.startswith(dep_info.PT_IMPORT):
+                        replace_str = dep_info.PT_IMPORT
+                    if replace_str is not None:
+                        pytorch_api = api_part_name.replace(replace_str, dep_info.PT_DEPENDENCY, 1)
+                        if "torch2paddle" in pytorch_api:
+                            # 说明当前节点是插入的已经替换过的node
                             pytorch_api = None 
                         break
-                elif api_part_name.startswith(dependency_info.PYTORCH_IMPORT):
-                    if (dependency_info.PYTORCH_FROM is not None and "torch" in dependency_info.PYTORCH_FROM) or \
-                            (dependency_info.PYTORCH_IMPORT is not None and "torch" in dependency_info.PYTORCH_IMPORT):
-                        if api_part_name.endswith(dependency_info.PYTORCH_IMPORT):
-                            pytorch_api = api_part_name.replace(dependency_info.PYTORCH_IMPORT, 
-                                                                dependency_info.PYTORCH_DEPENDENCY)
-                        else:
-                            pytorch_api = api_part_name.replace(dependency_info.PYTORCH_IMPORT + ".", 
-                                                                dependency_info.PYTORCH_DEPENDENCY + ".")
-                        if "torch2paddle" in pytorch_api or "(" in pytorch_api:
-                            pytorch_api = None 
-                        break 
-            elif isinstance(dependency_info, ast.Assign):
+            elif isinstance(dep_info, ast.Assign):
                 is_customized = False
-                for s in astor.to_source(dependency_info.targets[0]).split(","):
+                for s in astor.to_source(dep_info.targets[0]).split(","):
                     if api_part_name.split(".")[0] == s.strip():
                         is_customized = True
                         break
                 if is_customized:
                     break
-        return pytorch_api, dependency_info
+        return pytorch_api, dep_info
+
     
-    def _rename(self, name, dependency_info, pytorch_api, paddle_api):
+    def _rename(self, name, dep_info, pytorch_api, paddle_api):
         """ 对函数名进行重命名。
             例如：将nn.Conv2d替换为nn.Conv2D。
         """
-        pytorch_api_seg = pytorch_api.split(dependency_info.PYTORCH_IMPORT)
-        if paddle_api.startswith(dependency_info.PADDLE_IMPORT + ".") or \
-                paddle_api.endswith("." + dependency_info.PADDLE_IMPORT) or  \
-                "." + dependency_info.PADDLE_IMPORT + "." in paddle_api:
-            paddle_api_seg = paddle_api.split(dependency_info.PADDLE_IMPORT)                
-            if dependency_info.AS is None:
-                name = name.replace(dependency_info.PYTORCH_IMPORT + pytorch_api_seg[-1], 
-                                    dependency_info.PADDLE_IMPORT + paddle_api_seg[-1])
+        pytorch_api_seg = pytorch_api.split(dep_info.PT_IMPORT)
+        if paddle_api.startswith(dep_info.PD_IMPORT + ".") or \
+                paddle_api.endswith("." + dep_info.PD_IMPORT) or  \
+                "." + dep_info.PD_IMPORT + "." in paddle_api:
+            paddle_api_seg = paddle_api.split(dep_info.PD_IMPORT)                
+            if dep_info.AS is None:
+                name = name.replace(dep_info.PT_IMPORT + pytorch_api_seg[-1], 
+                                    dep_info.PD_IMPORT + paddle_api_seg[-1])
             else:
                 name = name.replace(pytorch_api_seg[-1], paddle_api_seg[-1])
-                name_seg = name.split(dependency_info.AS)
-                if len(name_seg[0]) > 0:
-                    name = name.replace(name_seg[0], "")
         elif "torch2paddle." in paddle_api:
             name = "torch2paddle." + paddle_api.split("torch2paddle.")[-1]
             self.is_import_torch2paddle = True
         else:
             name = paddle_api
         return name
-    
-    def _generate_file_path(self, dependency_info):
-        """ 根据from信息获取依赖包所在文件。如果from字符串中存在相对路径（出现"."），
-            则根据相对路径找到相应的文件；反之，执行import语句找到相应依赖的文件。
-        """
-        if self._level > 0:
-            l = self._level
-            path = self.py_file_path
-            while l > 0:
-                path, folder_or_file = osp.split(path)
-                l -= 1
-            if dependency_info.PYTORCH_FROM is None:
-                import_file_path = osp.join(path, "__init__.py")
-            else:
-                path = osp.join(path, osp.join(*dependency_info.PYTORCH_FROM.split(".")))
-                if osp.exists(path + ".py"):
-                    import_file_path = path + ".py"
-                else:
-                    import_file_path = osp.join(path, "__init__.py")
-        else:
-            if len(dependency_info.PYTORCH_FROM.split(".")) == 1:
-                current_abs_path = osp.dirname(self.py_file_path)
-                sys.path.append(current_abs_path)
-                exec("import {}".format(dependency_info.PYTORCH_FROM))
-                sys.path.pop(-1)
-                import_file_path = locals()[dependency_info.PYTORCH_FROM].__file__
-            else:
-                from_seg = dependency_info.PYTORCH_FROM.split(".")
-                import_str = from_seg[-1]
-                from_str = ".".join(from_seg[0: -1])
-                current_abs_path = osp.dirname(self.py_file_path)
-                sys.path.append(current_abs_path)
-                exec("from {} import {}".format(from_str, import_str))
-                sys.path.pop(-1)
-                import_file_path = locals()[import_str].__file__
-        return import_file_path
         
     def run(self):
         self.scopes_and_dependencies.append(self.root)
@@ -193,11 +146,12 @@ class AstUpdation(ast.NodeVisitor):
         
     def visit(self, node):
         self.nodes.append(node)
-        out = super(AstUpdation, self).visit(node)
+        out = super(AstUpdater, self).visit(node)
         self.nodes.pop()
         if out is not None:
             return out
         else:
+            # 出现字符串或者if等节点需要返回字符串
             try:
                 return astor.to_source(node)
             except Exception:
@@ -215,109 +169,104 @@ class AstUpdation(ast.NodeVisitor):
         scope_node = self._get_scope_node()
         current_id = self._get_current_index(scope_node, node)
         scope_node.body.pop(current_id)
-        self._from_name = node.module
-        self._level = node.level
         son_nodes = node.names
-        for son_node in son_nodes:
+        for i, son_node in enumerate(son_nodes):
             copy_node = copy.deepcopy(node)
             copy_node.names = [son_node]
-            is_remove = self.visit_alias(son_node, copy_node)
-            if not is_remove:
-                scope_node.body.insert(current_id, copy_node)
-        self._from_name = None
-        self._level = None
+            if i ==0 :
+                is_remove = self.visit_alias(son_node, copy_node, node.module, node.level)
+                if not is_remove:
+                    scope_node.body.insert(current_id, copy_node)
+            else:
+                scope_node.body.insert(current_id + i, copy_node)
         
     def visit_Import(self, node):
         """ 遍历子节点。
         """
-        self._from_name = None
-        self._level = None
         son_nodes = getattr(node, "names")
         for son_node in son_nodes:
             self.visit_alias(son_node, node)
             
         
-    def visit_alias(self, node, father_node=None):
-        """ 构建DependencyInfo并将其放入scopes_and_dependencies。
-            如果import字符串为“*”，获取依赖包所在文件的依赖信息并转换为DependencyInfo加入当前的scopes_and_dependencies；
-            反之，直接在scopes_and_dependencies中加入DependencyInfo。
+    def visit_alias(self, node, father_node=None, from_name=None, from_level=None):
+        """ 构建DepInfo并将其放入scopes_and_dependencies。
+            如果import字符串为“*”，获取依赖包所在文件的依赖信息并转换为DepInfo加入当前的scopes_and_dependencies；
+            反之，直接在scopes_and_dependencies中加入DepInfo。
         """
         is_remove = False
-        dependency_info = DependencyInfo()
-        dependency_info.PYTORCH_FROM = self._from_name
-        dependency_info.PYTORCH_IMPORT = getattr(node, "name")
-        dependency_info.AS = getattr(node, "asname", None)
-        if dependency_info.PYTORCH_IMPORT == "*":
-            import_file_path = self._generate_file_path(dependency_info)
-            pytorch_dependencies = self.file_dependency[import_file_path]
-            for pytorch_dependency_info in pytorch_dependencies:
-                current_dependency_info = DependencyInfo()
-                if not isinstance(pytorch_dependency_info, str):
-                    current_dependency_info.PYTORCH_FROM = pytorch_dependency_info.FROM
-                    current_dependency_info.PYTORCH_IMPORT = pytorch_dependency_info.IMPORT
-                    current_dependency_info.AS = pytorch_dependency_info.AS
-                    current_dependency_info.PYTORCH_DEPENDENCY = pytorch_dependency_info.DEPENDENCY
-                    if "torch" in current_dependency_info.PYTORCH_DEPENDENCY:
-                        if current_dependency_info.PYTORCH_DEPENDENCY in API_MAPPER:
-                            current_dependency_info.PADDLE_DEPENDENCY = \
-                                    API_MAPPER[current_dependency_info.PYTORCH_DEPENDENCY][0]
-                            if current_dependency_info.PYTORCH_DEPENDENCY == "torch":
+        dep_info = DepInfo()
+        dep_info.PT_FROM = from_name
+        dep_info.PT_IMPORT = getattr(node, "name")
+        dep_info.AS = getattr(node, "asname", None)
+        if dep_info.PT_IMPORT == "*":
+            import_file_path = get_dep_file_path(self.py_file_path, from_level, from_name)
+            pytorch_dependencies = self.file_dependencies[import_file_path]
+            for pytorch_dep_info in pytorch_dependencies:
+                current_dep_info = DepInfo()
+                if not isinstance(pytorch_dep_info, str):
+                    current_dep_info.PT_FROM = pytorch_dep_info.FROM
+                    current_dep_info.PT_IMPORT = pytorch_dep_info.IMPORT
+                    current_dep_info.AS = pytorch_dep_info.AS
+                    current_dep_info.PT_DEPENDENCY = pytorch_dep_info.DEPENDENCY
+                    if "torch" in current_dep_info.PT_DEPENDENCY:
+                        if current_dep_info.PT_DEPENDENCY in API_MAPPER:
+                            current_dep_info.PD_DEPENDENCY = \
+                                    API_MAPPER[current_dep_info.PT_DEPENDENCY][0]
+                            if current_dep_info.PT_DEPENDENCY == "torch" and \
+                                    isinstance(self._get_scope_node(), ast.Module):
                                 self.is_import_paddle = False
-                            if current_dependency_info.PYTORCH_FROM is not None:
-                                seg = current_dependency_info.PADDLE_DEPENDENCY.split(".")
-                                current_dependency_info.PADDLE_IMPORT = seg[-1]
-                                current_dependency_info.PADDLE_FROM = \
-                                        current_dependency_info.PADDLE_DEPENDENCY.replace("." + seg[-1], "")
+                            if current_dep_info.PT_FROM is not None:
+                                seg = current_dep_info.PD_DEPENDENCY.split(".")
+                                current_dep_info.PD_IMPORT = seg[-1]
+                                current_dep_info.PD_FROM = \
+                                        current_dep_info.PD_DEPENDENCY.replace("." + seg[-1], "")
                             else:
-                                current_dependency_info.PADDLE_IMPORT = \
-                                current_dependency_info.PADDLE_DEPENDENCY
-                        elif current_dependency_info.PYTORCH_DEPENDENCY in REMOVE_API:
+                                current_dep_info.PD_IMPORT = \
+                                current_dep_info.PD_DEPENDENCY
+                        elif current_dep_info.PT_DEPENDENCY in REMOVE_API:
                             scope_node = self._get_scope_node()
                             for i, n in enumerate(scope_node.body):
                                 if father_node == n:
                                     scope_node.body.pop(i)
                             is_remove = True
                         else:
-                            self.no_support_apis.append(current_dependency_info.PYTORCH_DEPENDENCY)
+                            self.no_support_apis.append(current_dep_info.PT_DEPENDENCY)
                 else:
-                    if isinstance(pytorch_dependency_info, str):
-                        current_dependency_info.PADDLE_DEPENDENCY = pytorch_dependency_info
-                    else:
-                        current_dependency_info.PADDLE_DEPENDENCY = pytorch_dependency_info.PYTORCH_DEPENDENCY
-                self.scopes_and_dependencies.append(current_dependency_info)
-            return
+                    current_dep_info.PD_DEPENDENCY = pytorch_dep_info
+                self.scopes_and_dependencies.append(current_dep_info)
+            return is_remove
         dependency_str_list = list()
-        if dependency_info.PYTORCH_FROM is None and self._level is not None:
-            dependency_str_list.append("." * self._level)
-        elif dependency_info.PYTORCH_FROM is not None:
-            dependency_str_list.append(dependency_info.PYTORCH_FROM)
-        dependency_str_list.append(dependency_info.PYTORCH_IMPORT)
-        dependency_info.PYTORCH_DEPENDENCY = ".".join(dependency_str_list)
-        if dependency_info.PYTORCH_DEPENDENCY.startswith("torch"):
-            if dependency_info.PYTORCH_DEPENDENCY in API_MAPPER:
-                dependency_info.PADDLE_DEPENDENCY = API_MAPPER[dependency_info.PYTORCH_DEPENDENCY][0]
-                if dependency_info.PYTORCH_DEPENDENCY == "torch":
+        if dep_info.PT_FROM is None and from_level is not None:
+            dependency_str_list.append("." * from_level)
+        elif dep_info.PT_FROM is not None:
+            dependency_str_list.append(dep_info.PT_FROM)
+        dependency_str_list.append(dep_info.PT_IMPORT)
+        dep_info.PT_DEPENDENCY = ".".join(dependency_str_list)
+        if dep_info.PT_DEPENDENCY.startswith("torch"):
+            if dep_info.PT_DEPENDENCY in API_MAPPER:
+                dep_info.PD_DEPENDENCY = API_MAPPER[dep_info.PT_DEPENDENCY][0]
+                if dep_info.PT_DEPENDENCY == "torch":
                     self.is_import_paddle = False
-                if dependency_info.PYTORCH_FROM is not None:
-                    seg = dependency_info.PADDLE_DEPENDENCY.split(".")
+                if dep_info.PT_FROM is not None:
+                    seg = dep_info.PD_DEPENDENCY.split(".")
                     setattr(node, "name", seg[-1])
-                    setattr(father_node, "module", dependency_info.PADDLE_DEPENDENCY.replace("." + seg[-1], ""))
-                    dependency_info.PADDLE_IMPORT = seg[-1]
-                    dependency_info.PADDLE_FROM = dependency_info.PADDLE_DEPENDENCY.replace("." + seg[-1], "")
+                    setattr(father_node, "module", dep_info.PD_DEPENDENCY.replace("." + seg[-1], ""))
+                    dep_info.PD_IMPORT = seg[-1]
+                    dep_info.PD_FROM = dep_info.PD_DEPENDENCY.replace("." + seg[-1], "")
                 else:
-                    setattr(node, "name", dependency_info.PADDLE_DEPENDENCY) 
-                    dependency_info.PADDLE_IMPORT = dependency_info.PADDLE_DEPENDENCY
-            elif dependency_info.PYTORCH_DEPENDENCY in REMOVE_API:
+                    setattr(node, "name", dep_info.PD_DEPENDENCY) 
+                    dep_info.PD_IMPORT = dep_info.PD_DEPENDENCY
+            elif dep_info.PT_DEPENDENCY in REMOVE_API:
                 scope_node = self._get_scope_node()
                 for i, n in enumerate(scope_node.body):
                     if father_node == n:
                         scope_node.body.pop(i)
                 is_remove = True
-            elif dependency_info.PYTORCH_DEPENDENCY.startswith("torch"):
-                self.no_support_apis.append(dependency_info.PYTORCH_DEPENDENCY)
+            elif dep_info.PT_DEPENDENCY.startswith("torch"):
+                self.no_support_apis.append(dep_info.PT_DEPENDENCY)
         else:
-            dependency_info.PADDLE_DEPENDENCY = dependency_info.PYTORCH_DEPENDENCY 
-        self.scopes_and_dependencies.append(dependency_info)
+            dep_info.PD_DEPENDENCY = dep_info.PT_DEPENDENCY 
+        self.scopes_and_dependencies.append(dep_info)
         return is_remove
         
     def visit_Name(self, node):
@@ -338,31 +287,31 @@ class AstUpdation(ast.NodeVisitor):
         attr = node.attr
         name = self.visit(value_node)
         attr_str = name + "." + attr
-        pytorch_api, dependency_info = self._get_complete_api(attr_str)
+        pytorch_api, dep_info = self._get_complete_api(attr_str)
         father_node = self._get_father_node()
         if pytorch_api in API_MAPPER:
             paddle_api = API_MAPPER[pytorch_api][0]
             if isinstance(father_node, ast.ClassDef):
-                attr_str = self._rename(attr_str, dependency_info, pytorch_api, paddle_api)
+                attr_str = self._rename(attr_str, dep_info, pytorch_api, paddle_api)
                 if node in father_node.bases:
                     father_node.bases[0] = ast.parse(attr_str).body[0].value
                 return attr_str
             elif isinstance(father_node, ast.Tuple):
-                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
+                paddle_api = self._rename(paddle_api, dep_info, pytorch_api, paddle_api)
                 for i, elts_node in enumerate(father_node.elts):
                     if astor.to_source(elts_node).strip() == attr_str:
                         father_node.elts[i] = ast.parse(paddle_api).body[0].value
                 return paddle_api
             elif isinstance(father_node, ast.FunctionDef):
-                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
+                paddle_api = self._rename(paddle_api, dep_info, pytorch_api, paddle_api)
                 father_node.returns = ast.parse(paddle_api).body[0].value
                 return paddle_api
             elif isinstance(father_node, ast.arg):
-                attr_str = self._rename(attr_str, dependency_info, pytorch_api, paddle_api)
+                attr_str = self._rename(attr_str, dep_info, pytorch_api, paddle_api)
                 father_node.annotation = ast.parse(attr_str).body[0].value
                 return attr_str
             elif isinstance(father_node, ast.Call) and getattr(father_node.func, "id", None) == "isinstance":
-                paddle_api = self._rename(paddle_api, dependency_info, pytorch_api, paddle_api)
+                paddle_api = self._rename(paddle_api, dep_info, pytorch_api, paddle_api)
                 for i, arg_node in enumerate(father_node.args):
                     if astor.to_source(arg_node).strip() == attr_str:
                         father_node.args[i] = ast.parse(paddle_api).body[0].value
@@ -435,8 +384,11 @@ class AstUpdation(ast.NodeVisitor):
         """
         # 获取函数名
         func_node = node.func
-        func_name = self.visit(func_node) 
-        pytorch_api, dependency_info = self._get_complete_api(func_name)
+        if isinstance(func_node, ast.Attribute) and isinstance(func_node.value, ast.Call):
+            func_name = None
+        else:
+            func_name = self.visit(func_node) 
+        pytorch_api, dep_info = self._get_complete_api(func_name)
         if pytorch_api is None:
             self.generic_visit(node)
             return
@@ -444,7 +396,7 @@ class AstUpdation(ast.NodeVisitor):
             self.no_support_apis.append(pytorch_api)
             return 
         paddle_api = API_MAPPER[pytorch_api][0]
-        func_name = self._rename(func_name, dependency_info, pytorch_api, paddle_api)
+        func_name = self._rename(func_name, dep_info, pytorch_api, paddle_api)
         setattr(node, "func", ast.parse(func_name).body[0].value)
         
         # 获取args
@@ -503,7 +455,7 @@ class AstUpdation(ast.NodeVisitor):
         self.scopes_and_dependencies.append(node)
         self.generic_visit(node)
         last_node = self.scopes_and_dependencies.pop(-1)
-        while isinstance(last_node, DependencyInfo): 
+        while isinstance(last_node, DepInfo): 
             last_node = self.scopes_and_dependencies.pop(-1)
         
         
@@ -515,7 +467,7 @@ class AstUpdation(ast.NodeVisitor):
         self.scopes_and_dependencies.append(node)
         self.generic_visit(node)
         last_node = self.scopes_and_dependencies.pop(-1)
-        while isinstance(last_node, DependencyInfo): 
+        while isinstance(last_node, DepInfo): 
             last_node = self.scopes_and_dependencies.pop(-1)
             
     def visit_If(self, node):
@@ -526,7 +478,7 @@ class AstUpdation(ast.NodeVisitor):
         self.scopes_and_dependencies.append(node)
         self.generic_visit(node)
         last_node = self.scopes_and_dependencies.pop(-1)
-        while isinstance(last_node, DependencyInfo): 
+        while isinstance(last_node, DepInfo): 
             last_node = self.scopes_and_dependencies.pop(-1)
             
     def visit_Try(self, node):
@@ -537,7 +489,7 @@ class AstUpdation(ast.NodeVisitor):
         self.scopes_and_dependencies.append(node)
         self.generic_visit(node)
         last_node = self.scopes_and_dependencies.pop(-1)
-        while isinstance(last_node, DependencyInfo): 
+        while isinstance(last_node, DepInfo): 
             last_node = self.scopes_and_dependencies.pop(-1)
             
     def visit_ExtSlice(self, node):
@@ -556,12 +508,12 @@ class AstUpdation(ast.NodeVisitor):
         setattr(node, "s", node.s.replace(".pth", ".pdiparams").replace(".pt", ".pdiparams").replace(".ckpt", ".pdiparams"))
 
             
-def run(py_file_path, file_dependency):
-    updation = AstUpdation(py_file_path, file_dependency)
-    updation.run()
-    if len(updation.no_support_apis) > 0:
+def update(py_file_path, file_dependencies):
+    updater = AstUpdater(py_file_path, file_dependencies)
+    updater.run()
+    if len(updater.no_support_apis) > 0:
         print("Can not convert the file {}.".format(py_file_path))
-        print("The unsupported packages or operators are: [{}].".format(", ".join(set(updation.no_support_apis))))
+        print("The unsupported packages or operators are: [{}].".format(", ".join(set(updater.no_support_apis))))
         return None
     else:
-        return updation.root
+        return updater.root
