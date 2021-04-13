@@ -45,11 +45,7 @@ def arg_parser():
         default=None,
         help="path to save translated model")
     parser.add_argument(
-        "--framework",
-        "-f",
-        type=_text_type,
-        default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        "--framework"， "-f", type=_text_type, default=None, help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
     )
     parser.add_argument(
         "--caffe_proto",
