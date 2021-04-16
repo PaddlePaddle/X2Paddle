@@ -37,7 +37,7 @@ class PyTorchOpMapper(OpMapper):
         self.scope_name_list = list()
         self.scope_name2id = dict()
         self.inputs_info = dict()
-        self.output2id = dict() # output名字和layer_id的关系，用于lstm去除前面的node
+        self.output2id = dict()  # output名字和layer_id的关系，用于lstm去除前面的node
         # 转换
         if not self.op_checker(decoder.graph):
             raise Exception("Model is not supported yet.")
@@ -50,6 +50,7 @@ class PyTorchOpMapper(OpMapper):
                 op_list.append(node.kind())
                 for block in node.blocks():
                     _update_op_list(block)
+
         op_list = list()
         _update_op_list(script_graph)
         op_list = list(set(op_list))
@@ -62,11 +63,11 @@ class PyTorchOpMapper(OpMapper):
             return True
         else:
             if len(unsupported_ops) > 0:
-                print("\n========= {} OPs are not supported yet ===========".format(
-                    len(unsupported_ops)))
+                print("\n========= {} OPs are not supported yet ===========".
+                      format(len(unsupported_ops)))
             for op in unsupported_ops:
                 print("========== {} ============".format(op))
-            return False 
+            return False
 
     def traverse(self, script_graph, parent_layer=None):
         # 用于获取graph的输入
@@ -85,20 +86,24 @@ class PyTorchOpMapper(OpMapper):
                 current_node_outputs.extend(outputs)
 
         # 初始化
-        graph = PaddleGraph(source_type="pytorch", parent_layer=parent_layer, graph_type="dygraph")
+        graph = PaddleGraph(
+            source_type="pytorch",
+            parent_layer=parent_layer,
+            graph_type="dygraph")
         if "TopLevelTracedModule" in str(type(self.script)):
             graph.set_script(self.script)
         current_node_outputs = []
         graph_inputs = []
         # 转换输入节点
         if isinstance(script_graph, torch._C.Graph):
-            input_ct = 0 
+            input_ct = 0
             for i, ivalue in enumerate(script_graph.inputs()):
                 node = ivalue.node()
                 if str(ivalue.type()) not in ["Tensor", "Dict[str, Tensor]"]:
                     graph.set_name(str(ivalue.type()).split(".")[-1])
                     continue
-                inputs, outputs = self.data(graph, node, ivalue.unique(), input_ct)
+                inputs, outputs = self.data(graph, node,
+                                            ivalue.unique(), input_ct)
                 input_ct += 1
         # 转换中间节点
         for node in script_graph.nodes():
@@ -183,8 +188,9 @@ class PyTorchOpMapper(OpMapper):
                     outputs=[output_name],
                     scope_name=scope_name,
                     dtype=string(str(param.dtype)),
-                    shape = param.shape,
-                    default_initializer="paddle.nn.initializer.Constant(value=0.0)")
+                    shape=param.shape,
+                    default_initializer="paddle.nn.initializer.Constant(value=0.0)"
+                )
                 self.output2id[output_name] = layer_id
             else:
                 if isinstance(param, dict) and "Tensor" in param and \
@@ -211,8 +217,9 @@ class PyTorchOpMapper(OpMapper):
                                             outputs=[output_name],
                                             scope_name=scope_name,
                                             dtype=string(str(param.dtype)),
-                                            shape = param.shape,
-                                          default_initializer="paddle.nn.initializer.Constant(value=0.0)")
+                                            shape=param.shape,
+                                            default_initializer="paddle.nn.initializer.Constant(value=0.0)"
+                                        )
                                         node_outputs.append(output_name)
                                         self.output2id[output_name] = layer_id
                                         return
@@ -232,7 +239,8 @@ class PyTorchOpMapper(OpMapper):
                         value=string(param)
                         if isinstance(param, str) else param)
             node_outputs.append(output_name)
-        elif node.kind() == "prim::Constant" and output_name in self.pytorch_params:
+        elif node.kind(
+        ) == "prim::Constant" and output_name in self.pytorch_params:
             param = self.pytorch_params[output_name]
             self.paddle_params[output_name] = param
             layer_id = graph.add_layer(
@@ -241,11 +249,10 @@ class PyTorchOpMapper(OpMapper):
                 outputs=[output_name],
                 scope_name=scope_name,
                 dtype=string(str(param.dtype)),
-                shape = param.shape,
-                default_initializer="paddle.nn.initializer.Constant(value=0.0)")  
+                shape=param.shape,
+                default_initializer="paddle.nn.initializer.Constant(value=0.0)")
             self.output2id[output_name] = layer_id
 
-            
     def _get_inputs_name(self, node):
         inputs_name = []
         inputs_node = []
@@ -256,7 +263,6 @@ class PyTorchOpMapper(OpMapper):
             inputs_node.append(script_input_node)
             inputs_name.append(input_name)
         return inputs_name, inputs_node
-    
 
     def data(self, graph, node, uid, input_ct):
         scope_name = self.normalize_scope_name(node)
@@ -276,7 +282,8 @@ class PyTorchOpMapper(OpMapper):
             data=output_name)
         if self.input_examples is not None:
             input_np = self.input_examples[input_ct].detach().numpy()
-            self.inputs_info[output_name] = [list(input_np.shape), str(input_np.dtype)]
+            self.inputs_info[
+                output_name] = [list(input_np.shape), str(input_np.dtype)]
         return [], [output_name]
 
     def equal(self, graph, node, uid=None, parent_layer=None, index=None):
@@ -289,7 +296,8 @@ class PyTorchOpMapper(OpMapper):
                 control_output_id = index - 1
             output_node_name = parent_layer.outputs[control_output_id]
             current_outputs = [output_node_name]
-            self._check_input(graph, node, input_node_name, current_outputs, scope_name)
+            self._check_input(graph, node, input_node_name, current_outputs,
+                              scope_name)
             graph.add_layer(
                 "prim.equal",
                 inputs={'input': input_node_name},
@@ -321,20 +329,20 @@ class PyTorchOpMapper(OpMapper):
                 self.scope_name2id[i][ns] = 0
         real_scope_name = "/".join(name_segments[1:])
         real_father_scope_name = "/".join(name_segments[1:-1])
-        
+
         for i, ns in enumerate(name_segments):
             if i == 0:
                 continue
             if self.scope_name2id[i][ns] != 0:
                 name_segments[i] = name_segments[i] + \
                 "__{}".format(self.scope_name2id[i][ns])
-            prefix_scope_name = "/".join(name_segments[1 :i + 1])
+            prefix_scope_name = "/".join(name_segments[1:i + 1])
             is_found = False
             for j in range(len(self.scope_name_list)):
-                last_scope_name = self.scope_name_list[-1-j]
+                last_scope_name = self.scope_name_list[-1 - j]
                 if last_scope_name.startswith(prefix_scope_name + "/") \
                         or last_scope_name == prefix_scope_name:
-                    if j != 0: # and i != len(name_segments) - 1:                        
+                    if j != 0:  # and i != len(name_segments) - 1:
                         is_found = True
                         origin_name_segment_i = name_segments[i].split("__")[0]
                         self.scope_name2id[i][origin_name_segment_i] += 1
@@ -346,4 +354,3 @@ class PyTorchOpMapper(OpMapper):
         real_scope_name = "/".join(name_segments[1:])
         self.scope_name_list.append(real_scope_name)
         return real_scope_name
-                

@@ -14,7 +14,8 @@
 # limitations under the License.
 
 NO_OUTPUT_COUNT = 0
- 
+
+
 def gen_codes(code_list, indent=0):
     indent_blank = "    " * indent
     codes = []
@@ -53,13 +54,24 @@ def get_value(layer, key, layer_id=None, different_attrs=None):
                     return str(layer.attrs[key])
 
 
-def prim_add(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_add(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
     line = "{} = {} + {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), get_value(layer, "y", different_attrs))
+                                 get_value(layer, "x", different_attrs),
+                                 get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_add_(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_add_(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
     line = "{} = {} + {} * {}".format(layer.outputs[0],
                                       get_value(layer, "x", different_attrs),
                                       layer.attrs["alpha"],
@@ -67,22 +79,39 @@ def prim_add_(layer, indent=1, init_func=[], forward_func=[], layer_id=None, dif
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_and(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_and(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None,
+             is_return_line=False):
     line = "{} = {} and {}".format(layer.outputs[0],
-                                   get_value(layer, "x", different_attrs), get_value(layer, "y", different_attrs))
+                                   get_value(layer, "x", different_attrs),
+                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_append(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_append(layer,
+                indent=1,
+                init_func=[],
+                forward_func=[],
+                layer_id=None,
+                different_attrs=None):
     line = "{}.append({})".format(
-        get_value(layer, "list", layer_id, different_attrs), 
+        get_value(layer, "list", layer_id, different_attrs),
         get_value(layer, "element", layer_id, different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_assert(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_assert(layer,
+                indent=1,
+                init_func=[],
+                forward_func=[],
+                layer_id=None,
+                different_attrs=None):
     if layer.attrs["type"] == "eq":
         values = get_value(layer, "key")
         if "value" in layer.attrs:
@@ -93,15 +122,15 @@ def prim_assert(layer, indent=1, init_func=[], forward_func=[], layer_id=None, d
                 s += "{} == {} or ".format(get_value(layer, "key"), v)
             if len(s) > 0:
                 s = s[:-4]
-            lc=locals()
+            lc = locals()
             exec("assert_result = {}".format(s))
             assert_result = lc['assert_result']
             line = "assert {}, \'The {} must be {}!\'".format(
                 s, get_value(layer, "key"), get_value(layer, "value"))
         else:
-            s = "{} == {}".format(get_value(layer, "key"),
-                                  get_value(layer, "value"))
-            lc=locals()
+            s = "{} == {}".format(
+                get_value(layer, "key"), get_value(layer, "value"))
+            lc = locals()
             exec("assert_result = {}".format(s))
             assert_result = lc['assert_result']
             line = "assert {}, \'The {} must be {}!\'".format(
@@ -112,7 +141,12 @@ def prim_assert(layer, indent=1, init_func=[], forward_func=[], layer_id=None, d
         forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_check_dim(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_check_dim(layer,
+                   indent=1,
+                   init_func=[],
+                   forward_func=[],
+                   layer_id=None,
+                   different_attrs=None):
     lines = []
     dim = get_value(layer, "dim", different_attrs)
     lines.append("if {} < 0:".format(dim))
@@ -123,12 +157,23 @@ def prim_check_dim(layer, indent=1, init_func=[], forward_func=[], layer_id=None
     forward_func.extend(gen_codes(lines, indent=indent))
 
 
-def prim_constant(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_constant(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
     line = "{} = {}".format(layer.outputs[0], layer.attrs["value"])
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_contain(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_contain(layer,
+                 indent=1,
+                 init_func=[],
+                 forward_func=[],
+                 layer_id=None,
+                 different_attrs=None,
+                 is_return_line=False):
     line = "{} = {} in {}".format(layer.outputs[0],
                                   get_value(layer, "element", different_attrs),
                                   get_value(layer, "input", different_attrs))
@@ -137,108 +182,182 @@ def prim_contain(layer, indent=1, init_func=[], forward_func=[], layer_id=None, 
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_dict(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_dict(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
     line = "{} = dict()".format(layer.outputs[0])
     forward_func.extend(gen_codes([line], indent=indent))
-    
-    
-def prim_dict_construct(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+
+
+def prim_dict_construct(layer,
+                        indent=1,
+                        init_func=[],
+                        forward_func=[],
+                        layer_id=None,
+                        different_attrs=None):
     lines = list()
     line = "{} = dict()".format(layer.outputs[0])
     lines.append(line)
     for i in range(len(layer.inputs)):
-        line = "{}[{}] = {}".format(layer.outputs[0],
-                                    get_value(layer, "key{}".format(i), different_attrs),
-                                    get_value(layer, "value{}".format(i), different_attrs))
+        line = "{}[{}] = {}".format(
+            layer.outputs[0],
+            get_value(layer, "key{}".format(i), different_attrs),
+            get_value(layer, "value{}".format(i), different_attrs))
         lines.append(line)
     forward_func.extend(gen_codes(lines, indent=indent))
-    
-    
-def prim_dict2values(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = list({}.values())".format(layer.outputs[0],
-                                           get_value(layer, "x", different_attrs))
+
+
+def prim_dict2values(layer,
+                     indent=1,
+                     init_func=[],
+                     forward_func=[],
+                     layer_id=None,
+                     different_attrs=None):
+    line = "{} = list({}.values())".format(
+        layer.outputs[0], get_value(layer, "x", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_div(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_div(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
     line = "{} = {} / {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), 
+                                 get_value(layer, "x", different_attrs),
                                  get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_eq(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None,is_return_line=False):
+def prim_eq(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} == {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_equal(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_equal(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
+    line = "{} = {}".format(layer.outputs[0],
+                            get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_exception(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "raise Exception({})".format(get_value(layer, "input", different_attrs))
+def prim_exception(layer,
+                   indent=1,
+                   init_func=[],
+                   forward_func=[],
+                   layer_id=None,
+                   different_attrs=None):
+    line = "raise Exception({})".format(
+        get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_float(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = float({})".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_float(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
+    line = "{} = float({})".format(layer.outputs[0],
+                                   get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_floor(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_floor(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
     line = "{} = math.floor({})".format(layer.outputs[0],
                                         get_value(layer, "x", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_floordiv(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_floordiv(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
     line = "{} = {} // {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_getitem(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_getitem(layer,
+                 indent=1,
+                 init_func=[],
+                 forward_func=[],
+                 layer_id=None,
+                 different_attrs=None):
     line = "{} = {}[{}]".format(layer.outputs[0],
                                 get_value(layer, "list", different_attrs),
                                 get_value(layer, "index", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_gt(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_gt(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} > {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), 
+                                 get_value(layer, "x", different_attrs),
                                  get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_if(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_if(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None):
     try:
         exec_s = None
         for line in forward_func:
             s = line.replace("    ", "")
-            if s.startswith("{} = ".format(get_value(layer, "input", different_attrs))):
+            if s.startswith("{} = ".format(
+                    get_value(layer, "input", different_attrs))):
                 exec_s = s.split(" = ")[1]
-        lc=locals()
+        lc = locals()
         if exec_s is not None:
             exec("if_result = {}".format(exec_s))
         else:
-            exec("if_result = {}".format(get_value(layer, "input", different_attrs)))
+            exec("if_result = {}".format(
+                get_value(layer, "input", different_attrs)))
         if_result = lc['if_result']
         if if_result:
             block = layer.blocks[0]
         else:
             block = layer.blocks[1]
         if len(block.layers) > 0:
-            b_init_lines, b_forward_lines = block.gen_dygraph_code(indent=indent)
+            b_init_lines, b_forward_lines = block.gen_dygraph_code(
+                indent=indent)
             init_func.extend(b_init_lines)
             forward_func.extend(b_forward_lines)
     except:
@@ -249,7 +368,8 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[], layer_id=None, diffe
             line = "pass"
             forward_func.extend(gen_codes([line], indent=indent + 1))
         else:
-            b_init_lines, b_forward_lines = block.gen_dygraph_code(indent=indent + 1)
+            b_init_lines, b_forward_lines = block.gen_dygraph_code(
+                indent=indent + 1)
             init_func.extend(b_init_lines)
             forward_func.extend(b_forward_lines)
         block = layer.blocks[1]
@@ -263,30 +383,54 @@ def prim_if(layer, indent=1, init_func=[], forward_func=[], layer_id=None, diffe
             forward_func.extend(b_forward_lines)
 
 
-def prim_int(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = int({})".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_int(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
+    line = "{} = int({})".format(layer.outputs[0],
+                                 get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_is(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_is(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} is {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_isinstance(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
-    line = "{} = isinstance({}, {})".format(layer.outputs[0],
-                                            get_value(layer, "input", different_attrs),
-                                            layer.attrs["cls"])
+def prim_isinstance(layer,
+                    indent=1,
+                    init_func=[],
+                    forward_func=[],
+                    layer_id=None,
+                    different_attrs=None,
+                    is_return_line=False):
+    line = "{} = isinstance({}, {})".format(
+        layer.outputs[0],
+        get_value(layer, "input", different_attrs), layer.attrs["cls"])
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_isnot(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_isnot(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None,
+               is_return_line=False):
     line = "{} = {} is not {}".format(layer.outputs[0],
                                       get_value(layer, "x", different_attrs),
                                       get_value(layer, "y", different_attrs))
@@ -295,53 +439,94 @@ def prim_isnot(layer, indent=1, init_func=[], forward_func=[], layer_id=None, di
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_le(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_le(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} <= {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_len(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = len({})".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_len(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
+    line = "{} = len({})".format(layer.outputs[0],
+                                 get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_len2list(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_len2list(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
     lines = []
     lines.append("{} = []".format(layer.outputs[0]))
-    lines.append("for i in range({}):".format(get_value(layer, "len", different_attrs)))
+    lines.append("for i in range({}):".format(
+        get_value(layer, "len", different_attrs)))
     lines.append("    {}.append(i)".format(layer.outputs[0]))
     forward_func.extend(gen_codes(lines, indent=indent))
 
 
-def prim_lt(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_lt(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} < {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), 
+                                 get_value(layer, "x", different_attrs),
                                  get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_list(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_list(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
     input_len = len(layer.inputs) + len(layer.attrs)
     inputs_list = list()
     for i in range(input_len):
-        inputs_list.append(get_value(layer, "input{}".format(i), different_attrs))
+        inputs_list.append(
+            get_value(layer, "input{}".format(i), different_attrs))
     inputs_str = ', '.join(inputs_list)
     line = "{} = [{}]".format(layer.outputs[0], inputs_str)
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_list_unpack(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}".format(", ".join(layer.outputs), get_value(layer, "input", different_attrs))
+def prim_list_unpack(layer,
+                     indent=1,
+                     init_func=[],
+                     forward_func=[],
+                     layer_id=None,
+                     different_attrs=None):
+    line = "{} = {}".format(", ".join(layer.outputs),
+                            get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_loop(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_loop(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
     loop_range = get_value(layer, "input", different_attrs)
     line = "for {} in range({}):".format(layer.outputs[1], loop_range)
     forward_func.extend(gen_codes([line], indent=indent))
@@ -351,171 +536,303 @@ def prim_loop(layer, indent=1, init_func=[], forward_func=[], layer_id=None, dif
     forward_func.extend(b_forward_lines)
 
 
-def prim_min(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = min({})".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_min(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
+    line = "{} = min({})".format(layer.outputs[0],
+                                 get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_mul(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_mul(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
     line = "{} = {} * {}".format(layer.outputs[0],
-                                 get_value(layer, "x", different_attrs), 
+                                 get_value(layer, "x", different_attrs),
                                  get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_ne(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_ne(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} != {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_neg(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = -{}".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_neg(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
+    line = "{} = -{}".format(layer.outputs[0],
+                             get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_not(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
-    line = "{} = not {}".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_not(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None,
+             is_return_line=False):
+    line = "{} = not {}".format(layer.outputs[0],
+                                get_value(layer, "input", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_or(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
+def prim_or(layer,
+            indent=1,
+            init_func=[],
+            forward_func=[],
+            layer_id=None,
+            different_attrs=None,
+            is_return_line=False):
     line = "{} = {} or {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs), 
+                                  get_value(layer, "x", different_attrs),
                                   get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_replaceitem(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_replaceitem(layer,
+                     indent=1,
+                     init_func=[],
+                     forward_func=[],
+                     layer_id=None,
+                     different_attrs=None):
     line = "{}[{}] = {}".format(
         get_value(layer, "list", layer_id, different_attrs),
-        get_value(layer, "index", layer_id, different_attrs), 
+        get_value(layer, "index", layer_id, different_attrs),
         get_value(layer, "item", layer_id, different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_requires_grad(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = not {}.stop_gradient".format(layer.outputs[0],
-                                              get_value(layer, "input", different_attrs))
+def prim_requires_grad(layer,
+                       indent=1,
+                       init_func=[],
+                       forward_func=[],
+                       layer_id=None,
+                       different_attrs=None):
+    line = "{} = not {}.stop_gradient".format(
+        layer.outputs[0], get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_rsub(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {} - {} * {}".format(layer.outputs[0],
-                                      get_value(layer, "y", different_attrs),
-                                      get_value(layer, "x", different_attrs),
-                                      get_value(layer, "alpha", different_attrs))
+def prim_rsub(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
+    line = "{} = {} - {} * {}".format(
+        layer.outputs[0],
+        get_value(layer, "y", different_attrs),
+        get_value(layer, "x", different_attrs),
+        get_value(layer, "alpha", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_select(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}[".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_select(layer,
+                indent=1,
+                init_func=[],
+                forward_func=[],
+                layer_id=None,
+                different_attrs=None):
+    line = "{} = {}[".format(layer.outputs[0],
+                             get_value(layer, "input", different_attrs))
     for dim in range(layer.attrs["dim"]):
         line += ":, "
     line += (get_value(layer, "index", different_attrs) + "]")
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_set_attr(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_set_attr(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
+    line = "{} = {}".format(layer.outputs[0],
+                            get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_set_item(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_set_item(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
     line = "{}[{}] = {}".format(
         get_value(layer, "dict", different_attrs),
-        get_value(layer, "key", different_attrs), get_value(layer, "value", different_attrs))
+        get_value(layer, "key", different_attrs),
+        get_value(layer, "value", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
-    
-    
-def prim_shape(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+
+
+def prim_shape(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
     line = "{} = {}.shape".format(layer.outputs[0],
                                   get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-
-def prim_shape_dim(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}.shape[{}]".format(layer.outputs[0],
-                                    get_value(layer, "input", different_attrs),
-                                    get_value(layer, "dim", different_attrs))
+def prim_shape_dim(layer,
+                   indent=1,
+                   init_func=[],
+                   forward_func=[],
+                   layer_id=None,
+                   different_attrs=None):
+    line = "{} = {}.shape[{}]".format(
+        layer.outputs[0],
+        get_value(layer, "input", different_attrs),
+        get_value(layer, "dim", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_slice(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}[{}: {}: {}]".format(layer.outputs[0],
-                                        get_value(layer, "input", different_attrs),
-                                        get_value(layer, "start", different_attrs),
-                                        get_value(layer, "end", different_attrs),
-                                        get_value(layer, "step", different_attrs))
+def prim_slice(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
+    line = "{} = {}[{}: {}: {}]".format(
+        layer.outputs[0],
+        get_value(layer, "input", different_attrs),
+        get_value(layer, "start", different_attrs),
+        get_value(layer, "end", different_attrs),
+        get_value(layer, "step", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
-    
-    
-def prim_startswith(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None, is_return_line=False):
-    line = "{} = {}.startswith({})".format(layer.outputs[0],
-                                           get_value(layer, "input", different_attrs),
-                                           get_value(layer, "start_str", different_attrs))
+
+
+def prim_startswith(layer,
+                    indent=1,
+                    init_func=[],
+                    forward_func=[],
+                    layer_id=None,
+                    different_attrs=None,
+                    is_return_line=False):
+    line = "{} = {}.startswith({})".format(
+        layer.outputs[0],
+        get_value(layer, "input", different_attrs),
+        get_value(layer, "start_str", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_str(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = str({})".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_str(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
+    line = "{} = str({})".format(layer.outputs[0],
+                                 get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_sub(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_sub(layer,
+             indent=1,
+             init_func=[],
+             forward_func=[],
+             layer_id=None,
+             different_attrs=None):
     if int(float(get_value(layer, "alpha", different_attrs))) == 1:
         line = "{} = {} - {}".format(layer.outputs[0],
-                                     get_value(layer, "x", different_attrs), 
+                                     get_value(layer, "x", different_attrs),
                                      get_value(layer, "y", different_attrs))
     else:
-        line = "{} = {} - {} * {}".format(layer.outputs[0],
-                                     get_value(layer, "x", different_attrs), 
-                                     get_value(layer, "alpha", different_attrs),
-                                     get_value(layer, "y", different_attrs))
+        line = "{} = {} - {} * {}".format(
+            layer.outputs[0],
+            get_value(layer, "x", different_attrs),
+            get_value(layer, "alpha", different_attrs),
+            get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_tuple(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_tuple(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
     input_len = len(layer.inputs) + len(layer.attrs)
     inputs_list = list()
     for i in range(input_len):
-        inputs_list.append(get_value(layer, "input{}".format(i), different_attrs))
+        inputs_list.append(
+            get_value(layer, "input{}".format(i), different_attrs))
     inputs_str = ', '.join(inputs_list)
     line = "{} = ({})".format(layer.outputs[0], inputs_str)
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_tuple_unpack(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_tuple_unpack(layer,
+                      indent=1,
+                      init_func=[],
+                      forward_func=[],
+                      layer_id=None,
+                      different_attrs=None):
     outputs_str = ', '.join(layer.outputs)
-    line = "{} = {}".format(outputs_str, get_value(layer, "input", different_attrs))
+    line = "{} = {}".format(outputs_str,
+                            get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_type(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}.dtype".format(layer.outputs[0], get_value(layer, "input", different_attrs))
+def prim_type(layer,
+              indent=1,
+              init_func=[],
+              forward_func=[],
+              layer_id=None,
+              different_attrs=None):
+    line = "{} = {}.dtype".format(layer.outputs[0],
+                                  get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_var2list(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
-    line = "{} = {}.numpy().tolist()".format(layer.outputs[0],
-                                             get_value(layer, "input", different_attrs))
+def prim_var2list(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
+    line = "{} = {}.numpy().tolist()".format(
+        layer.outputs[0], get_value(layer, "input", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_warnings(layer, indent=1, init_func=[], forward_func=[], layer_id=None, different_attrs=None):
+def prim_warnings(layer,
+                  indent=1,
+                  init_func=[],
+                  forward_func=[],
+                  layer_id=None,
+                  different_attrs=None):
     lines = ["import warnings"]
     line = "warnings.warn({}, stacklevel={})".format(
         get_value(layer, "input", different_attrs), layer.attrs["stacklevel"])
     lines.append(line)
     forward_func.extend(gen_codes(lines, indent=indent))
-    
