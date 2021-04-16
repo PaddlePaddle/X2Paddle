@@ -16,6 +16,7 @@ import paddle
 from paddle.nn.functional import instance_norm
 from paddle.fluid.initializer import Constant
 
+
 class InstanceNorm(paddle.nn.Layer):
     """
     This class is based class for InstanceNorm1D, 2d, 3d. 

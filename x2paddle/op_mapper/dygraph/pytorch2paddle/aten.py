@@ -31,6 +31,7 @@ dtype_dict = {
 }
 
 
+
 def aten_abs(mapper, graph, node):
     """ 构造获取绝对值的PaddleLayer。
 
