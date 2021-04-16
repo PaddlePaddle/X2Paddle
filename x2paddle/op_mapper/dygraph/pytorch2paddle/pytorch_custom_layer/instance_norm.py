@@ -19,7 +19,7 @@ from paddle.fluid.initializer import Constant
 
 class InstanceNorm(paddle.nn.Layer):
     """
-    This class is based class for InstanceNorm1D, 2d, 3d. 
+    This class is based class for InstanceNorm1D, 2d, 3d.
     See InstaceNorm1D, InstanceNorm2D or InstanceNorm3D for more details.
     """
 
