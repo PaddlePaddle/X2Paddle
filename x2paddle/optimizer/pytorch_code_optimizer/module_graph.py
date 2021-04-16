@@ -212,6 +212,8 @@ class ModuleGraph(object):
             layer_id_list2 = list(sub_layers2.keys())
             for i, layer_id1 in enumerate(layer_id_list1):
                 layer_id2 = layer_id_list2[i]
+                if layer_id2 not in self.pd_graph.edges_in:
+                    return False
                 if len(self.pd_graph.edges_in[layer_id1]) != len(self.pd_graph.edges_in[layer_id2]):
                     return False
                 for j, ipt_layer_id1 in enumerate(self.pd_graph.edges_in[layer_id1]):

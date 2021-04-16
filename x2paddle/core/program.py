@@ -76,6 +76,7 @@ class PaddleGraph(object):
         self.source_type = source_type
         self.custom_code = None
         self.inputs_info = None
+        self.has_unpack = False
 
     def set_name(self, name):
         self.name = name.replace("-", "_").replace("/", "_")
@@ -112,6 +113,8 @@ class PaddleGraph(object):
                                          layer_id)
         layer = PaddleLayer(layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
         self.layers[layer_id] = layer
+        if layer.kernel in ["prim.list_unpack" or "prim.tuple_unpack"]:
+            self.has_unpack = True
         return layer_id
 
     def del_layer(self, layer_id):
@@ -272,12 +275,16 @@ class PaddleGraph(object):
                 
     def gen_dygraph_model(self, save_dir, jit_type=None):
         if jit_type == "trace":
-            from x2paddle.optimizer.pytorch_code_optimizer import HierarchicalTree
-            hierarchical_tree = HierarchicalTree(self)
-            for layer_id, layer in self.layers.items():
-                hierarchical_tree.insert(layer)
-            hierarchical_tree.save_source_files(save_dir)
-            self.dump_dygraph_parameter(save_dir)
+            if not self.has_unpack:
+                from x2paddle.optimizer.pytorch_code_optimizer import HierarchicalTree
+                hierarchical_tree = HierarchicalTree(self)
+                for layer_id, layer in self.layers.items():
+                    hierarchical_tree.insert(layer)
+                hierarchical_tree.save_source_files(save_dir)
+                self.dump_dygraph_parameter(save_dir)
+            else:
+                self.gen_dygraph_code(save_dir)
+                self.dump_dygraph_parameter(save_dir)
         else:
             if self.source_type == "pytorch":
                 from x2paddle.optimizer.pytorch_code_optimizer import ModuleGraph

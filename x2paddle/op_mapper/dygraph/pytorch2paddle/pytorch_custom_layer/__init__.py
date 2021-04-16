@@ -14,3 +14,4 @@
 
 
 from .gather import Gather
+from .instance_norm import InstanceNorm
