@@ -62,6 +62,60 @@ def aten_abs(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_adaptive_avg_pool1d(mapper, graph, node):
+    """ 构造average adaptive pool1d的PaddleLayer。
+
+    TorchScript示例:
+        %x.5 : Tensor = aten::adaptive_avg_pool1d(%x.3, %_output_size.1)
+        参数含义:
+        %x.5 (Tensor): 池化后结果Tensor。
+        %x.3 (Tensor): 输入Tensor。
+        %_output_size.1 (list): 自适应池化后的Tensor的长度大小。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pool1d", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%x.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%_output_size.1
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["output_size"] = mapper.attrs[inputs_name[1]][0]
+        graph.add_layer(
+            "paddle.nn.AdaptiveAvgPool1D",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["output_size"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+        graph.add_layer(
+            "prim.getitem",
+            inputs={"list": layer_inputs["output_size"]},
+            outputs=[layer_inputs["output_size"]],
+            scope_name=scope_name,
+            index=0)
+        graph.add_layer(
+            "paddle.nn.functional.adaptive_avg_pool1d",
+            inputs=layer_inputs,
+            outputs=layer_outputs[1:],
+            scope_name=scope_name,
+            **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_adaptive_avg_pool2d(mapper, graph, node):
     """ 构造average adaptive pool2d的PaddleLayer。
 
@@ -2531,8 +2585,52 @@ def aten_hardtanh_(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_index(mapper, graph, node):
+    """ 构造选择元素的PaddleLayer。
+
+    TorchScript示例:
+        %1681 : Float = aten::index(%1653, %1680)
+        参数含义:
+        %1681 (Tensor): 输出，选择后的Tensor。
+        %1653 (Tensor): 需要选择的Tensor。
+        %1680 (int): 选择的索引。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%1653
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%1680
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["index"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.getitem",
+        inputs={"list": layer_inputs["index"]},
+        outputs=[layer_inputs["index"]],
+        scope_name=scope_name,
+        index=0)
+    graph.add_layer(
+        "paddle.index_select",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_index_select(mapper, graph, node):
-    """ 构造对dict加入元素的PaddleLayer。
+    """ 构造选择元素的PaddleLayer。
 
     TorchScript示例:
         %bd.3 : Tensor = aten::index_select(%x2.3, %320, %371)
@@ -4245,6 +4343,57 @@ def aten_reshape(mapper, graph, node):
 
     graph.add_layer(
         "paddle.reshape",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_roll(mapper, graph, node):
+    """ 构造循环滚动的PaddleLayer。
+
+    TorchScript示例:
+        %x.87 : Float = aten::roll(%x.86, %1862, %1863)
+        参数含义:
+        %x.87 (Tensor): 输出Tensor。
+        %x.86 (Tensor): 输入Tensor。
+        %1862 (int/list/tuple): 滚动位移。
+        %1863 (int/list/tuple): 滚动轴。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%x.86
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%1862
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["shifts"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["shifts"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入2，即%1863
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    graph.add_layer(
+        "paddle.roll",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name,

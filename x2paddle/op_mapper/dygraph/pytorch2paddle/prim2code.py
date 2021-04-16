@@ -394,6 +394,18 @@ def prim_int(layer,
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_index(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
+    line = "{} = {}[{}]".format(layer.outputs[0],
+                                get_value(layer, "x", different_attrs),
+                                get_value(layer, "index", different_attrs))
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_is(layer,
             indent=1,
             init_func=[],
