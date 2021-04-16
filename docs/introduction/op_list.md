@@ -20,7 +20,7 @@
 | 41 | Cast             | 42 | Split          | 43 | Squeeze        | 44 | ResizeNearestNeighbor |
 | 45 | Softmax          | 46 | Range          | 47 | ConcatV2       | 48 | MirrorPad             |
 | 49 | Identity         | 50 | GreaterEqual   | 51 | StopGradient   | 52 | Minimum               |
-| 53 | RadnomUniform    | 54 | Fill           | 55 | Floor          | 56 | DepthToSpace          |
+| 53 | RandomUniform    | 54 | Fill           | 55 | Floor          | 56 | DepthToSpace          |
 | 57 | Sqrt             | 58 | Softplus       | 59 | Erf            | 60 | AddV2                 |
 | 61 | LessEqual        | 62 | BatchMatMul    | 63 | BatchMatMulV2  | 64 | ExpandDims            |
 | 65 | BatchToSpaceND   | 66 | SpaceToBatchND | 67 | OneHot         | 68 | Pow                   |
