@@ -9,14 +9,15 @@ X2Paddle在多个主流的CV模型上，测试过TensorFlow/Caffe/ONNX/PyTorch�
 
 ## 环境依赖
 
-python >= 3.5  
-paddlepaddle 2.0.0-rc1 或者 develop  
+- python >= 3.5  
+- paddlepaddle >= 2.0.0  
 
 **按需安装以下依赖**  
-tensorflow ： tensorflow == 1.14.0  
-caffe ： 无  
-onnx ： onnx >= 1.6.0
-pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
+
+- tensorflow ： tensorflow == 1.14.0  
+- caffe ： 无  
+- onnx ： onnx >= 1.6.0
+- pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 ## 安装
 ### 安装方式一（推荐）
