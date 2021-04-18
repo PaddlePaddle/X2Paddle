@@ -91,6 +91,8 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 4. [X2Paddle支持的op列表](./docs/introduction/op_list.md) 
 5. [PyTorch模型导出为ONNX模型](./docs/user_guides/pytorch2onnx.md)
 6. [X2Paddle添加内置的Caffe自定义层](./docs/user_guides/add_caffe_custom_layer.md)
+7. [TensorFlow转换教程](./docs/demo/tensorflow2paddle.ipynb)
+8. [PyTorch转换教程](./docs/demo/pytorch2paddle.ipynb)
 
 ## 更新历史
 2020.12.09
