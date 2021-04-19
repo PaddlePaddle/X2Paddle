@@ -14,9 +14,7 @@
 
 import paddle
 import copy
-
-TYPE_ORDER = ["bool", "int32", "int64", "float32", "float64"]
-TYPE_MAPPER = {"fp32": "float32", "fp64": "float64"}
+from .utils import *
 
 
 def binary_cross_entropy_with_logits(input,

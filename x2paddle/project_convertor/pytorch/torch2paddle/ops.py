@@ -15,10 +15,7 @@
 import paddle
 import copy
 import warnings
-from paddle import DataParallel as Base_DataParallel
-
-TYPE_ORDER = ["bool", "int32", "int64", "float32", "float64"]
-TYPE_MAPPER = {"fp32": "float32", "fp64": "float64"}
+from .utils import *
 
 
 def abs(input, *, out=None):
@@ -261,6 +258,6 @@ def zeros_like(input,
         return paddle.zeros_like(input, dtype)
 
 
-class DataParallel(Base_DataParallel):
+class DataParallel(paddle.DataParallel):
     def __init__(self, module, device_ids=None, output_device=None, dim=0):
         super().__init__(module)
