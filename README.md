@@ -109,8 +109,6 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
 
 
-## 致谢
+## 贡献代码
 
-X2Paddle借鉴了如下项目：
-
-- [MMdnn](https://github.com/microsoft/MMdnn)
+我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests。
