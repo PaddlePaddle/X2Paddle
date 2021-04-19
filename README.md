@@ -73,7 +73,8 @@ x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --paddle_t
 PyTorch仅支持API使用方式，详见[PyTorch预测模型转换文档](./docs/user_guides/pytorch2paddle.md)。
 
 ### 训练项目转换
-#### PyTorch (待更新)
+#### PyTorch
+【待更新】可安装[分支](https://github.com/PaddlePaddle/X2Paddle/tree/pytorch_project_convertor)源码进行使用。
 详见[PyTorch训练项目转换文档](https://github.com/SunAhong1993/X2Paddle/blob/code_convert_last/docs/pytorch_project_convertor/README.md)。
 
 
