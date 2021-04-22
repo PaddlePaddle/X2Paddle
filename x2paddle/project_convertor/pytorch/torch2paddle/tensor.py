@@ -90,11 +90,6 @@ def float(self, memory_format=None):
 
 
 @add_tensor_function
-def cuda(self):
-    return self
-
-
-@add_tensor_function
 def size(self, dim=None):
     if dim is not None:
         return self.shape[dim]
@@ -216,3 +211,36 @@ pd_expand = partial(paddle.Tensor.expand)
 @add_tensor_function
 def expand(self, *sizes):
     return pd_expand(self, sizes)
+
+
+@add_tensor_function
+def div(self, value):
+    return self / value
+
+
+@add_tensor_function
+def eq(self, other):
+    return self.equal(other)
+
+
+@add_tensor_function
+def eq_(self, other):
+    return self.equal(other)
+
+
+@add_tensor_function
+def mul(self, value):
+    return self * value
+
+
+@add_tensor_function
+def mul_(self, value):
+    return self * value
+
+
+pd_cuda = partial(paddle.Tensor.cuda)
+
+
+@add_tensor_function
+def cuda(self, device=None, non_blocking=False, memory_format=None):
+    return pd_cuda(self, device_id=0, blocking=non_blocking)

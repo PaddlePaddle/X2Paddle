@@ -39,15 +39,15 @@ def get_dep_file_path(current_file_path, from_level, from_str):
                 import_file_path = osp.join(current_file_path, "__init__.py")
     else:
         current_abs_path = osp.dirname(current_file_path)
-        print(current_abs_path)
         sys.path.append(current_abs_path)
         if len(from_str.split(".")) == 1:
             key_str = from_str
             exec("import {}".format(key_str))
         else:
             from_seg = from_str.split(".")
-            key_str = ".".join(from_seg[0:-1])
-            exec("from {} import {}".format(from_seg[-1], key_str))
+            from_str = ".".join(from_seg[0:-1])
+            key_str = from_seg[-1]
+            exec("from {} import {}".format(from_str, key_str))
         sys.path.pop(-1)
         import_file_path = locals()[key_str].__file__
     return import_file_path

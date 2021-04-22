@@ -57,12 +57,30 @@ def apply(self, func):
     func(self)
 
 
-train_tmp = partial(paddle.nn.Layer.train)
+@add_layer_function
+def modules(self):
+    return [self] + self.sublayers()
+
+
+@add_layer_function
+def add_module(self, name, module):
+    self.add_sublayer(name, module)
+
+
+pd_cuda = partial(paddle.nn.Layer.cuda)
+
+
+@add_layer_function
+def cuda(self, device=None):
+    return pd_cuda(self)
+
+
+pd_train = partial(paddle.nn.Layer.train)
 
 
 @add_layer_function
 def train(self, mode=True):
     if mode:
-        return train_tmp(self)
+        return pd_train(self)
     else:
         return paddle.nn.Layer.eval(self)

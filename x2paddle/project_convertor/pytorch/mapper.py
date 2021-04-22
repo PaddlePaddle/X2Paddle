@@ -37,9 +37,18 @@ NN_MAPPER = {
     "torch.nn.utils.clip_grad_value_":
     ["x2paddle.torch2paddle.clip_grad_value_", None],
     "torch.nn.Parameter": ["paddle.create_parameter", CreateParamModuleMapper],
+    "torch.nn.parallel": ["paddle", None],
     "torch.nn.DataParallel": ["paddle.DataParallel", DataParallelModuleMapper],
+    "torch.nn.parallel.DistributedDataParallel":
+    ["paddle.DataParallel", DataParallelModuleMapper],
     "torch.nn.functional": ["paddle.nn.functional", None],
     # nn_net
+    "torch.nn.AdaptiveAvgPool1d": ["paddle.nn.AdaptiveAvgPool1D", None],
+    "torch.nn.AdaptiveAvgPool2d": ["paddle.nn.AdaptiveAvgPool2D", None],
+    "torch.nn.AdaptiveAvgPool3d": ["paddle.nn.AdaptiveAvgPool3D", None],
+    "torch.nn.AvgPool1d": ["paddle.nn.AvgPool1D", AvgPoolModuleMapper],
+    "torch.nn.AvgPool2d": ["paddle.nn.AvgPool2D", AvgPoolModuleMapper],
+    "torch.nn.AvgPool3d": ["paddle.nn.AvgPool3D", AvgPoolModuleMapper],
     "torch.nn.BatchNorm1d": ["paddle.nn.BatchNorm1D", BatchNormModuleMapper],
     "torch.nn.BatchNorm2d": ["paddle.nn.BatchNorm2D", BatchNormModuleMapper],
     "torch.nn.BatchNorm3d": ["paddle.nn.BatchNorm3D", BatchNormModuleMapper],
@@ -58,6 +67,7 @@ NN_MAPPER = {
     "torch.nn.MaxPool2d": ["paddle.nn.MaxPool2D", MaxPoolModuleMapper],
     "torch.nn.MaxPool3d": ["paddle.nn.MaxPool3D", MaxPoolModuleMapper],
     "torch.nn.ReLU": ["paddle.nn.ReLU", ReLUModuleMapper],
+    "torch.nn.ReLU6": ["paddle.nn.ReLU6", ReLUModuleMapper],
     "torch.nn.Sigmoid": ["paddle.nn.Sigmoid", None],
     "torch.nn.Softmax": ["paddle.nn.Softmax", SoftmaxModuleMapper],
     "torch.nn.Tanh": ["paddle.nn.Tanh", None],
@@ -77,6 +87,8 @@ NN_MAPPER = {
     ["paddle.nn.functional.avg_pool3d", AvgPoolFuncMapper],
     "torch.nn.functional.dropout":
     ["paddle.nn.functional.dropout", DropoutFuncMapper],
+    "torch.nn.functional.interpolate":
+    ["paddle.nn.functional.interpolate", InterpolateFuncMapper],
     "torch.nn.functional.log_softmax":
     ["paddle.nn.functional.log_softmax", LogSoftmaxFuncMapper],
     "torch.nn.functional.pad": ["paddle.nn.functional.pad", PadFuncMapper],
@@ -85,8 +97,16 @@ NN_MAPPER = {
     ["paddle.nn.functional.sigmoid", SigmoidFuncMapper],
     "torch.nn.functional.softmax":
     ["paddle.nn.functional.softmax", SoftmaxFuncMapper],
+    # init
+    "torch.nn.init": ["x2paddle.torch2paddle", None],
+    "torch.nn.init.kaiming_normal_":
+    ["x2paddle.torch2paddle.kaiming_normal_", None],
     "torch.nn.init.xavier_uniform_":
-    ["x2paddle.torch2paddle.xavier_uniform_", XavierUniformFuncMapper],
+    ["x2paddle.torch2paddle.xavier_normal_", None],
+    "torch.nn.init.xavier_normal_":
+    ["x2paddle.torch2paddle.xavier_uniform_", None],
+    "torch.nn.init.ones_": ["x2paddle.torch2paddle.ones_init_", None],
+    "torch.nn.init.zeros_": ["x2paddle.torch2paddle.zeros_init_", None],
     # functional_loss
     "torch.nn.functional.binary_cross_entropy_with_logits":
     ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
@@ -106,7 +126,12 @@ UTILS_MAPPER = {
     ["x2paddle.torch2paddle.random_split", None],
     "torch.utils.data.Dataset": ["paddle.io.Dataset", None],
     "torch.utils.data.ConcatDataset":
-    ["x2paddle.torch2paddle.ConcatDataset", None]
+    ["x2paddle.torch2paddle.ConcatDataset", None],
+    "torch.utils.data.distributed": ["x2paddle.torch2paddle", None],
+    "torch.utils.data.distributed.DistributedSampler":
+    ["x2paddle.torch2paddle.DistributedSampler", None],
+    "torch.multiprocessing": ["paddle.distributed", None],
+    "torch.multiprocessing.spawn": ["paddle.distributed.spawn", None]
 }
 
 DTYPE_MAPPER = {
@@ -129,9 +154,13 @@ TORCHVISION_MAPPER = {
     ["paddle.vision.transforms.CenterCrop", None],
     "torchvision.transforms.Normalize":
     ["x2paddle.torch2paddle.Normalize", None],
+    "torchvision.transforms.RandomResizedCrop":
+    ["paddle.vision.transforms.RandomResizedCrop", None],
+    "torchvision.utils": ["x2paddle.torch2paddle", None],
     "torchvision.utils.save_image": ["x2paddle.torch2paddle.save_image", None],
+    "torchvision.datasets": ["paddle.vision.datasets", None],
     "torchvision.datasets.ImageFolder":
-    ["paddle.vision.datasets.ImageFolder", ImageFolderMapper]
+    ["x2paddle.torch2paddle.ImageFolder", None]
 }
 
 AUTOGRAD_MAPPER = {
@@ -148,6 +177,7 @@ API_MAPPER = {
     "torch.device": ["paddle.set_device", SetDeviceMapper],
     "torch.cat": ["x2paddle.torch2paddle.concat", None],
     "torch.cuda.is_available": ["paddle.is_compiled_with_cuda", None],
+    "torch.cuda.set_device": ["x2paddle.torch2paddle.set_cuda_device", None],
     "torch.no_grad": ["paddle.no_grad", None],
     "torch.from_numpy": ["paddle.to_tensor", None],
     "torch.cuda.device_count": ["x2paddle.torch2paddle.device_count", None],
@@ -182,6 +212,7 @@ API_MAPPER = {
     "torch.bitwise_xor": ["paddle.logical_xor", LogicalMapper],
     "torch.bitwise_and": ["paddle.logical_and", LogicalMapper],
     "torch.bitwise_not": ["paddle.logical_not", LogicalMapper],
+    "torch.split": ["paddle.split", SplitMapper],
 }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)
@@ -193,5 +224,5 @@ API_MAPPER.update(AUTOGRAD_MAPPER)
 
 REMOVE_API = [
     "torch.backends.cudnn", "torch.backends.cudnn.benchmark",
-    "torch.backends.cudnn.enabled"
+    "torch.backends.cudnn.enabled", "torch.backends.cudnn.deterministic"
 ]

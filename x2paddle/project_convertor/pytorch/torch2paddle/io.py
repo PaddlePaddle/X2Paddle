@@ -170,3 +170,20 @@ class DataLoader(paddle.io.DataLoader):
             worker_init_fn=worker_init_fn)
         if sampler is not None:
             seld.batch_sampler.sampler = sampler
+
+
+class DistributedSampler(paddle.io.DistributedBatchSampler):
+    def __init__(self,
+                 dataset,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=True,
+                 seed=0,
+                 drop_last=False):
+        super().__init__(
+            dataset=dataset,
+            batch_size=1,
+            num_replicas=num_replicas,
+            rank=rank,
+            shuffle=shuffle,
+            drop_last=drop_last)

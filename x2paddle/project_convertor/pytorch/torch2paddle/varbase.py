@@ -87,7 +87,11 @@ def __getitem__(self, idx):
             return out.cast("bool") if is_bool else out
         # TODO(syf): 出来为(slice(None, None, None), slice(None, None, None), 0)
     else:
-        return self.tmp(idx)
+        out = self.tmp(idx)
+        if out.shape == [1]:
+            return out.numpy()[0]
+        else:
+            return out
 
 
 VarBase.__getitem__ = __getitem__

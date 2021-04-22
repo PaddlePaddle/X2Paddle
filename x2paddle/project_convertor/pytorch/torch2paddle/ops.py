@@ -177,6 +177,13 @@ def ones_like(input,
         return paddle.ones_like(input, dtype)
 
 
+def set_cuda_device(device):
+    if isinstance(device, int):
+        return paddle.set_device("gpu:{}".format(device))
+    else:
+        return paddle.set_device("gpu")
+
+
 def rand(*size,
          out=None,
          dtype=None,
@@ -207,6 +214,10 @@ def randperm(n,
 
 def save(obj, f, pickle_module=None, pickle_protocol=2):
     return paddle.save(obj, f, pickle_protocol=pickle_protocol)
+
+
+def split(tensor, split_size_or_sections, dim=0):
+    return paddle.split(tensor, split_size_or_sections, dim)
 
 
 def sqrt(input, *, out=None):

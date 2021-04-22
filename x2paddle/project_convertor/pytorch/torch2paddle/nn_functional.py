@@ -97,6 +97,20 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return paddle.nn.functional.dropout(input, p=p, training=training)
 
 
+def interpolate(input,
+                size=None,
+                scale_factor=None,
+                mode='nearest',
+                align_corners=None,
+                recompute_scale_factor=None):
+    return paddle.nn.functional.interpolate(
+        input,
+        size=size,
+        scale_factor=scale_factor,
+        mode=mode,
+        align_corners=align_corners)
+
+
 def log_softmax(input, dim=None, _stacklevel=3, dtype=None):
     return paddle.nn.functional.log_softmax(input, axis=dim, dtype=None)
 

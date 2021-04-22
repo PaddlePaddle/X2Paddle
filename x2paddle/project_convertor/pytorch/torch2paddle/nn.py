@@ -15,6 +15,57 @@
 import paddle
 
 
+class AvgPool1D(paddle.nn.AvgPool1D):
+    def __init__(self,
+                 kernel_size,
+                 stride=None,
+                 padding=0,
+                 ceil_mode=False,
+                 count_include_pad=True,
+                 divisor_override=None):
+        super().__init__(
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=padding,
+            exclusive=count_include_pad,
+            divisor_override=divisor_override)
+
+
+class AvgPool2D(paddle.nn.AvgPool2D):
+    def __init__(self,
+                 kernel_size,
+                 stride=None,
+                 padding=0,
+                 ceil_mode=False,
+                 count_include_pad=True,
+                 divisor_override=None):
+        super().__init__(
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=padding,
+            exclusive=count_include_pad,
+            divisor_override=divisor_override)
+
+
+class AvgPool3D(paddle.nn.AvgPool3D):
+    def __init__(self,
+                 kernel_size,
+                 stride=None,
+                 padding=0,
+                 ceil_mode=False,
+                 count_include_pad=True,
+                 divisor_override=None):
+        super().__init__(
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=padding,
+            exclusive=count_include_pad,
+            divisor_override=divisor_override)
+
+
 class BatchNorm1D(paddle.nn.BatchNorm1D):
     def __init__(self,
                  num_features,
@@ -89,6 +140,62 @@ class BCEWithLogitsLoss(paddle.nn.BCEWithLogitsLoss):
                  reduction='mean',
                  pos_weight=None):
         super().__init__(weight, reduction=reduction, pos_weight=pos_weight)
+
+
+@property
+def in_channels(self):
+    return self._in_channels
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "in_channels", in_channels)
+
+
+@property
+def out_channels(self):
+    return self._out_channels
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "out_channels", out_channels)
+
+
+@property
+def kernel_size(self):
+    return self._kernel_size
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "kernel_size", kernel_size)
+
+
+@property
+def stride(self):
+    return self._stride
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "stride", stride)
+
+
+@property
+def padding(self):
+    return self._padding
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "padding", padding)
+
+
+@property
+def dilation(self):
+    return self._dilation
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "dilation", dilation)
+
+
+@property
+def groups(self):
+    return self._groups
+
+
+setattr(paddle.nn.layer.conv._ConvNd, "groups", groups)
 
 
 class Conv1D(paddle.nn.Conv1D):

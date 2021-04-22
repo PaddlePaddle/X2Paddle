@@ -16,6 +16,48 @@ from .utils import *
 from x2paddle.utils import *
 
 
+class AvgPoolModuleMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        if "count_include_pad" in self.kwargs:
+            if isinstance(self.kwargs["count_include_pad"], bool):
+                self.kwargs["exclusive"] = not self.kwargs["count_include_pad"]
+            else:
+                self.kwargs["exclusive"] = "not {}".format(self.kwargs[
+                    "count_include_pad"])
+        if len(self.args) > 4:
+            if isinstance(self.args[4], bool):
+                self.args[4] = not self.args[4]
+            else:
+                self.args[4] = "not {}".format(self.args[4])
+
+    def delete_attrs(self):
+        delete_key(self.kwargs, "count_include_pad")
+
+    def run(self):
+        if self.pytorch_api_name == "torch.nn.AvgPool1d" and self.rename_func_name(
+                "x2paddle.torch2paddle.AvgPool1D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.AvgPool2d" and self.rename_func_name(
+                "x2paddle.torch2paddle.AvgPool2D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.AvgPool3d" and self.rename_func_name(
+                "x2paddle.torch2paddle.AvgPool3d"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            return self.convert_to_paddle()
+
+
 class BatchNormModuleMapper(Mapper):
     def __init__(self,
                  func_name,
@@ -334,6 +376,32 @@ class DropoutFuncMapper(Mapper):
             return self.convert_to_paddle()
 
 
+class InterpolateFuncMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+
+    def check_attrs(self):
+        assert "recompute_scale_factor" not in self.kwargs or self.kwargs[
+            "recompute_scale_factor"] is None or len(
+                self.args
+            ) > 5, "The recompute_scale_factor is not supported yet in interpolate!"
+
+    def run(self):
+        if self.rename_func_name("x2paddle.torch2paddle.interpolate"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            return self.convert_to_paddle()
+
+
 class LogSoftmaxFuncMapper(Mapper):
     def __init__(self,
                  func_name,
@@ -455,27 +523,3 @@ class SoftmaxFuncMapper(Mapper):
         else:
             self.convert_args2kwargs(2)
             return self.convert_to_paddle()
-
-
-class XavierUniformFuncMapper(Mapper):
-    def __init__(self,
-                 func_name,
-                 pytorch_api_name,
-                 args,
-                 kwargs,
-                 target_name=None):
-        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
-
-    def run(self):
-        if len(self.args) >= 1:
-            param_name = self.args[0]
-            if len(self.args) > 1:
-                gain = self.args[1]
-            else:
-                gain = self.kwargs["gain"] if "gain" in self.kwargs else 1.0
-        else:
-            param_name = self.kwargs["tensor"]
-            gain = self.kwargs["gain"] if "gain" in self.kwargs else 1.0
-        param_name = param_name.strip()
-        code = "{} = {}(gain={})".format(param_name, self.func_name, gain)
-        return [], code, []

@@ -37,7 +37,7 @@ def generate_dependencies(folder_path, file_dependencies):
         current_path = osp.join(folder_path, name)
         if osp.isfile(current_path) and current_path.endswith(".py"):
             if current_path in file_dependencies:
-                break
+                continue
             analyze(current_path, file_dependencies)
         elif osp.isdir(current_path):
             generate_dependencies(current_path, file_dependencies)
@@ -46,9 +46,9 @@ def generate_dependencies(folder_path, file_dependencies):
 def convert_code(folder_path, new_folder_path, file_dependencies):
     for name in os.listdir(folder_path):
         current_path = osp.join(folder_path, name)
-        print(current_path)
         new_current_path = osp.join(new_folder_path, name)
         if osp.isfile(current_path) and current_path.endswith(".py"):
+            print(current_path)
             root = update(current_path, file_dependencies)
             if root is not None:
                 write_file(new_current_path, root)
@@ -77,9 +77,10 @@ def convert_params(params_path):
     bn_w_name_list = list()
     for k, v in params.items():
         if k.endswith(".running_mean"):
-            new_params[k.replace(".running_mean", "_mean")] = v.detach().numpy()
+            new_params[k.replace(".running_mean", "._mean")] = v.detach().numpy(
+            )
         elif k.endswith(".running_var"):
-            new_params[k.replace(".running_var", "_variance")] = v.detach(
+            new_params[k.replace(".running_var", "._variance")] = v.detach(
             ).numpy()
             bn_w_name_list.append(k.replace(".running_var", ".weight"))
         else:
