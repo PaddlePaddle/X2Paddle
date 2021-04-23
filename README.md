@@ -21,14 +21,14 @@ X2Paddle的架构设计着重考虑了对多深度学习框架的的支持以及
 
 ## 环境依赖
 
-python >= 3.5  
-paddlepaddle 2.0.0-rc1 或者 develop  
+> python >= 3.5  
+> paddlepaddle 2.0.0+
 
 **按需安装以下依赖**  
-tensorflow ： tensorflow == 1.14.0  
-caffe ： 无  
-onnx ： onnx >= 1.6.0
-pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
+> tensorflow ： tensorflow == 1.14.0  
+> caffe ： 无  
+> onnx ： onnx >= 1.6.0  
+> pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 ## 安装
 ### 方式一：源码安装（推荐）
@@ -90,6 +90,7 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 3. [PyTorch模型导出为ONNX模型](./docs/user_guides/pytorch2onnx.md)
 4. [X2Paddle添加内置的Caffe自定义层](./docs/user_guides/add_caffe_custom_layer.md)
 5. [转换后PaddlePaddle预测模型简介](./docs/user_guides/pd_folder_introduction.py)
+6. [Paddle到ONNX的转换](https://github.com/PaddlePaddle/Paddle2ONNX)
 
 ## 支持列表文档
 1. [X2Paddle测试模型库](./docs/introduction/x2paddle_model_zoo.md)  
