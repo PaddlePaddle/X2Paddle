@@ -72,7 +72,7 @@ pd_cuda = partial(paddle.nn.Layer.cuda)
 
 @add_layer_function
 def cuda(self, device=None):
-    return pd_cuda(self)
+    return self
 
 
 pd_train = partial(paddle.nn.Layer.train)

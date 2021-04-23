@@ -243,4 +243,4 @@ pd_cuda = partial(paddle.Tensor.cuda)
 
 @add_tensor_function
 def cuda(self, device=None, non_blocking=False, memory_format=None):
-    return pd_cuda(self, device_id=0, blocking=non_blocking)
+    return self

@@ -43,7 +43,6 @@ class DepInfo:
 
 class AstUpdater(ast.NodeVisitor):
     """ 更新ast树，将ast树中PyTorch相关的节点转为Paddle相关的节点。
-
     Args:
         py_file_path (str): python文件的绝对值路径。
         file_dependencies (dict): 当前已经统计的依赖信息，key为python文件的绝对值路径，
@@ -251,7 +250,7 @@ class AstUpdater(ast.NodeVisitor):
                             scope_node = self._get_scope_node()
                             for i, n in enumerate(scope_node.body):
                                 if father_node == n:
-                                    scope_node.body.pop(i)
+                                    scope_node.body[i] = ast.parse("\n").body
                             is_remove = True
                         else:
                             self.no_support_apis.append(
@@ -287,7 +286,7 @@ class AstUpdater(ast.NodeVisitor):
                 scope_node = self._get_scope_node()
                 for i, n in enumerate(scope_node.body):
                     if father_node == n:
-                        scope_node.body.pop(i)
+                        scope_node.body[i] = ast.parse("\n").body
                 is_remove = True
             elif dep_info.PT_DEPENDENCY.startswith("torch"):
                 self.no_support_apis.append(dep_info.PT_DEPENDENCY)
@@ -299,6 +298,19 @@ class AstUpdater(ast.NodeVisitor):
     def visit_Name(self, node):
         """ 获取字符串名字。
         """
+        pytorch_api, dep_info = self._get_complete_api(getattr(node, "id"))
+        father_node = self._get_father_node()
+        if pytorch_api in API_MAPPER:
+            paddle_api = API_MAPPER[pytorch_api][0]
+            if isinstance(father_node, ast.Call) and getattr(
+                    father_node.func, "id", None) in ("getattr", "setattr",
+                                                      "hasattr"):
+                paddle_api = self._rename(paddle_api, dep_info, pytorch_api,
+                                          paddle_api)
+                for i, arg_node in enumerate(father_node.args):
+                    if astor.to_source(arg_node).strip() == getattr(node, "id"):
+                        father_node.args[i] = ast.parse(paddle_api).body[
+                            0].value
         return getattr(node, "id")
 
     def visit_Attribute(self, node):

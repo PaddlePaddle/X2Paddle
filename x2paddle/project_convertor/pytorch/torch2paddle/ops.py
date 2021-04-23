@@ -98,6 +98,24 @@ def load(f, map_location=None, pickle_module=None, **pickle_load_args):
     return paddle.load(f)
 
 
+def load_state_dict_from_url(url,
+                             model_dir=None,
+                             map_location=None,
+                             progress=True,
+                             check_hash=False,
+                             file_name=None):
+    return paddle.load(url)
+
+
+def load_url(url,
+             model_dir=None,
+             map_location=None,
+             progress=True,
+             check_hash=False,
+             file_name=None):
+    return paddle.load(url)
+
+
 def log(input, *, out=None):
     return paddle.log(input)
 

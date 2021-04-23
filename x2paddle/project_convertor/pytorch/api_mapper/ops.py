@@ -45,6 +45,37 @@ class LoadMapper(Mapper):
             return self.convert_to_paddle()
 
 
+class HubLoadMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        if len(self.args) == 1:
+            self.kwargs.clear()
+        elif len(self.args) == 0:
+            self.args.append(list(self.kwargs.values())[0])
+            self.kwargs.clear()
+        else:
+            self.args = self.args[:1]
+
+    def run(self):
+        if self.pytorch_api_name == "torch.hub.load_state_dict_from_url":
+            if self.rename_func_name(
+                    "x2paddle.torch2paddle.load_state_dict_from_url"):
+                return [], generate_api_code(self.func_name, self.args,
+                                             self.kwargs), []
+        if self.pytorch_api_name == "torch.utils.model_zoo.load_url":
+            if self.rename_func_name("x2paddle.torch2paddle.load_url"):
+                return [], generate_api_code(self.func_name, self.args,
+                                             self.kwargs), []
+        return self.convert_to_paddle()
+
+
 class SetDeviceMapper(Mapper):
     def __init__(self,
                  func_name,

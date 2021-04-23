@@ -130,8 +130,16 @@ UTILS_MAPPER = {
     "torch.utils.data.distributed": ["x2paddle.torch2paddle", None],
     "torch.utils.data.distributed.DistributedSampler":
     ["x2paddle.torch2paddle.DistributedSampler", None],
+    "torch.utils.model_zoo": ["paddle", None],
+    "torch.utils.model_zoo.load_url": ["paddle.load", HubLoadMapper],
+}
+
+DIST_MAPPER = {
     "torch.multiprocessing": ["paddle.distributed", None],
-    "torch.multiprocessing.spawn": ["paddle.distributed.spawn", None]
+    "torch.multiprocessing.spawn": ["paddle.distributed.spawn", None],
+    "torch.distributed": ["x2paddle.torch2paddle", None],
+    "torch.distributed.init_process_group":
+    ["x2paddle.torch2paddle.init_process_group", None]
 }
 
 DTYPE_MAPPER = {
@@ -213,12 +221,14 @@ API_MAPPER = {
     "torch.bitwise_and": ["paddle.logical_and", LogicalMapper],
     "torch.bitwise_not": ["paddle.logical_not", LogicalMapper],
     "torch.split": ["paddle.split", SplitMapper],
+    "torch.hub.load_state_dict_from_url": ["paddle.load", HubLoadMapper],
 }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)
 API_MAPPER.update(NN_MAPPER)
 API_MAPPER.update(UTILS_MAPPER)
 API_MAPPER.update(DTYPE_MAPPER)
+API_MAPPER.update(DIST_MAPPER)
 API_MAPPER.update(TORCHVISION_MAPPER)
 API_MAPPER.update(AUTOGRAD_MAPPER)
 
