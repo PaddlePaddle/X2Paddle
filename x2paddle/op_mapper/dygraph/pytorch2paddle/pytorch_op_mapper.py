@@ -281,7 +281,7 @@ class PyTorchOpMapper(OpMapper):
             scope_name=scope_name,
             data=output_name)
         if self.input_examples is not None:
-            input_np = self.input_examples[input_ct].detach().numpy()
+            input_np = self.input_examples[input_ct].cpu().detach().numpy()
             self.inputs_info[
                 output_name] = [list(input_np.shape), str(input_np.dtype)]
         return [], [output_name]
