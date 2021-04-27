@@ -33,7 +33,7 @@ X2Paddle的架构设计着重考虑了对多深度学习框架的的支持以及
 - pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 ## 安装
-### 方式一：源码安装（推荐）
+### 方式一：源码安装
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -41,7 +41,7 @@ git checkout develop
 python setup.py install
 ```
 
-### 方式二：pip安装
+### 方式二：pip安装(推荐）
 我们会定期更新pip源上的x2paddle版本
 ```
 pip install x2paddle --index https://pypi.python.org/simple/
