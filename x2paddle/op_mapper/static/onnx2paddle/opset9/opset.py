@@ -94,43 +94,54 @@ class OpSet9():
     directly_map_ops = {
         'Ceil': ['paddle.ceil'],
         # reduce function
-        'ReduceMean': ['paddle.mean',
-                       dict(axes='axis', keepdims='keepdim'), 
-                       dict(axes=None, keepdims=1)],
-        'ReduceSum': ['paddle.sum', 
-                      dict(axes='axis', keepdims='keepdim'), 
-                      dict(axes=None, keepdims=1)],
-        'ReduceMin': ['paddle.min', 
-                      dict(axes='axis', keepdims='keepdim'), 
-                      dict(axes=None, keepdim=1)],
-        'ReduceMax': ['paddle.max', 
-                      dict(axes='axis', keepdims='keepdim'), 
-                      dict(axes=None, keepdim=1)],
-        'ReduceProd': ['paddle.prod', 
-                      dict(axes='axis', keepdims='keepdim'), 
-                      dict(axes=None, keepdim=1)],
+        'ReduceMean': [
+            'paddle.mean', dict(
+                axes='axis', keepdims='keepdim'), dict(
+                    axes=None, keepdims=1)
+        ],
+        'ReduceSum': [
+            'paddle.sum', dict(
+                axes='axis', keepdims='keepdim'), dict(
+                    axes=None, keepdims=1)
+        ],
+        'ReduceMin': [
+            'paddle.min', dict(
+                axes='axis', keepdims='keepdim'), dict(
+                    axes=None, keepdim=1)
+        ],
+        'ReduceMax': [
+            'paddle.max', dict(
+                axes='axis', keepdims='keepdim'), dict(
+                    axes=None, keepdim=1)
+        ],
+        'ReduceProd': [
+            'paddle.prod', dict(
+                axes='axis', keepdims='keepdim'), dict(
+                    axes=None, keepdim=1)
+        ],
         # active function
         'Relu': ['paddle.nn.functional.relu'],
-        'LeakyRelu': ['paddle.nn.functional.leaky_relu', 
-                      dict(alpha='negative_slope'), 
-                      dict(negative_slope=.01)],
-        'Elu': ['paddle.nn.functional.elu', 
-                dict(alpha='alpha'), 
-                dict(alpha=1.)],
-        'ThresholdedRelu': ['paddle.nn.functional.thresholded_relu', 
-                            dict(alpha='threshold'),
-                            dict(alpha=1.)],
+        'LeakyRelu': [
+            'paddle.nn.functional.leaky_relu', dict(alpha='negative_slope'),
+            dict(negative_slope=.01)
+        ],
+        'Elu':
+        ['paddle.nn.functional.elu', dict(alpha='alpha'), dict(alpha=1.)],
+        'ThresholdedRelu': [
+            'paddle.nn.functional.thresholded_relu', dict(alpha='threshold'),
+            dict(alpha=1.)
+        ],
         'Tanh': ['paddle.nn.functional.tanh'],
         'Sigmoid': ['paddle.nn.functional.sigmoid'],
         'Softsign': ['paddle.nn.functional.softsign'],
-        'Softplus': ['paddle.nn.functional.softplus', 
-                     dict(threshold='threshold'), 
-                     dict(threshold=float(sys.maxsize))],
+        'Softplus': [
+            'paddle.nn.functional.softplus', dict(threshold='threshold'),
+            dict(threshold=float(sys.maxsize))
+        ],
         'Exp': ['paddle.exp'],
         'Log': ['paddle.log'],
-        'Softmax': ['paddle.nn.functional.softmax', 
-                    dict(axis='axis'), 
-                    dict(axis=1)],
+        'Softmax':
+        ['paddle.nn.functional.softmax', dict(axis='axis'), dict(axis=1)],
         'Sqrt': ['paddle.sqrt'],
         'Floor': ['paddle.floor'],
         'Abs': ['paddle.abs'],
@@ -170,19 +181,16 @@ class OpSet9():
             inputs={"x": input.name},
             outputs=[node.name],
             **layer_attrs)
-            
+
     @print_mapping_info
     def elementwise_map(self, node):
         op_type = self.elementwise_ops[node.layer_type]
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        inputs_dict = {'x': val_x.name, 
-                       'y': val_y.name}
+        inputs_dict = {'x': val_x.name, 'y': val_y.name}
         self.paddle_graph.add_layer(
-            op_type, 
-            inputs=inputs_dict, 
-            outputs=[node.name])
-        
+            op_type, inputs=inputs_dict, outputs=[node.name])
+
     @print_mapping_info
     def place_holder(self, node):
         shape = node.out_shapes[0]
@@ -209,8 +217,8 @@ class OpSet9():
         shape = node.out_shapes[0]
         if hasattr(node.weight, "shape") and len(node.weight.shape) == 0:
             self.paddle_graph.add_layer(
-                "paddle.full", 
-                inputs={}, 
+                "paddle.full",
+                inputs={},
                 outputs=[node.name],
                 dtype=string(dtype),
                 shape=[1],
@@ -247,17 +255,19 @@ class OpSet9():
             if len(node.layer.input) == 2:
                 # opset 10
                 val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # TODO(syf): paddle.nn.functional.interpolate will support the length
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
-                attrs['scale_factor'] = self.params[val_scales.name].tolist()[2:]
+                #                 inputs['scale_factor'] = val_scales.name
+                attrs['scale_factor'] = self.params[val_scales.name].tolist()[
+                    2:]
             elif len(node.layer.input) == 3:
                 # opset 11
                 val_scales = self.graph.get_input_node(node, idx=2, copy=True)
-                # TODO(syf): paddle.nn.functional.interpolate will support the length  
+                # TODO(syf): paddle.nn.functional.interpolate will support the length
                 # which is the same as the rank of input.
-#                 inputs['scale_factor'] = val_scales.name
-                attrs['scale_factor'] = self.params[val_scales.name].tolist()[2:]
+                #                 inputs['scale_factor'] = val_scales.name
+                attrs['scale_factor'] = self.params[val_scales.name].tolist()[
+                    2:]
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
@@ -274,8 +284,13 @@ class OpSet9():
                     outputs=[var_hw],
                     dtype=string('int32'))
                 inputs['size'] = var_hw
-                attrs = {"align_corners": False,
-                         "mode": string(node.get_attr('mode', 'nearest'))}
+                attrs = {
+                    "align_corners": False,
+                    "mode": string(node.get_attr('mode', 'nearest'))
+                }
+                mode = node.get_attr('mode', 'nearest')
+                if mode == "linear":
+                    attrs["mode"] = string("bilinear")
                 self.paddle_graph.add_layer(
                     kernel="paddle.nn.functional.interpolate",
                     inputs=inputs,
@@ -294,9 +309,11 @@ class OpSet9():
             inputs['scale_factor'] = val_scales.name
 
         mode = node.get_attr('mode', 'nearest')
-        attrs.update({"align_corners": False,
-                 "mode": string(mode),
-                 "align_mode": 1})
+        attrs.update({
+            "align_corners": False,
+            "mode": string(mode),
+            "align_mode": 1
+        })
         val_x_shape = val_x.out_shapes[0]
         if mode == "linear" and len(val_x_shape) == 4:
             attrs["mode"] = string("bilinear")
@@ -306,7 +323,7 @@ class OpSet9():
             inputs=inputs,
             outputs=[node.name],
             **attrs)
-        
+
     @print_mapping_info
     def HardSigmoid(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -323,8 +340,8 @@ class OpSet9():
             inputs={"x": node.name + "_val"},
             outputs=[node.name],
             min=0.0,
-            max=1.0)  
-        
+            max=1.0)
+
     @print_mapping_info
     def Shape(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -333,10 +350,10 @@ class OpSet9():
             inputs={"input": val_x.name},
             outputs=[node.name])
         self.paddle_graph.add_layer(
-                'paddle.cast',
-                inputs={"x": node.name},
-                outputs=[node.name],
-                dtype=string('int64'))   
+            'paddle.cast',
+            inputs={"x": node.name},
+            outputs=[node.name],
+            dtype=string('int64'))
 
     @print_mapping_info
     def RoiAlign(self, node):
@@ -408,12 +425,14 @@ class OpSet9():
             paddings = []
             paddle_op = 'paddle.nn.functional.pad'
             if len(pads) == 10 and sum(pads) == 0:
-                pads = pads[0: 6]
+                pads = pads[0:6]
             if len(pads) in [2, 4, 6]:
                 if data_shape:
-                    assume_pad |= data_shape and 2 * (len(data_shape) - 2) == len(pads) # NCHW
+                    assume_pad |= data_shape and 2 * (len(data_shape) - 2
+                                                      ) == len(pads)  # NCHW
                 if output_shape:
-                    assume_pad |= output_shape and 2 * (len(output_shape) - 2) == len(pads)  # NCHW
+                    assume_pad |= output_shape and 2 * (len(output_shape) - 2
+                                                        ) == len(pads)  # NCHW
                 if assume_pad:
                     if len(pads) == 2:
                         data_format = "NCL"
@@ -421,7 +440,7 @@ class OpSet9():
                         data_format = "NCHW"
                     else:
                         data_format = "NCDHW"
-                    
+
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
                     paddings = np.flip(paddings, axis=0).flatten().tolist()
@@ -429,20 +448,26 @@ class OpSet9():
                     layer_attrs['data_format'] = string(data_format)
                 else:
                     if data_shape:
-                        assume_pad |= data_shape and 2 * len(data_shape) == len(pads) # NCHW
+                        assume_pad |= data_shape and 2 * len(data_shape) == len(
+                            pads)  # NCHW
                     if output_shape:
-                        assume_pad |= output_shape and 2 * len(output_shape) == len(pads)  # NCHW
+                        assume_pad |= output_shape and 2 * len(
+                            output_shape) == len(pads)  # NCHW
                     if assume_pad:
                         paddings = np.array(pads).reshape(
-                            (2, -1)).transpose().astype("int32").flatten().tolist()
+                            (2,
+                             -1)).transpose().astype("int32").flatten().tolist()
                         layer_attrs['pad'] = paddings
                     else:
-                        raise Exception("The padding value {} is wrong!".format(pads))
+                        raise Exception("The padding value {} is wrong!".format(
+                            pads))
             elif len(pads) == 8:
                 if data_shape:
-                    assume_pad |= data_shape and 2 * len(data_shape) == len(pads) # NCHW
+                    assume_pad |= data_shape and 2 * len(data_shape) == len(
+                        pads)  # NCHW
                 if output_shape:
-                    assume_pad |= output_shape and 2 * len(output_shape) == len(pads)  # NCHW
+                    assume_pad |= output_shape and 2 * len(output_shape) == len(
+                        pads)  # NCHW
                 if assume_pad:
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
@@ -454,11 +479,11 @@ class OpSet9():
                         layer_attrs['pad'] = paddings
                         paddle_op = "custom_layer:pad_all_dim4_one_input"
             else:
-                 raise Exception("The padding value {} is wrong!".format(pads))
+                raise Exception("The padding value {} is wrong!".format(pads))
             self.paddle_graph.add_layer(
-                paddle_op, 
-                inputs={'x': val_x.name}, 
-                outputs=layer_outputs, 
+                paddle_op,
+                inputs={'x': val_x.name},
+                outputs=layer_outputs,
                 **layer_attrs)
             if not op_independent:
                 return node.name + '_paded'
@@ -466,9 +491,11 @@ class OpSet9():
             pads_len = val_pad.out_shapes[0][0]
             if pads_len in [2, 4, 6]:
                 if data_shape:
-                    assume_pad |= data_shape and 2 * (len(data_shape) - 2) == pads_len # NCHW
+                    assume_pad |= data_shape and 2 * (len(data_shape) - 2
+                                                      ) == pads_len  # NCHW
                 if output_shape:
-                    assume_pad |= output_shape and 2 * (len(output_shape) - 2) == pads_len  # NCHW 
+                    assume_pad |= output_shape and 2 * (len(output_shape) - 2
+                                                        ) == pads_len  # NCHW
                 if assume_pad:
                     if pads_len == 2:
                         data_format = "NCL"
@@ -477,42 +504,49 @@ class OpSet9():
                     else:
                         data_format = "NCDHW"
                     self.paddle_graph.add_layer(
-                        "custom_layer:pad_with_two_input", 
-                        inputs={'x': val_x.name, 'pad': val_pad.name}, 
+                        "custom_layer:pad_with_two_input",
+                        inputs={'x': val_x.name,
+                                'pad': val_pad.name},
                         outputs=layer_outputs,
                         value=value,
                         mode=string(mode),
                         data_format=string(data_format))
                 else:
                     if data_shape:
-                        assume_pad |= data_shape and 2 * len(data_shape) == pads_len # NCHW
+                        assume_pad |= data_shape and 2 * len(
+                            data_shape) == pads_len  # NCHW
                     if output_shape:
-                        assume_pad |= output_shape and 2 * len(output_shape) == pads_len  # NCHW
+                        assume_pad |= output_shape and 2 * len(
+                            output_shape) == pads_len  # NCHW
                     if assume_pad:
                         if pads_len == 4:
                             self.paddle_graph.add_layer(
-                                "custom_layer:pad_all_dim2", 
-                                inputs={'x': val_x.name, 'pad': val_pad.name}, 
-                                outputs=layer_outputs, 
+                                "custom_layer:pad_all_dim2",
+                                inputs={'x': val_x.name,
+                                        'pad': val_pad.name},
+                                outputs=layer_outputs,
                                 value=value,
                                 mode=string(mode))
                         else:
                             raise Exception("The padding value is wrong!")
             elif pads_len == 8:
                 if data_shape:
-                    assume_pad |= data_shape and 2 * len(data_shape) == pads_len # NCHW
+                    assume_pad |= data_shape and 2 * len(
+                        data_shape) == pads_len  # NCHW
                 if output_shape:
-                    assume_pad |= output_shape and 2 * len(output_shape) == pads_len  # NCHW
+                    assume_pad |= output_shape and 2 * len(
+                        output_shape) == pads_len  # NCHW
                 if assume_pad:
                     self.paddle_graph.add_layer(
-                        "custom_layer:pad_all_dim4", 
-                        inputs={'x': val_x.name, 'pad': val_pad.name}, 
-                        outputs=layer_outputs, 
+                        "custom_layer:pad_all_dim4",
+                        inputs={'x': val_x.name,
+                                'pad': val_pad.name},
+                        outputs=layer_outputs,
                         value=value,
                         mode=string(mode))
             else:
                 print(pads_len)
-                raise Exception("The padding value is wrong!")   
+                raise Exception("The padding value is wrong!")
             if not op_independent:
                 return node.name + '_paded'
 
@@ -530,8 +564,8 @@ class OpSet9():
                     shape=[1])
         else:
             self.paddle_graph.add_layer(
-                'paddle.unsqueeze', 
-                inputs={"x": val_x.name}, 
+                'paddle.unsqueeze',
+                inputs={"x": val_x.name},
                 outputs=[node.name],
                 **layer_attrs)
 
@@ -542,9 +576,9 @@ class OpSet9():
         lambd = node.get_attr('lambd')
         assert bias == 0.0, 'not support bias!=0'
         self.paddle_graph.add_layer(
-            'paddle.nn.functional.hardshrink', 
-            inputs={"x": val_x.name}, 
-            outputs=[node.name], 
+            'paddle.nn.functional.hardshrink',
+            inputs={"x": val_x.name},
+            outputs=[node.name],
             threshold=lambd)
 
     @print_mapping_info
@@ -571,8 +605,8 @@ class OpSet9():
             value = value.tolist()
             value = value[0]
             self.paddle_graph.add_layer(
-                "paddle.full", 
-                inputs={}, 
+                "paddle.full",
+                inputs={},
                 outputs=[node.name],
                 dtype=string(dtype),
                 shape=[1],
@@ -603,11 +637,9 @@ class OpSet9():
         val_scale = self.graph.get_input_node(node, idx=1, copy=True)
         val_b = self.graph.get_input_node(node, idx=2, copy=True)
         epsilon = node.get_attr('epsilon', 1e-5)
-        layer_attrs = {
-            'eps': epsilon,
-        }
+        layer_attrs = {'eps': epsilon, }
         dim = len(val_x.out_shapes[0])
-        if dim ==2 :
+        if dim == 2:
             layer_attrs["data_format"] = string("NC")
         elif dim == 3:
             layer_attrs["data_format"] = string("NCL")
@@ -616,13 +648,17 @@ class OpSet9():
         elif dim == 5:
             layer_attrs["data_format"] = string("NCDHW")
         else:
-            raise Exception("The paddle only support 2D, 3D, 4D or 5D input in InstanceNormalization.")
+            raise Exception(
+                "The paddle only support 2D, 3D, 4D or 5D input in InstanceNormalization."
+            )
         self.paddle_graph.add_layer(
-            "paddle.nn.functional.instance_norm", 
-            inputs={"x": val_x.name,
-                    "weight": val_scale.name,
-                    "bias": val_b.name}, 
-            outputs=[node.name], 
+            "paddle.nn.functional.instance_norm",
+            inputs={
+                "x": val_x.name,
+                "weight": val_scale.name,
+                "bias": val_b.name
+            },
+            outputs=[node.name],
             **layer_attrs)
 
     @print_mapping_info
@@ -637,16 +673,10 @@ class OpSet9():
             'fill_value': 1
         }
         self.paddle_graph.add_layer(
-            'paddle.full',
-            inputs={},
-            outputs=[name_ones],
-            **attr_ones)
-        inputs_dict = {'x': name_ones, 
-                       'y': val_x.name}
+            'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
+        inputs_dict = {'x': name_ones, 'y': val_x.name}
         self.paddle_graph.add_layer(
-            'paddle.multiply',
-            inputs=inputs_dict,
-            outputs=[node.name])
+            'paddle.multiply', inputs=inputs_dict, outputs=[node.name])
 
     @print_mapping_info
     def Gather(self, node):
@@ -700,9 +730,9 @@ class OpSet9():
             for i in range(len(perm)):
                 new_perm[perm[i]] = i
             self.paddle_graph.add_layer(
-                'paddle.transpose', 
-                inputs={"x": node.name}, 
-                outputs=[node.name], 
+                'paddle.transpose',
+                inputs={"x": node.name},
+                outputs=[node.name],
                 perm=new_perm)
             if len(indices_shape) < 1:
                 self.paddle_graph.add_layer(
@@ -804,9 +834,11 @@ class OpSet9():
         if len(indices.out_shapes[0]) == 1:
             self.paddle_graph.add_layer(
                 'paddle.scatter',
-                inputs={'x': val_x.name,
-                        'index': indices.name,
-                        'updates': updates.name},
+                inputs={
+                    'x': val_x.name,
+                    'index': indices.name,
+                    'updates': updates.name
+                },
                 outputs=[node.name])
         else:
             input_inner_indices = node.name + '_input_inner_indices'
@@ -881,9 +913,11 @@ class OpSet9():
         val_limit = self.graph.get_input_node(node, idx=1, copy=True)
         val_delta = self.graph.get_input_node(node, idx=2, copy=True)
         dtype = val_start.dtype
-        inputs = {'start': val_start.name, 
-                  'end': val_limit.name, 
-                  'step': val_delta.name}
+        inputs = {
+            'start': val_start.name,
+            'end': val_limit.name,
+            'step': val_delta.name
+        }
         self.paddle_graph.add_layer(
             'paddle.arange',
             inputs=inputs,
@@ -913,7 +947,7 @@ class OpSet9():
             if len(node.inputs) > 4:
                 steps = self.graph.get_input_node(node, idx=4, copy=True)
                 steps = _const_weight_or_none(steps).tolist()
-            
+
             layer_attrs = {
                 "axes": axes,
                 "starts": starts.name,
@@ -927,7 +961,8 @@ class OpSet9():
                 #        ends_value[idx] = 2**31 - 1
                 #print(val_x.out_shapes)
                 for idx in range(len(ends_value)):
-                    if starts_value[idx] >= val_x.out_shapes[0][axes[idx]] and val_x.out_shapes[0][axes[idx]] > 0:
+                    if starts_value[idx] >= val_x.out_shapes[0][axes[
+                            idx]] and val_x.out_shapes[0][axes[idx]] > 0:
                         starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
                         ends_value[idx] = val_x.out_shapes[0][axes[idx]]
                     elif ends_value[idx] > 2**31 - 1:
@@ -965,19 +1000,18 @@ class OpSet9():
                     ends[idx] = 2**31 - 1
             layer_attrs = {"axes": axes, "starts": starts, "ends": ends}
 
-
         if steps is not None:
             layer_attrs['strides'] = steps
             self.paddle_graph.add_layer(
-                'paddle.strided_slice', 
-                inputs={"x": val_x.name}, 
-                outputs=[node.name], 
+                'paddle.strided_slice',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
                 **layer_attrs)
         else:
             self.paddle_graph.add_layer(
-                'paddle.slice', 
-                inputs={"input": val_x.name}, 
-                outputs=[node.name],  
+                'paddle.slice',
+                inputs={"input": val_x.name},
+                outputs=[node.name],
                 **layer_attrs)
 
     @print_mapping_info
@@ -992,13 +1026,10 @@ class OpSet9():
                                  'this is not supported')
         if len(value) == 1:
             value = value[0]
-            layer_attrs = {
-                'dtype': string(dtype),
-                'fill_value': value
-            }
+            layer_attrs = {'dtype': string(dtype), 'fill_value': value}
             self.paddle_graph.add_layer(
-                "paddle.full", 
-                inputs={'shape': val_shape.name}, 
+                "paddle.full",
+                inputs={'shape': val_shape.name},
                 outputs=[node.name],
                 **layer_attrs)
 
@@ -1015,9 +1046,9 @@ class OpSet9():
                 'min': min_value,
             }
             self.paddle_graph.add_layer(
-                'paddle.clip', 
-                inputs={"x": val_x.name}, 
-                outputs=[node.name], 
+                'paddle.clip',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
                 **layer_attrs)
         else:
             min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
@@ -1031,9 +1062,9 @@ class OpSet9():
         if max_value is not None and min_value is not None:
             layer_attrs = {'max': max_value, 'min': min_value}
             self.paddle_graph.add_layer(
-                'paddle.clip', 
-                inputs={"x": val_x.name}, 
-                outputs=[node.name], 
+                'paddle.clip',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
                 **layer_attrs)
         else:
             raise
@@ -1058,9 +1089,9 @@ class OpSet9():
         else:
             outputs_list.append(node.name)
         self.paddle_graph.add_layer(
-            'paddle.split', 
-            inputs={"x": val_x.name}, 
-            outputs=outputs_list, 
+            'paddle.split',
+            inputs={"x": val_x.name},
+            outputs=outputs_list,
             **layer_attrs)
 
     @print_mapping_info
@@ -1117,17 +1148,18 @@ class OpSet9():
         if output_dtype:
             assert dtype == output_dtype, 'dtype of to unmatches output'
         self.paddle_graph.add_layer(
-            'paddle.cast', 
-            inputs={'x': val_input.name}, 
-            outputs=[node.name], 
+            'paddle.cast',
+            inputs={'x': val_input.name},
+            outputs=[node.name],
             dtype=string(dtype))
 
     @print_mapping_info
     def Not(self, node):
         val_input = self.graph.get_input_node(node, idx=0, copy=True)
-        self.paddle_graph.add_layer('paddle.logical_not', 
-                                    inputs={'x': val_input.name}, 
-                                    outputs=[node.name])
+        self.paddle_graph.add_layer(
+            'paddle.logical_not',
+            inputs={'x': val_input.name},
+            outputs=[node.name])
 
     @print_mapping_info
     def AveragePool(self, node):
@@ -1162,9 +1194,9 @@ class OpSet9():
             "name": string(node.name)
         }
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs={'x': val_x if isinstance(val_x, str) else val_x.name}, 
-            outputs=[node.name], 
+            paddle_op,
+            inputs={'x': val_x if isinstance(val_x, str) else val_x.name},
+            outputs=[node.name],
             **layer_attrs)
 
     @print_mapping_info
@@ -1179,9 +1211,9 @@ class OpSet9():
             assert 'Unspported situation happened, please create issue on https://github.com/PaddlePaddle/X2Paddle/issues.'
         axis = node.get_attr('axis')
         self.paddle_graph.add_layer(
-            'paddle.concat', 
-            inputs={"x": inputs_list}, 
-            outputs=[node.name], 
+            'paddle.concat',
+            inputs={"x": inputs_list},
+            outputs=[node.name],
             axis=axis)
 
     @print_mapping_info
@@ -1199,8 +1231,8 @@ class OpSet9():
             for s in output_shape[axis:]:
                 shape_list[1] *= s
         self.paddle_graph.add_layer(
-            'paddle.reshape', 
-            inputs={"x": val_x.name}, 
+            'paddle.reshape',
+            inputs={"x": val_x.name},
             outputs=[node.name],
             shape=shape_list)
 
@@ -1215,8 +1247,7 @@ class OpSet9():
         trans_a = bool(node.get_attr('transA', 0))  # optional
         trans_b = bool(node.get_attr('transB', 0))  # optional
         val_mm = node.name + '_mm'
-        matmul_inputs = {"x": val_a.name, 
-                         "y": val_b.name}
+        matmul_inputs = {"x": val_a.name, "y": val_b.name}
         attr_matmul = {
             "transpose_x": trans_a,
             "transpose_y": trans_b,
@@ -1227,19 +1258,13 @@ class OpSet9():
             outputs=[val_mm],
             **attr_matmul)
         self.paddle_graph.add_layer(
-            "paddle.scale", 
-            inputs={"x": val_mm}, 
-            outputs=[val_mm],
-            scale=alpha)
+            "paddle.scale", inputs={"x": val_mm}, outputs=[val_mm], scale=alpha)
 
         if beta != 0:
             if beta == 1.:
-                add_inputs = {"x": val_mm, 
-                              "y": val_c.name}
+                add_inputs = {"x": val_mm, "y": val_c.name}
                 self.paddle_graph.add_layer(
-                    "paddle.add",
-                    inputs=add_inputs,
-                    outputs=[node.name])
+                    "paddle.add", inputs=add_inputs, outputs=[node.name])
             else:
                 var_beta = node.name + '_beta'
                 self.paddle_graph.add_layer(
@@ -1249,9 +1274,7 @@ class OpSet9():
                     scale=beta)
                 add_inputs = {"x": val_mm, "y": var_beta}
                 self.paddle_graph.add_layer(
-                    "paddle.add",
-                    inputs=add_inputs,
-                    outputs=[node.name])
+                    "paddle.add", inputs=add_inputs, outputs=[node.name])
 
     @print_mapping_info
     def Sum(self, node):
@@ -1262,9 +1285,8 @@ class OpSet9():
             "y": self.graph.get_input_node(
                 node, idx=1, copy=True).name,
         }
-        self.paddle_graph.add_layer("paddle.add", 
-                                    inputs=inputs_dict, 
-                                    outputs=[node.name])
+        self.paddle_graph.add_layer(
+            "paddle.add", inputs=inputs_dict, outputs=[node.name])
 
         for idx, ipt in enumerate(val_inps[2:]):
             y = self.graph.get_input_node(node, idx=idx, copy=True)
@@ -1273,9 +1295,7 @@ class OpSet9():
                 "y": y.name,
             }
             self.paddle_graph.add_layer(
-                "paddle.add", 
-                inputs=inputs_dict, 
-                outputs=[node.name])
+                "paddle.add", inputs=inputs_dict, outputs=[node.name])
 
     @print_mapping_info
     def MatMul(self, node):
@@ -1283,8 +1303,7 @@ class OpSet9():
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
         x_shape = val_x.out_shapes[0]
         y_shape = val_y.out_shapes[0]
-        inputs_dict = {"x": val_x.name, 
-                       "y": val_y.name}
+        inputs_dict = {"x": val_x.name, "y": val_y.name}
         if y_shape[0] == 1 and x_shape[-1] != 1 and x_shape[0] != 1:
             y_squeeze = val_y.name + '_squeeze'
             self.paddle_graph.add_layer(
@@ -1294,15 +1313,11 @@ class OpSet9():
                 axis=[0])
             inputs_dict['y'] = y_squeeze
             self.paddle_graph.add_layer(
-                "paddle.matmul", 
-                inputs=inputs_dict, 
-                outputs=[node.name])
+                "paddle.matmul", inputs=inputs_dict, outputs=[node.name])
         else:
             self.paddle_graph.add_layer(
-                "paddle.matmul", 
-                inputs=inputs_dict, 
-                outputs=[node.name])
-            
+                "paddle.matmul", inputs=inputs_dict, outputs=[node.name])
+
     @print_mapping_info
     def BatchNormalization(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1321,15 +1336,17 @@ class OpSet9():
             "epsilon": epsilon,
         }
         self.paddle_graph.add_layer(
-            "paddle.nn.functional.batch_norm", 
-            inputs={"x": val_x.name,
-                    "weight": val_scale.name,
-                    "bias": val_b.name,
-                    "running_mean": val_mean.name,
-                    "running_var": val_var.name}, 
-            outputs=[node.name], 
+            "paddle.nn.functional.batch_norm",
+            inputs={
+                "x": val_x.name,
+                "weight": val_scale.name,
+                "bias": val_b.name,
+                "running_mean": val_mean.name,
+                "running_var": val_var.name
+            },
+            outputs=[node.name],
             **layer_attrs)
-        
+
     @print_mapping_info
     def Transpose(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1338,9 +1355,9 @@ class OpSet9():
         perm_default.reverse()
         perm = node.get_attr('perm', perm_default)
         self.paddle_graph.add_layer(
-            "paddle.transpose", 
+            "paddle.transpose",
             inputs={"x": val_x.name},
-            outputs=[node.name], 
+            outputs=[node.name],
             perm=perm)
 
     @print_mapping_info
@@ -1355,23 +1372,23 @@ class OpSet9():
 
         if mode == "element":
             self.paddle_graph.add_layer(
-                "paddle.static.nn.prelu", 
+                "paddle.static.nn.prelu",
                 inputs={"x": val_x.name,
-                        "param_attr": val_slope.name}, 
+                        "param_attr": val_slope.name},
                 outputs=[node.name],
                 mode="element")
         else:
             if mode == 'channel':
                 if len(shape_slope) > 1:
                     self.paddle_graph.add_layer(
-                        "paddle.reshape", 
-                        inputs={"x": val_slope.name}, 
+                        "paddle.reshape",
+                        inputs={"x": val_slope.name},
                         outputs=[val_slope.name],
                         shape=[shape_slope[0]])
             self.paddle_graph.add_layer(
-                "paddle.nn.functional.prelu", 
+                "paddle.nn.functional.prelu",
                 inputs={"x": val_x.name,
-                        "weight": val_slope.name}, 
+                        "weight": val_slope.name},
                 outputs=[node.name])
 
     @print_mapping_info
@@ -1386,9 +1403,9 @@ class OpSet9():
                 dtype=string(val_x.dtype))
         else:
             self.paddle_graph.add_layer(
-                "paddle.squeeze", 
-                inputs={"x": val_x.name}, 
-                outputs=[node.name], 
+                "paddle.squeeze",
+                inputs={"x": val_x.name},
+                outputs=[node.name],
                 axis=axes)
 
     @print_mapping_info
@@ -1460,8 +1477,8 @@ class OpSet9():
         val_x_dim = len(val_x.out_shapes[0])
         if val_x_dim == 1:
             self.paddle_graph.add_layer(
-                "paddle.nonzero", 
-                inputs={"x": val_x.name}, 
+                "paddle.nonzero",
+                inputs={"x": val_x.name},
                 outputs=[val_x.name])
             self.paddle_graph.add_layer(
                 "paddle.transpose",
@@ -1470,28 +1487,24 @@ class OpSet9():
                 perm=[1, 0])
         if val_x_dim > 1:
             self.paddle_graph.add_layer(
-                "paddle.nonzero", 
-                inputs={"x": val_x.name}, 
+                "paddle.nonzero",
+                inputs={"x": val_x.name},
                 outputs=[val_x.name])
             self.paddle_graph.add_layer(
                 "paddle.split",
-                inputs={"x": val_x.name}, 
+                inputs={"x": val_x.name},
                 outputs=[val_x.name],
                 num_or_sections=1,
                 axis=val_x_dim)
             self.paddle_graph.add_layer(
-                "paddle.concat", 
-                inputs={"x": val_x.name}, 
-                outputs=[node.name])
+                "paddle.concat", inputs={"x": val_x.name}, outputs=[node.name])
 
     @print_mapping_info
     def Identity(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
-            "paddle.assign", 
-            inputs={"x": val_x.name}, 
-            outputs=[node.name])
-        
+            "paddle.assign", inputs={"x": val_x.name}, outputs=[node.name])
+
     @print_mapping_info
     def Tile(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1516,10 +1529,10 @@ class OpSet9():
             "name": string(node.name),
         }
         self.paddle_graph.add_layer(
-            "paddle.tile", 
-            inputs={"x": val_x.name}, 
-                    outputs=[node.name], 
-                    repeat_times=repeats)
+            "paddle.tile",
+            inputs={"x": val_x.name},
+            outputs=[node.name],
+            repeat_times=repeats)
 
     @print_mapping_info
     def MaxPool(self, node):
@@ -1546,7 +1559,7 @@ class OpSet9():
             pad_w = _get_same_padding(input_shape[3], kernel_shape[1],
                                       strides[1])
             paddings = pad_h + pad_w
-            
+
         layer_attrs = {
             "kernel_size": kernel_shape,
             "stride": strides,
@@ -1554,9 +1567,9 @@ class OpSet9():
             "ceil_mode": ceil_mode,
         }
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs={'x': val_x if isinstance(val_x, str) else val_x.name}, 
-            outputs=[node.name], 
+            paddle_op,
+            inputs={'x': val_x if isinstance(val_x, str) else val_x.name},
+            outputs=[node.name],
             **layer_attrs)
 
     @print_mapping_info
@@ -1573,11 +1586,11 @@ class OpSet9():
         assert 1 <= poolnd <= 3, 'only adaptive_max_pool1d, adaptive_max_pool2d and adaptive_max_pool3d are supported'
         output_shape = node.out_shapes[0]
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs={'x': val_x.name}, 
-            outputs=[node.name], 
+            paddle_op,
+            inputs={'x': val_x.name},
+            outputs=[node.name],
             output_size=output_shape[2:])
-        
+
     @print_mapping_info
     def GlobalAveragePool(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1592,9 +1605,9 @@ class OpSet9():
         assert 1 <= poolnd <= 3, 'only Pool1D, Pool2D and Pool3D are supported'
         output_shape = node.out_shapes[0]
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs={'x': val_x.name}, 
-            outputs=[node.name], 
+            paddle_op,
+            inputs={'x': val_x.name},
+            outputs=[node.name],
             output_size=output_shape[2:])
 
     @print_mapping_info
@@ -1640,20 +1653,18 @@ class OpSet9():
         }
         if has_bias:
             layer_inputs["bias"] = val_b.name
-        if reduce(lambda x,y:x*y, input_shape) in [1, -1] and 1 not in input_shape:
+        if reduce(lambda x, y: x * y,
+                  input_shape) in [1, -1] and 1 not in input_shape:
             input_shape[1] = num_in_channels * num_groups
             input_shape[0] = 0
             input_shape[2] = 0
             self.paddle_graph.add_layer(
-                "paddle.reshape", 
-                inputs={"x": layer_inputs["x"]}, 
-                outputs=[layer_inputs["x"]], 
+                "paddle.reshape",
+                inputs={"x": layer_inputs["x"]},
+                outputs=[layer_inputs["x"]],
                 shape=input_shape)
         self.paddle_graph.add_layer(
-            paddle_op, 
-            inputs=layer_inputs, 
-            outputs=[node.name], 
-            **layer_attrs)
+            paddle_op, inputs=layer_inputs, outputs=[node.name], **layer_attrs)
 
     @print_mapping_info
     def ConvTranspose(self, node):
@@ -1688,14 +1699,14 @@ class OpSet9():
         output_size[1] = (val_x.out_shapes[0][3] - 1
                           ) * strides[1] - 2 * paddings[1] + dilations[1] * (
                               kernel_shape[1] - 1) + 1 + out_padding[1]
-        layer_inputs = {'x': val_x.name,
-                       "weight": val_w.name}
+        layer_inputs = {'x': val_x.name, "weight": val_w.name}
         layer_attrs = {
             "stride": strides,
             "dilation": dilations,
             "padding": paddings,
             "groups": num_groups,
-            "output_size": node.out_shapes[0][2:]}
+            "output_size": node.out_shapes[0][2:]
+        }
         if val_b is not None:
             layer_inputs["bias"] = val_b.name
         self.paddle_graph.add_layer(
@@ -1703,54 +1714,47 @@ class OpSet9():
             inputs=layer_inputs,
             outputs=[node.name],
             **layer_attrs)
-        
+
     @print_mapping_info
     def ArgMax(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axis = node.get_attr('axis')
         keepdims = False if node.get_attr('keepdims') == 0 else True
-        layer_attrs = {'axis': axis,
-                      'keepdim': keepdims}
+        layer_attrs = {'axis': axis, 'keepdim': keepdims}
         self.paddle_graph.add_layer(
-            'paddle.argmax', 
-            inputs={"x": val_x.name}, 
+            'paddle.argmax',
+            inputs={"x": val_x.name},
             outputs=[node.name],
             **layer_attrs)
-        
+
     @print_mapping_info
     def Size(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
-            "paddle.shape", 
-            inputs={"input": val_x.name}, 
-            outputs=[node.name])
+            "paddle.shape", inputs={"input": val_x.name}, outputs=[node.name])
         self.paddle_graph.add_layer(
             'paddle.cast',
             inputs={"x": node.name},
             outputs=[node.name],
-            dtype=string('int64'))  
+            dtype=string('int64'))
         self.paddle_graph.add_layer(
-            "paddle.prod",
-            inputs={"x": node.name},
-            outputs=[node.name])
+            "paddle.prod", inputs={"x": node.name}, outputs=[node.name])
 
     @print_mapping_info
     def Sign(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         if node.dtype not in ["float16", "float32", "float64"]:
             self.paddle_graph.add_layer(
-                "paddle.cast", 
-                inputs={"x": val_x.name}, 
+                "paddle.cast",
+                inputs={"x": val_x.name},
                 outputs=[val_x.name],
                 dtype=string("float32"))
         self.paddle_graph.add_layer(
-            "paddle.sign", 
-            inputs={"x": val_x.name}, 
-            outputs=[node.name])
+            "paddle.sign", inputs={"x": val_x.name}, outputs=[node.name])
         if node.dtype not in ["float16", "float32", "float64"]:
             self.paddle_graph.add_layer(
-                "paddle.cast", 
-                inputs={"x": node.name}, 
+                "paddle.cast",
+                inputs={"x": node.name},
                 outputs=[node.name],
                 dtype=string(node.dtype))
 
@@ -1761,10 +1765,12 @@ class OpSet9():
         values = self.graph.get_input_node(node, idx=2, copy=True)
         axis = node.get_attr('axis', -1)
         self.paddle_graph.add_layer(
-            "custom_layer:one_hot", 
-            inputs={"indices": indices.name,
-                    "depth": depth.name,
-                    "values": values.name}, 
+            "custom_layer:one_hot",
+            inputs={
+                "indices": indices.name,
+                "depth": depth.name,
+                "values": values.name
+            },
             outputs=[node.name],
             axis=axis)
 
@@ -1772,9 +1778,7 @@ class OpSet9():
     def Reciprocal(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         self.paddle_graph.add_layer(
-            "paddle.reciprocal", 
-            inputs={"x": val_x.name}, 
-            outputs=[node.name])
+            "paddle.reciprocal", inputs={"x": val_x.name}, outputs=[node.name])
 
     @print_mapping_info
     def TopK(self, node):
@@ -1782,15 +1786,20 @@ class OpSet9():
         val_k = self.graph.get_input_node(node, idx=1, copy=True)
         layer_attrs = dict()
         layer_attrs["axis"] = node.get_attr('axis', -1)
-        layer_attrs["largest"] = True if node.get_attr('largest', 1) == 1 else False
-        layer_attrs["sorted"] = True if node.get_attr('sorted', 1) == 1 else False
+        layer_attrs["largest"] = True if node.get_attr('largest',
+                                                       1) == 1 else False
+        layer_attrs["sorted"] = True if node.get_attr('sorted',
+                                                      1) == 1 else False
         self.paddle_graph.add_layer(
-            "paddle.topk", 
+            "paddle.topk",
             inputs={"x": val_x.name,
-                    "k": val_k.name}, 
-            outputs=["{}_p{}".format(node.layer_name, 0), "{}_p{}".format(node.layer_name, 1)],
+                    "k": val_k.name},
+            outputs=[
+                "{}_p{}".format(node.layer_name, 0),
+                "{}_p{}".format(node.layer_name, 1)
+            ],
             **layer_attrs)
-        
+
     @print_mapping_info
     def LRN(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
@@ -1799,16 +1808,11 @@ class OpSet9():
         beta = node.get_attr('beta', 0.75)
         bias = node.get_attr('bias', 1.0)
         size = node.get_attr('size')
-        layer_attrs = {
-            'size': size,
-            'alpha': alpha,
-            'beta': beta,
-            'k': bias
-        }
+        layer_attrs = {'size': size, 'alpha': alpha, 'beta': beta, 'k': bias}
         self.paddle_graph.add_layer(
-            "custom_layer:local_response_norm", 
-            inputs={"x": val_x.name}, 
-            outputs=[node.name], 
+            "custom_layer:local_response_norm",
+            inputs={"x": val_x.name},
+            outputs=[node.name],
             **layer_attrs)
 
     @print_mapping_info
@@ -1823,37 +1827,30 @@ class OpSet9():
                 'paddle.reshape',
                 inputs={"x": val_x.name},
                 outputs=[node.name],
-                shape=[b, blocksize, blocksize, c // (blocksize**2), h, w]
-                )
+                shape=[b, blocksize, blocksize, c // (blocksize**2), h, w])
             self.paddle_graph.add_layer(
                 'paddle.transpose',
                 inputs={"x": node.name},
                 outputs=[node.name],
-                perm=[0, 3, 4, 1, 5, 2]
-                )
+                perm=[0, 3, 4, 1, 5, 2])
             self.paddle_graph.add_layer(
                 'paddle.reshape',
                 inputs={"x": node.name},
                 outputs=[node.name],
-                shape=[b, c // (blocksize**2), h * blocksize, w * blocksize]
-                )
+                shape=[b, c // (blocksize**2), h * blocksize, w * blocksize])
         else:
             self.paddle_graph.add_layer(
                 'paddle.reshape',
                 inputs={"x": val_x.name},
                 outputs=[node.name],
-                shape=[b, c // (blocksize ** 2), blocksize, blocksize, h, w]
-                )
+                shape=[b, c // (blocksize**2), blocksize, blocksize, h, w])
             self.paddle_graph.add_layer(
                 'paddle.transpose',
                 inputs={"x": node.name},
                 outputs=[node.name],
-                perm=[0, 1, 4, 2, 5, 3]
-                )
+                perm=[0, 1, 4, 2, 5, 3])
             self.paddle_graph.add_layer(
                 'paddle.reshape',
                 inputs={"x": node.name},
                 outputs=[node.name],
-                shape=[b, c // (blocksize ** 2), h * blocksize, w * blocksize]
-                )
-                
+                shape=[b, c // (blocksize**2), h * blocksize, w * blocksize])
