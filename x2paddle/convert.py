@@ -41,7 +41,6 @@ def arg_parser():
     parser.add_argument(
         "--save_dir",
         "-s",
-        required=True,
         type=_text_type,
         default=None,
         help="path to save translated model")
@@ -220,6 +219,8 @@ def main():
         print("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".format(
             x2paddle.__version__))
         return
+
+    assert args.save_dir is not None, "--save_dir is not defined"
 
     try:
         import platform
