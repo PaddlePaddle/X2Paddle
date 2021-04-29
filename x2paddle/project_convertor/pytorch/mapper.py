@@ -36,6 +36,8 @@ NN_MAPPER = {
     "torch.nn.utils": ["paddle.nn.utils", None],
     "torch.nn.utils.clip_grad_value_":
     ["x2paddle.torch2paddle.clip_grad_value_", None],
+    "torch.nn.utils.spectral_norm":
+    ["x2paddle.torch2paddle.spectral_norm", None],
     "torch.nn.Parameter": ["paddle.create_parameter", CreateParamModuleMapper],
     "torch.nn.parallel": ["paddle", None],
     "torch.nn.DataParallel": ["paddle.DataParallel", DataParallelModuleMapper],
@@ -52,12 +54,14 @@ NN_MAPPER = {
     "torch.nn.BatchNorm1d": ["paddle.nn.BatchNorm1D", BatchNormModuleMapper],
     "torch.nn.BatchNorm2d": ["paddle.nn.BatchNorm2D", BatchNormModuleMapper],
     "torch.nn.BatchNorm3d": ["paddle.nn.BatchNorm3D", BatchNormModuleMapper],
+    "torch.nn.ConstantPad2d": ["paddle.nn.Pad2D", PadModuleMapper],
     "torch.nn.Conv1d": ["paddle.nn.Conv1D", ConvModuleMapper],
     "torch.nn.Conv2d": ["paddle.nn.Conv2D", ConvModuleMapper],
     "torch.nn.Conv3d": ["paddle.nn.Conv3D", ConvModuleMapper],
     "torch.nn.ConvTranspose2d":
     ["x2paddle.torch2paddle.Conv2DTranspose", None],
     "torch.nn.Dropout": ["paddle.nn.Dropout", DropoutModuleMapper],
+    "torch.nn.Dropout2d": ["paddle.nn.Dropout", DropoutModuleMapper],
     "torch.nn.Embedding": ["paddle.nn.Embedding", EmbeddingModuleMapper],
     "torch.nn.InstanceNorm2d":
     ["paddle.nn.InstanceNorm2D", BatchNormModuleMapper],
@@ -66,18 +70,26 @@ NN_MAPPER = {
     "torch.nn.MaxPool1d": ["paddle.nn.MaxPool1D", MaxPoolModuleMapper],
     "torch.nn.MaxPool2d": ["paddle.nn.MaxPool2D", MaxPoolModuleMapper],
     "torch.nn.MaxPool3d": ["paddle.nn.MaxPool3D", MaxPoolModuleMapper],
+    "torch.nn.MaxUnpool2d": ["x2paddle.torch2paddle.MaxUnpool2d", None],
+    "torch.nn.ReflectionPad2d": ["paddle.nn.Pad2D", PadModuleMapper],
+    "torch.nn.ReplicationPad2d": ["paddle.nn.Pad2D", PadModuleMapper],
+    "torch.nn.PReLU": ["paddle.nn.PReLU", None],
     "torch.nn.ReLU": ["paddle.nn.ReLU", ReLUModuleMapper],
     "torch.nn.ReLU6": ["paddle.nn.ReLU6", ReLUModuleMapper],
     "torch.nn.Sigmoid": ["paddle.nn.Sigmoid", None],
     "torch.nn.Softmax": ["paddle.nn.Softmax", SoftmaxModuleMapper],
+    "torch.nn.SyncBatchNorm": ["paddle.nn.SyncBatchNorm", BatchNormModuleMapper],
     "torch.nn.Tanh": ["paddle.nn.Tanh", None],
     "torch.nn.Upsample": ["paddle.nn.Upsample", None],
+    "torch.nn.ZeroPad2d": ["paddle.nn.Pad2D", PadModuleMapper],
     # nn_loss
     "torch.nn.CrossEntropyLoss":
     ["paddle.nn.CrossEntropyLoss", LossModuleMapper],
     "torch.nn.BCEWithLogitsLoss":
     ["paddle.nn.BCEWithLogitsLoss", LossModuleMapper],
     "torch.nn.BCELoss": ["paddle.nn.BCELoss", None],
+    "torch.nn.KLDivLoss": ["x2paddle.torch2paddle.KLDivLoss", None],
+    "torch.nn.L1Loss": ["paddle.nn.loss.L1Loss", LossModuleMapper],
     # functional_net
     "torch.nn.functional.avg_pool1d":
     ["paddle.nn.functional.avg_pool1d", AvgPoolFuncMapper],
@@ -89,34 +101,43 @@ NN_MAPPER = {
     ["paddle.nn.functional.dropout", DropoutFuncMapper],
     "torch.nn.functional.interpolate":
     ["paddle.nn.functional.interpolate", InterpolateFuncMapper],
+    "torch.nn.functional.leaky_relu":
+    ["paddle.nn.functional.leaky_relu", LeaklyReluFuncMapper],
     "torch.nn.functional.log_softmax":
     ["paddle.nn.functional.log_softmax", LogSoftmaxFuncMapper],
     "torch.nn.functional.pad": ["paddle.nn.functional.pad", PadFuncMapper],
+    "torch.nn.functional.relu": ["paddle.nn.functional.relu", ReluFuncMapper],
     "torch.sigmoid": ["paddle.nn.functional.sigmoid", SigmoidFuncMapper],
     "torch.nn.functional.sigmoid":
     ["paddle.nn.functional.sigmoid", SigmoidFuncMapper],
     "torch.nn.functional.softmax":
     ["paddle.nn.functional.softmax", SoftmaxFuncMapper],
+    "torch.nn.functional.tanh":
+    ["paddle.tanh", None],
     # init
     "torch.nn.init": ["x2paddle.torch2paddle", None],
     "torch.nn.init.kaiming_normal_":
+    ["x2paddle.torch2paddle.kaiming_normal_", None],
+    "torch.nn.init.kaiming_normal":
     ["x2paddle.torch2paddle.kaiming_normal_", None],
     "torch.nn.init.xavier_uniform_":
     ["x2paddle.torch2paddle.xavier_normal_", None],
     "torch.nn.init.xavier_normal_":
     ["x2paddle.torch2paddle.xavier_uniform_", None],
+    "torch.nn.init.constant_": ["x2paddle.torch2paddle.constant_init_", None],
+    "torch.nn.init.normal_": ["x2paddle.torch2paddle.normal_init_", None],
     "torch.nn.init.ones_": ["x2paddle.torch2paddle.ones_init_", None],
     "torch.nn.init.zeros_": ["x2paddle.torch2paddle.zeros_init_", None],
+    "torch.nn.init.orthogonal_": ["x2paddle.torch2paddle.normal_init_", None], # syf(TODO)
     # functional_loss
     "torch.nn.functional.binary_cross_entropy_with_logits":
     ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
     "torch.nn.functional.cross_entropy":
     ["paddle.nn.functional.cross_entropy", CrossEntropyFuncMapper],
-    "torch.nn.functional.dropout":
-    ["paddle.nn.functional.dropout", DropoutFuncMapper],
-    "torch.nn.functional.relu": ["paddle.nn.functional.relu", ReluFuncMapper],
+    "torch.nn.functional.mse_loss":
+    ["paddle.nn.functional.mse_loss", LossFuncMapper], 
     "torch.nn.functional.smooth_l1_loss":
-    ["paddle.nn.functional.smooth_l1_loss", SmoothL1LossFuncMapper],
+    ["paddle.nn.functional.smooth_l1_loss", LossFuncMapper],
 }
 
 UTILS_MAPPER = {
@@ -148,6 +169,8 @@ DTYPE_MAPPER = {
 }
 
 TORCHVISION_MAPPER = {
+    "torchvision": ["paddle.vision", None],
+    # transforms
     "torchvision.transforms": ["paddle.vision.transforms", None],
     "torchvision.transforms.Compose":
     ["paddle.vision.transforms.Compose", None],
@@ -164,11 +187,35 @@ TORCHVISION_MAPPER = {
     ["x2paddle.torch2paddle.Normalize", None],
     "torchvision.transforms.RandomResizedCrop":
     ["paddle.vision.transforms.RandomResizedCrop", None],
+    "torchvision.transforms.Lambda":
+    ["x2paddle.torch2paddle.Lambda", None],
+    # utils
     "torchvision.utils": ["x2paddle.torch2paddle", None],
     "torchvision.utils.save_image": ["x2paddle.torch2paddle.save_image", None],
+    # datasets
     "torchvision.datasets": ["paddle.vision.datasets", None],
     "torchvision.datasets.ImageFolder":
-    ["x2paddle.torch2paddle.ImageFolder", None]
+    ["x2paddle.torch2paddle.ImageFolder", None],
+    # models
+    "torchvision.models": ["x2paddle.project_convertor.pytorch.torch2paddle.models", None],
+    "torchvision.models.vgg.model_urls": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg.model_urls", None],
+    "torchvision.models.vgg11": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg11", None],
+    "torchvision.models.vgg13": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg13", None],
+    "torchvision.models.vgg16": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg16", None],
+    "torchvision.models.vgg19": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg19", None],
+    "torchvision.models.vgg11_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg11_bn", None],
+    "torchvision.models.vgg13_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg13_bn", None],
+    "torchvision.models.vgg16_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg16_bn", None],
+    "torchvision.models.vgg19_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg19_bn", None],
+    "torchvision.models.resnet18": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet18", None],
+    "torchvision.models.resnet34": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet34", None],
+    "torchvision.models.resnet50": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet50", None],
+    "torchvision.models.resnet101": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet101", None],
+    "torchvision.models.resnet152": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet152", None],
+    "torchvision.models.resnext50_32x4d": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnext50_32x4d", None],
+    "torchvision.models.resnext101_32x8d": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnext101_32x8d", None],
+    "torchvision.models.wide_resnet50_2": ["x2paddle.project_convertor.pytorch.torch2paddle.models.wide_resnet50_2", None],
+    "torchvision.models.wide_resnet101_2": ["x2paddle.project_convertor.pytorch.torch2paddle.models.wide_resnet101_2", None],
 }
 
 AUTOGRAD_MAPPER = {
@@ -179,7 +226,10 @@ AUTOGRAD_MAPPER = {
 API_MAPPER = {
     "torch": ["paddle", None],
     "torch.Tensor": ["x2paddle.torch2paddle.create_tensor", None],
-    "torch.FloatTensor": ["paddle.Tensor", FloatTensorMapper],
+    "torch.FloatTensor": ["x2paddle.torch2paddle.create_float32_tensor", None],
+    "torch.cuda.FloatTensor": ["x2paddle.torch2paddle.create_float32_tensor", None],
+    "torch.ByteTensor": ["x2paddle.torch2paddle.create_uint8_tensor", None],
+    "torch.cuda.ByteTensor": ["x2paddle.torch2paddle.create_uint8_tensor", None],
     "torch.load": ["paddle.load", LoadMapper],
     "torch.save": ["paddle.save", SaveMapper],
     "torch.device": ["paddle.set_device", SetDeviceMapper],
@@ -200,28 +250,32 @@ API_MAPPER = {
     "torch.ones_like": ["paddle.full_like", TensorLikeMapper],
     "torch.zeros": ["paddle.zeros", TensorBuilderMapper],
     "torch.zeros_like": ["paddle.full_like", TensorLikeMapper],
-    "torch.sqrt": ["paddle.sqrt", MathMapper],
+    "torch.sqrt": ["paddle.sqrt", OneMathMapper],
     "torch.arange": ["paddle.arange", ArangeMapper],
-    "torch.matmul": ["paddle.matmul", MatmulMapper],
+    "torch.matmul": ["paddle.matmul", TwoMathMapper],
     "torch.set_grad_enabled": ["paddle.no_grad", NoGradMapper],
     "torch.tensor": ["paddle.to_tensor", None],
-    "torch.clamp": ["paddle.clip", MathMapper],
-    "torch.exp": ["paddle.exp", MathMapper],
+    "torch.clamp": ["paddle.clip", OneMathMapper],
+    "torch.exp": ["paddle.exp", OneMathMapper],
     "torch.max": ["x2paddle.torch2paddle.max", None],
     "torch.min": ["x2paddle.torch2paddle.min", None],
-    "torch.argmax": ["paddle.argmax", MathMapper],
-    "torch.argmin": ["paddle.argmin", MathMapper],
+    "torch.argmax": ["paddle.argmax", OneMathMapper],
+    "torch.argmin": ["paddle.argmin", OneMathMapper],
     "torch.stack": ["paddle.stacks", StackMapper],
-    "torch.log": ["paddle.log", MathMapper],
+    "torch.log": ["paddle.log", OneMathMapper],
     "torch.randperm": ["paddle.randperm", RandpermMapper],
     "torch.rand": ["x2paddle.torch2paddle.rand", None],
-    "torch.abs": ["paddle.abs", MathMapper],
+    "torch.randn_like": ["x2paddle.torch2paddle.randn_like", None],
+    "torch.abs": ["paddle.abs", OneMathMapper],
     "torch.bitwise_or": ["paddle.logical_or", LogicalMapper],
     "torch.bitwise_xor": ["paddle.logical_xor", LogicalMapper],
     "torch.bitwise_and": ["paddle.logical_and", LogicalMapper],
     "torch.bitwise_not": ["paddle.logical_not", LogicalMapper],
     "torch.split": ["paddle.split", SplitMapper],
     "torch.hub.load_state_dict_from_url": ["paddle.load", HubLoadMapper],
+    "torch.randn": ["x2paddle.torch2paddle.randn", None],
+    "torch.add": ["paddle.add", TwoMathMapper],
+    "torch.mul": ["paddle.multiply", TwoMathMapper],
 }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)

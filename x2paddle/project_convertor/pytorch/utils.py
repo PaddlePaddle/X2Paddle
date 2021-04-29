@@ -51,3 +51,12 @@ def get_dep_file_path(current_file_path, from_level, from_str):
         sys.path.pop(-1)
         import_file_path = locals()[key_str].__file__
     return import_file_path
+
+
+def add_line_continuation_symbol(code):
+    code_list = code.split("\n")
+    for i, line in enumerate(code_list):
+        if line.strip().endswith("="):
+            code_list[i] = line + "\\"
+    return "\n".join(code_list)
+            

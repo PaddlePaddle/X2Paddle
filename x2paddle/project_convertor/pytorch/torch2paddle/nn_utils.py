@@ -35,21 +35,22 @@ def clip_grad_value_(parameters, clip_value):
         paddle.clip(p.grad, min=-clip_value, max=clip_value)
 
 
-def spectral_norm(module, name='weight', n_power_iterations=1, eps=1e-12, dim=None):
+def spectral_norm(module,
+                  name='weight',
+                  n_power_iterations=1,
+                  eps=1e-12,
+                  dim=None):
     input = getattr(module, name)
     if dim is None:
-        if isinstance(module, (paddle.nn.Conv1DTranspose,
-                               pdddle.nn.Conv2DTranspose,
-                               paddle.nn.Conv3DTranspose)):
+        if isinstance(module,
+                      (paddle.nn.Conv1DTranspose, pdddle.nn.Conv2DTranspose,
+                       paddle.nn.Conv3DTranspose)):
             dim = 1
         else:
             dim = 0
     t = str(input.dtype).lower().strip().split(".")[-1]
     t = TYPE_MAPPER[t]
-    spectral_norm = paddle.nn.SpectralNorm(input.shape, 
-                                           dim=dim, 
-                                           power_iters=n_power_iterations, 
-                                           eps=eps, 
-                                           dtype=t)
+    spectral_norm = paddle.nn.SpectralNorm(
+        input.shape, dim=dim, power_iters=n_power_iterations, eps=eps, dtype=t)
     out = spectral_norm(input)
     return out

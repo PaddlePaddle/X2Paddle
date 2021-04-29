@@ -175,3 +175,17 @@ class Normalize(BaseTransform):
         if isinstance(img, paddle.Tensor):
             img = img.numpy()
         return F.normalize(img, self.mean, self.std, 'CHW', False)
+    
+    
+class Lambda(BaseTransform):
+    """Apply a user-defined lambda as a transform. This transform does not support torchscript.
+    Args:
+        lambd (function): Lambda/function to be used for transform.
+    """
+    def __init__(self, lambd):
+        if not callable(lambd):
+            raise TypeError("Argument lambd should be callable, got {}".format(repr(type(lambd).__name__)))
+        self.lambd = lambd
+        
+    def _apply_image(self, img):
+        return self.lambd(img)

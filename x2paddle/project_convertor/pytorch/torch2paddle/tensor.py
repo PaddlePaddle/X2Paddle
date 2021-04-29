@@ -244,3 +244,8 @@ pd_cuda = partial(paddle.Tensor.cuda)
 @add_tensor_function
 def cuda(self, device=None, non_blocking=False, memory_format=None):
     return self
+
+@add_tensor_function
+def copy_(self, src, non_blocking=False):
+    src = paddle.expand(src, self.shape)
+    paddle.assign(src, self)

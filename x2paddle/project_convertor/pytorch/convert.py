@@ -22,13 +22,15 @@ from six import text_type as _text_type
 
 from .dependency_analyzer import analyze
 from .ast_update import update
+from .utils import *
 
 
 def write_file(path, tree):
-    codes = astor.to_source(tree)
-    codes = codes.replace("(...)", "...")
+    code = astor.to_source(tree)
+    code = code.replace("(...)", "...")
+    code = add_line_continuation_symbol(code)
     f = open(path, "w")
-    f.write(codes)
+    f.write(code)
     f.close()
 
 
@@ -108,6 +110,7 @@ def main(args):
             convert_params(params_path)
     project_path = osp.abspath(project_path)
     file_dependencies = dict()
+    sys.path.append(project_path)
     generate_dependencies(project_path, file_dependencies)
     if not osp.exists(save_path):
         os.makedirs(save_path)

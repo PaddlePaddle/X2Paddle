@@ -58,6 +58,7 @@ class AstUpdater(ast.NodeVisitor):
         self.no_support_apis = list()  # 不支持的API列表
         self.is_import_torch2paddle = False  # 是否添加import torch2paddle
         self.is_import_paddle = True  # 是否添加import padddle
+        self.is_import_x2paddle = False # 是否添加import x2paddle
 
     def _get_scope_node(self):
         """ 获取当前节点的作用域。
@@ -133,6 +134,8 @@ class AstUpdater(ast.NodeVisitor):
             例如：将nn.Conv2d替换为nn.Conv2D。
         """
         pytorch_api_seg = pytorch_api.split(dep_info.PT_IMPORT)
+        if ".models." in paddle_api:
+            self.is_import_x2paddle = True
         if paddle_api.startswith(dep_info.PD_IMPORT + ".") or \
                 paddle_api.endswith("." + dep_info.PD_IMPORT) or  \
                 "." + dep_info.PD_IMPORT + "." in paddle_api:
@@ -158,6 +161,8 @@ class AstUpdater(ast.NodeVisitor):
                     self.root.body.insert(
                         i,
                         ast.parse("from x2paddle import torch2paddle").body[0])
+                if self.is_import_x2paddle:
+                    self.root.body.insert(i, ast.parse("import x2paddle").body[0])
                 if self.is_import_paddle:
                     self.root.body.insert(i, ast.parse("import paddle").body[0])
                 break
@@ -393,7 +398,7 @@ class AstUpdater(ast.NodeVisitor):
                         return None
         else:
             if isinstance(pytorch_api, str) and pytorch_api.startswith(
-                    "torch") and "(" not in pytorch_api:
+                    "torch") and "(" not in pytorch_api and "[" not in pytorch_api:
                 if not isinstance(father_node, ast.Attribute):
                     self.no_support_apis.append(pytorch_api)
         return attr_str
@@ -451,7 +456,8 @@ class AstUpdater(ast.NodeVisitor):
             self.generic_visit(node)
             return
         if pytorch_api not in API_MAPPER:
-            self.no_support_apis.append(pytorch_api)
+            if  "[" not in pytorch_api:
+                self.no_support_apis.append(pytorch_api)
             return
         paddle_api = API_MAPPER[pytorch_api][0]
         func_name = self._rename(func_name, dep_info, pytorch_api, paddle_api)
@@ -509,6 +515,22 @@ class AstUpdater(ast.NodeVisitor):
                         j, ast.parse(code.replace("\n", "")).body[0])
                     j += 1
                 break
+                
+                
+    def visit_Subscript(self, node):
+        value_node = node.value
+        value_name = self.visit(value_node)
+        pytorch_api, dep_info = self._get_complete_api(value_name)
+        if pytorch_api in API_MAPPER:
+            paddle_api = API_MAPPER[pytorch_api][0]
+            value_name = self._rename(value_name, dep_info, pytorch_api, paddle_api)
+            node.value = ast.parse(value_name).body[0]
+        else:
+            if isinstance(pytorch_api, str) and pytorch_api.startswith(
+                    "torch") and "(" not in pytorch_api:
+                self.no_support_apis.append(pytorch_api)
+        self.visit(node.slice)
+        self.visit(node.ctx)
 
     def visit_FunctionDef(self, node):
         """ 1. 将FunctionDef节点加入scopes_and_dependencies；

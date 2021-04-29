@@ -21,6 +21,8 @@ from .utils import *
 def abs(input, *, out=None):
     return paddle.abs(input)
 
+def add(input, other, *, out=None):
+    return paddle.add(input, other)
 
 def arange(start,
            end,
@@ -59,7 +61,25 @@ def create_tensor(*size):
     if len(size) > 1:
         return paddle.zeros(size, dtype="float32")
     else:
-        return paddle.Tensor(size)
+        return paddle.to_tensor(size)
+    
+    
+def create_float32_tensor(*size):
+    if len(size) > 1:
+        return paddle.zeros(size, dtype="float32")
+    else:
+        out = paddle.to_tensor(size)
+        out = paddle.cast(out, "float32")
+        return out
+    
+    
+def create_uint8_tensor(*size):
+    if len(size) > 1:
+        return paddle.zeros(size, dtype="uint8")
+    else:
+        out = paddle.to_tensor(size)
+        out = paddle.cast(out, "uint8")
+        return out
 
 
 def exp(input, *, out=None):
@@ -140,6 +160,10 @@ def matmul(input, other, *, out=None):
     return paddle.matmul(input, other)
 
 
+def mul(input, other, *, out=None):
+    return paddle.multiply(input, other)
+
+
 def max(input, dim_other=None, keepdim=False, *, out=None):
     if dim_other is None:
         return paddle.max(input)
@@ -216,6 +240,35 @@ def rand(*size,
         return paddle.rand(shape, dtype).requires_grad_(True)
     else:
         return paddle.rand(shape, dtype)
+    
+
+def randn(*size, 
+          out=None, 
+          dtype=None, 
+          layout=None, 
+          device=None, 
+          requires_grad=False):
+    if len(size) == 1 and isinstance(size[0], (tuple, list)):
+        shape = size[0]
+    else:
+        shape = size
+    if requires_grad:
+        return paddle.randn(shape, dtype).requires_grad_(True)
+    else:
+        return paddle.randn(shape, dtype)
+    
+    
+def randn_like(input,
+               dtype=None, 
+               layout=None, 
+               device=None, 
+               requires_grad=False, 
+               memory_format=None):
+    shape = input.shape
+    if requires_grad:
+        return paddle.randn(shape, dtype).requires_grad_(True)
+    else:
+        return paddle.randn(shape, dtype)
 
 
 def randperm(n,

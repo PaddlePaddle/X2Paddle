@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from . import vgg
+from . import resnet
 
 from .vgg import *
+from .resnet import *
 
 __all__ = vgg.__all__
-
+__all__ = resnet.__all__

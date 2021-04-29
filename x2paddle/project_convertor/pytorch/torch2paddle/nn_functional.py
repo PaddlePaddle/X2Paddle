@@ -111,8 +111,23 @@ def interpolate(input,
         align_corners=align_corners)
 
 
+def leaky_relu(input, negative_slope=0.01, inplace=False):
+    return paddle.nn.functional.leaky_relu(
+        input,
+        negative_slope=negative_slope)
+
+
 def log_softmax(input, dim=None, _stacklevel=3, dtype=None):
     return paddle.nn.functional.log_softmax(input, axis=dim, dtype=None)
+
+
+def mse_loss(input, 
+             target, 
+             size_average=None, 
+             reduce=None, 
+             reduction='mean'):
+    paddle.nn.functional.mse_loss(
+        input, target, reduction=reduction)
 
 
 def relu(input, inplace=False):

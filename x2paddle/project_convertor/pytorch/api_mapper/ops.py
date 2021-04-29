@@ -145,7 +145,7 @@ class UnSqueezeMapper(Mapper):
             return self.convert_to_paddle()
 
 
-class MathMapper(Mapper):
+class OneMathMapper(Mapper):
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -208,7 +208,7 @@ class ArangeMapper(Mapper):
             return self.convert_to_paddle()
 
 
-class MatmulMapper(Mapper):
+class TwoMathMapper(Mapper):
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -225,12 +225,19 @@ class MatmulMapper(Mapper):
         delete_key(self.kwargs, "out")
 
     def run(self):
-        if self.rename_func_name("x2paddle.torch2paddle.matmul"):
-            return [], generate_api_code(self.func_name, self.args,
-                                         self.kwargs), []
-        else:
-            self.convert_args2kwargs()
-            return self.convert_to_paddle()
+        if self.pytorch_api_name == "torch.matmul":
+            if self.rename_func_name("x2paddle.torch2paddle.matmul"):
+                return [], generate_api_code(self.func_name, self.args,
+                                             self.kwargs), []
+        if self.pytorch_api_name == "torch.add":
+            if self.rename_func_name("x2paddle.torch2paddle.add"):
+                return [], generate_api_code(self.func_name, self.args,
+                                             self.kwargs), []
+        if self.pytorch_api_name == "torch.mul":
+            if self.rename_func_name("x2paddle.torch2paddle.mul"):
+                return [], generate_api_code(self.func_name, self.args,
+                                             self.kwargs), []
+        return self.convert_to_paddle()
 
 
 class CreateParamModuleMapper(Mapper):
@@ -368,22 +375,6 @@ class RandpermMapper(Mapper):
             return self.convert_to_paddle()
 
 
-class FloatTensorMapper(Mapper):
-    def __init__(self,
-                 func_name,
-                 pytorch_api_name,
-                 args,
-                 kwargs,
-                 target_name=None):
-        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
-
-    def run(self):
-        insert_code = "{} = paddle.cast({}, dtype='float32')".format(
-            self.target_name, self.target_name)
-        return [], generate_api_code(self.func_name, self.args,
-                                     self.kwargs), [insert_code]
-
-
 class TensorBuilderMapper(Mapper):
     def __init__(self,
                  func_name,
@@ -395,6 +386,18 @@ class TensorBuilderMapper(Mapper):
         self.useful_attrs = dict()
 
     def process_attrs(self):
+        if self.pytorch_api_name in ["torch.ones", "torch.zeros"]:
+            if len(self.args) > 1:
+                new_args = list()
+                for arg in self.args:
+                    if isinstance(arg, int):
+                        new_args.append(str(arg))
+                    else:
+                        new_args.append(arg)
+                shape = ", ".join(new_args)
+                shape = "[{}]".format(shape)
+                self.args.clear()
+                self.args.append(shape)
         rename_key(self.kwargs, "size", "shape")
         self.useful_attrs["requires_grad"] = self.kwargs[
             "requires_grad"] if "requires_grad" in self.kwargs else False

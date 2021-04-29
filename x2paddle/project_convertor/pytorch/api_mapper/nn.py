@@ -68,7 +68,7 @@ class BatchNormModuleMapper(Mapper):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
 
     def process_attrs(self):
-        rename_key(self.kwargs, "num_features", "num_channels")
+        rename_key(self.kwargs, "num_channels", "num_features")
         rename_key(self.kwargs, "eps", "epsilon")
         rename_key(self.kwargs, "track_running_stats", "use_global_stats")
         if "momentum" in self.kwargs:
@@ -83,6 +83,7 @@ class BatchNormModuleMapper(Mapper):
 
     def delete_attrs(self):
         delete_key(self.kwargs, "affine")
+        delete_key(self.kwargs, "process_group")
 
     def run(self):
         if self.pytorch_api_name == "torch.nn.BatchNorm1d" and self.rename_func_name(
@@ -95,6 +96,10 @@ class BatchNormModuleMapper(Mapper):
                                          self.kwargs), []
         elif self.pytorch_api_name == "torch.nn.BatchNorm3d" and self.rename_func_name(
                 "x2paddle.torch2paddle.BatchNorm3D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.SyncBatchNorm" and self.rename_func_name(
+                "x2paddle.torch2paddle.SyncBatchNorm"):
             return [], generate_api_code(self.func_name, self.args,
                                          self.kwargs), []
         elif self.pytorch_api_name == "torch.nn.InstanceNorm2d" and self.rename_func_name(
@@ -112,6 +117,8 @@ class BatchNormModuleMapper(Mapper):
                     self.func_name = "x2paddle.torch2paddle.BatchNorm2D"
                 elif self.pytorch_api_name == "torch.nn.BatchNorm3D":
                     self.func_name = "x2paddle.torch2paddle.BatchNorm3D"
+                elif self.pytorch_api_name == "torch.nn.SyncBatchNorm":
+                    self.func_name = "x2paddle.torch2paddle.SyncBatchNorm"
                 elif self.pytorch_api_name == "torch.nn.InstanceNorm2D":
                     self.func_name = "x2paddle.torch2paddle.InstanceNorm2D"
                 return [], generate_api_code(self.func_name, self.args,
@@ -222,9 +229,6 @@ class LossModuleMapper(Mapper):
         delete_key(self.kwargs, "size_average")
         delete_key(self.kwargs, "reduce")
 
-    def process_attrs(self):
-        rename_key(self.kwargs, "target", "label")
-
     def run(self):
         if self.pytorch_api_name == "torch.nn.CrossEntropyLoss" and \
         self.rename_func_name("x2paddle.torch2paddle.CrossEntropyLoss"):
@@ -234,8 +238,11 @@ class LossModuleMapper(Mapper):
         self.rename_func_name("x2paddle.torch2paddle.BCEWithLogitsLoss"):
             return [], generate_api_code(self.func_name, self.args,
                                          self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.L1Loss" and \
+        self.rename_func_name("x2paddle.torch2paddle.L1Loss"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
         else:
-            self.convert_args2kwargs(1)
             return self.convert_to_paddle()
 
 
@@ -270,6 +277,45 @@ class MaxPoolModuleMapper(Mapper):
         else:
             self.convert_args2kwargs(3)
             return self.convert_to_paddle()
+        
+        
+class PadModuleMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        
+    def process_attrs(self):
+        if self.pytorch_api_name == "torch.nn.ReflectionPad2d":
+            self.kwargs["mode"] = "reflect"
+        elif self.pytorch_api_name in ["torch.nn.ConstantPad2d", "torch.nn.ZeroPad2d"]:
+            self.kwargs["mode"] = "constant"
+        elif self.pytorch_api_name == "torch.nn.ReplicationPad2d":
+            self.kwargs["mode"] = "replicate"
+            
+    def run(self):
+        if self.pytorch_api_name == "torch.nn.ReflectionPad2d" and self.rename_func_name(
+                "x2paddle.torch2paddle.ReflectionPad2D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.ConstantPad2d" and self.rename_func_name(
+                "x2paddle.torch2paddle.ConstantPad2D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.ReplicationPad2d" and self.rename_func_name(
+                "x2paddle.torch2paddle.ReplicationPad2D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.ZeroPad2d" and self.rename_func_name(
+                "x2paddle.torch2paddle.ZeroPad2D"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            self.convert_args2kwargs(1)
+            return self.convert_to_paddle()
 
 
 class ReLUModuleMapper(Mapper):
@@ -297,6 +343,7 @@ class SoftmaxModuleMapper(Mapper):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
 
     def process_attrs(self):
+        
         rename_key(self.kwargs, "dim", "axis")
 
 
@@ -400,6 +447,29 @@ class InterpolateFuncMapper(Mapper):
                                          self.kwargs), []
         else:
             return self.convert_to_paddle()
+        
+        
+class LeaklyReluFuncMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+        
+    def delete_attrs(self):
+        delete_key(self.kwargs, "inplace")
+
+    def run(self):
+        if self.rename_func_name("x2paddle.torch2paddle.leaky_relu"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            return self.convert_to_paddle()
 
 
 class LogSoftmaxFuncMapper(Mapper):
@@ -474,7 +544,7 @@ class SigmoidFuncMapper(Mapper):
         rename_key(self.kwargs, "input", "x")
 
 
-class SmoothL1LossFuncMapper(Mapper):
+class LossFuncMapper(Mapper):
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -492,7 +562,10 @@ class SmoothL1LossFuncMapper(Mapper):
         delete_key(self.kwargs, "reduce")
 
     def run(self):
-        if self.rename_func_name("x2paddle.torch2paddle.smooth_l1_loss"):
+        if self.pytorch_api_name == "torch.nn.functional.smooth_l1_loss" and self.rename_func_name("x2paddle.torch2paddle.smooth_l1_loss"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        elif self.pytorch_api_name == "torch.nn.functional.mse_loss" and self.rename_func_name("x2paddle.torch2paddle.mse_loss"):
             return [], generate_api_code(self.func_name, self.args,
                                          self.kwargs), []
         else:
