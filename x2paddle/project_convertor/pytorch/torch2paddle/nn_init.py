@@ -278,6 +278,24 @@ def xavier_uniform_(param, gain=1.0):
         dtype=param.dtype,
         default_initializer=XavierUniform(gain=gain))
     paddle.assign(param, replaced_param)
+    
+    
+def constant_init_(param, val):
+    replaced_param = paddle.create_parameter(
+        shape=param.shape,
+        dtype=param.dtype,
+        default_initializer=paddle.nn.initializer.Assign(
+            paddle.full(param.shape, val, param.dtype)))
+    paddle.assign(param, replaced_param)
+    
+    
+def normal_init_(param, mean=0.0, std=1.0):
+    replaced_param = paddle.create_parameter(
+        shape=param.shape,
+        dtype=param.dtype,
+        default_initializer=paddle.nn.initializer.Assign(
+            paddle.normal(mean=mean, std=std, shape=param.shape)))
+    paddle.assign(param, replaced_param)
 
 
 def ones_init_(param):
