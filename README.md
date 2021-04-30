@@ -95,10 +95,8 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 4. [X2Paddle添加内置的Caffe自定义层](./docs/user_guides/add_caffe_custom_layer.md)
 5. [转换后PaddlePaddle预测模型简介](./docs/user_guides/pd_folder_introduction.py)
 6. [Paddle到ONNX的转换](https://github.com/PaddlePaddle/Paddle2ONNX)
-
-## 已支持目录
-1. [X2Paddle测试模型库](./docs/introduction/x2paddle_model_zoo.md)  
-2. [X2Paddle支持的op列表](./docs/introduction/op_list.md)
+7. [X2Paddle测试模型库](./docs/introduction/x2paddle_model_zoo.md)  
+8. [X2Paddle支持的op列表](./docs/introduction/op_list.md)
 
 
 ## 转换教程
