@@ -4,36 +4,37 @@
 ![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
 ## 简介
-X2Paddle用于不同框架模型或项目到PaddlePaddle框架模型或项目的迁移，旨在为飞桨开发者提升框架间迁移的效率。  
-X2Paddle支持Caffe/TensorFlow/ONNX/PyTorch的预测模型，一步转换至PaddlePaddle预测模型；同时，支持PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。
-
-### 架构设计
-X2Paddle的架构设计着重考虑了对多深度学习框架的的支持以及代码的易读性、易扩展性，并且在多个层面的对转换后OP进行优化处理。  
-![](./docs/images/frame.png)
+X2Paddle用于不同框架模型或项目到PaddlePaddle框架模型或项目的迁移，旨在为飞桨开发者提升框架间迁移的效率。
 
 ### 特性
+- **支持主流深度学习框架**：目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的迁移，涵盖目前市面主流深度学习框架。
+- **支持的模型丰富**：在主流的CV和NLP模型上均支持转换，涵盖了19+个Caffe模型转换、27+个TensorFlow模型转换、32+个ONNX模型转换、27+个PyTorch模型转换、2+个PyTorch项目转换。
+- **简洁易用**：一条命令行或者一个API即可完成模型转换。
 
-- **支持主流深度学习框架**：目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的迁移，涵盖目前市面主流深度学习框架。  
+### X2Paddle技术文档
+- [各框架OP算子支持列表](docs/introduction/op_list.md)
+- [各框架模型转换支持列表](docs/introduction/x2paddle_model_zoo.md)
+- [X2Paddle技术原理](docs/introduction/architecture.md)
 
-- **支持的模型丰富**：在主流的CV和NLP模型上均支持转换，涵盖了19+个Caffe模型转换、27+个TensorFlow模型转换、32+个ONNX模型转换、27+个PyTorch模型转换、2+个PyTorch项目转换。  
+## 安装
 
-- **简洁易用**：一条命令行或者一个API即可完成模型转换。  
-
-
-
-## 环境依赖
+### 环境依赖
 
 - python >= 3.5  
 - paddlepaddle >= 2.0.0
 
-**按需安装以下依赖**  
-- tensorflow ： tensorflow == 1.14.0  
-- caffe ： 无  
-- onnx ： onnx >= 1.6.0  
-- pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
+- 转换TensorFlow模型时: tensorflow==1.14.0
+- 转换ONNX模型时: onnx >= 1.6.0
+- 转换PyTorch模型时: torch >= 1.5.0
 
-## 安装
-### 方式一：源码安装
+### 安装方式
+
+#### 1. pip安装(推荐)
+```
+pip install x2paddle
+```
+
+#### 2. 源码安装
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -41,13 +42,27 @@ git checkout develop
 python setup.py install
 ```
 
-### 方式二：pip安装(推荐）
-我们会定期更新pip源上的x2paddle版本
-```
-pip install x2paddle --index https://pypi.python.org/simple/
-```
 ## 快速开始
-### 预测模型转换
+### Caffe模型转换
+```
+x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
+```
+
+### TensorFlow模型转换
+```
+x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
+```
+
+### ONNX模型转换
+```
+x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --paddle_type dygraph
+```
+
+### PyTorch模型转换
+PyTorch模型目前不支持命令方式，需用户通过Python API的方式调用转换，详见[PyTorch模型转换](docs/user_guides/pytorch2paddle.md)
+
+### 转换命令参数说明
+
 | 参数                 |        作用                                                      |
 | -------------------- | ------------------------------------------------------------ |
 | --framework          | 源模型类型 (tensorflow、caffe、onnx)                         |
@@ -59,36 +74,8 @@ pip install x2paddle --index https://pypi.python.org/simple/
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/user_guides/FAQ.md) |
 | --paddle_type        | **[可选]** 该参数指定转换为动态图代码（dygraph）或者静态图代码（static），默认为dygraph |
 
-#### TensorFlow
-```
-x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model --paddle_type dygraph
-```
-#### Caffe
-```
-x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model --paddle_type dygraph
-```
-#### ONNX
-```
-x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --paddle_type dygraph
-```
 
-#### PyTorch
-PyTorch仅支持API使用方式，详见[PyTorch预测模型转换文档](./docs/user_guides/pytorch2paddle.md)。
-
-### 训练项目转换
-
-#### PyTorch
-【待更新】可安装[分支](https://github.com/PaddlePaddle/X2Paddle/tree/pytorch_project_convertor)源码进行使用。
-详见[PyTorch训练项目转换文档](https://github.com/SunAhong1993/X2Paddle/blob/code_convert_last/docs/pytorch_project_convertor/README.md)。
-
-
-## 小工具
-X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README.md)  
-1. 检测模型是否在PaddleLite中支持  
-2. 合并模型参数文件
-
-
-## 使用相关文档
+## 其它相关文档
 1. [X2Paddle使用过程中常见问题](./docs/user_guides/FAQ.md)  
 2. [如何导出TensorFlow的Frozen Model](./docs/user_guides/export_tf_model.md)
 3. [PyTorch模型导出为ONNX模型](./docs/user_guides/pytorch2onnx.md)
