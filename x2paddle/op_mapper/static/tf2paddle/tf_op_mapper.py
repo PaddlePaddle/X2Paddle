@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from x2paddle.decoder.tf_decoder import TFGraph, TFGraphNode
-from x2paddle.core.program import PaddleGraph
+from x2paddle.core.program import PaddleGraph 
 from x2paddle.core.op_mapper import OpMapper
 from x2paddle.core.util import *
 from x2paddle import program
@@ -60,8 +60,8 @@ class TFOpMapper(OpMapper):
         'swish_f32': ['paddle.nn.functional.swish'],
         'Tanh': ['paddle.tanh'],
         'Softplus': ['paddle.nn.functional.softplus'],
-        'LeakyRelu':
-        ['paddle.nn.functional.leaky_relu', dict(alpha='negative_slope')],
+        'LeakyRelu': ['paddle.nn.functional.leaky_relu', 
+                     dict(alpha='negative_slope')],
         'Floor': ['paddle.floor'],
         'Erf': ['paddle.erf'],
         'Square': ['paddle.square']
@@ -95,8 +95,7 @@ class TFOpMapper(OpMapper):
         if not self.op_checker():
             raise Exception("Model is not supported yet.")
         self.params = dict()
-        self.paddle_graph = PaddleGraph(
-            parent_layer=None, graph_type="static", source_type="tf")
+        self.paddle_graph = PaddleGraph(parent_layer=None, graph_type="static", source_type="tf")
         self.params_output2id = dict()
 
         not_placeholder = list()
@@ -136,7 +135,7 @@ class TFOpMapper(OpMapper):
         print("\nNodes converted.")
         self.paddle_graph.set_name(self.graph.graph_name)
         self.paddle_graph.set_parameters(self.params)
-
+        
     def op_checker(self):
         unsupported_ops = set()
         for node_name in self.graph.topo_sort:
@@ -151,8 +150,8 @@ class TFOpMapper(OpMapper):
             return True
         else:
             if len(unsupported_ops) > 0:
-                print("\n========= {} OPs are not supported yet ===========".
-                      format(len(unsupported_ops)))
+                print("\n========= {} OPs are not supported yet ===========".format(
+                    len(unsupported_ops)))
             for op in unsupported_ops:
                 print("========== {} ============".format(op))
             return False
@@ -187,11 +186,8 @@ class TFOpMapper(OpMapper):
             inputs={"x": x.name,
                     "y": y.name},
             outputs=[node.name])
-        self.paddle_graph.layers[layer_id].input_shapes = {
-            "x": x_shape,
-            "y": y_shape
-        }
-
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
+        
     def bool_map(self, node):
         op_type = self.bool_ops[node.layer_type]
         self.elementwise_map(node, op_type)
@@ -245,8 +241,7 @@ class TFOpMapper(OpMapper):
         if perm.layer_type == "Const":
             perm = perm.value.tolist()
         else:
-            perm = self.decoder.infer_tensor(
-                perm, use_diff_inputs=False).tolist()
+            perm = self.decoder.infer_tensor(perm, use_diff_inputs=False).tolist()
 
         self.paddle_graph.add_layer(
             kernel="paddle.transpose",
@@ -268,7 +263,10 @@ class TFOpMapper(OpMapper):
         attr["fill_value"] = input_value.value
 
         self.paddle_graph.add_layer(
-            "paddle.full", inputs=inputs, outputs=[node.name], **attr)
+            "paddle.full",
+            inputs=inputs,
+            outputs=[node.name],
+            **attr)
         if dims.layer_type != "Const":
             self.paddle_graph.add_layer(
                 "paddle.reshape",
@@ -330,12 +328,14 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
-
+            
     def Where(self, node):
         if len(node.layer.input) == 1:
             cond = self.graph.get_input_node(node, 0)
             self.paddle_graph.add_layer(
-                "paddle.nonzero", inputs={"x": cond.name}, outputs=[node.name])
+                "paddle.nonzero",
+                inputs={"x": cond.name},
+                outputs=[node.name])
         else:
             cond = self.graph.get_input_node(node, 0)
             x = self.graph.get_input_node(node, 1)
@@ -346,10 +346,10 @@ class TFOpMapper(OpMapper):
                         "x": x.name,
                         "y": y.name},
                 outputs=[node.name])
-
+            
     def Neg(self, node):
         input = self.graph.get_input_node(node, 0)
-
+        
         self.paddle_graph.add_layer(
             "paddle.scale",
             inputs={"x": input.name},
@@ -409,8 +409,7 @@ class TFOpMapper(OpMapper):
             kernel_value = kernel.value
             kernel_weight_name = kernel.name.replace('/', '_')
         else:
-            kernel_value = self.decoder.infer_tensor(
-                kernel, use_diff_inputs=False)
+            kernel_value = self.decoder.infer_tensor(kernel, use_diff_inputs=False)
             if kernel.layer_type == 'Split':
                 kernel_weight_name = "{}_{}_kernel".format(node.name,
                                                            kernel.name)
@@ -425,7 +424,7 @@ class TFOpMapper(OpMapper):
             shape=self.params[kernel_weight_name].shape,
             dtype=string(str(self.params[kernel_weight_name].dtype)),
             name=string(kernel_weight_name))
-
+        
         input_name = input.name
         if data_format == "NHWC":
             strides = [strides[i] for i in [0, 3, 1, 2]]
@@ -448,8 +447,7 @@ class TFOpMapper(OpMapper):
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.conv2d",
-            inputs={"x": input_name,
-                    "weight": kernel_weight_name},
+            inputs={"x": input_name, "weight": kernel_weight_name},
             outputs=[node.name],
             bias=None,
             stride=strides[2:4],
@@ -462,7 +460,7 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
-
+            
     def Conv3D(self, node):
         input = self.graph.get_input_node(node, 0)
         kernel = self.graph.get_input_node(node, 1)
@@ -481,8 +479,7 @@ class TFOpMapper(OpMapper):
             kernel_value = kernel.value
             kernel_weight_name = kernel.name.replace('/', '_')
         else:
-            kernel_value = self.decoder.infer_tensor(
-                kernel, use_diff_inputs=False)
+            kernel_value = self.decoder.infer_tensor(kernel, use_diff_inputs=False)
             if kernel.layer_type == 'Split':
                 kernel_weight_name = "{}_{}_kernel".format(node.name,
                                                            kernel.name)
@@ -497,7 +494,7 @@ class TFOpMapper(OpMapper):
             shape=self.params[kernel_weight_name].shape,
             dtype=string(str(self.params[kernel_weight_name].dtype)),
             name=string(kernel_weight_name))
-
+        
         input_name = input.name
         if data_format == "NDHWC":
             strides = [strides[i] for i in [0, 4, 1, 2, 3]]
@@ -516,12 +513,11 @@ class TFOpMapper(OpMapper):
                 kernel="paddle.reshape",
                 inputs={"x": input_name},
                 outputs=[input_name],
-                shape=[0, k_size[2], 0, 0, 0])
-
+                shape=[0, k_size[2], 0, 0, 0])        
+            
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.conv3d",
-            inputs={"x": input_name,
-                    "weight": kernel_weight_name},
+            inputs={"x": input_name,  "weight": kernel_weight_name},
             outputs=[node.name],
             bias=None,
             stride=strides[2:5],
@@ -569,13 +565,11 @@ class TFOpMapper(OpMapper):
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.batch_norm",
-            inputs={
-                "x": input_name,
-                "running_mean": moving_mean.name,
-                "running_var": moving_var.name,
-                "weight": gamma.name,
-                "bias": beta.name
-            },
+            inputs={"x": input_name,
+                    "running_mean": moving_mean.name,
+                    "running_var": moving_var.name,
+                    "weight": gamma.name,
+                    "bias": beta.name},
             outputs=[node.name],
             epsilon=node.get_attr("epsilon"))
 
@@ -585,7 +579,7 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 perm=[0, 2, 3, 1])
-
+            
     def FusedBatchNormV3(self, node):
         self.FusedBatchNorm(node)
 
@@ -649,10 +643,11 @@ class TFOpMapper(OpMapper):
             outputs=[node.name],
             pad=paddings,
             value=constant_values)
-
+        
     def MirrorPad(self, node):
         self.Pad(node)
-
+        
+        
     def PadV2(self, node):
         self.Pad(node)
 
@@ -681,12 +676,15 @@ class TFOpMapper(OpMapper):
             inputs={"input": input_name},
             outputs=[node.name])
         self.paddle_graph.add_layer(
-            kernel="paddle.prod", inputs={"x": node.name}, outputs=[node.name])
-
+            kernel="paddle.prod",
+            inputs={"x": node.name},
+            outputs=[node.name])
+        
     def Ceil(self, node):
         input = self.graph.get_input_node(node, 0)
         self.paddle_graph.add_layer(
-            kernel="paddle.ceil", inputs={"x": input.name},
+            kernel="paddle.ceil",
+            inputs={"x": input.name},
             outputs=[node.name])
 
     def ArgMax(self, node):
@@ -699,7 +697,7 @@ class TFOpMapper(OpMapper):
             inputs={"x": input.name},
             outputs=[node.name],
             axis=axis)
-
+        
     def TopKV2(self, node):
         input = self.graph.get_input_node(node, 0)
         k = self.graph.get_input_node(node, 1)
@@ -750,8 +748,8 @@ class TFOpMapper(OpMapper):
 
         if len(kernel.outputs) == 1:
             self.params[kernel.name] = numpy.transpose(self.params[kernel.name],
-                                                       (2, 3, 0, 1))
-            layer = self.paddle_graph.layers[self.params_output2id[kernel.name]]
+                                                          (2, 3, 0, 1))
+            layer = self.paddle_graph.layers[self.params_output2id[kernel.name]] 
             layer.attrs["shape"] = self.params[kernel.name].shape
         else:
             self.paddle_graph.add_layer(
@@ -810,7 +808,7 @@ class TFOpMapper(OpMapper):
             strides = [strides[i] for i in [0, 3, 1, 2]]
             k_size = [k_size[i] for i in [0, 3, 1, 2]]
             input_name = transpose_name
-
+        
         # TODO(syf): The op has diff.
 
         self.paddle_graph.add_layer(
@@ -863,9 +861,7 @@ class TFOpMapper(OpMapper):
                 axis = 1
             else:
                 raise Exception("Unexpected situation happend in Unpack OP")
-        layer_outputs = [
-            "{}_p{}".format(node.layer_name, i) for i in range(num)
-        ]
+        layer_outputs = ["{}_p{}".format(node.layer_name, i) for i in range(num)]
         if len(layer_outputs) == 1:
             layer_outputs[0] = "[{}]".format(node.layer_name)
         self.paddle_graph.add_layer(
@@ -891,7 +887,7 @@ class TFOpMapper(OpMapper):
             inputs={"x": input_names},
             outputs=[node.name],
             axis=axis)
-
+        
     def Concat(self, node):
         inputs_list = list()
         for i in range(1, len(node.inputs)):
@@ -901,14 +897,14 @@ class TFOpMapper(OpMapper):
         axis = axis.value
         if axis < 0:
             axis += len(inputs_list[0].out_shapes[0])
-
+            
         input_names = [i.name for i in inputs_list]
         self.paddle_graph.add_layer(
             kernel="paddle.concat",
             inputs={"x": input_names},
             outputs=[node.name],
             axis=axis)
-
+            
     def AddN(self, node):
         inputs_list = list()
         for i in range(len(node.inputs) - 1):
@@ -986,7 +982,7 @@ class TFOpMapper(OpMapper):
                 new_end.append(999999)
             else:
                 new_end.append(end[i])
-
+            
         if input.dtype == "bool":
             self.paddle_graph.add_layer(
                 "paddle.cast",
@@ -1001,7 +997,7 @@ class TFOpMapper(OpMapper):
             axes=[i for i in range(len(new_begin))],
             starts=new_begin,
             ends=new_end)
-
+        
         if input.dtype == "bool":
             self.paddle_graph.add_layer(
                 "paddle.cast",
@@ -1024,7 +1020,7 @@ class TFOpMapper(OpMapper):
                     inputs={"x": node.name},
                     outputs=[node.name],
                     axis=shrink_axes)
-
+                
     def Prod(self, node):
         input = self.graph.get_input_node(node, 0)
         reduction_indices = self.graph.get_input_node(node, 1)
@@ -1054,7 +1050,7 @@ class TFOpMapper(OpMapper):
             ],
             num_or_sections=num_split,
             axis=dim)
-
+        
     def SplitV(self, node):
         input = self.graph.get_input_node(node, 0)
         size_splits = self.graph.get_input_node(node, 1)
@@ -1063,13 +1059,12 @@ class TFOpMapper(OpMapper):
         dim = self.graph.get_input_node(node, 2)
         assert dim.layer_type == "Const", "dim of SplitV OP should be Const"
         dim = dim.value
-
+        
         self.paddle_graph.add_layer(
             kernel="paddle.split",
             inputs={"x": input.name},
             outputs=[
-                "{}_p{}".format(node.layer_name, i)
-                for i in range(len(size_splits))
+                "{}_p{}".format(node.layer_name, i) for i in range(len(size_splits))
             ],
             num_or_sections=size_splits,
             axis=dim)
@@ -1085,8 +1080,15 @@ class TFOpMapper(OpMapper):
             begin = begin.value.tolist()
             attrs['offsets'] = begin
         else:
-            begin = self.decoder.infer_tensor(
-                begin, use_diff_inputs=False).tolist()
+            #             shape = begin.out_shapes[0]
+            #             reshape_name = gen_name("slice", "reshape")
+            #             self.paddle_graph.add_layer(
+            #                 kernel="fluid.layers.reshape",
+            #                 inputs={"x": begin.name},
+            #                 outputs=[reshape_name],
+            #                 shape=shape)
+            #             inputs['offsets'] = reshape_name
+            begin = self.decoder.infer_tensor(begin, use_diff_inputs=False).tolist()
             attrs['offsets'] = begin
         if size.layer_type == "Const":
             size = size.value.tolist()
@@ -1101,18 +1103,19 @@ class TFOpMapper(OpMapper):
                 shape=shape)
             inputs['shape'] = reshape_name
         self.paddle_graph.add_layer(
-            kernel="paddle.crop", inputs=inputs, outputs=[node.name], **attrs)
+            kernel="paddle.crop",
+            inputs=inputs,
+            outputs=[node.name],
+            **attrs)
 
     def ResizeNearestNeighbor(self, node):
         input = self.graph.get_input_node(node, 0)
         resize_shape = self.graph.get_input_node(node, 1)
         data_format = "NHWC"
         inputs = {"x": input.name}
-        attrs = {
-            "align_corners": node.get_attr("align_corners"),
-            "mode": string("nearest"),
-            "align_mode": 1
-        }
+        attrs = {"align_corners": node.get_attr("align_corners"),
+                 "mode": string("nearest"),
+                 "align_mode": 1}
 
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
@@ -1154,11 +1157,9 @@ class TFOpMapper(OpMapper):
         resize_shape = self.graph.get_input_node(node, 1)
         data_format = "NHWC"
         inputs = {"x": input.name}
-        attrs = {
-            "align_corners": node.get_attr("align_corners"),
-            "mode": string("bilinear"),
-            "align_mode": 1
-        }
+        attrs = {"align_corners": node.get_attr("align_corners"),
+                 "mode": string("bilinear"),
+                 "align_mode": 1}
 
         if resize_shape.layer_type == "Const":
             resize_shape = resize_shape.value.tolist()
@@ -1260,17 +1261,15 @@ class TFOpMapper(OpMapper):
         if out_shape.layer_type == "Const":
             out_shape = out_shape.value.tolist()
         else:
-            out_shape = self.decoder.infer_tensor(
-                out_shape, out_shape=node.out_shapes[0])
+            out_shape = self.decoder.infer_tensor(out_shape,
+                                                  out_shape=node.out_shapes[0])
 
         in_shape = input.out_shapes[0]
         if in_shape.count(-1) > 2:
-            in_shape = self.decoder.infer_tensor(
-                input, use_diff_inputs=False).shape
+            in_shape = self.decoder.infer_tensor(input, use_diff_inputs=False).shape
         k_size = kernel.out_shapes[0]
         if k_size.count(-1) > 2:
-            k_size = self.decoder.infer_tensor(
-                kernel, use_diff_inputs=False).shape
+            k_size = self.decoder.infer_tensor(kernel, use_diff_inputs=False).shape
 
         pad_mode = node.get_attr("padding").decode()
         strides = node.get_attr("strides")
@@ -1300,14 +1299,11 @@ class TFOpMapper(OpMapper):
             dtype=string(str(self.params[kernel_name].dtype)),
             shape=self.params[kernel_name].shape,
             name=string(kernel_name))
-
+    
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.conv2d_transpose",
-            inputs={
-                "x": input_name,
-                "weight":
-                "{}_{}".format(node.name, kernel_name).replace(".", "_")
-            },
+            inputs={"x": input_name,
+                    "weight": "{}_{}".format(node.name, kernel_name).replace(".", "_")},
             outputs=[node.name],
             bias=None,
             stride=strides[2:4],
@@ -1332,12 +1328,14 @@ class TFOpMapper(OpMapper):
             attr["repeat_times"] = repeat_times
         else:
             inputs["repeat_times"] = repeat_times.name
-
+            
         self.paddle_graph.add_layer(
-            kernel="paddle.tile", inputs=inputs, outputs=[node.name], **attr)
-
-        if not isinstance(repeat_times,
-                          list) and repeat_times.layer_type != "Const":
+            kernel="paddle.tile",
+            inputs=inputs,
+            outputs=[node.name],
+            **attr)
+        
+        if not isinstance(repeat_times, list) and repeat_times.layer_type != "Const":
             self.paddle_graph.add_layer(
                 kernel="paddle.reshape",
                 inputs={"x": node.name},
@@ -1374,7 +1372,10 @@ class TFOpMapper(OpMapper):
         attr["dtype"] = string(node.dtype)
 
         self.paddle_graph.add_layer(
-            kernel="paddle.arange", inputs=inputs, outputs=[node.name], **attr)
+            kernel="paddle.arange",
+            inputs=inputs,
+            outputs=[node.name],
+            **attr)
         if start.layer_type != "Const" or \
                 limit.layer_type != "Const" or \
                 delta.layer_type != "Const":
@@ -1393,20 +1394,14 @@ class TFOpMapper(OpMapper):
         # TODO(syf)
         layer_id = self.paddle_graph.add_layer(
             "paddle.subtract", inputs=inputs, outputs=[node.name])
-        self.paddle_graph.layers[layer_id].input_shapes = {
-            "x": x_shape,
-            "y": y_shape
-        }
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
         inputs = {"x": node.name, "y": node.name}
         x_shape = node.out_shapes[0]
         y_shape = node.out_shapes[0]
         layer_id = self.paddle_graph.add_layer(
             "paddle.multiply", inputs=inputs, outputs=[node.name])
-        self.paddle_graph.layers[layer_id].input_shapes = {
-            "x": x_shape,
-            "y": y_shape
-        }
+        self.paddle_graph.layers[layer_id].input_shapes = {"x": x_shape, "y": y_shape}
 
     def OneHot(self, node):
         input = self.graph.get_input_node(node, 0)
@@ -1460,7 +1455,10 @@ class TFOpMapper(OpMapper):
                 outputs=[input_name],
                 dtype=string("bool"))
         self.paddle_graph.add_layer(
-            "paddle.all", inputs={"x": input_name}, outputs=[node.name], **attr)
+            "paddle.all",
+            inputs={"x": input_name},
+            outputs=[node.name],
+            **attr)
 
         node.layer.attr['dtype'].type = 10
 
@@ -1481,7 +1479,10 @@ class TFOpMapper(OpMapper):
                 shape=[-1])
         inputs = {'x': embeddings.name, 'index': index_name}
         self.paddle_graph.add_layer(
-            "paddle.gather", inputs=inputs, outputs=[node.name], axis=axis)
+            "paddle.gather",
+            inputs=inputs,
+            outputs=[node.name],
+            axis=axis)
         if len(index.out_shapes[0]) != 1:
             out_shape = node.out_shapes[0]
             self.paddle_graph.add_layer(
@@ -1489,13 +1490,15 @@ class TFOpMapper(OpMapper):
                 inputs={"x": node.name},
                 outputs=[node.name],
                 shape=out_shape)
-
+            
     def GatherNd(self, node):
         x = self.graph.get_input_node(node, 0)
         index = self.graph.get_input_node(node, 1)
         inputs = {'x': x.name, 'index': index.name}
         self.paddle_graph.add_layer(
-            "paddle.gather_nd", inputs=inputs, outputs=[node.name])
+            "paddle.gather_nd",
+            inputs=inputs,
+            outputs=[node.name])
 
     def ExpandDims(self, node):
         x = self.graph.get_input_node(node, 0, copy=True)
@@ -1510,8 +1513,11 @@ class TFOpMapper(OpMapper):
         else:
             inputs['axis'] = y.name
         self.paddle_graph.add_layer(
-            "paddle.unsqueeze", inputs=inputs, outputs=[node.name], **attr)
-
+            "paddle.unsqueeze",
+            inputs=inputs,
+            outputs=[node.name],
+            **attr)
+        
     def ReverseV2(self, node):
         x = self.graph.get_input_node(node, 0)
         axis = self.graph.get_input_node(node, 1)
@@ -1525,114 +1531,8 @@ class TFOpMapper(OpMapper):
         else:
             inputs['axis'] = axis.name
         self.paddle_graph.add_layer(
-            "paddle.flip", inputs=inputs, outputs=[node.name], **attr)
-
-    def BatchToSpaceND(self, node):
-        '''
-        reshape->transpose->reshape->crop
-        '''
-        x = self.graph.get_input_node(node, 0)
-        block_shape = self.graph.get_input_node(node, 1)
-        crops = self.graph.get_input_node(node, 2)
-        if block_shape.layer_type == "Const":
-            block_shape = block_shape.value.tolist()
-        if crops.layer_type == "Const":
-            crops = crops.value.tolist()
-        data_format = x.get_attr("data_format").decode()
-        if data_format == "NHWC":
-            n, h, w, c = x.out_shapes[0]
-        else:
-            n, c, h, w = x.out_shapes[0]
-        input_name = x.name
-        #reshape
-        shape = block_shape + [-1, h, w, c]
-        reshape_name = gen_name("batch_to_space", "reshape")
-        self.paddle_graph.add_layer(
-            kernel="paddle.reshape",
-            inputs={"x": input_name},
-            outputs=[reshape_name],
-            shape=shape)
-        #transpose
-        perm = [len(block_shape)] + list(j for i in range(len(block_shape)) for j in (i + len(block_shape) + 1, i)) +\
-                                    list(i + 2*len(block_shape) + 1 for i in range(len(x.out_shapes[0]) - len(block_shape) - 1))
-        transpose_name = gen_name("batch_to_space", "transpose")
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": reshape_name},
-            outputs=[transpose_name],
-            perm=perm)
-        #reshape
-        shape = [-1] + list(i * j
-                            for i, j in zip(block_shape, x.out_shapes[0][
-                                1:])) + x.out_shapes[0][1 + len(block_shape):]
-        reshape_name = gen_name("batch_to_space", "reshape")
-        self.paddle_graph.add_layer(
-            kernel="paddle.reshape",
-            inputs={"x": transpose_name},
-            outputs=[reshape_name],
-            shape=shape)
-        #crop
-        attrs = {}
-        crop_shape = shape
-        crop_offsets = [0] * len(shape)
-        for i in range(len(crops)):
-            crop_shape[i + 1] = crop_shape[i + 1] - crops[i][0] - crops[i][1]
-            crop_offsets[i + 1] = crops[i][0]
-        attrs['shape'] = crop_shape
-        attrs['offsets'] = crop_offsets
-        self.paddle_graph.add_layer(
-            kernel="paddle.crop",
-            inputs={"x": reshape_name},
+            "paddle.flip",
+            inputs=inputs,
             outputs=[node.name],
-            **attrs)
+            **attr)
 
-    def SpaceToBatchND(self, node):
-        '''
-        zero-pad->reshape->transpose->reshape
-        '''
-        x = self.graph.get_input_node(node, 0)
-        block_shape = self.graph.get_input_node(node, 1)
-        paddings = self.graph.get_input_node(node, 2)
-        if block_shape.layer_type == "Const":
-            block_shape = block_shape.value.tolist()
-        if paddings.layer_type == "Const":
-            paddings = paddings.value.flatten().tolist()
-        input_name = x.name
-        #zero-pad
-        constant_values = 0
-        pad_name = gen_name("space_to_batch", "pad")
-        paddings = [0, 0] + paddings + [0, 0]
-        self.paddle_graph.add_layer(
-            kernel="paddle.nn.functional.pad",
-            inputs={"x": input_name},
-            outputs=[pad_name],
-            pad=paddings,
-            value=constant_values)
-        #reshape
-        n, h, w, c = x.out_shapes[0]
-        h = h + paddings[2] + paddings[3]
-        w = w + paddings[4] + paddings[5]
-        shape = [
-            n, h // block_shape[0], block_shape[0], w // block_shape[1],
-            block_shape[1], c
-        ]
-        reshape_name = gen_name("space_to_batch", "reshape")
-        self.paddle_graph.add_layer(
-            kernel="paddle.reshape",
-            inputs={"x": pad_name},
-            outputs=[reshape_name],
-            shape=shape)
-        #transpose
-        transpose_name = gen_name("space_to_batch", "transpose")
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": reshape_name},
-            outputs=[transpose_name],
-            perm=[2, 4, 0, 1, 3, 5])
-        #reshape
-        shape = [-1, h // block_shape[0], w // block_shape[1], c]
-        self.paddle_graph.add_layer(
-            kernel="paddle.reshape",
-            inputs={"x": transpose_name},
-            outputs=[node.name],
-            shape=shape)
