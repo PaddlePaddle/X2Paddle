@@ -116,9 +116,9 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 1. 新增支持转换的模型：[SwinTransformer](https://github.com/microsoft/Swin-Transformer/)、[BASNet](https://github.com/xuebinqin/BASNet)、[DBFace](https://github.com/dlunion/DBFace)、[EasyOCR](https://github.com/JaidedAI/EasyOCR)、[CifarNet](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)等。
 2. 支持Windows上使用本工具。
 3. 新增TensorFlow op映射（4个）：SplitV、ReverseV2、BatchToSpaceND、SpaceToBatchND。
-4. 新增PyTorch op映射（11个）：aten::index、aten::roll、aten::adaptive_avg_pool1d、aten::reflection_pad2d、aten::reflection_pad1d、aten::instance_norm、aten::gru、aten::norm、aten::clamp_min、aten:prelu、aten:split_with_sizes。
+4. 新增PyTorch op映射（11个）：aten::index、aten::roll、aten::adaptive_avg_pool1d、aten::reflection_pad2d、aten::reflection_pad1d、aten::instance_norm、aten::gru、aten::norm、aten::clamp_min、aten::prelu、aten:split_with_sizes。
 5. 新增ONNX op映射（1个）：DepthToSpace。
-6. 新增Caffe op映射（1个）：op：MemoryData。
+6. 新增Caffe op映射（1个）：MemoryData。
 
 ## 贡献代码
 
