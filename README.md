@@ -33,7 +33,7 @@ X2Paddle的架构设计着重考虑了对多深度学习框架的的支持以及
 - pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 ## 安装
-### 方式一：源码安装（推荐）
+### 方式一：源码安装
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -41,7 +41,7 @@ git checkout develop
 python setup.py install
 ```
 
-### 方式二：pip安装
+### 方式二：pip安装(推荐）
 我们会定期更新pip源上的x2paddle版本
 ```
 pip install x2paddle --index https://pypi.python.org/simple/
@@ -95,10 +95,8 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 4. [X2Paddle添加内置的Caffe自定义层](./docs/user_guides/add_caffe_custom_layer.md)
 5. [转换后PaddlePaddle预测模型简介](./docs/user_guides/pd_folder_introduction.py)
 6. [Paddle到ONNX的转换](https://github.com/PaddlePaddle/Paddle2ONNX)
-
-## 支持列表文档
-1. [X2Paddle测试模型库](./docs/introduction/x2paddle_model_zoo.md)  
-2. [X2Paddle支持的op列表](./docs/introduction/op_list.md)
+7. [X2Paddle测试模型库](./docs/introduction/x2paddle_model_zoo.md)  
+8. [X2Paddle支持的op列表](./docs/introduction/op_list.md)
 
 
 ## 转换教程
@@ -106,14 +104,21 @@ X2Paddle提供了工具解决如下问题，详见[tools/README.md](tools/README
 2. [PyTorch预测模型转换教程](./docs/demo/pytorch2paddle.ipynb)
 
 ## 更新历史
-2020.12.09
-1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。
-  方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。
-  方式二：script方式，转换后的代码按执行顺序逐行出现。
+2020.12.09  
+1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。  
+  方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。    
+  方式二：script方式，转换后的代码按执行顺序逐行出现。  
 2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
-3. 新增TensorFlow op（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2
+3. 新增TensorFlow op映射（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2。
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
 
+2021.04.30
+1. 新增支持转换的模型：[SwinTransformer](https://github.com/microsoft/Swin-Transformer/)、[BASNet](https://github.com/xuebinqin/BASNet)、[DBFace](https://github.com/dlunion/DBFace)、[EasyOCR](https://github.com/JaidedAI/EasyOCR)、[CifarNet](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)等。
+2. 支持Windows上使用本工具。
+3. 新增TensorFlow op映射（4个）：SplitV、ReverseV2、BatchToSpaceND、SpaceToBatchND。
+4. 新增PyTorch op映射（11个）：aten::index、aten::roll、aten::adaptive_avg_pool1d、aten::reflection_pad2d、aten::reflection_pad1d、aten::instance_norm、aten::gru、aten::norm、aten::clamp_min、aten:prelu、aten:split_with_sizes。
+5. 新增ONNX op映射（1个）：DepthToSpace。
+6. 新增Caffe op映射（1个）：op：MemoryData。
 
 ## 贡献代码
 
