@@ -1,6 +1,6 @@
 # Create A Good Pull Request
 
-Please check the follow step before mergine this pull request
+Please check the follow step before merging this pull request
 
 - [ ] Python code style verification
 - [ ] Review all the code diff by yourself
