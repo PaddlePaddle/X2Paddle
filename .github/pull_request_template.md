@@ -1,5 +1,7 @@
 # Create A Good Pull Request
 
+> 下面的文字请保留在PR说明的最后面，并在提完PR后，根据实际情况勾选确认以下情况  
+
 Please check the follow step before merging this pull request
 
 - [ ] Python code style verification
