@@ -332,6 +332,30 @@ class Embedding(paddle.nn.Embedding):
             sparse=sparse)
         assert max_norm is None, "The max_norm must be None in Embedding!"
         assert not scale_grad_by_freq, "The scale_grad_by_freq must False None in Embedding!"
+        
+        
+class Identity(paddle.nn.Layer):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def forward(self, input):
+        return input
+
+    
+class GroupNorm(paddle.nn.GroupNorm):
+    def __init__(num_groups, num_channels, eps=1e-05, affine=True):
+        if not affine:
+            weight_attr = False
+            bias_attr = False
+        else:
+            weight_attr = None
+            bias_attr = None
+        super().__init__(num_groups,
+                         num_channels,
+                         eps,
+                         weight_attr,
+                         bias_attr)
+
 
 
 class InstanceNorm2D(paddle.nn.InstanceNorm2D):
@@ -371,7 +395,7 @@ class KLDivLoss(paddle.nn.Layer):
             out = paddle.exp(target) * (target - input)
         else:
             out_pos = target * (paddle.log(target) - input)
-            zeros = paddle.zeros_like(output_pos)
+            zeros = paddle.zeros_like(out_pos)
             out = paddle.where(target > 0, out_pos, zeros)
         out_sum = paddle.sum(out)
         if self.reduction == "sum":
@@ -383,6 +407,20 @@ class KLDivLoss(paddle.nn.Layer):
             return paddle.mean(out)
         else:
             return out
+        
+        
+class LayerNorm(paddle.nn.LayerNorm):
+    def __init__(self, normalized_shape, eps=1e-05, elementwise_affine=True):
+        if not elementwise_affine:
+            weight_attr = False
+            bias_attr = False
+        else:
+            weight_attr = None
+            bias_attr = None
+        super().__init__(normalized_shape,
+                         eps,
+                         weight_attr,
+                         bias_attr)
 
 
 class Linear(paddle.nn.Linear):
@@ -449,6 +487,10 @@ class MaxPool3D(paddle.nn.MaxPool3D):
         assert dilation == 1, "The dilation must be 1 in MaxPool3D."
         
         
+import paddle
+import paddle.nn as nn
+TYPE_MAPPER = {"fp16": "float16", "fp32": "float32", "fp64": "float64"}
+
 class MaxUnpool2D(paddle.nn.Layer):
     def __init__(self, kernel_size, stride=None, padding=0):
         super().__init__()
@@ -470,18 +512,27 @@ class MaxUnpool2D(paddle.nn.Layer):
         
     def forward(self, input, indices, output_size=None):
         if output_size is None:
-            n, c, h, w = x.shape
+            n, c, h, w = input.shape
             out_h = (h - 1) * self.stride[0] - 2 * self.padding[0] + self.kernel_size[0]
             out_w = (w - 1) * self.stride[1] - 2 * self.padding[1] + self.kernel_size[1]
             output_size = (n, c, out_h, out_w)
-        t = str(x.dtype).lower().strip().split(".")[-1]
+        else:
+            if len(output_size) == len(self.kernel_size) + 2:
+                output_size = output_size[2:]
+        t = str(input.dtype).lower().strip().split(".")[-1]
         t = TYPE_MAPPER[t]
         out = paddle.zeros(output_size, dtype=t)
         flatten_out = paddle.flatten(out)
+        for i in range(indices.shape[0]):
+            for j in range(indices.shape[1]):
+                for k in range(indices.shape[2]):
+                    for m in range(indices.shape[3]):
+                        indices[i, j, k, m] = (out.shape[1] * out.shape[2] * out.shape[3]) * i + \
+                                              (out.shape[2] * out.shape[3]) * j + indices[i, j, k, m]
         flatten_indices = paddle.flatten(indices)
         flatten_input = paddle.flatten(input)
         for i in range(flatten_indices.shape[0]):
-            flatten_out[flatten_indices[i]] = flatten_input[flatten_indices[i]]
+            flatten_out[flatten_indices[i].tolist()] = flatten_input[i].tolist()
         out = paddle.reshape(flatten_out, out.shape)
         return out
     

@@ -385,7 +385,7 @@ class AstUpdater(ast.NodeVisitor):
                 return attr_str
         elif pytorch_api in REMOVE_API:
             if isinstance(father_node,
-                          (ast.Assign, ast.If, ast.FunctionDef, ast.ClassDef)):
+                          (ast.Assign, ast.If, ast.FunctionDef, ast.ClassDef, ast.Call)):
                 scope_node = self._get_scope_node()
                 for i, n in enumerate(scope_node.body):
                     if father_node == n:
@@ -417,7 +417,7 @@ class AstUpdater(ast.NodeVisitor):
         value = self.visit(value_node)
         if value in API_MAPPER:
             value = API_MAPPER[value][0]
-        elif isinstance(value, str) and value.startswith("torch"):
+        elif isinstance(value, str) and value.startswith("torch") and "(" not in value and "[" not in value:
             self.no_support_apis.append(value)
         return {key: value}
 
@@ -456,7 +456,7 @@ class AstUpdater(ast.NodeVisitor):
             self.generic_visit(node)
             return
         if pytorch_api not in API_MAPPER:
-            if  "[" not in pytorch_api:
+            if  pytorch_api.startswith("torch") and "[" not in pytorch_api  and "(" not in pytorch_api:
                 self.no_support_apis.append(pytorch_api)
             return
         paddle_api = API_MAPPER[pytorch_api][0]
@@ -564,6 +564,18 @@ class AstUpdater(ast.NodeVisitor):
         last_node = self.scopes_and_dependencies.pop(-1)
         while not isinstance(last_node, ast.If):
             last_node = self.scopes_and_dependencies.pop(-1)
+            
+    def visit_While(self, node):
+        """ 1. 将While节点加入scopes_and_dependencies；
+            2. 遍历Try节点的子节点；
+            3. 去除scopes_and_dependencies中Try节点以及之后的节点。
+        """
+        self.scopes_and_dependencies.append(node)
+        self.generic_visit(node)
+        last_node = self.scopes_and_dependencies.pop(-1)
+        while not isinstance(last_node, ast.While):
+            last_node = self.scopes_and_dependencies.pop(-1)
+
 
     def visit_Try(self, node):
         """ 1. 将Try节点加入scopes_and_dependencies；

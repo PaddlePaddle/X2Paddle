@@ -63,9 +63,13 @@ NN_MAPPER = {
     "torch.nn.Dropout": ["paddle.nn.Dropout", DropoutModuleMapper],
     "torch.nn.Dropout2d": ["paddle.nn.Dropout", DropoutModuleMapper],
     "torch.nn.Embedding": ["paddle.nn.Embedding", EmbeddingModuleMapper],
+    "torch.nn.GELU": ["paddle.nn.GELU", None],
+    "torch.nn.GroupNorm": ["paddle.nn.GroupNorm", None],
+    "torch.nn.Identity": ["x2paddle.torch2paddle.Identity", None],
     "torch.nn.InstanceNorm2d":
     ["paddle.nn.InstanceNorm2D", BatchNormModuleMapper],
     "torch.nn.LeakyReLU": ["paddle.nn.LeakyReLU", None],
+    "torch.nn.LayerNorm": ["paddle.nn.LayerNorm", BatchNormModuleMapper], 
     "torch.nn.Linear": ["paddle.nn.Linear", LinearModuleMapper],
     "torch.nn.MaxPool1d": ["paddle.nn.MaxPool1D", MaxPoolModuleMapper],
     "torch.nn.MaxPool2d": ["paddle.nn.MaxPool2D", MaxPoolModuleMapper],
@@ -165,7 +169,8 @@ DIST_MAPPER = {
 
 DTYPE_MAPPER = {
     "torch.float32": [string("float32"), None],
-    "torch.long": [string("int64"), None]
+    "torch.long": [string("int64"), None],
+    "torch.bool": [string("bool"), None]
 }
 
 TORCHVISION_MAPPER = {
@@ -197,25 +202,26 @@ TORCHVISION_MAPPER = {
     "torchvision.datasets.ImageFolder":
     ["x2paddle.torch2paddle.ImageFolder", None],
     # models
-    "torchvision.models": ["x2paddle.project_convertor.pytorch.torch2paddle.models", None],
-    "torchvision.models.vgg.model_urls": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg.model_urls", None],
-    "torchvision.models.vgg11": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg11", None],
-    "torchvision.models.vgg13": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg13", None],
-    "torchvision.models.vgg16": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg16", None],
-    "torchvision.models.vgg19": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg19", None],
-    "torchvision.models.vgg11_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg11_bn", None],
-    "torchvision.models.vgg13_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg13_bn", None],
-    "torchvision.models.vgg16_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg16_bn", None],
-    "torchvision.models.vgg19_bn": ["x2paddle.project_convertor.pytorch.torch2paddle.models.vgg19_bn", None],
-    "torchvision.models.resnet18": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet18", None],
-    "torchvision.models.resnet34": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet34", None],
-    "torchvision.models.resnet50": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet50", None],
-    "torchvision.models.resnet101": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet101", None],
-    "torchvision.models.resnet152": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnet152", None],
-    "torchvision.models.resnext50_32x4d": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnext50_32x4d", None],
-    "torchvision.models.resnext101_32x8d": ["x2paddle.project_convertor.pytorch.torch2paddle.models.resnext101_32x8d", None],
-    "torchvision.models.wide_resnet50_2": ["x2paddle.project_convertor.pytorch.torch2paddle.models.wide_resnet50_2", None],
-    "torchvision.models.wide_resnet101_2": ["x2paddle.project_convertor.pytorch.torch2paddle.models.wide_resnet101_2", None],
+    "torchvision.models": ["x2paddle.models", None],
+    "torchvision.models.vgg.model_urls": ["x2paddle.models.vgg_pth_urls", None],
+    "torchvision.models.vgg11": ["x2paddle.models.vgg11_pth", None],
+    "torchvision.models.vgg13": ["x2paddle.models.vgg13_pth", None],
+    "torchvision.models.vgg16": ["x2paddle.models.vgg16_pth", None],
+    "torchvision.models.vgg19": ["x2paddle.models.vgg19_pth", None],
+    "torchvision.models.vgg11_bn": ["x2paddle.models.vgg11_bn_pth", None],
+    "torchvision.models.vgg13_bn": ["x2paddle.models.vgg13_bn_pth", None],
+    "torchvision.models.vgg16_bn": ["x2paddle.models.vgg16_bn_pth", None],
+    "torchvision.models.vgg19_bn": ["x2paddle.models.vgg19_bn_pth", None],
+    "torchvision.models.resnet.model_urls": ["x2paddle.models.resnet_pth_urls", None],
+    "torchvision.models.resnet18": ["x2paddle.models.resnet18_pth", None],
+    "torchvision.models.resnet34": ["x2paddle.models.resnet34_pth", None],
+    "torchvision.models.resnet50": ["x2paddle.models.resnet50_pth", None],
+    "torchvision.models.resnet101": ["x2paddle.models.resnet101_pth", None],
+    "torchvision.models.resnet152": ["x2paddle.models.resnet152_pth", None],
+    "torchvision.models.resnext50_32x4d": ["x2paddle.models.resnext50_32x4d_pth", None],
+    "torchvision.models.resnext101_32x8d": ["x2paddle.models.resnext101_32x8d_pth", None],
+    "torchvision.models.wide_resnet50_2": ["x2paddle.models.wide_resnet50_2_pth", None],
+    "torchvision.models.wide_resnet101_2": ["x2paddle.models.wide_resnet101_2_pth", None],
 }
 
 AUTOGRAD_MAPPER = {
@@ -276,6 +282,12 @@ API_MAPPER = {
     "torch.randn": ["x2paddle.torch2paddle.randn", None],
     "torch.add": ["paddle.add", TwoMathMapper],
     "torch.mul": ["paddle.multiply", TwoMathMapper],
+    "torch.einsum": ["paddlenlp.ops.einsum ", None],
+    "torch.linspace": ["paddle.linspace", LinspaceMapper],
+}
+INVALID_API={
+    "torch.channels_last": ["None", None],
+    "torch.cuda.empty_cache": ["x2paddle.torch2paddle.invalid", None],
 }
 
 API_MAPPER.update(OPTIMIZER_MAPPER)
@@ -285,8 +297,9 @@ API_MAPPER.update(DTYPE_MAPPER)
 API_MAPPER.update(DIST_MAPPER)
 API_MAPPER.update(TORCHVISION_MAPPER)
 API_MAPPER.update(AUTOGRAD_MAPPER)
+API_MAPPER.update(INVALID_API)
 
 REMOVE_API = [
     "torch.backends.cudnn", "torch.backends.cudnn.benchmark",
-    "torch.backends.cudnn.enabled", "torch.backends.cudnn.deterministic"
+    "torch.backends.cudnn.enabled", "torch.backends.cudnn.deterministic",
 ]

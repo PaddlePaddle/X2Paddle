@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import vgg
-from . import resnet
+import os
+import paddle
 
-from .vgg import *
-from .resnet import *
-
-__all__ = vgg.__all__
-__all__ = resnet.__all__
+def init_process_group(backend, 
+                       init_method=None, 
+                       timeout=datetime.timedelta(0, 1800), 
+                       world_size=-1, 
+                       rank=-1, 
+                       store=None, 
+                       group_name=''):
+    paddle.distributed.init_parallel_env()
+    os.environ['PADDLE_TRAINERS_NUM'] = world_size if world_size > 0 else 1
+    os.environ['PADDLE_TRAINER_ID'] = rank if rank > 0 else 1

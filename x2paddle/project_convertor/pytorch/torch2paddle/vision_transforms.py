@@ -118,8 +118,6 @@ class ToPILImage(BaseTransform):
         return Image.fromarray(npimg, mode=mode)
 
 
-setattr(paddle.vision.transforms, "ToPILImage", ToPILImage)
-
 
 class ToTensor(BaseTransform):
     """Convert a ``PIL.Image`` or ``numpy.ndarray`` to ``numpy.ndarray`` with shapr (C x H x W).

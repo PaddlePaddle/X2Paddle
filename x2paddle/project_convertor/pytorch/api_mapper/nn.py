@@ -196,6 +196,60 @@ class EmbeddingModuleMapper(Mapper):
         else:
             self.convert_args2kwargs(3)
             return self.convert_to_paddle()
+        
+        
+class GroupNormModuleMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "eps", "epsilon")
+        if "affine" in self.kwargs and not self.kwargs["affine"]:
+            for key in ["weight_attr", "bias_attr"]:
+                self.kwargs[key] = False
+
+    def delete_attrs(self):
+        delete_key(self.kwargs, "affine")
+
+    def run(self):
+        if self.rename_func_name("x2paddle.torch2paddle.GroupNorm"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            self.convert_args2kwargs(2)
+            return self.convert_to_paddle()
+        
+        
+class LayerNormModuleMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "eps", "epsilon")
+        if "elementwise_affine" in self.kwargs and not self.kwargs["elementwise_affine"]:
+            for key in ["weight_attr", "bias_attr"]:
+                self.kwargs[key] = False
+
+    def delete_attrs(self):
+        delete_key(self.kwargs, "elementwise_affine")
+
+    def run(self):
+        if self.rename_func_name("x2paddle.torch2paddle.LayerNorm"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            self.convert_args2kwargs(1)
+            return self.convert_to_paddle()
 
 
 class LinearModuleMapper(ConvModuleMapper):

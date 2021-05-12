@@ -33,7 +33,10 @@ def arange(start,
            layout=None,
            device=None,
            requires_grad=False):
-    return paddle.arange(start, end, step, dtype)
+    if requires_grad:
+        return paddle.arange(start, end, step, dtype).requires_grad_(True)
+    else:
+        return paddle.arange(start, end, step, dtype)
 
 
 def clip(input, min, max, *, out=None):
@@ -112,6 +115,21 @@ def full_like(input,
         return paddle.full_like(input, fill_value, dtype).requires_grad_(True)
     else:
         return paddle.full_like(input, fill_value, dtype)
+    
+    
+def linspace(start, 
+             end, 
+             steps, 
+             out=None, 
+             dtype=None, 
+             layout=None, 
+             device=None, 
+             requires_grad=False):
+    if requires_grad:
+        return paddle.linspace(start, end, step, dtype).requires_grad_(True)
+    else:
+        return paddle.linspace(start, end, step, dtype)
+
 
 
 def load(f, map_location=None, pickle_module=None, **pickle_load_args):
@@ -280,7 +298,10 @@ def randperm(n,
              device=None,
              requires_grad=False,
              pin_memory=False):
-    return paddle.randperm(n, dtype)
+    if requires_grad:
+        return paddle.randperm(n, dtype).requires_grad_(True)
+    else:
+        return paddle.randperm(n, dtype)
 
 
 def save(obj, f, pickle_module=None, pickle_protocol=2):
@@ -343,3 +364,7 @@ def zeros_like(input,
 class DataParallel(paddle.DataParallel):
     def __init__(self, module, device_ids=None, output_device=None, dim=0):
         super().__init__(module)
+        
+        
+def invalid(*args, **kwargs):
+    return None

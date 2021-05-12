@@ -192,6 +192,11 @@ class ArangeMapper(Mapper):
                  kwargs,
                  target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        self.useful_attrs = dict()
+        
+    def process_attrs(self):
+        self.useful_attrs["requires_grad"] = self.kwargs[
+            "requires_grad"] if "requires_grad" in self.kwargs else False
 
     def delete_attrs(self):
         delete_key(self.kwargs, "out")
@@ -205,7 +210,12 @@ class ArangeMapper(Mapper):
                                          self.kwargs), []
         else:
             self.convert_args2kwargs(3)
-            return self.convert_to_paddle()
+            out1, out2, out3 = self.convert_to_paddle()
+            if isinstance(self.useful_attrs["requires_grad"],
+                          str) or not self.useful_attrs["requires_grad"]:
+                out2 = "{}.requires_grad_({})".format(
+                    out2, self.useful_attrs["requires_grad"])
+            return out1, out2, out3
 
 
 class TwoMathMapper(Mapper):
@@ -275,9 +285,9 @@ class CreateParamModuleMapper(Mapper):
                 param_name = self.args[0]
             else:
                 param_name = self.kwargs["value"]
-        code = "paddle.create_parameter(shape={}.shape, dtype=str({}.numpy().dtype), default_initializer = psddle.nn.initializer.Assign({}))".format(
+        code = "paddle.create_parameter(shape={}.shape, dtype=str({}.numpy().dtype), default_initializer = paddle.nn.initializer.Assign({}))".format(
             param_name, param_name, param_name)
-        return [], code, ["{}.stop_gradient = True".format(self.target_name)]
+        return [], code, ["{}.stop_gradient = False".format(self.target_name)]
 
 
 class NoGradMapper(Mapper):
@@ -492,3 +502,39 @@ class SplitMapper(Mapper):
         else:
             self.convert_args2kwargs(3)
             return self.convert_to_paddle()
+
+        
+class LinspaceMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+        self.useful_attrs = dict()
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "end", "stop")
+        rename_key(self.kwargs, "steps", "num")
+        self.useful_attrs["requires_grad"] = self.kwargs[
+            "requires_grad"] if "requires_grad" in self.kwargs else False
+        
+    def delete_attrs(self):
+        delete_key(self.kwargs, "out")
+        delete_key(self.kwargs, "layout")
+        delete_key(self.kwargs, "device")
+        delete_key(self.kwargs, "requires_grad")
+        
+    def run(self):
+        if self.rename_func_name("x2paddle.torch2paddle.linspace"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            self.convert_args2kwargs(1)
+            out1, out2, out3 = self.convert_to_paddle()
+            if isinstance(self.useful_attrs["requires_grad"],
+                          str) or not self.useful_attrs["requires_grad"]:
+                out2 = "{}.requires_grad_({})".format(
+                    out2, self.useful_attrs["requires_grad"])
+            return out1, out2, out3
