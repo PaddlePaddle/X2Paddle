@@ -123,4 +123,4 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 
 ## :hugs:贡献代码:hugs:
 
-我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests。有PyTorch训练项目转换需求欢迎随时提issue~
+我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests，如果有PyTorch训练项目转换需求欢迎随时提issue~
