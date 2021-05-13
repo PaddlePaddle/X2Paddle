@@ -51,7 +51,7 @@ class CelebA(data.Dataset):
                 test_dataset)
         filename, label = dataset[index]
         image = Image.open(os.path.join(self.image_dir, filename))
-        # return self.transform(image), torch.FloatTensor(label)
+        # return self.transform(image), torch2paddle.create_float32_tensor(label)
         # 将原来的return替换为如下12-17行
         out1 = self.transform(image)
         if isinstance(out1, paddle.Tensor):
