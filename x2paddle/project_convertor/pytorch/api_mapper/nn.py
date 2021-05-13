@@ -88,7 +88,6 @@ class BatchNormModuleMapper(Mapper):
     def run(self):
         if self.pytorch_api_name == "torch.nn.InstanceNorm2d":
             delete_key(self.kwargs, "track_running_stats")
-            print("------", self.kwargs)
         if self.pytorch_api_name == "torch.nn.BatchNorm1d" and self.rename_func_name(
                 "x2paddle.torch2paddle.BatchNorm1D"):
             return [], generate_api_code(self.func_name, self.args,
