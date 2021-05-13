@@ -77,7 +77,7 @@ PyTorch仅支持API使用方式，详见[PyTorch预测模型转换文档](./docs
 ***[预测模型转换常见问题](./docs/inference_model_convertor/FAQ.md)***
 
 
-### 功能二：训练项目转换:heart:
+### 功能二：训练项目转换:heart: :heart:
 
 | 参数 | 作用 |
 |----------|--------------|
