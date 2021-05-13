@@ -116,7 +116,7 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 5. 新增ONNX op映射（1个）：DepthToSpace。
 6. 新增Caffe op映射（1个）：MemoryData。
 
-2021.05.13
+2021.05.13  
 新增PyTorch训练项目功能：
 支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
 
