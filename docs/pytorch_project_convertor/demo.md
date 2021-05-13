@@ -56,7 +56,7 @@ class CelebA(data.Dataset):
         out1 = self.transform(image)
         if isinstance(out1, paddle.Tensor):
             out1 = out1.numpy()
-        out2 = paddle.Tensor(label)
+        out2 = torch2paddle.create_float32_tensor(label)
         if isinstance(out2, paddle.Tensor):
             out2 = out2.numpy()
         return out1, out2
