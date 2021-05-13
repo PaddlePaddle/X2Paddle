@@ -107,7 +107,7 @@ python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample
 ## [Ultra-Light-Fast-Generic-Face-Detector](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)
 
 ### 准备工作
-1.
+1. 下载代码
 ``` shell
 # 下载项目
 git clone https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB.git
