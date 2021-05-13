@@ -26,6 +26,7 @@ main(config)
 cd ../
 x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project --pretrain_model=stargan/stargan_celeba_128/models/
 ```
+【注意】此示例中的`pretrain_model`是训练后的PyTorch模型，转换后则为PaddlePaddle训练后的模型，用户可修改转换后代码将其作为预训练模型，也可直接用于预测。
 ### 第三步：转换后代码后处理
 **需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**  
 1.[使用CPU可忽略此步骤] 若需要使用GPU，DataLoader的`num_workers`设置为0，在[config处](https://github.com/SunAhong1993/stargan/blob/paddle/main.py#L116)设置强制设置`num_workers`，具体添加代码如下：
