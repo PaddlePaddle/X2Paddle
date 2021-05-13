@@ -3,7 +3,6 @@
 ```python
 torch.narrow(input, dim, start, length)
 ```
-
 ### [paddle.slice](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/layers/slice_cn.html#slice)
 ```python
 paddle.slice(input, axes, starts, ends)
