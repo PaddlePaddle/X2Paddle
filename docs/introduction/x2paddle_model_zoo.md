@@ -1,9 +1,6 @@
-# X2Paddle模型测试库
-> 目前X2Paddle支持80+的TensorFlow OP，30+的Caffe Layer，60+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
+# X2Paddle转换库
 
-**注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
-
-## TensorFlow
+## TensorFlow预测模型
 
 | 模型 | 代码 |
 |------|----------|
@@ -28,7 +25,7 @@
 | Bert（chinese_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
 | Bert（multi_cased_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
 
-## Caffe
+## Caffe预测模型
 
 | 模型 | 代码 |
 |-------|--------|
@@ -51,7 +48,7 @@
 
 
 
-## ONNX
+## ONNX预测模型
 **注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](pytorch_to_onnx.md)
 
 | 模型 | 来源 | operator version|备注|
@@ -74,9 +71,10 @@
 |Ultra-Light-Fast-Generic-Face-Detector-1MB| [onnx_model](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/master/models/onnx)|9 |
 |BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../user_guides/FAQ.md)|
 |GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../user_guides/FAQ.md)|
+|CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9||
 
 
-## PyTorch
+## PyTorch预测模型
 
 | 模型 | 代码 | 备注 |
 |------|----------|------|
@@ -98,4 +96,15 @@
 | XLMRobertaForTokenClassification|[code](https://huggingface.co/transformers/model_doc/xlmroberta.html)  |只支持trace模式|
 | EasyOCR_detector|[code](https://github.com/JaidedAI/EasyOCR/blob/master/easyocr/detection.py)  |-|
 | EasyOCR_recognizer|[code](https://github.com/JaidedAI/EasyOCR/blob/master/easyocr/recognition.py)  |-|
+| SwinTransformer|[code](https://github.com/microsoft/Swin-Transformer/)  |-|
+| BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
+| DBFace |[code](https://github.com/dlunion/DBFacet)  |-|
 
+## PyTorch训练项目
+| 模型 | 转换前代码 | 转换后代码 |
+|------|----------|------|
+| StaGAN | [code](https://github.com/yunjey/stargan)|[code](https://github.com/SunAhong1993/stargan/tree/paddle)|
+| Ultra-Light-Fast-Generic-Face-Detector | [code](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB) |[code](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)|
+
+
+**注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：
