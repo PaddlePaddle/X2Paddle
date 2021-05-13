@@ -5,7 +5,7 @@
 
 ## 简介
 X2Paddle用于不同框架模型或项目到PaddlePaddle框架模型或项目的转换，旨在为飞桨开发者提升框架间转换的效率。  
-X2Paddle主要有有***2大功能***：  
+X2Paddle主要有***2大功能***：  
 1. ***预测模型转换***：X2Paddle支持Caffe/TensorFlow/ONNX/PyTorch的预测模型，一步转换至PaddlePaddle预测模型。
 2. ***训练项目转换***：PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。
 
@@ -100,7 +100,7 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 3. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo.md)
 
 ## 更新历史
-2020.12.09  
+**2020.12.09**  
 1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。  
   方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。  
   方式二：script方式，转换后的代码按执行顺序逐行出现。  
@@ -108,7 +108,7 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 3. 新增TensorFlow op映射（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2。
 4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
 
-2021.04.30
+**2021.04.30**
 1. 新增支持转换的模型：[SwinTransformer](https://github.com/microsoft/Swin-Transformer/)、[BASNet](https://github.com/xuebinqin/BASNet)、[DBFace](https://github.com/dlunion/DBFace)、[EasyOCR](https://github.com/JaidedAI/EasyOCR)、[CifarNet](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)等。
 2. 支持Windows上使用本工具。
 3. 新增TensorFlow op映射（4个）：SplitV、ReverseV2、BatchToSpaceND、SpaceToBatchND。
@@ -116,8 +116,8 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 5. 新增ONNX op映射（1个）：DepthToSpace。
 6. 新增Caffe op映射（1个）：MemoryData。
 
-2021.05.13  
-新增PyTorch训练项目功能：
+**2021.05.13**  
+- 新增PyTorch训练项目功能：
 支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
 
 
