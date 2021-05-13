@@ -5,9 +5,9 @@
 
 ## 简介
 X2Paddle用于不同框架模型或项目到PaddlePaddle框架模型或项目的转换，旨在为飞桨开发者提升框架间转换的效率。  
-X2Paddle主要有有2大功能：  
-***预测模型转换***：X2Paddle支持Caffe/TensorFlow/ONNX/PyTorch的预测模型，一步转换至PaddlePaddle预测模型。
-***训练项目转换***：PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。
+X2Paddle主要有有***2大功能***：  
+1. ***预测模型转换***：X2Paddle支持Caffe/TensorFlow/ONNX/PyTorch的预测模型，一步转换至PaddlePaddle预测模型。
+2. ***训练项目转换***：PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。
 
 ### 特性
 
