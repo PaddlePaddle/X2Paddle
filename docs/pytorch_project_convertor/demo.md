@@ -41,7 +41,7 @@ print(config)
 main(config)
 ```
 
-2.[使用CPU可忽略此步骤] 修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/stargan/blob/paddle/data_loader.py#L63)，将Tensor修改为numpy，修改代码如下：
+2. 修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/stargan/blob/paddle/data_loader.py#L63)，将Tensor修改为numpy，修改代码如下：
 ``` python
 ...
 class CelebA(data.Dataset):
@@ -64,7 +64,7 @@ class CelebA(data.Dataset):
     ...
 ```
 
-3.[使用CPU可忽略此步骤] 在[Tensor对比操作](https://github.com/SunAhong1993/stargan/blob/paddle/solver.py#L156)中对Tensor进行判断，判断是否为bool型，如果为bool类型需要强制转换，修改代码如下：
+3. 在[Tensor对比操作](https://github.com/SunAhong1993/stargan/blob/paddle/solver.py#L156)中对Tensor进行判断，判断是否为bool型，如果为bool类型需要强制转换，修改代码如下：
 ``` python
 ...
 class Solver(object):
