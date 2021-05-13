@@ -104,6 +104,7 @@ class BatchNormModuleMapper(Mapper):
                                          self.kwargs), []
         elif self.pytorch_api_name == "torch.nn.InstanceNorm2d" and self.rename_func_name(
                 "x2paddle.torch2paddle.InstanceNorm2D"):
+            delete_key(self.kwargs, "track_running_stats")
             return [], generate_api_code(self.func_name, self.args,
                                          self.kwargs), []
         else:

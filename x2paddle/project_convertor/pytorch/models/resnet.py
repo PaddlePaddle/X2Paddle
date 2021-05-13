@@ -11,21 +11,21 @@ __all__ = [
 ]
 
 model_urls = {
-    'resnet18': 'https://x2paddle.bj.bcebos.com/vision/models/resnet18-pt.pth',
-    'resnet34': 'https://x2paddle.bj.bcebos.com/vision/models/resnet34-pt.pth',
-    'resnet50': 'https://x2paddle.bj.bcebos.com/vision/models/resnet50-pt.pth',
+    'resnet18': 'https://x2paddle.bj.bcebos.com/vision/models/resnet18-pt.pdparams',
+    'resnet34': 'https://x2paddle.bj.bcebos.com/vision/models/resnet34-pt.pdparams',
+    'resnet50': 'https://x2paddle.bj.bcebos.com/vision/models/resnet50-pt.pdparams',
     'resnet101':
-    'https://x2paddle.bj.bcebos.com/vision/models/resnet101-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/resnet101-pt.pdparams',
     'resnet152':
-    'https://x2paddle.bj.bcebos.com/vision/models/resnet152-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/resnet152-pt.pdparams',
     'resnext50_32x4d':
-    'https://x2paddle.bj.bcebos.com/vision/models/resnext50_32x4d-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/resnext50_32x4d-pt.pdparams',
     'resnext101_32x8d':
-    'https://x2paddle.bj.bcebos.com/vision/models/resnext101_32x8d-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/resnext101_32x8d-pt.pdparams',
     'wide_resnet50_2':
-    'https://x2paddle.bj.bcebos.com/vision/models/wide_resnet50_2-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/wide_resnet50_2-pt.pdparams',
     'wide_resnet101_2':
-    'https://x2paddle.bj.bcebos.com/vision/models/wide_resnet101_2-pt.pth',
+    'https://x2paddle.bj.bcebos.com/vision/models/wide_resnet101_2-pt.pdparams',
 }
 
 

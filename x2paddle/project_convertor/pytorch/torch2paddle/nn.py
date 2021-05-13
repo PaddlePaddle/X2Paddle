@@ -376,8 +376,7 @@ class InstanceNorm2D(paddle.nn.InstanceNorm2D):
             momentum=momentum,
             epsilon=eps,
             weight_attr=weight_attr,
-            bias_attr=bias_attr,
-            use_global_stats=track_running_stats)
+            bias_attr=bias_attr)
         
         
 class KLDivLoss(paddle.nn.Layer):

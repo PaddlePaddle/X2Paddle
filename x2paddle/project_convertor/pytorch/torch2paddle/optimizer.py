@@ -41,10 +41,12 @@ def update_parameters(parameters, lr, weight_decay):
                             "lr"] / lr * p.optimize_attr["learning_rate"]
                 if "weight_decay" in items:
                     for p in params:
-                        if isinstance(items["weight_decay"], float):
+                        if isinstance(items["weight_decay"], (float, int)):
                             p.regularizer = L2Decay(items["weight_decay"])
                         else:
                             p.regularizer = weight_decay
+                for p in params:
+                    print(p.regularizer)
                 parameters_list.extend(params)
             else:
                 parameters_list.append(items)
@@ -148,6 +150,8 @@ class Adam(paddle.optimizer.Adam):
                  weight_decay=0,
                  amsgrad=False):
         parameters_list = update_parameters(params, lr, weight_decay)
+        if weight_decay == 0:
+            weight_decay = None
         super().__init__(
             learning_rate=lr,
             beta1=betas[0],

@@ -64,14 +64,14 @@ def create_tensor(*size):
     if len(size) > 1:
         return paddle.zeros(size, dtype="float32")
     else:
-        return paddle.to_tensor(size)
+        return paddle.to_tensor(size[0])
     
     
 def create_float32_tensor(*size):
     if len(size) > 1:
         return paddle.zeros(size, dtype="float32")
     else:
-        out = paddle.to_tensor(size)
+        out = paddle.to_tensor(size[0])
         out = paddle.cast(out, "float32")
         return out
     
@@ -80,7 +80,7 @@ def create_uint8_tensor(*size):
     if len(size) > 1:
         return paddle.zeros(size, dtype="uint8")
     else:
-        out = paddle.to_tensor(size)
+        out = paddle.to_tensor(size[0])
         out = paddle.cast(out, "uint8")
         return out
 
