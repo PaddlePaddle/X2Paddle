@@ -66,7 +66,7 @@ def freeze_model(sess, output_tensor_names, freeze_model_path):
         f.write(out_graph.SerializeToString())
 
     print("freeze model saved in {}".format(freeze_model_path))
-    
+
 # 加载模型参数
 # 此处需要修改input_checkpoint（checkpoint的前缀）和save_pb_file（模型导出的文件路径）
 input_checkpoint = "./tfhub_models/save/model.ckpt"

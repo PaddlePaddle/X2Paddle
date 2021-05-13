@@ -8,17 +8,17 @@ python == 2.7 | python >= 3.5
 paddlepaddle >= 1.8.0  
 pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
-**使用trace方式需安装以下依赖** 
+**使用trace方式需安装以下依赖**
 pandas
-treelib 
+treelib
 
 ## 使用方式
 
 ``` python
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(module=torch_module, 
-               save_dir="./pd_model", 
-               jit_type="trace", 
+pytorch2paddle(module=torch_module,
+               save_dir="./pd_model",
+               jit_type="trace",
                input_examples=[torch_input])
 # module (torch.nn.Module): PyTorch的Module。
 # save_dir (str): 转换后模型的保存路径。
@@ -46,8 +46,8 @@ torch_module.load_state_dict(torch_state_dict)
 torch_module.eval()
 # 进行转换
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(torch_module, 
-               save_dir="pd_model_trace", 
-               jit_type="trace", 
+pytorch2paddle(torch_module,
+               save_dir="pd_model_trace",
+               jit_type="trace",
                input_examples=[torch.tensor(input_data)])
 ```

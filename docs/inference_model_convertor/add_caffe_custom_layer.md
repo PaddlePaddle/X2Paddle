@@ -1,6 +1,6 @@
 ## 如何转换Caffe自定义Layer
 
-本文档介绍如何将Caffe自定义Layer转换为PaddlePaddle模型中的对应实现, 用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换。 
+本文档介绍如何将Caffe自定义Layer转换为PaddlePaddle模型中的对应实现, 用户可根据自己需要，添加代码实现自定义层，从而支持模型的完整转换。
 目前，代码中已经提供了10个非官方op（不在[官网](http://caffe.berkeleyvision.org/tutorial/layers)上的op）的转换，这些op对应的Caffe实现源码如下：
 
 | op | 该版本实现源码 |
@@ -49,7 +49,7 @@ def Permute(self, node):
         node.inputs) == 1, "The count of Permute node\'s input is not 1."
     input = self.graph.get_input_node(node, idx=0, copy=True)
     params = node.layer.permute_param
-    order = list(params.order)    
+    order = list(params.order)  
     self.paddle_graph.add_layer(
         "paddle.transpose",
         inputs={"x": input.name},
@@ -80,7 +80,7 @@ def shape_permute(layer, input_shape):
 - 方式二：
 1. 进入./x2paddle/op_mapper/dygraph/caffe2paddle/caffe_custom_layer，创建.py文件，例如mylayer.py
 2. 仿照./x2paddle/op_mapper/dygraph/caffe2paddle/caffe_custom_layer中的其他文件，在mylayer.py中主要需要实现1个类，下面以roipooling.py为例分析代码：
-  
+
 ```python
 class ROIPooling(object):
     def __init__(self, pooled_height, pooled_width, spatial_scale):
@@ -90,10 +90,10 @@ class ROIPooling(object):
             "spatial_scale": spatial_scale}
 
     def __call__(self, x0, x1):
-        slice_x1 = paddle.slice(input=x1, axes=[1], 
+        slice_x1 = paddle.slice(input=x1, axes=[1],
                                 starts=[1], ends=[5])
-        out = fluid.layers.roi_pool(input=x0, 
-                                    rois=slice_x1, 
+        out = fluid.layers.roi_pool(input=x0,
+                                    rois=slice_x1,
                                     **self.roipooling_layer_attrs)
         return out
 ```
