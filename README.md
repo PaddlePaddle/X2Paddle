@@ -7,7 +7,7 @@
 X2Paddle用于不同框架模型或项目到PaddlePaddle框架模型或项目的转换，旨在为飞桨开发者提升框架间转换的效率。  
 X2Paddle主要有***2大功能***：  
 1. ***预测模型转换***：X2Paddle支持Caffe/TensorFlow/ONNX/PyTorch的预测模型，一步转换至PaddlePaddle预测模型。
-2. ***训练项目转换***：PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。
+2. ***训练项目转换***：PyTorch训练项目，转换至PaddlePaddle项目，助力用户在PaddlePaddlePaddle上进行模型训练。:heart:
 
 ### 特性
 
@@ -121,6 +121,6 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
 
 
-## 贡献代码
+## :hugs:贡献代码:hugs:
 
-我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests。
+我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests。有PyTorch训练项目转换需求欢迎随时提issue~
