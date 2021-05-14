@@ -30,7 +30,7 @@ x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project
 【注意】此示例中的`pretrain_model`是训练后的PyTorch模型，转换后则为PaddlePaddle训练后的模型，用户可修改转换后代码将其作为预训练模型，也可直接用于预测。
 ### 第三步：转换后代码后处理
 **需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**  
-1.[使用CPU可忽略此步骤] 若需要使用GPU，DataLoader的`num_workers`设置为0，在[config处](https://github.com/SunAhong1993/stargan/blob/paddle/main.py#L116)设置强制设置`num_workers`，具体添加代码如下：
+1. DataLoader的`num_workers`设置为0，在[config处](https://github.com/SunAhong1993/stargan/blob/paddle/main.py#L116)设置强制设置`num_workers`，具体添加代码如下：
 ``` python
 ...
 parser.add_argument('--lr_update_step', type=int, default=1000)
@@ -42,7 +42,7 @@ print(config)
 main(config)
 ```
 
-2.[使用CPU可忽略此步骤] 修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/stargan/blob/paddle/data_loader.py#L63)，将Tensor修改为numpy，修改代码如下：
+2. 修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/stargan/blob/paddle/data_loader.py#L63)，将Tensor修改为numpy，修改代码如下：
 ``` python
 ...
 class CelebA(data.Dataset):
@@ -65,7 +65,7 @@ class CelebA(data.Dataset):
     ...
 ```
 
-3.[使用CPU可忽略此步骤] 在[Tensor对比操作](https://github.com/SunAhong1993/stargan/blob/paddle/solver.py#L156)中对Tensor进行判断，判断是否为bool型，如果为bool类型需要强制转换，修改代码如下：
+3. 在[Tensor对比操作](https://github.com/SunAhong1993/stargan/blob/paddle/solver.py#L156)中对Tensor进行判断，判断是否为bool型，如果为bool类型需要强制转换，修改代码如下：
 ``` python
 ...
 class Solver(object):
@@ -108,7 +108,7 @@ python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample
 ## [Ultra-Light-Fast-Generic-Face-Detector](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)
 
 ### 准备工作
-1.
+1. 下载项目
 ``` shell
 # 下载项目
 git clone https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB.git
@@ -158,7 +158,7 @@ x2paddle --convert_torch_project --project_dir=Ultra-Light-Fast-Generic-Face-Det
 ```
 ### 第三步：转换后代码后处理
 **需要修改的文件位于paddle_project文件夹中，其中文件命名与原始Ultra-Light-Fast-Generic-Face-Detector-1MB文件夹中文件命名一致。**  
-1.[使用CPU可忽略此步骤] 若需要使用GPU，DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/paddle/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
+1. DataLoader的`num_workers`设置为0，在转换后的[train-version-RFB.sh处](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/paddle/train-version-RFB.sh#L27)设置强制设置`num_workers`，具体添加代码如下：
 ```shell
 ...
   --num_workers \
@@ -166,7 +166,7 @@ x2paddle --convert_torch_project --project_dir=Ultra-Light-Fast-Generic-Face-Det
   0 \
 ...
 ```
-2.[使用CPU可忽略此步骤] 修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/paddle/vision/datasets/voc_dataset.py#L56)，将Tensor修改为numpy，修改代码如下：
+2.修改自定义Dataset中的[\_\_getitem\_\_的返回值](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/paddle/vision/datasets/voc_dataset.py#L56)，将Tensor修改为numpy，修改代码如下：
 ``` python
 ...
 class VOCDataset(data.Dataset):
