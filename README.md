@@ -81,7 +81,7 @@ PyTorch仅支持API使用方式，详见[PyTorch预测模型转换文档](./docs
 
 | 参数 | 作用 |
 |----------|--------------|
-|--convert_torch_project | 当前方式为对PyTorch Project进行转换 |
+|--convert_torch_project | 表示使用对PyTorch Project进行转换的功能 |
 |--project_dir | PyTorch的项目路径 |
 |--save_dir | 指定转换后项目的保存路径 |
 |--pretrain_model | **[可选]**需要转换的预训练模型的路径(文件后缀名为“.pth”、“.pt”、“.ckpt”)或者包含预训练模型的文件夹路径，转换后的模型将将保在当前路径，后缀名为“.pdiparams” |
