@@ -1,6 +1,4 @@
-## 组网类API映射列表
-
-该文档梳理了与构造网络相关的PyTorch-PaddlePaddle API映射列表。
+## 组网类
 
 | 序号 | PyTorch API                                                  | PaddlePaddle API                                             | 备注                                                         |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -50,6 +48,6 @@
 | 44   | [torch.nn.PReLU](https://pytorch.org/docs/stable/generated/torch.nn.PReLU.html?highlight=prelu#torch.nn.PReLU) | [paddle.nn.PReLU](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/activation/PReLU_cn.html#prelu) | 功能一致                                                     |
 | 45   | [torch.nn.ReLU](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html?highlight=relu#torch.nn.ReLU) | [paddle.nn.ReLU](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/activation/ReLU_cn.html#relu) | 功能一致，PaddlePaddle未定义`inplace`参数表示在不更改变量的内存地址的情况下，直接修改变量的值 |
 | 46   | [torch.nn.Softmax](https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html?highlight=softmax#torch.nn.Softmax) | [paddle.nn.Softmax](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/activation/Softmax_cn.html#softmax) | 功能一致，参数名不一致  |
-
+| 47   | [torch.nn.Sequential](https://pytorch.org/docs/stable/generated/torch.nn.Sequential.html#torch.nn.Sequential) | [paddle.nn.Sequential](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/dygraph/container/Sequential_cn.html#sequential) | 功能一致|
 
 ***持续更新...***

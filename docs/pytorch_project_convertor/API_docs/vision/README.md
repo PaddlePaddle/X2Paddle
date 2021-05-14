@@ -1,6 +1,5 @@
-## 视觉类API映射列表
+## 视觉类
 
-该文档梳理了与视觉处理相关的PyTorch-PaddlePaddle API映射列表。
 | 序号 | PyTorch API                                                  | PaddlePaddle API                                             | 备注                                                    |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------- |
 | 1    | [torchvision.transforms.Compose](https://pytorch.org/vision/stable/transforms.html?highlight=compose#torchvision.transforms.Compose) | [paddle.vision.transforms.Compose](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/vision/transforms/transforms/Compose_cn.html#compose) | 功能一致                                                |
@@ -20,5 +19,6 @@
 | 15   | [torchvision.transforms.Lambda](https://pytorch.org/vision/stable/transforms.html?highlight=lambda#torchvision.transforms.Lambda) | 无对应实现                                                   | [组合实现](torchvision.transforms.Lambda.md)     |
 | 17   | [torchvision.utils.save_image](https://pytorch.org/vision/stable/utils.html?highlight=save_image#torchvision.utils.save_image) | 无对应实现                                                   | [组合实现](torchvision.utils.save_image.md)      |
 | 18   | [torchvision.models 系列模型](https://pytorch.org/vision/stable/models.html?highlight=torchvision%20models) | X2Paddle提供                                                 | [使用方式](torchvision.models.md)                                                |
+| 19   | [torchvision.datasets.ImageFolder](https://pytorch.org/vision/stable/datasets.html?highlight=imagefolder#torchvision.datasets.ImageFolder) | 无对应实现                                                    | [组合实现](torchvision.datasets.ImageFolder.md)                                                |
 
 ***持续更新...***
