@@ -104,6 +104,7 @@ cd paddle_project/stargan
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample_dir stargan_celeba/samples --log_dir stargan_celeba/logs --model_save_dir stargan_celeba/models --result_dir stargan_celeba/results --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young --celeba_image_dir ./data/celeba/images --attr_path ./data/celeba/list_attr_celeba.txt
 ```
 
+***转换后的代码可在[这里](https://github.com/SunAhong1993/stargan/tree/paddle)进行查看。***
 
 ## [Ultra-Light-Fast-Generic-Face-Detector](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)
 
@@ -193,3 +194,4 @@ class VOCDataset(data.Dataset):
 cd paddle_project/Ultra-Light-Fast-Generic-Face-Detector-1MB
 sh train-version-RFB.sh
 ```
+***转换后的代码可在[这里](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)进行查看。***
