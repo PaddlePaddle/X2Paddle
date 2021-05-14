@@ -20,5 +20,5 @@ A：
 4.当前是否支持torch.jit的转换？  
 A：不支持。  
 
-5.如何查看PyTorch与PaddlePaddle API的差异？
+5.如何查看PyTorch与PaddlePaddle API的差异？  
 A：我们提供了[PyTorch-PaddlePaddle API对应表](./API_docs/README.md)，您可从中获取对应关系。
