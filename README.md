@@ -89,7 +89,7 @@ PyTorch仅支持API使用方式，详见[PyTorch预测模型转换文档](./docs
 ```shell
 x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_project --pretrain_model=model.pth
 ```
-【注意】需要搭配预处理和后处理一起使用，详细可参见[训练项目转换文档](./docs/pytorch_project_convertor/README.md)。  
+【注意】需要搭配预处理和后处理一起使用，详细可参见[训练项目转换文档](./docs/pytorch_project_convertor/README.md)。  此外，我们为用户提供了:star:[PyTorch-PaddlePaddle API映射表](docs/pytorch_project_convertor/API_docs/README.md):star:供用户查阅。
 
 ***[训练项目转换常见问题](./docs/pytorch_project_convertor/FAQ.md)***
 
