@@ -5,7 +5,7 @@ PyTorch2Paddle支持trace和script两种方式的转换，均是PyTorch动态图
 ## 环境依赖
 
 python == 2.7 | python >= 3.5  
-paddlepaddle >= 1.8.0  
+paddlepaddle >= 2.0.0  
 pytorch：torch >=1.5.0 (script方式暂不支持1.7.0)
 
 **使用trace方式需安装以下依赖**
