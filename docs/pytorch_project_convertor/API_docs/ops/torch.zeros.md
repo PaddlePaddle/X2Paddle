@@ -1,4 +1,4 @@
-***## torch.zeros
+## torch.zeros
 ### [torch.zeros](https://pytorch.org/docs/stable/generated/torch.zeros.html?highlight=zeros#torch.zeros)
 
 ```python
