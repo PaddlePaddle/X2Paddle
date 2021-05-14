@@ -4,6 +4,7 @@
 ``` shell
 # 下载项目
 git clone https://github.com/yunjey/stargan.git
+git checkout 30867d6f85a3bb99c38ae075de651004747c42d4
 # 下载预训练模型
 cd stargan
 bash download.sh pretrained-celeba-128x128
@@ -111,6 +112,7 @@ python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample
 ``` shell
 # 下载项目
 git clone https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB.git
+git checkout 492a02471671b49c56be8d90cda54c94749d2980
 ```
 2. 根据Generate VOC format training data set and training process的README.md所示下载数据集，并存放于Ultra-Light-Fast-Generic-Face-Detector-1MB/data/文件夹下。
 ### 第一步：转换前代码预处理
