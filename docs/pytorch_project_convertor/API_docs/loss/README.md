@@ -1,4 +1,5 @@
-***持续更新...***## Loss类
+## Loss类API映射列表
+该文档梳理了计算loss相关的PyTorch-PaddlePaddle API映射列表。
 | 序号 | PyTorch API                                                  | PaddlePaddle API                                             | 备注                                                         |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | 1    | [torch.nn.L1Loss](https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html?highlight=l1loss#torch.nn.L1Loss) | [paddle.nn.loss.L1Loss](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/loss/L1Loss_cn.html#l1loss) | 功能一致，PyTroch存在废弃参数`size_average`和`reduce`。      |

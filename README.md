@@ -97,7 +97,7 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 ## 转换教程
 1. [TensorFlow预测模型转换教程](./docs/inference_model_convertor/demo/tensorflow2paddle.ipynb)
 2. [PyTorch预测模型转换教程](./docs/inference_model_convertor/demo/pytorch2paddle.ipynb)
-3. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo.md)
+3. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo/README.md)
 
 ## 更新历史
 **2020.12.09**  

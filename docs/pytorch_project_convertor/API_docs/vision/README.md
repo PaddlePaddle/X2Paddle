@@ -1,5 +1,6 @@
-## 视觉类
+## 视觉类API映射列表
 
+该文档梳理了与视觉处理相关的PyTorch-PaddlePaddle API映射列表。
 | 序号 | PyTorch API                                                  | PaddlePaddle API                                             | 备注                                                    |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------- |
 | 1    | [torchvision.transforms.Compose](https://pytorch.org/vision/stable/transforms.html?highlight=compose#torchvision.transforms.Compose) | [paddle.vision.transforms.Compose](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/vision/transforms/transforms/Compose_cn.html#compose) | 功能一致                                                |

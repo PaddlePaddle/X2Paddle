@@ -103,8 +103,7 @@
 ## PyTorch训练项目
 | 模型 | 转换前代码 | 转换后代码 |
 |------|----------|------|
-| StaGAN | [code](https://github.com/yunjey/stargan)|[code](https://github.com/SunAhong1993/stargan/tree/paddle)|
+| StarGAN | [code](https://github.com/yunjey/stargan)|[code](https://github.com/SunAhong1993/stargan/tree/paddle)|
 | Ultra-Light-Fast-Generic-Face-Detector | [code](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB) |[code](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)|
 
-
-**注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：
+**注：** 受限于不同框架的差异，部分预测模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型等。对于常见的预测模型或PyTorch项目，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进。
