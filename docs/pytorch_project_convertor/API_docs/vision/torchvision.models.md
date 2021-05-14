@@ -26,11 +26,11 @@ out = model(x)
 | [torchvision.models.resnext101_32x8d](https://pytorch.org/vision/stable/models.html#torchvision.models.resnext101_32x8d) | x2paddle.resnext101_32x8d_pth        |
 | [torchvision.models.wide_resnet50_2](https://pytorch.org/vision/stable/models.html#torchvision.models.wide_resnet50_2) | x2paddle.models.wide_resnet50_2_pth  |
 | [torchvision.models.wide_resnet101_2](https://pytorch.org/vision/stable/models.html#torchvision.models.wide_resnet101_2) | x2paddle.models.wide_resnet101_2_pth |
-| [torchvision.models.vgg11](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg11) | x2paddle.models.vgg11            |
+| [torchvision.models.vgg11](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg11) | x2paddle.models.vgg11_pth            |
 | [torchvision.models.vgg11_bn](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg11_bn) | x2paddle.models.vgg11_bn_pth         |
-| [torchvision.models.vgg13](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg13) | x2paddle.models.vgg13            |
+| [torchvision.models.vgg13](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg13) | x2paddle.models.vgg13_pth            |
 | [torchvision.models.vgg13_bn](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg13_bn) | x2paddle.models.vgg13_bn_pth         |
-| [torchvision.models.vgg16](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg16) | x2paddle.models.vgg16            |
+| [torchvision.models.vgg16](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg16) | x2paddle.models.vgg16_pth            |
 | [torchvision.models.vgg16_bn](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg16_bn) | x2paddle.models.vgg16_bn_pth         |
-| [torchvision.models.vgg19](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg19) | x2paddle.models.vgg19            |
+| [torchvision.models.vgg19](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg19) | x2paddle.models.vgg19_pth            |
 | [torchvision.models.vgg19_bn](https://pytorch.org/vision/stable/models.html#torchvision.models.vgg19_bn) | x2paddle.models.vgg19_bn_pth         |
