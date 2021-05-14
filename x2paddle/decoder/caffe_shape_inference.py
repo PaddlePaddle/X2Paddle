@@ -10,7 +10,7 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License. 
+# limitations under the License.
 
 import math
 import numbers
@@ -313,7 +313,8 @@ def shape_reshape(layer, input_shape):
         assert input_count % explicit_count == 0, "[Reshape]botom count[%d] "\
                 "must be divisible by product of the specified dimensions[%d] "\
                 % (input_count, explicit_count)
-        output_shape[start_axis + inferred_axis] = int(input_count / explicit_count)
+        output_shape[start_axis + inferred_axis] = int(input_count /
+                                                       explicit_count)
 
     output_count = count(output_shape)
     assert output_count == input_count, "[Reshape]output count[%d] must match input count[%d]" % (
@@ -381,7 +382,8 @@ def shape_reduction(layer, input_shape):
     assert axis <= len(input_shape[0]), 'invalid axis[%d] error' % (axis)
     return [input_shape[0:axis]]
 
-def shape_axpy(layer, input_shape):
+
+def shape_axpy(layer, input_shapes):
     assert len(input_shapes) == 3, "not valid input shape for axpy layer"
     assert len(input_shapes[0]) == len(input_shapes[1]), 'should have same dims'
     output_shape = input_shapes[1]
@@ -390,11 +392,14 @@ def shape_axpy(layer, input_shape):
             % (str(output_shape), str(input_shapes[2]))
     return [output_shape]
 
+
 def shape_detectionoutput(layer, input_shape):
     return [[-1, 6]]
 
+
 def shape_normalize(layer, input_shape):
     return input_shape
+
 
 def shape_permute(layer, input_shape):
     order = layer.permute_param.order
@@ -405,6 +410,7 @@ def shape_permute(layer, input_shape):
         assert ii < len(inshape), "invalid order for permute[%s]" % (name)
         output_shape.append(inshape[ii])
     return [output_shape]
+
 
 def shape_priorbox(layer, input_shape):
     max_size = layer.prior_box_param.max_size
@@ -419,10 +425,12 @@ def shape_priorbox(layer, input_shape):
     output_shape = [1, 2, 4 * N_bbx]
     return [output_shape]
 
+
 def shape_relu6(layer, input_shape):
     return input_shape
 
-def shape_roipooling(layer, input_shape):
+
+def shape_roipooling(layer, input_shapes):
     pooled_w = layer.roi_pooling_param.pooled_w
     pooled_h = layer.roi_pooling_param.pooled_h
     base_fea_shape = input_shapes[0]
@@ -433,10 +441,12 @@ def shape_roipooling(layer, input_shape):
     output_shape[3] = pooled_w
     return [output_shape]
 
+
 def shape_shufflechannel(layer, input_shape):
     return input_shape
 
-def shape_upsample(layer, input_shape):
+
+def shape_upsample(layer, input_shapes):
     scale = layer.upsample_param.scale
     assert len(input_shapes) == 1, "not valid input shape for upsample layer"
     assert type(scale) is int
@@ -447,7 +457,8 @@ def shape_upsample(layer, input_shape):
     output_shape = [input_shape[0], input_shape[1], new_h, new_w]
     return [output_shape]
 
-def shape_select(layer, input_shape):
+
+def shape_select(layer, input_shapes):
     slice_point = layer.select_param.slice_point
     axis = layer.select_param.axis
     input_shape = input_shapes[0]
@@ -461,4 +472,3 @@ def shape_select(layer, input_shape):
     output_shape = input_shape
     output_shape[axis] = end - start
     return [output_shape]
-
