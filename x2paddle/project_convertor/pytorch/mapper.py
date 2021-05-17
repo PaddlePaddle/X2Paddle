@@ -275,7 +275,7 @@ API_MAPPER = {
     "torch.min": ["x2paddle.torch2paddle.min", None],
     "torch.argmax": ["paddle.argmax", OneMathMapper],
     "torch.argmin": ["paddle.argmin", OneMathMapper],
-    "torch.stack": ["paddle.stacks", StackMapper],
+    "torch.stack": ["paddle.stack", StackMapper],
     "torch.log": ["paddle.log", OneMathMapper],
     "torch.randperm": ["paddle.randperm", RandpermMapper],
     "torch.rand": ["x2paddle.torch2paddle.rand", None],
