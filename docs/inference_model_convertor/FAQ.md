@@ -34,4 +34,4 @@ out =main(ipt)
 > 若运行代码无误，则说明代码中有op不支持动转静，我们将会再未来支持；若报错，则说明pytorch2paddle转换出错，请提issue，我们将及时回复。
 
 **Q5. 目前支持了哪些op的转换呢？**  
-A: 可详见[X2Paddle支持的op列表](./docs/inference_model_convertor/op_list.md)。
+A: 可详见[X2Paddle支持的op列表](op_list.md)。

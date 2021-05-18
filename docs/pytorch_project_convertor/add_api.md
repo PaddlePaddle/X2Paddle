@@ -116,7 +116,7 @@ NN_MAPPER = {
 
 该情况需要完成以下几个步骤：
 
-***步骤1*** 在[x2paddle/project_convertor/pytorch/mapper.py](.../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、映射处理类，具体实现如下：
+***步骤1*** 在[x2paddle/project_convertor/pytorch/mapper.py](../../x2paddle/project_convertor/pytorch/mapper.py)中对应的MAPPER中添加PyTorch API的字符串以及Paddle API的字符串、映射处理类，具体实现如下：
 
 ```python
 # key为PyTorch API字符串；

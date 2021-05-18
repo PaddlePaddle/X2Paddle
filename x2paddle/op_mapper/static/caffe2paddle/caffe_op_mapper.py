@@ -1247,8 +1247,8 @@ class CaffeOpMapper(OpMapper):
             "scale_factor": params.scale,
             "mode": "nearest"}
         self.paddle_graph.add_layer(
-            "paddle.nn.functioanl.interpolate",
-            inputs={"input": input.name},
+            "paddle.nn.functional.interpolate",
+            inputs={"x": input.name},
             outputs=[node.layer_name],
             **layer_attrs)
     
