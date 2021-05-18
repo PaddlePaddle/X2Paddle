@@ -293,7 +293,7 @@ API_MAPPER = {
     "torch.mul": ["paddle.multiply", TwoMathMapper],
     "torch.einsum": ["paddlenlp.ops.einsum ", None],
     "torch.linspace": ["paddle.linspace", LinspaceMapper],
-    "torch.as_tensor": ["paddle.to_tensor", ToTensor],
+    "torch.as_tensor": ["paddle.to_tensor", ToTensorMapper],
 }
 INVALID_API = {
     "torch.channels_last": ["None", None],

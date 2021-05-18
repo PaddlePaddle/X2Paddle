@@ -539,7 +539,7 @@ class LinspaceMapper(Mapper):
                     out2, self.useful_attrs["requires_grad"])
             return out1, out2, out3
 
-class ToTensor(Mapper):
+class ToTensorMapper(Mapper):
     def __init__(self, 
                  func_name,
                  pytorch_api_name, 
