@@ -231,3 +231,95 @@ class Adam(paddle.optimizer.Adam):
 
     def zero_grad(self):
         return self.clear_grad()
+
+class AdamW(paddle.optimizer.AdamW):
+    def __init__(self,
+                 params,
+                 lr=0.001,
+                 betas=(0.9, 0.999),
+                 eps=1e-08,
+                 weight_decay=0.01,
+                 amsgrad=False):
+        parameters_list = update_parameters(params, lr, weight_decay)
+        if weight_decay == 0:
+            weight_decay = None
+        super().__init__(
+            learning_rate=lr,
+            beta1=betas[0],
+            beta2=betas[1],
+            epsilon=eps,
+            parameters=parameters_list,
+            weight_decay=weight_decay,
+            apply_decay_param_fun=None,
+            grad_clip=None,
+            name=None,
+            lazy_mode=False)
+
+        defaults = dict(
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            amsgrad=amsgrad)
+        self.defaults = defaults
+
+        self.state = defaultdict(dict)
+        self.param_groups = []
+
+        param_groups = list(parameters_list)
+        if len(param_groups) == 0:
+            print(param_groups)
+            raise ValueError("optimizer got an empty parameter list")
+        if not isinstance(param_groups[0], dict):
+            param_groups = [{'params': param_groups}]
+
+        for param_group in param_groups:
+            self.add_param_group(param_group)
+
+    def add_param_group(self, param_group):
+        assert isinstance(param_group, dict), "param group must be a dict"
+
+        params = param_group['params']
+        if isinstance(params, paddle.Tensor):
+            param_group['params'] = [params]
+        elif isinstance(params, set):
+            raise TypeError(
+                'optimizer parameters need to be organized in ordered collections, but '
+                'the ordering of tensors in sets will change between runs. Please use a list instead.'
+            )
+        else:
+            param_group['params'] = list(params)
+
+        for param in param_group['params']:
+            if not isinstance(param, paddle.Tensor):
+                raise TypeError("optimizer can only optimize Tensors.")
+            if not param.is_leaf:
+                raise ValueError("can't optimize a non-leaf Tensor")
+
+        for name, default in self.defaults.items():
+            if default is required and name not in param_group:
+                raise ValueError(
+                    "parameter group didn't specify a value of required optimization parameter "
+                    + name)
+            else:
+                param_group.setdefault(name, default)
+
+        params = param_group['params']
+        if len(params) != len(set(params)):
+            warnings.warn(
+                "optimizer contains a parameter group with duplicate parameters; "
+                "in future, this will cause an error; ",
+                stacklevel=3)
+
+        param_set = set()
+        for group in self.param_groups:
+            param_set.update(set(group['params']))
+
+        if not param_set.isdisjoint(set(param_group['params'])):
+            raise ValueError(
+                "some parameters appear in more than one parameter group")
+
+        self.param_groups.append(param_group)
+
+    def zero_grad(self):
+        return self.clear_grad()
