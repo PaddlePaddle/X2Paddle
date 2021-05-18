@@ -24,8 +24,11 @@ OPTIMIZER_MAPPER = {
     "torch.optim.lr_scheduler.MultiStepLR":
     ["paddle.optimizer.lr.MultiStepDecay", LRScheculerMapper],
     "torch.optim.Adam": ["x2paddle.torch2paddle.Adam", None],
+
     "torch.optim.SGD": ["x2paddle.torch2paddle.Momentum", None],
     "torch.optim.AdamW": ["x2paddle.torch2paddle.AdamW", None]
+
+
     
 }
 
@@ -277,7 +280,7 @@ API_MAPPER = {
     "torch.min": ["x2paddle.torch2paddle.min", None],
     "torch.argmax": ["paddle.argmax", OneMathMapper],
     "torch.argmin": ["paddle.argmin", OneMathMapper],
-    "torch.stack": ["paddle.stacks", StackMapper],
+    "torch.stack": ["paddle.stack", StackMapper],
     "torch.log": ["paddle.log", OneMathMapper],
     "torch.randperm": ["paddle.randperm", RandpermMapper],
     "torch.rand": ["x2paddle.torch2paddle.rand", None],
