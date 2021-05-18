@@ -5,9 +5,10 @@
 ``` shell
 # 下载项目
 git clone https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB.git
+cd Ultra-Light-Fast-Generic-Face-Detector-1MB
 git checkout 492a02471671b49c56be8d90cda54c94749d2980
 ```
-2. 根据Generate VOC format training data set and training process的README.md所示下载数据集，并存放于Ultra-Light-Fast-Generic-Face-Detector-1MB/data/文件夹下。
+2. 根据[Generate VOC format training data set and training process的README.md](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB#generate-voc-format-training-data-set-and-training-process)所示下载数据集，并存放于Ultra-Light-Fast-Generic-Face-Detector-1MB/data/文件夹下。
 ### 第一步：转换前代码预处理
 1. 将代码中的[或操作符](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/blob/master/vision/utils/box_utils.py#L153)替换为如下代码：
 ``` python
@@ -83,7 +84,7 @@ class VOCDataset(data.Dataset):
 
 ### 运行训练代码
 ``` shell
-cd paddle_project/Ultra-Light-Fast-Generic-Face-Detector-1MB
+cd paddle_projec
 sh train-version-RFB.sh
 ```
 ***转换后的代码可在[这里](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)进行查看。***
