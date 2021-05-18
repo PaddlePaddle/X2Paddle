@@ -24,8 +24,8 @@ OPTIMIZER_MAPPER = {
     "torch.optim.lr_scheduler.MultiStepLR":
     ["paddle.optimizer.lr.MultiStepDecay", LRScheculerMapper],
     "torch.optim.Adam": ["x2paddle.torch2paddle.Adam", None],
-    "torch.optim.SGD": ["x2paddle.torch2paddle.Momentum", None],
-    "torch.as_tensor": ["paddle.to_tensor", ToTensor]
+    "torch.optim.SGD": ["x2paddle.torch2paddle.Momentum", None]
+    
 }
 
 NN_MAPPER = {
@@ -293,6 +293,7 @@ API_MAPPER = {
     "torch.mul": ["paddle.multiply", TwoMathMapper],
     "torch.einsum": ["paddlenlp.ops.einsum ", None],
     "torch.linspace": ["paddle.linspace", LinspaceMapper],
+    "torch.as_tensor": ["paddle.to_tensor", ToTensor],
 }
 INVALID_API = {
     "torch.channels_last": ["None", None],
