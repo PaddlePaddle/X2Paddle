@@ -17,8 +17,6 @@ import paddle
 class Gather(object):
     def __init__(self, dim):
         self.dim = dim
-        self.dtype_mapping = {"VarType.INT32": "int32", 
-                              "VarType.INT64": "int64"}
         
     def __call__(self, x, index):
         if self.dim < 0:
@@ -31,7 +29,7 @@ class Gather(object):
         index_range[0] = self.dim
         index_range[self.dim] = 0
         index_swaped = paddle.transpose(index, perm=index_range)
-        dtype = self.dtype_mapping[str(index.dtype)]
+        dtype = index.dtype
         
         x_shape = paddle.shape(x_swaped)
         index_shape = paddle.shape(index_swaped)

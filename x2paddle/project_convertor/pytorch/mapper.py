@@ -170,9 +170,21 @@ DIST_MAPPER = {
 }
 
 DTYPE_MAPPER = {
-    "torch.float32": [string("float32"), None],
-    "torch.long": [string("int64"), None],
-    "torch.bool": [string("bool"), None]
+    "torch.float16": ["paddle.float16", None],
+    "torch.half": ["paddle.float16", None],
+    "torch.float32": ["paddle.float32", None],
+    "torch.float": ["paddle.float32", None],
+    "torch.float64": ["paddle.float64", None],
+    "torch.double": ["paddle.float64", None],
+    "torch.uint8": ["paddle.uint8", None],
+    "torch.int8": ["paddle.int8", None],
+    "torch.int16": ["paddle.int16", None],
+    "torch.short": ["paddle.int16", None],
+    "torch.int32": ["paddle.int32", None],
+    "torch.int": ["paddle.int32", None],
+    "torch.int64": ["paddle.int64", None],
+    "torch.long": ["paddle.int64", None],
+    "torch.bool": ["paddle.bool", None],
 }
 
 TORCHVISION_MAPPER = {

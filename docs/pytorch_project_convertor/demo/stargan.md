@@ -80,17 +80,15 @@ class Solver(object):
                         if j != i:
                             c_trg[:, j] = 0
             else:
-                # 如果为bool型，需要强转为int32，
-                # 在17-20行实现
-                is_bool = False
-                if str(c_trg.dtype) == "VarType.BOOL":
-                    c_trg = c_trg.cast("int32")
-                    is_bool = True
-                c_trg[:, i] = (c_trg[:, i] == 0)
-                # 如果为bool类型转换为原类型
-                # 在23-24行实现
-                if is_bool:
-                    c_trg = c_trg.cast("bool")
+                # 如果为非int型，需要强转为int32，
+                # 在18-22行实现
+                # c_trg[:, i] = (c_trg[:, i] == 0)
+                c_trg = c_trg.cast("int32")
+                c_trg_tmp = paddle.zeros_like(c_trg)
+                paddle.assign(c_trg, c_trg_tmp)
+                c_trg_tmp = c_trg_tmp.cast("bool")
+                c_trg_tmp[:, i] = c_trg[:, i] == 0
+                c_trg = c_trg_tmp 
             ...
         ...
     ...

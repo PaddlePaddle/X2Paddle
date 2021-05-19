@@ -101,8 +101,8 @@ class KaimingNormal(MSRAInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle.float16:
+            out_dtype = paddle.float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['masra_init', var.name, 'tmp'])),
@@ -169,8 +169,8 @@ class XavierNormal(XavierInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle.float16:
+            out_dtype = paddle.float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['xavier_init', var.name, 'tmp'])),
@@ -195,7 +195,7 @@ class XavierNormal(XavierInitializer):
                 "seed": self._seed
             },
             stop_gradient=True)
-        if var.dtype == VarDesc.VarType.FP16:
+        if var.dtype == paddle.float16:
             block.append_op(
                 type="cast",
                 inputs={"X": out_var},
@@ -233,8 +233,8 @@ class XavierUniform(XavierInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle.float16:
+            out_dtype = paddle.float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['xavier_init', var.name, 'tmp'])),
@@ -260,7 +260,7 @@ class XavierUniform(XavierInitializer):
                 "seed": self._seed
             },
             stop_gradient=True)
-        if var.dtype == VarDesc.VarType.FP16:
+        if var.dtype == paddle.float16:
             block.append_op(
                 type="cast",
                 inputs={"X": out_var},
