@@ -1855,11 +1855,6 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[0] + "_type"],
         scope_name=scope_name)
     graph.add_layer(
-        "prim.str",
-        inputs={"input": inputs_name[0] + "_type"},
-        outputs=[inputs_name[0] + "_type"],
-        scope_name=scope_name)
-    graph.add_layer(
         "prim.eq",
         inputs={"x": inputs_name[0] + "_type"},
         outputs=[inputs_name[0] + "_cond"],
@@ -2106,11 +2101,6 @@ def aten_floor(mapper, graph, node):
         outputs=[inputs_name[0] + "_cond"],
         scope_name=scope_name,
         y="paddle.bool")
-#     graph.add_layer(
-#         "prim.startswith", {'input': inputs_name[0] + "_type"},
-#         outputs=[inputs_name[0] + "_cond"],
-#         scope_name=scope_name,
-#         start_str=string("VarType"))
     graph.add_layer(
         "prim.if", {'input': inputs_name[0] + "_cond"},
         outputs=[inputs_name[0] + "_if"],
