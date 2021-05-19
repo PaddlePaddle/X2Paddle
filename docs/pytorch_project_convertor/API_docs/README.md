@@ -3,7 +3,7 @@
 | 类别         | 简介 |
 | ---------- | ------------------------- |
 | [基础操作类](./ops/README.md) | 主要为`torch.XX`类API |
-| [组网类]((./nn/README.md))    | 主要为`torch.nn.XX`类下组网相关的API |
+| [组网类](./nn/README.md)    | 主要为`torch.nn.XX`类下组网相关的API |
 | [Loss类](./loss/README.md) |主要为`torch.nn.XX`类下loss相关的API    |
 |  [工具类](./utils/README.md)   | 主要为`torch.nn.XX`类下分布式相关的API和`torch.utils.XX`类API|
 |   [视觉类](./vision/README.md)  | 主要为`torchvision.XX`类API |

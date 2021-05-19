@@ -3,9 +3,9 @@
 ``` shell
 # 下载项目
 git clone https://github.com/yunjey/stargan.git
+cd stargan
 git checkout 30867d6f85a3bb99c38ae075de651004747c42d4
 # 下载预训练模型
-cd stargan
 bash download.sh pretrained-celeba-128x128
 # 下载数据集
 bash download.sh celeba
@@ -99,7 +99,7 @@ class Solver(object):
 
 ### 运行训练代码
 ``` shell
-cd paddle_project/stargan
+cd paddle_project
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 --sample_dir stargan_celeba/samples --log_dir stargan_celeba/logs --model_save_dir stargan_celeba/models --result_dir stargan_celeba/results --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young --celeba_image_dir ./data/celeba/images --attr_path ./data/celeba/list_attr_celeba.txt
 ```
 

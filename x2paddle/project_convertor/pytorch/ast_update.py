@@ -431,8 +431,9 @@ class AstUpdater(ast.NodeVisitor):
         elts_nodes = getattr(node, "elts")
         elts = list()
         for elts_node in elts_nodes:
-            elts.append(self.visit(elts_node))
-        elts = tuple(elts)
+            elt = self.visit(elts_node)
+            elts.append(elt if isinstance(elt, str) else str(elt))
+        elts = "({})".format(", ".join(elts))
         return elts
 
     def visit_Assign(self, node):

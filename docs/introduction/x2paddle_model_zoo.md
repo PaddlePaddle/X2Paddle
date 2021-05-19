@@ -16,7 +16,7 @@
 | VGG16 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
 | ResNet_V1_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
-| UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |
+| UNet | [code1](https://github.com/jakeret/tf_unet)/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |
 | MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |
 | YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 
 | FALSR | [code](https://github.com/xiaomi-automl/FALSR) |
@@ -49,7 +49,7 @@
 
 
 ## ONNX预测模型
-**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](pytorch_to_onnx.md)
+**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](../inference_model_convertor/pytorch2onnx.md)
 
 | 模型 | 来源 | operator version|备注|
 |-------|--------|---------|---------|
@@ -82,7 +82,7 @@
 | MNasNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mnasnet.py) |-|
 | MobileNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py) |-|
 | ResNet18 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |-|
-| ShuffleNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/shufflenet.py) |-|
+| ShuffleNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/shufflenetv2.py) |-|
 | SqueezeNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py) |-|
 | VGG16 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |-|
 | InceptionV3 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py) |-|
@@ -90,7 +90,7 @@
 | FCN_ResNet50 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/fcn.py) |-|
 | CamembertForQuestionAnswering | [code](https://huggingface.co/transformers/model_doc/camembert.html) |只支持trace模式|
 | DPRContextEncoder | [code](https://huggingface.co/transformers/model_doc/dpr.html) |只支持trace模式|
-| ElectraModel | [code](https://huggingface.co/transformers/model_doc/electra.html ) |只支持trace模式|
+| ElectraModel | [code](https://huggingface.co/transformers/model_doc/electra.html) |只支持trace模式|
 | FlaubertModel | [code](https://huggingface.co/transformers/model_doc/flaubert.html) |只支持trace模式|
 | Roberta| [code](https://huggingface.co/transformers/model_doc/roberta.html)  |只支持trace模式|
 | XLMRobertaForTokenClassification|[code](https://huggingface.co/transformers/model_doc/xlmroberta.html)  |只支持trace模式|
@@ -98,7 +98,7 @@
 | EasyOCR_recognizer|[code](https://github.com/JaidedAI/EasyOCR/blob/master/easyocr/recognition.py)  |-|
 | SwinTransformer|[code](https://github.com/microsoft/Swin-Transformer/)  |-|
 | BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
-| DBFace |[code](https://github.com/dlunion/DBFacet)  |-|
+| DBFace |[code](https://github.com/dlunion/DBFace)  |-|
 
 ## PyTorch训练项目
 | 模型 | 转换前代码 | 转换后代码 |
