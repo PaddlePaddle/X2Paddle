@@ -2133,3 +2133,38 @@ class OpSet9():
                 inputs={"x": node.name},
                 outputs=[node.name],
                 shape=[b, c // (blocksize**2), h * blocksize, w * blocksize])
+
+    @print_mapping_info
+    def NonMaxSuppression(self, node):
+        nn_op_name = name_generator("nms", self.nn_name2id)
+        output_name = node.name
+        layer_outputs = [nn_op_name, output_name]
+        boxes = self.graph.get_input_node(node, idx=0, copy=True)
+        scores = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs_len = len(node.layer.input)
+        layer_attrs = dict()
+        if inputs_len > 2:
+            max_output_boxes_per_class = self.graph.get_input_node(
+                node, idx=2, copy=True)
+            layer_attrs["nms_top_k"] = _const_weight_or_none(
+                max_output_boxes_per_class).tolist()[0]
+        else:
+            layer_attrs["nms_top_k"] = 0
+        if inputs_len > 3:
+            iou_threshold = self.graph.get_input_node(node, idx=3, copy=True)
+            layer_attrs["nms_threshold"] = _const_weight_or_none(
+                iou_threshold).tolist()[0]
+        else:
+            layer_attrs["nms_threshold"] = 0.0
+        if inputs_len > 4:
+            score_threshold = self.graph.get_input_node(node, idx=4, copy=True)
+            layer_attrs["score_threshold"] = _const_weight_or_none(
+                score_threshold).tolist()[0]
+        else:
+            layer_attrs["score_threshold"] = 0.0
+        self.paddle_graph.add_layer(
+            "custom_layer:NMS",
+            inputs={"bboxes": boxes.name,
+                    "scores": scores.name},
+            outputs=layer_outputs,
+            **layer_attrs)
