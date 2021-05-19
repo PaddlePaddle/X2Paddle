@@ -2061,6 +2061,12 @@ class OpSet9():
     def TopK(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_k = self.graph.get_input_node(node, idx=1, copy=True)
+        if val_k.dtype != "int32":
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": val_k.name},
+                outputs=[val_k.name],
+                dtype=string('int32'))
         layer_attrs = dict()
         layer_attrs["axis"] = node.get_attr('axis', -1)
         layer_attrs["largest"] = True if node.get_attr('largest',
