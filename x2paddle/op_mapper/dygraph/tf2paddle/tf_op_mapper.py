@@ -649,18 +649,30 @@ class TFOpMapper(OpMapper):
         paddings = self.graph.get_input_node(node, 1)
         assert paddings.layer_type == "Const", "Padding should be Const"
         paddings = paddings.value.flatten().tolist()
+            
         constant_values = 0
         if len(node.layer.input) > 2:
             constant_values = self.graph.get_input_node(node, 2)
             assert constant_values.layer_type == "Const", "Padding should be Const"
             constant_values = constant_values.value
-
-        self.paddle_graph.add_layer(
-            kernel="paddle.nn.functional.pad",
-            inputs={"x": input.name},
-            outputs=[node.name],
-            pad=paddings,
-            value=constant_values)
+            
+        if len(paddings) == 8 and sum(paddings[:2]) == 0 \
+            and sum(paddings[-2:]) == 0:
+            paddings = paddings[2: -2]
+            self.paddle_graph.add_layer(
+                kernel="paddle.nn.functional.pad",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                pad=paddings,
+                value=constant_values,
+                data_format=string('NHWC'))
+        else:
+            self.paddle_graph.add_layer(
+                kernel="paddle.nn.functional.pad",
+                inputs={"x": input.name},
+                outputs=[node.name],
+                pad=paddings,
+                value=constant_values)
 
     def MirrorPad(self, node):
         self.Pad(node)
@@ -833,15 +845,6 @@ class TFOpMapper(OpMapper):
             kernel_size=k_size[2:4],
             stride=strides[2:4],
             padding=string(pad_mode))
-
-        #         self.paddle_graph.add_layer(
-        #             kernel="fluid.layers.pool2d",
-        #             inputs={"input": input_name},
-        #             outputs=[node.name],
-        #             pool_size=k_size[2:4],
-        #             pool_type=string("avg"),
-        #             pool_stride=strides[2:4],
-        #             pool_padding=string(pad_mode))
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
@@ -1318,19 +1321,6 @@ class TFOpMapper(OpMapper):
                 perm=[0, 3, 1, 2])
             input_name = transpose_name
 
-        # TODO(syf): The output_size is not set.
-        #         self.paddle_graph.add_layer(
-        #             kernel="paddle.nn.Conv2DTranspose",
-        #             inputs={"input": input_name},
-        #             outputs=layer_outputs,
-        #             weight_attr=string(kernel_name),
-        #             bias_attr=False,
-        #             in_channels=k_size[3],
-        #             out_channels=k_size[2],
-        #             kernel_size=k_size[0:2],
-        #             stride=strides[2:4],
-        #             dilation=dilations[2:4],
-        #             padding=string(pad_mode))
         self.paddle_graph.add_layer(
             "self.create_parameter",
             inputs={},

@@ -2962,6 +2962,51 @@ def aten_log(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_log_softmax(mapper, graph, node):
+    """ 构造log_softmax的PaddleLayer。
+    TorchScript示例:
+        %4 = aten::log_softmax(%input, %2, %3)
+        参数含义:
+        %4 (Tensor): 输出的Tensor。
+        %input (Tensor): 输入的Tensor。
+        %2 (int): 指定对输入进行运算的轴。
+        %3 (int): 输入Tensor的数据类型。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    current_inputs = []
+    # 处理输入0，即%input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%2，代表dtype
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+    # 处理输入2，即%3，代表dtype
+    if mapper.attrs[inputs_name[2]] is not None:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[2]]]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.functional.log_softmax",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_lstm(mapper, graph, node):
     """ 构造长短期记忆网络（LSTM）的PaddleLayer。
     TorchScript示例:

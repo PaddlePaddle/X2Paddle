@@ -41,15 +41,16 @@ def arg_parser():
     parser.add_argument(
         "--save_dir",
         "-s",
-        required=True,
         type=_text_type,
         default=None,
         help="path to save translated model")
     parser.add_argument(
         "--framework",
         "-f",
-        choices=['tensorflow', 'caffe', 'onnx'],
-        help="define which deeplearning framework(tensorflow/caffe/onnx)")
+        type=_text_type,
+        default=None,
+        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+    )
     parser.add_argument(
         "--caffe_proto",
         "-c",
@@ -72,9 +73,26 @@ def arg_parser():
     parser.add_argument(
         "--paddle_type",
         "-pt",
-        choices=['dygraph', 'static'],
+        type=_text_type,
         default="dygraph",
         help="define the paddle model type after converting(dygraph/static)")
+    parser.add_argument(
+        "--convert_torch_project",
+        "-tp",
+        action='store_true',
+        help="Convert the PyTorch Project.")
+    parser.add_argument(
+        "--project_dir",
+        "-pd",
+        type=_text_type,
+        default=None,
+        help="define project folder path for pytorch")
+    parser.add_argument(
+        "--pretrain_model",
+        "-pm",
+        type=_text_type,
+        default=None,
+        help="pretrain model file of pytorch model")
 
     return parser
 
@@ -221,6 +239,12 @@ def main():
             x2paddle.__version__))
         return
 
+    if not args.convert_torch_project:
+        assert args.framework is not None, "--framework is not defined(support tensorflow/caffe/onnx)"
+    assert args.save_dir is not None, "--save_dir is not defined"
+    assert args.paddle_type in ["dygraph", "static"
+                                ], "--paddle_type must be 'dygraph' or 'static'"
+
     try:
         import platform
         v0, v1, v2 = platform.python_version().split('.')
@@ -240,28 +264,34 @@ def main():
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
         )
 
-    if args.framework == "tensorflow":
-        assert args.model is not None, "--model should be defined while translating tensorflow model"
-        define_input_shape = False
-        if args.define_input_shape:
-            define_input_shape = True
-        tf2paddle(args.model, args.save_dir, define_input_shape,
-                  args.paddle_type)
-
-    elif args.framework == "caffe":
-        assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
-        caffe2paddle(args.prototxt, args.weight, args.save_dir,
-                     args.caffe_proto, args.paddle_type)
-    elif args.framework == "onnx":
-        assert args.model is not None, "--model should be defined while translating onnx model"
-        onnx2paddle(args.model, args.save_dir, args.paddle_type)
-    elif args.framework == "paddle2onnx":
-        print(
-            "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"
-        )
-
+    if args.convert_torch_project:
+        assert args.project_dir is not None, "--project_dir should be defined while translating pytorch project"
+        from x2paddle.project_convertor.pytorch.convert import main as convert_torch
+        convert_torch(args)
     else:
-        raise Exception("--framework only support tensorflow/caffe/onnx now")
+        if args.framework == "tensorflow":
+            assert args.model is not None, "--model should be defined while translating tensorflow model"
+            define_input_shape = False
+            if args.define_input_shape:
+                define_input_shape = True
+            tf2paddle(args.model, args.save_dir, define_input_shape,
+                      args.paddle_type)
+
+        elif args.framework == "caffe":
+            assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
+            caffe2paddle(args.prototxt, args.weight, args.save_dir,
+                         args.caffe_proto, args.paddle_type)
+        elif args.framework == "onnx":
+            assert args.model is not None, "--model should be defined while translating onnx model"
+            onnx2paddle(args.model, args.save_dir, args.paddle_type)
+        elif args.framework == "paddle2onnx":
+            print(
+                "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"
+            )
+
+        else:
+            raise Exception(
+                "--framework only support tensorflow/caffe/onnx now")
 
 
 if __name__ == "__main__":

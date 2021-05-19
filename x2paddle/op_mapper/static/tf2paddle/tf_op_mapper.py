@@ -1085,14 +1085,6 @@ class TFOpMapper(OpMapper):
             begin = begin.value.tolist()
             attrs['offsets'] = begin
         else:
-            #             shape = begin.out_shapes[0]
-            #             reshape_name = gen_name("slice", "reshape")
-            #             self.paddle_graph.add_layer(
-            #                 kernel="fluid.layers.reshape",
-            #                 inputs={"x": begin.name},
-            #                 outputs=[reshape_name],
-            #                 shape=shape)
-            #             inputs['offsets'] = reshape_name
             begin = self.decoder.infer_tensor(
                 begin, use_diff_inputs=False).tolist()
             attrs['offsets'] = begin

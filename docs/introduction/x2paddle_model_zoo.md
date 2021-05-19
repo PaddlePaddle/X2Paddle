@@ -1,9 +1,6 @@
-# X2Paddle模型测试库
-> 目前X2Paddle支持80+的TensorFlow OP，30+的Caffe Layer，60+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim，覆盖了大部分CV分类模型常用的操作。我们在如下模型列表中测试了X2Paddle的转换。
+# X2Paddle转换库
 
-**注：** 受限于不同框架的差异，部分模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型，NLP模型等。对于CV常见的模型，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
-
-## TensorFlow
+## TensorFlow预测模型
 
 | 模型 | 代码 |
 |------|----------|
@@ -19,7 +16,7 @@
 | VGG16 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
 | ResNet_V1_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
-| UNet | [code1](https://github.com/jakeret/tf_unet )/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |
+| UNet | [code1](https://github.com/jakeret/tf_unet)/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |
 | MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |
 | YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 
 | FALSR | [code](https://github.com/xiaomi-automl/FALSR) |
@@ -28,7 +25,7 @@
 | Bert（chinese_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
 | Bert（multi_cased_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
 
-## Caffe
+## Caffe预测模型
 
 | 模型 | 代码 |
 |-------|--------|
@@ -51,8 +48,8 @@
 
 
 
-## ONNX
-**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](pytorch_to_onnx.md)
+## ONNX预测模型
+**注：** 部分模型来源于PyTorch，PyTorch的转换可参考[pytorch_to_onnx.md](../inference_model_convertor/pytorch2onnx.md)
 
 | 模型 | 来源 | operator version|备注|
 |-------|--------|---------|---------|
@@ -72,11 +69,12 @@
 | EfficientNet | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
 | SqueezeNet | [onnx official](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz) |9|
 |Ultra-Light-Fast-Generic-Face-Detector-1MB| [onnx_model](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/master/models/onnx)|9 |
-|BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../user_guides/FAQ.md)|
-|GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../user_guides/FAQ.md)|
+|BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
+|GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
+|CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9||
 
 
-## PyTorch
+## PyTorch预测模型
 
 | 模型 | 代码 | 备注 |
 |------|----------|------|
@@ -84,7 +82,7 @@
 | MNasNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mnasnet.py) |-|
 | MobileNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py) |-|
 | ResNet18 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) |-|
-| ShuffleNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/shufflenet.py) |-|
+| ShuffleNetV2 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/shufflenetv2.py) |-|
 | SqueezeNet | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py) |-|
 | VGG16 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/vgg.py) |-|
 | InceptionV3 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py) |-|
@@ -92,10 +90,20 @@
 | FCN_ResNet50 | [code](https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/fcn.py) |-|
 | CamembertForQuestionAnswering | [code](https://huggingface.co/transformers/model_doc/camembert.html) |只支持trace模式|
 | DPRContextEncoder | [code](https://huggingface.co/transformers/model_doc/dpr.html) |只支持trace模式|
-| ElectraModel | [code](https://huggingface.co/transformers/model_doc/electra.html ) |只支持trace模式|
+| ElectraModel | [code](https://huggingface.co/transformers/model_doc/electra.html) |只支持trace模式|
 | FlaubertModel | [code](https://huggingface.co/transformers/model_doc/flaubert.html) |只支持trace模式|
 | Roberta| [code](https://huggingface.co/transformers/model_doc/roberta.html)  |只支持trace模式|
 | XLMRobertaForTokenClassification|[code](https://huggingface.co/transformers/model_doc/xlmroberta.html)  |只支持trace模式|
 | EasyOCR_detector|[code](https://github.com/JaidedAI/EasyOCR/blob/master/easyocr/detection.py)  |-|
 | EasyOCR_recognizer|[code](https://github.com/JaidedAI/EasyOCR/blob/master/easyocr/recognition.py)  |-|
+| SwinTransformer|[code](https://github.com/microsoft/Swin-Transformer/)  |-|
+| BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
+| DBFace |[code](https://github.com/dlunion/DBFace)  |-|
 
+## PyTorch训练项目
+| 模型 | 转换前代码 | 转换后代码 |
+|------|----------|------|
+| StarGAN | [code](https://github.com/yunjey/stargan)|[code](https://github.com/SunAhong1993/stargan/tree/paddle)|
+| Ultra-Light-Fast-Generic-Face-Detector | [code](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB) |[code](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)|
+
+**注：** 受限于不同框架的差异，部分预测模型可能会存在目前无法转换的情况，如TensorFlow中包含控制流的模型等。对于常见的预测模型或PyTorch项目，如若您发现无法转换或转换失败，存在较大diff等问题，欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进。
