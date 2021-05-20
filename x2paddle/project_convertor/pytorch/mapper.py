@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from x2paddle.project_convertor.pytorch.api_mapper import *
-from x2paddle.utils import *
+from x2paddle.utils import is_new_version
 
 OPTIMIZER_MAPPER = {
     "torch.optim": ["paddle.optimizer", None],
@@ -168,7 +168,7 @@ DIST_MAPPER = {
     ["x2paddle.torch2paddle.init_process_group", None]
 }
 
-if is_larger_21:
+if is_new_version:
     DTYPE_MAPPER = {
         "torch.float16": ["paddle.float16", None],
         "torch.half": ["paddle.float16", None],

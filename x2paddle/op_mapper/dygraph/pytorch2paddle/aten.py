@@ -15,8 +15,8 @@
 
 import copy
 import numpy as np
-from x2paddle.core.util import *
-from x2paddle.utils import *
+from x2paddle.core.util import name_generator, string
+from x2paddle.utils import paddle_dtypes
 from x2paddle.core.program import PaddleGraph
 
 dtype_dict = {
@@ -1840,7 +1840,7 @@ def aten_expand_as(mapper, graph, node):
         inputs={"x": inputs_name[0] + "_type"},
         outputs=[inputs_name[0] + "_cond"],
         scope_name=scope_name,
-        y=pd_bool)
+        y=paddle_dtypes.t_bool)
     graph.add_layer(
         "prim.if", {'input': inputs_name[0] + "_cond"},
         outputs=[inputs_name[0] + "_if1"],
@@ -2081,7 +2081,7 @@ def aten_floor(mapper, graph, node):
         inputs={"x": inputs_name[0] + "_type"},
         outputs=[inputs_name[0] + "_cond"],
         scope_name=scope_name,
-        y=pd_bool)
+        y=paddle_dtypes.t_bool)
     graph.add_layer(
         "prim.if", {'input': inputs_name[0] + "_cond"},
         outputs=[inputs_name[0] + "_if"],

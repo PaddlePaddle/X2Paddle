@@ -14,7 +14,7 @@
 
 import paddle
 from paddle.fluid.core import VarBase
-from x2paddle.utils import *
+from x2paddle.utils import paddle_dtypes
 
 
 def is_condition_one(idx):
@@ -25,7 +25,7 @@ def is_condition_one(idx):
     a[mask, ...]
     """
     if not (isinstance(idx[0], paddle.Tensor) and \
-            idx[0].dtype == pd_bool):
+            idx[0].dtype == paddle_dtypes.t_bool):
         return False
     if len(idx) == 1:
         return False
@@ -58,13 +58,13 @@ VarBase.tmp = VarBase.__getitem__
 
 def __getitem__(self, idx):
     is_bool = False
-    if self.dtype == pd_bool:
+    if self.dtype == paddle_dtypes.t_bool:
         self = self.cast("int32")
         is_bool = True
     if isinstance(idx, paddle.Tensor) and len(idx.shape) == 1:
         out = paddle.gather(self, idx)
         return out.cast("bool") if is_bool else out
-    elif isinstance(idx, paddle.Tensor) and idx.dtype == pd_bool:
+    elif isinstance(idx, paddle.Tensor) and idx.dtype == paddle_dtypes.t_bool:
         idx = paddle.cast(idx, "int32")
         idx = paddle.nonzero(idx)
         out = paddle.gather_nd(self, idx)
@@ -101,7 +101,7 @@ VarBase.setitem_tmp = VarBase.__setitem__
 
 
 def __setitem__(self, idx, value):
-    if isinstance(idx, paddle.Tensor) and idx.dtype == pd_bool:
+    if isinstance(idx, paddle.Tensor) and idx.dtype == paddle_dtypes.t_bool:
         """
         a = paddle.to_tensor(np.array([1,2,3]).astype("float32"))
         mask = paddle.to_tensor(np.array([True, False, True]).astype("bool"))
