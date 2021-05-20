@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import paddle
+from x2paddle.core.util import *
+
 
 class Gather(object):
     def __init__(self, dim):
         self.dim = dim
-        
+
     def __call__(self, x, index):
         if self.dim < 0:
             self.dim += len(x.shape)
@@ -30,26 +32,26 @@ class Gather(object):
         index_range[self.dim] = 0
         index_swaped = paddle.transpose(index, perm=index_range)
         dtype = index.dtype
-        
+
         x_shape = paddle.shape(x_swaped)
         index_shape = paddle.shape(index_swaped)
-        
-        prod = paddle.prod(x_shape, dtype=dtype) / x_shape[0]
-        
+
+        prod = paddle.cast(paddle.prod(x_shape), dtype=dtype) / x_shape[0]
+
         x_swaped_flattend = paddle.flatten(x_swaped)
         index_swaped_flattend = paddle.flatten(index_swaped)
         index_swaped_flattend *= prod
-        
+
         bias = paddle.arange(start=0, end=prod, dtype=dtype)
         bias = paddle.reshape(bias, x_shape[1:])
         bias = paddle.crop(bias, index_shape[1:])
         bias = paddle.flatten(bias)
         bias = paddle.tile(bias, [index_shape[0]])
         index_swaped_flattend += bias
-        
+
         gathered = paddle.index_select(x_swaped_flattend, index_swaped_flattend)
         gathered = paddle.reshape(gathered, index_swaped.shape)
-        
+
         out = paddle.transpose(gathered, perm=x_range)
 
         return out

@@ -169,18 +169,10 @@ class PyTorchOpMapper(OpMapper):
             outputs_name.append(output_name)
         return outputs_name
 
-    def _check_input(self,
-                     graph,
-                     node,
-                     output_name,
-                     node_outputs,
-                     scope_name,
-                     add_dim=False):
+    def _check_input(self, graph, node, output_name, node_outputs, scope_name):
         if node.kind() == "prim::GetAttr":
             param = self.pytorch_params[output_name]
             if isinstance(param, np.ndarray):
-                if add_dim:
-                    param = param[np.newaxis, :]
                 self.paddle_params[output_name] = param
                 layer_id = graph.add_layer(
                     "self.create_parameter",
@@ -208,8 +200,6 @@ class PyTorchOpMapper(OpMapper):
                                 else:
                                     if id1_part[i] == "0" and id2_part[
                                             i] == "1":
-                                        if add_dim:
-                                            param = param[np.newaxis, :]
                                         self.paddle_params[output_name] = param
                                         layer_id = graph.add_layer(
                                             "self.create_parameter",
