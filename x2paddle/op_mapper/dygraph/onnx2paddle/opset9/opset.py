@@ -100,9 +100,8 @@ def print_mapping_info(func):
         try:
             res = func(*args, **kwargs)
         except:
-            print("convert failed node:{}, op_type is {}".format(node.name[
-                9:], node.layer_type))
-            raise
+            raise Exception("convert failed node:{}, op_type is {}".format(
+                node.name[9:], node.layer_type))
         else:
             return res
 
@@ -2020,7 +2019,6 @@ class OpSet9():
 
         def assign_params(op_name, weights, weight_idx=0, suffix=''):
             param_names = generate_paddle_param_names(op_name, suffix)
-            print(param_names)
             for param_name, weight in zip(param_names, weights):
                 self.weights[param_name] = weight[weight_idx]
 
