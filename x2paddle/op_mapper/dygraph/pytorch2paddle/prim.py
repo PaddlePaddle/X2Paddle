@@ -15,7 +15,7 @@
 
 import torch
 import numpy as np
-from x2paddle.core.util import *
+from x2paddle.core.util import string
 
 
 def prim_Constant(mapper, graph, node):

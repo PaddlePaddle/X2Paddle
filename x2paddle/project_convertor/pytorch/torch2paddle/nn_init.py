@@ -19,6 +19,7 @@ from paddle.fluid import framework
 from paddle.fluid.core import VarDesc
 from paddle.fluid.initializer import XavierInitializer, MSRAInitializer
 from paddle.fluid.data_feeder import check_variable_and_dtype
+from x2paddle.utils import paddle_dtypes
 
 
 def _calculate_fan_in_and_fan_out(var):
@@ -101,8 +102,8 @@ class KaimingNormal(MSRAInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle_dtypes.t_float16:
+            out_dtype = paddle_dtypes.t_float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['masra_init', var.name, 'tmp'])),
@@ -169,8 +170,8 @@ class XavierNormal(XavierInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle_dtypes.t_float16:
+            out_dtype = paddle_dtypes.t_float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['xavier_init', var.name, 'tmp'])),
@@ -195,7 +196,7 @@ class XavierNormal(XavierInitializer):
                 "seed": self._seed
             },
             stop_gradient=True)
-        if var.dtype == VarDesc.VarType.FP16:
+        if var.dtype == paddle_dtypes.t_float16:
             block.append_op(
                 type="cast",
                 inputs={"X": out_var},
@@ -233,8 +234,8 @@ class XavierUniform(XavierInitializer):
             self._seed = block.program.random_seed
 
         # to be compatible of fp16 initalizers
-        if var.dtype == VarDesc.VarType.FP16:
-            out_dtype = VarDesc.VarType.FP32
+        if var.dtype == paddle_dtypes.t_float16:
+            out_dtype = paddle_dtypes.t_float32
             out_var = block.create_var(
                 name=unique_name.generate(".".join(
                     ['xavier_init', var.name, 'tmp'])),
@@ -260,7 +261,7 @@ class XavierUniform(XavierInitializer):
                 "seed": self._seed
             },
             stop_gradient=True)
-        if var.dtype == VarDesc.VarType.FP16:
+        if var.dtype == paddle_dtypes.t_float16:
             block.append_op(
                 type="cast",
                 inputs={"X": out_var},

@@ -13,8 +13,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import paddle
+
 
 def string(param):
     """ 生成字符串。
     """
     return "\'{}\'".format(param)
+
+
+def check_version():
+    version = paddle.__version__
+    v0, v1, v2 = version.split('.')
+    if not ((v0 == '0' and v1 == '0' and v2 == '0') or
+            (int(v0) >= 2 and int(v1) >= 1)):
+        return False
+    else:
+        return True
+
+
+class PaddleDtypes():
+    def __init__(self, is_new_version=True):
+        if is_new_version:
+            self.t_float16 = paddle.float16
+            self.t_float32 = paddle.float32
+            self.t_float64 = paddle.float64
+            self.t_uint8 = paddle.uint8
+            self.t_int8 = paddle.int8
+            self.t_int16 = paddle.int16
+            self.t_int32 = paddle.int32
+            self.t_int64 = paddle.int64
+            self.t_bool = paddle.bool
+        else:
+            from paddle.fluid.core import VarDesc
+            self.t_float16 = VarDesc.VarType.FP16
+            self.t_float32 = VarDesc.VarType.FP32
+            self.t_float64 = VarDesc.VarType.FP64
+            self.t_uint8 = VarDesc.VarType.UINT8
+            self.t_int8 = VarDesc.VarType.INT8
+            self.t_int16 = VarDesc.VarType.INT16
+            self.t_int32 = VarDesc.VarType.INT32
+            self.t_int64 = VarDesc.VarType.INT64
+            self.t_bool = VarDesc.VarType.BOOL
+
+
+is_new_version = check_version()
+paddle_dtypes = PaddleDtypes(is_new_version)
