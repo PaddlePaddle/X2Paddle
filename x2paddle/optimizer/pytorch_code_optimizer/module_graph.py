@@ -368,7 +368,7 @@ class ModuleGraph(object):
         self.update_parameters()
         import_list = ["import paddle",
                        "import math",
-                       "from x2paddle.op_mapper.dygraph.pytorch2paddle " + \
+                       "from x2paddle.op_mapper.pytorch2paddle " + \
                                  "import pytorch_custom_layer as x2paddle_nn"
                        "\n",]
         import_str = "\n".join(import_list)

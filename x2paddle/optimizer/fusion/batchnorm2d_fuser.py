@@ -70,7 +70,7 @@ class BatchNorm2dFuser(FuseBase):
         if_layer1.add_block(pattern_block1)
         self.pattern.add_layer("prim.if", {}, [gen_name(4)], input=False)
         if_layer2 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
-        pattern_block0 = PaddleGraph(parent_layer=if_layer)
+        pattern_block0 = PaddleGraph(parent_layer=if_layer2)
         pattern_block0.add_layer(
             "prim.shape", inputs={'input': "bn-input-0"},
             outputs=[gen_name(5)])

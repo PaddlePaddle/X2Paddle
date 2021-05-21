@@ -288,7 +288,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 cur_outputs.extend(layer.outputs[1:])
         elif "prim" in layer.kernel:
             func_name = layer.kernel.replace(".", "_")
-            from x2paddle.op_mapper.dygraph.pytorch2paddle import prim2code
+            from x2paddle.op_mapper.pytorch2paddle import prim2code
             if hasattr(prim2code, func_name):
                 for k, v in layer.inputs.items():
                     if v not in cur_outputs and v not in inputs:
