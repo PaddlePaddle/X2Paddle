@@ -18,12 +18,12 @@
 | ResNet_V2_101 | [code](https://github.com/tensorflow/models/tree/master/research/slim/nets) |
 | UNet | [code1](https://github.com/jakeret/tf_unet)/[code2](https://github.com/lyatdawn/Unet-Tensorflow) |
 | MTCNN | [code](https://github.com/AITTSMD/MTCNN-Tensorflow) |
-| YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) | 
+| YOLO-V3| [code](https://github.com/YunYang1994/tensorflow-yolov3) |
 | FALSR | [code](https://github.com/xiaomi-automl/FALSR) |
 | DCSCN | [code](https://modelzoo.co/model/dcscn-super-resolution) |
 | Bert（albert） | [code](https://github.com/google-research/albert#pre-trained-models) |
-| Bert（chinese_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
-| Bert（multi_cased_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) | 
+| Bert（chinese_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) |
+| Bert（multi_cased_L-12_H-768_A-12） | [code](https://github.com/google-research/bert#pre-trained-models) |
 
 ## Caffe预测模型
 
@@ -71,7 +71,9 @@
 |Ultra-Light-Fast-Generic-Face-Detector-1MB| [onnx_model](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/master/models/onnx)|9 |
 |BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
 |GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
-|CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9||
+|CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9|
+|Fcos | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py)|11|
+|Yolov3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py)|11||
 
 
 ## PyTorch预测模型
