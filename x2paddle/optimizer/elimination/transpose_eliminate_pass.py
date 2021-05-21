@@ -12,5 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .transpose_elimination import TransposeElimination
-from .transpose_eliminate_pass import TransposeEliminatePass
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.elimination import TransposeElimination
+from x2paddle.optimizer.pass_manager import pass_register
+
+
+@pass_register
+class TransposeEliminatePass(Pass):
+    name = "transpose_eliminate_pass"
+
+    def __init__(self):
+        Pass.__init__(self)
+
+    def apply(self, graph):
+        fuser = TransposeElimination()
+        fuser.operate(graph)
+
+
+# 用于注册
+transpose_eliminate_pass = TransposeEliminatePass()

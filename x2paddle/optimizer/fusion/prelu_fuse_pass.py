@@ -12,5 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .transpose_elimination import TransposeElimination
-from .transpose_eliminate_pass import TransposeEliminatePass
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.fusion import PReLUFuser
+from x2paddle.optimizer.pass_manager import pass_register
+
+
+@pass_register
+class PReLUFusePass(Pass):
+    name = "prelu_fuse_pass"
+
+    def __init__(self):
+        Pass.__init__(self)
+
+    def apply(self, graph):
+        fuser = PReLUFuser()
+        fuser.operate(graph, match_kind="edge")
+
+
+# 用于注册
+prelu_fuse_pass = PReLUFusePass()

@@ -99,13 +99,14 @@ class PatternMatcher(object):
                                     return False
                                 else:
                                     subgraph_id2layers.pop(layer_id)
-                                    continue                                
+                                    continue
                         else:
                             if len(graph.edges_out[layer_id]) != len(
                                     pattern.edges_out[pattern_layer_id]):
                                 # 如果在每个节点edges_in相同的情况下，edges_out数目相同则说明无节点在subgraph外被用到
                                 if "paddle.nn" in layer.kernel and "functional" not in layer.kernel:
-                                    pattern_layer_opt = pattern_layer.outputs[1:]
+                                    pattern_layer_opt = pattern_layer.outputs[
+                                        1:]
                                 else:
                                     pattern_layer_opt = pattern_layer.outputs
                                 if not set(pattern_layer_opt).issubset(
@@ -118,13 +119,16 @@ class PatternMatcher(object):
                                         continue
                             else:
                                 layer_out = graph.edges_out[layer_id]
-                                pattern_layer_out = pattern.edges_out[pattern_layer_id]
+                                pattern_layer_out = pattern.edges_out[
+                                    pattern_layer_id]
                                 is_pop = False
                                 for i in range(len(layer_out)):
                                     layer_id_out = layer_out[i]
                                     pattern_layer_id_out = pattern_layer_out[i]
                                     if layer_id_out != -1:
-                                        if graph_layers[layer_id_out].kernel != pattern.layers[pattern_layer_id_out].kernel:
+                                        if graph_layers[
+                                                layer_id_out].kernel != pattern.layers[
+                                                    pattern_layer_id_out].kernel:
                                             is_pop = True
                                             break
                                 if is_pop:
@@ -243,10 +247,11 @@ class PatternMatcher(object):
             for j, block in enumerate(layer.blocks):
                 if len(block.layers) > 0:
                     self.detect_patterns_by_edge(layer.blocks[j])
-                    
+
     def detect_patterns_by_op(self, graph):
         """ 当只匹配op时使用此方式。
         """
+
         def get_subgraph(pattern, graph, start_index):
             pattern_id2layers = pattern.get_global_layers()
             pattern_ids = list(pattern_id2layers.keys())
@@ -261,7 +266,7 @@ class PatternMatcher(object):
                 if layer.kernel != pattern_layer.kernel:
                     return False
                 subgraph_id2layers[layer_id] = layer
-                
+
             while len(subgraph_id2layers) != len(pattern_id2layers):
                 out = update(layer_id, pattern_layer_id)
                 if out == False:
@@ -271,6 +276,7 @@ class PatternMatcher(object):
                         return subgraph_id2layers
                     else:
                         return False
+
         for i, (layer_id, layer) in enumerate(graph.layers.items()):
             match_info = get_subgraph(self.pattern, graph, i)
             if match_info:
@@ -278,7 +284,6 @@ class PatternMatcher(object):
             for j, block in enumerate(layer.blocks):
                 if len(block.layers) > 0:
                     self.detect_patterns_by_op(layer.blocks[j])
-
 
     def remove_overlapped_match(self):
         """ 如果2个子图有重叠，只取前一个子图。
@@ -317,8 +322,8 @@ def get_subgraph(prefix_layer_id, suffix_layer_id, graph):
 
 
 class FuseBase(object):
-    def __init__(self, graph_type):
-        self.pattern = PaddleGraph(graph_type=graph_type)
+    def __init__(self):
+        self.pattern = PaddleGraph()
         self.patterns = list()
 
     def operate(self, graph, match_kind="topo"):
@@ -356,5 +361,3 @@ class FuseBase(object):
                 if layer_id in subgraph.layers:
                     # layer_id可能是属于子图的，此时删除父layer，即删除整个子图
                     subgraph.layers.pop(layer_id)
-                    
-                    

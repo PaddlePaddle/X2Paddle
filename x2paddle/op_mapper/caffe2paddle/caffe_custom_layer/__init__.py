@@ -1,4 +1,4 @@
-#   Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .transpose_elimination import TransposeElimination
-from .transpose_eliminate_pass import TransposeEliminatePass
+from .detectionoutput import DetectionOutput
+from .normalize import Normalize
+from .priorbox import PriorBox
+from .roipooling import ROIPooling
+from .select import Select
