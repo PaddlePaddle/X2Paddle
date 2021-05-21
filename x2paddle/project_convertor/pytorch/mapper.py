@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from x2paddle.project_convertor.pytorch.api_mapper import *
-from x2paddle.utils import *
+from x2paddle.utils import is_new_version
 
 OPTIMIZER_MAPPER = {
     "torch.optim": ["paddle.optimizer", None],
@@ -25,7 +25,6 @@ OPTIMIZER_MAPPER = {
     ["paddle.optimizer.lr.MultiStepDecay", LRScheculerMapper],
     "torch.optim.Adam": ["x2paddle.torch2paddle.Adam", None],
     "torch.optim.SGD": ["x2paddle.torch2paddle.Momentum", None]
-    
 }
 
 NN_MAPPER = {
@@ -169,11 +168,42 @@ DIST_MAPPER = {
     ["x2paddle.torch2paddle.init_process_group", None]
 }
 
-DTYPE_MAPPER = {
-    "torch.float32": [string("float32"), None],
-    "torch.long": [string("int64"), None],
-    "torch.bool": [string("bool"), None]
-}
+if is_new_version:
+    DTYPE_MAPPER = {
+        "torch.float16": ["paddle.float16", None],
+        "torch.half": ["paddle.float16", None],
+        "torch.float32": ["paddle.float32", None],
+        "torch.float": ["paddle.float32", None],
+        "torch.float64": ["paddle.float64", None],
+        "torch.double": ["paddle.float64", None],
+        "torch.uint8": ["paddle.uint8", None],
+        "torch.int8": ["paddle.int8", None],
+        "torch.int16": ["paddle.int16", None],
+        "torch.short": ["paddle.int16", None],
+        "torch.int32": ["paddle.int32", None],
+        "torch.int": ["paddle.int32", None],
+        "torch.int64": ["paddle.int64", None],
+        "torch.long": ["paddle.int64", None],
+        "torch.bool": ["paddle.bool", None],
+    }
+else:
+    DTYPE_MAPPER = {
+        "torch.float16": [string("float16"), None],
+        "torch.half": [string("float16"), None],
+        "torch.float32": [string("float32"), None],
+        "torch.float": [string("float32"), None],
+        "torch.float64": [string("float64"), None],
+        "torch.double": [string("float64"), None],
+        "torch.uint8": [string("uint8"), None],
+        "torch.int8": [string("int8"), None],
+        "torch.int16": [string("int16"), None],
+        "torch.short": [string("int16"), None],
+        "torch.int32": [string("int32"), None],
+        "torch.int": [string("int32"), None],
+        "torch.int64": [string("int64"), None],
+        "torch.long": [string("int64"), None],
+        "torch.bool": [string("bool"), None],
+    }
 
 TORCHVISION_MAPPER = {
     "torchvision": ["paddle.vision", None],

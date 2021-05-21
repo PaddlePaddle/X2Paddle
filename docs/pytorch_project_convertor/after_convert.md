@@ -24,19 +24,18 @@ class VocDataset(paddle.io.Dataset):
     ...
 ```
 
-3. 若存在Tensor对比操作（包含==、!=、<、<=、>、>=操作符）,在对比操作符前添加对Tensor类型的判断，如果为bool型强转为int型，并在对比后转换回bool型。
+3. 若存在Tensor对比操作（包含==、!=、<、<=、>、>=操作符）,在对比操作符前添加对Tensor类型的判断，如果为非bool型强转为bool型，并在对比后转换回bool型。
 
 ```
-# 原始代码（其中c_trg是Tensor）
+# 原始代码（其中c_trg是非bool型的Tensor）
 c_trg = c_trg == 0
 # 替换后代码
-is_bool = False
-if str(c_trg.dtype) == "VarType.BOOL":
-    c_trg = c_trg.cast("int32")
-    is_bool = True
-c_trg = c_trg == 0
-if is_bool:
-    c_trg = c_trg.cast("bool")
+c_trg = c_trg.cast("int32")
+c_trg_tmp = paddle.zeros_like(c_trg)
+paddle.assign(c_trg, c_trg_tmp)
+c_trg_tmp = c_trg_tmp.cast("bool")
+c_trg_tmp[:, i] = c_trg[:, i] == 0
+c_trg = c_trg_tmp 
 ```
 
 4. 如若转换后的运行代码的入口为sh脚本文件，且其中有预训练模型路径，应将其中的预训练模型的路径字符串中的“.pth”、“.pt”、“.ckpt”替换为“.pdiparams”。
