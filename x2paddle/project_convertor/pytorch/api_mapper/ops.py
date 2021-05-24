@@ -555,3 +555,25 @@ class ToTensorMapper(Mapper):
         else:
             self.convert_args2kwargs()
             return self.convert_to_paddle()
+
+class EyeMapper(Mapper):
+    def __init__(self, 
+                 func_name,
+                 pytorch_api_name, 
+                 args, kwargs, 
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "n", "num_rows")
+        rename_key(self.kwargs, "m", "num_columns")
+    def delete_attrs(self):
+        delete_key(self.kwargs, "layout")
+        delete_key(self.kwargs, "device")
+        delete_key(self.kwargs, "requires_grad")
+    def run(self):
+        if self.rename_func_name("paddle.eye"):
+            return [], generate_api_code(self.func_name, self.args, self.kwargs), []
+        else:
+            self.convert_args2kwargs()
+            return self.convert_to_paddle()
