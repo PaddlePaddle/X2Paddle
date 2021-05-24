@@ -118,6 +118,7 @@ NN_MAPPER = {
     "torch.nn.functional.softmax":
     ["paddle.nn.functional.softmax", SoftmaxFuncMapper],
     "torch.nn.functional.tanh": ["paddle.tanh", None],
+    "torch.nn.functional.conv2d": ["torch.nn.functional.conv2d", Conv2DMapper],
     # init
     "torch.nn.init": ["x2paddle.torch2paddle", None],
     "torch.nn.init.kaiming_normal_":

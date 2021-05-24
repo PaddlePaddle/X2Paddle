@@ -657,3 +657,22 @@ class SoftmaxFuncMapper(Mapper):
         else:
             self.convert_args2kwargs(2)
             return self.convert_to_paddle()
+class Conv2DMapper(Mapper):
+    def __init__(self,
+                 func_name,
+                 pytorch_api_name,
+                 args,
+                 kwargs,
+                 target_name=None):
+        super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
+
+    def process_attrs(self):
+        rename_key(self.kwargs, "input", "x")
+
+    def run(self):
+        if self.rename_func_name("paddle.nn.functional.conv2d"):
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
+        else:
+            self.convert_args2kwargs(2)
+            return self.convert_to_paddle()
