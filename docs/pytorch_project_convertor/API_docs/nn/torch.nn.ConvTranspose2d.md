@@ -13,7 +13,7 @@ torch.nn.ConvTranspose1d(in_channels,
                          padding_mode='zeros')
 ```
 
-### [paddle.nn.Conv2DTranspose](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/conv/Conv2DTranspose_cn.html#conv2dtranspose)
+### [paddle.nn.Conv2DTranspose](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/Conv2DTranspose_cn.html#conv2dtranspose)
 ```python
 paddle.nn.Conv2DTranspose(in_channels,
                           out_channels,
@@ -34,7 +34,7 @@ paddle.nn.Conv2DTranspose(in_channels,
 
 #### 更新参数设置
 ***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。  
-***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/param_attr/ParamAttr_cn.html#cn-api-fluid-paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
+***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
 
 #### padding大小的设置
 ***PyTorch***：`padding`只能支持list或tuple类型。  

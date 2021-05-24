@@ -12,7 +12,7 @@ torch.empty(*size,
             pin_memory=False)
 ```
 
-### [paddle.empty](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/empty_cn.html#empty)
+### [paddle.empty](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/empty_cn.html#empty)
 
 ```python
 paddle.empty(shape,

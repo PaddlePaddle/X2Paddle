@@ -3,7 +3,7 @@
 ```python
 torch.bernoulli(input, *, generator=None, out=None)
 ```
-### [paddle.bernoulli](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/random/bernoulli_cn.html#bernoulli)
+### [paddle.bernoulli](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/bernoulli_cn.html#bernoulli)
 ```python
 paddle.bernoulli(x, name=None)
 ```

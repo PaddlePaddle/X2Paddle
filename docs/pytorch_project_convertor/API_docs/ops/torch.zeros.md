@@ -11,7 +11,7 @@ torch.zeros(*size,
             requires_grad=False)
 ```
 
-### [paddle.zeros](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_cn.html#zeros)
+### [paddle.zeros](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/zeros_cn.html#zeros)
 
 ```python
 paddle.zeros(shape,

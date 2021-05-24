@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode, Graph
-from x2paddle.core.fluid_code import FluidCode
 from tensorflow.python.framework import tensor_util
 from tensorflow.core.framework import attr_value_pb2
 import tensorflow as tf
@@ -36,7 +35,6 @@ class TFGraphNode(GraphNode):
         self.layer_type = layer.op
         self.tf_data_format = data_format
         self.pd_data_format = "NCHW"
-        self.fluid_code = FluidCode()
 
         self.dtype_map = {
             1: "float32",
@@ -174,7 +172,6 @@ class TFGraph(Graph):
         self._optimize_dialiation_conv()
         self._remove_identity_node()
         self._remove_cast_node()
-        
 
     def get_node(self, node_name, copy=False):
         items = node_name.strip().split(':')
@@ -191,7 +188,7 @@ class TFGraph(Graph):
         if len(items) == 1 and node.layer_type in self.multi_out_ops:
             node.index = 0
         return node
-    
+
     def get_input_node(self, node, idx=0, copy=False):
         input_node_name = node.layer.input[idx]
         if idx > 0:
@@ -289,7 +286,6 @@ class TFGraph(Graph):
                     self.output_nodes.pop(idx)
                 else:
                     self.output_nodes[idx] = input_node.layer_name
-                
 
     def _remove_cast_node(self):
         cast_node = list()
@@ -442,7 +438,7 @@ class TFDecoder(object):
                 if shape.count(None) > 0:
                     shape[shape.index(None)] = -1
                 self.inputs_info["x2paddle_{}".format(layer.name)] = (shape,
-                                                                     dtype)
+                                                                      dtype)
             else:
                 value = graph_node.layer.attr["shape"].shape
                 shape = [dim.size for dim in value.dim]
@@ -466,13 +462,15 @@ class TFDecoder(object):
         for b in batch_size:
             for input_name, info in self.inputs_info.items():
                 (shape, dtype) = cp.deepcopy(info)
-                input_tensor = self.sess.graph.get_tensor_by_name(input_name + ":0")
+                input_tensor = self.sess.graph.get_tensor_by_name(input_name +
+                                                                  ":0")
                 if shape.count(-1) > 0:
                     shape[shape.index(-1)] = b
                 feed[input_tensor] = numpy.random.random_sample(shape)
             output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
             if use_diff_inputs:
-                results.append(self.sess.run([output_tensor], feed)[0].flatten())
+                results.append(
+                    self.sess.run([output_tensor], feed)[0].flatten())
             else:
                 return self.sess.run([output_tensor], feed)[0]
 
@@ -499,4 +497,3 @@ class TFDecoder(object):
             return results[0].tolist()
         else:
             raise Exception("Couldn't infer a stable shape shape tensor value")
-            

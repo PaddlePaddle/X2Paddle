@@ -10,7 +10,7 @@ torch.nn.MaxPool3d(kernel_size,
                    ceil_mode=False)
 ```
 
-### [paddle.nn.MaxPool3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/pooling/MaxPool3D_cn.html#maxpool3d)
+### [paddle.nn.MaxPool3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/MaxPool3D_cn.html#maxpool3d)
 
 ```python
 paddle.nn.MaxPool3D(kernel_size,

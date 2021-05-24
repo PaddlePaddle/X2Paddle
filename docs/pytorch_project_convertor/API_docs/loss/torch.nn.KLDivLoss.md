@@ -7,7 +7,7 @@ torch.nn.KLDivLoss(size_average=None,
                    log_target=False)
 ```
 
-### [paddle.nn.KLDivLoss](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/loss/KLDivLoss_cn.html)
+### [paddle.nn.KLDivLoss](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/KLDivLoss_cn.html#kldivloss)
 ```python
 paddle.nn.KLDivLoss(reduction='mean')
 ```

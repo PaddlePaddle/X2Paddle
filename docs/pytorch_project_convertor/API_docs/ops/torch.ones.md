@@ -11,7 +11,7 @@ torch.ones(*size,
            requires_grad=False)
 ```
 
-### [paddle.ones](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/ones_cn.html#ones)
+### [paddle.ones](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ones_cn.html#ones)
 
 ```python
 paddle.ones(shape,

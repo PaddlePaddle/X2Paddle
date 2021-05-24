@@ -13,54 +13,37 @@
 # limitations under the License.
 
 from x2paddle.optimizer.pass_manager import PassManager
-from x2paddle.optimizer.fusion.dygraph import *
-from x2paddle.optimizer.fusion.static import *
-from x2paddle.optimizer.elimination.dygraph import *
-from x2paddle.optimizer.elimination.static import *
+from x2paddle.optimizer.fusion import *
+from x2paddle.optimizer.elimination import *
+
 
 class GraphOptimizer(object):
-    def __init__(self, source_frame, paddle_type="dygraph", jit_type="trace"):
+    def __init__(self, source_frame, jit_type="trace"):
         if source_frame == "pytorch":
             if jit_type == "trace":
                 self.passes = ["trace_fc_fuse_pass"]
             else:
                 self.passes = [
-                    "dygraph_constant_fuse_pass", 
-                    "dygraph_batchnorm2d_fuse_pass",
-                    "dygraph_interpolate_bilinear_fuse_pass", 
-                    "dygraph_fc_fuse_pass",
-                    "dygraph_adaptive_pool2d_fuse_pass", 
-                    "dygraph_reshape_fuse_pass",
-                    "dygraph_dropout_fuse_pass",
-                    "dygraph_if_fuse_pass"
+                    "constant_fuse_pass", "batchnorm2d_fuse_pass",
+                    "interpolate_bilinear_fuse_pass", "fc_fuse_pass",
+                    "adaptive_pool2d_fuse_pass", "reshape_fuse_pass",
+                    "dropout_fuse_pass", "if_fuse_pass"
                 ]
         elif source_frame == "caffe":
-            if paddle_type == "dygraph":
-                self.passes = ["dygraph_bn_scale_fuse_pass"]
-            else:
-                self.passes = ["static_bn_scale_fuse_pass"]
+            self.passes = ["bn_scale_fuse_pass"]
         elif source_frame == "tf":
-            if paddle_type == "dygraph":
-                self.passes = [
-                    "dygraph_conv2d_add_fuse_pass",
-                    "dygraph_tf_batchnorm_fuse_pass",
-                    "dygraph_prelu_fuse_pass",
-                    "transpose_eliminate_pass"
-                ]
-            else:
-                self.passes = [
-                    "static_conv2d_add_fuse_pass",
-                    "static_tf_batchnorm_fuse_pass",
-                    "static_prelu_fuse_pass",
-                    "static_transpose_eliminate_pass"
-                ]
+            self.passes = [
+                "conv2d_add_fuse_pass", "tf_batchnorm_fuse_pass",
+                "prelu_fuse_pass", "transpose_eliminate_pass"
+            ]
         else:
             self.passes = []
 
     def optimize(self, graph):
         for pass_name in self.passes:
             pass_ = PassManager.lookup(pass_name)()
-            if pass_name.endswith("_eliminate_pass") or pass_name.endswith("_conv2d_add_fuse_pass"):
+            if pass_name.endswith("_eliminate_pass") or pass_name.endswith(
+                    "conv2d_add_fuse_pass"):
                 pass_.apply(graph)
             else:
                 while True:

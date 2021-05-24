@@ -4,7 +4,7 @@
 torch.utils.data.BatchSampler(sampler, batch_size, drop_last)
 ```
 
-### [paddle.io.BatchSampler](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/dataloader/batch_sampler/BatchSampler_cn.html#batchsampler)
+### [paddle.io.BatchSampler](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/io/BatchSampler_cn.html#batchsampler)
 ```python
 paddle.io.BatchSampler(dataset=None, sampler=None, shuffle=Fasle, batch_size=1, drop_last=False)
 ```

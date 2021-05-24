@@ -8,7 +8,7 @@ torch.save(obj,
            pickle_protocol=2)
 ```
 
-### [paddle.save](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/framework/io/save_cn.html#save)
+### [paddle.save](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/save_cn.html#save)
 
 ```python
 paddle.save(obj, path, pickle_protocol=2)

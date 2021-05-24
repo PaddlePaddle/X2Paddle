@@ -3,7 +3,7 @@
 ```python
 torch.normal(mean, std, *, generator=None, out=None)
 ```
-### [paddle.normal](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/random/normal_cn.html#normal)
+### [paddle.normal](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/normal_cn.html#normal)
 ```python
 paddle.normal(mean=0.0, std=1.0, shape=None, name=None)
 ```
