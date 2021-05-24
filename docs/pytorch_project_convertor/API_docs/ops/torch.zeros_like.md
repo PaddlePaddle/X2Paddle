@@ -11,7 +11,7 @@ torch.zeros_like(input,
                  memory_format=torch.preserve_format)
 ```
 
-### [paddle.zeros_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/zeros_like_cn.html#zeros-like)
+### [paddle.zeros_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/zeros_like_cn.html#zeros-like)
 
 ```python
 paddle.zeros_like(x, dtype=None, name=None)

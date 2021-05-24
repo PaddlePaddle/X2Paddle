@@ -18,7 +18,7 @@ torch.utils.data.DataLoader(dataset,
                             persistent_workers=False)
 ```
 
-### [paddle.io.DataLoader](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/reader/DataLoader_cn.html#dataloader)
+### [paddle.io.DataLoader](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/io/DataLoader_cn.html#dataloader)
 ```python
 paddle.io.DataLoader(dataset,
                      feed_list=None,

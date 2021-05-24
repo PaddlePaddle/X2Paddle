@@ -13,7 +13,7 @@ torch.nn.Conv3d(in_channels,
                 padding_mode='zeros')
 ```
 
-### [paddle.nn.Conv3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/conv/Conv3D_cn.html#conv3d)
+### [paddle.nn.Conv3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/Conv3D_cn.html#conv3d)
 
 ```python
 paddle.nn.Conv3D(in_channels,
@@ -37,7 +37,7 @@ paddle.nn.Conv3D(in_channels,
 
 #### 更新参数设置
 ***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。  
-***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/param_attr/ParamAttr_cn.html#cn-api-fluid-paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
+***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
 #### padding的设置
 ***PyTorch***：`padding`只能支持list或tuple类型。它可以有3种格式：  
 (1)包含4个二元组：\[\[0,0\], \[0,0\], \[padding_depth_front, padding_depth_back\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，其中每个元组都可使用整数值替换，代表元组中的2个值相等；  

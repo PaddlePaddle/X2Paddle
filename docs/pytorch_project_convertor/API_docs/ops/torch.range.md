@@ -12,7 +12,7 @@ torch.range(start=0,
             device=None,
             requires_grad=False)
 ```
-### [paddle.arange](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/arange_cn.html#arange)
+### [paddle.arange](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/arange_cn.html#arange)
 ```python
 paddle.arange(start=0,
               end=None,

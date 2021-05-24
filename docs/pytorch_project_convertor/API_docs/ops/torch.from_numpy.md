@@ -5,7 +5,7 @@
 torch.from_numpy(ndarray)
 ```
 
-### [paddle.to_tensor](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/to_tensor_cn.html#to-tensor)
+### [paddle.to_tensor](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/to_tensor_cn.html#to-tensor)
 
 ```python
 paddle.to_tensor(data,

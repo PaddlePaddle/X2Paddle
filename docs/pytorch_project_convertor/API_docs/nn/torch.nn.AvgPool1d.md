@@ -9,7 +9,7 @@ torch.nn.AvgPool1d(kernel_size,
                    count_include_pad=True)
 ```
 
-### [paddle.nn.AvgPool1D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/pooling/AvgPool1D_cn.html#avgpool1d)
+### [paddle.nn.AvgPool1D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/AvgPool1D_cn.html#avgpool1d)
 
 ```python
 paddle.nn.AvgPool1D(kernel_size,

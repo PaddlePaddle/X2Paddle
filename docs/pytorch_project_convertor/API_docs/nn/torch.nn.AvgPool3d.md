@@ -10,7 +10,7 @@ torch.nn.AvgPool3d(kernel_size,
                    divisor_override=None)
 ```
 
-### [paddle.nn.AvgPool3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/pooling/AvgPool3D_cn.html#avgpool3d)
+### [paddle.nn.AvgPool3D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/AvgPool3D_cn.html#avgpool3d)
 
 ```python
 paddle.nn.AvgPool3D(kernel_size,

@@ -4,7 +4,7 @@
 torch.nn.ConstantPad2d(padding, value)
 ```
 
-### [paddle.nn.Pad2D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/common/Pad2D_cn.html#pad2d)
+### [paddle.nn.Pad2D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/Pad2D_cn.html#pad2d)
 ```python
 paddle.nn.Pad2D(padding, mode='constant', value=0.0, data_format='NCHW', name=None)
 ```

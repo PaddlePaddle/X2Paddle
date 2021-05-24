@@ -12,7 +12,7 @@ torch.eye(n,
           requires_grad=False)
 ```
 
-### [paddle.eye](https://pytorch.org/docs/stable/generated/torch.eye.html?highlight=eye#torch.eye)
+### [paddle.eye](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/eye_cn.html#eye)
 ```python
 paddle.eye(num_rows,
            num_columns=None,

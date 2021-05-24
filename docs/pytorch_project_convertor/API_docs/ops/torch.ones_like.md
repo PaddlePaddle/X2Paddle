@@ -11,7 +11,7 @@ torch.ones_like(input,
                 memory_format=torch.preserve_format)
 ```
 
-### [paddle.ones_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/ones_like_cn.html#ones-like)
+### [paddle.ones_like](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ones_like_cn.html#ones-like)
 
 ```python
 paddle.ones_like(x, dtype=None, name=None)

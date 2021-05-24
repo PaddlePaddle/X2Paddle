@@ -3,7 +3,7 @@
 ```python
 torch.multinomial(input, num_samples, replacement=False, *, generator=None, out=None)
 ```
-### [paddle.multinomial](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/random/multinomial_cn.html#multinomial)
+### [paddle.multinomial](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/multinomial_cn.html#multinomial)
 ```python
 paddle.multinomial(x, num_samples=1, replacement=False, name=None)
 ```

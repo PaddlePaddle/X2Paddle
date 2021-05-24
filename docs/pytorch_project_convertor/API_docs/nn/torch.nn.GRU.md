@@ -10,7 +10,7 @@ torch.nn.GRU(input_size,
              bidirectional=False)
 ```
 
-### [paddle.nn.GRU](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/rnn/GRU_cn.html#gru)
+### [paddle.nn.GRU](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/GRU_cn.html#gru)
 ```python
 paddle.nn.GRU(input_size,
               hidden_size,
@@ -33,4 +33,4 @@ paddle.nn.GRU(input_size,
 ### 功能差异
 #### 更新参数设置
 ***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。  
-***PaddlePaddle***：`weight_ih_attr`/`weight_hh_attr`/`bias_ih_attr`/`bias_hh_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/fluid/param_attr/ParamAttr_cn.html#cn-api-fluid-paramattr)；当`bias_ih_attr`/`bias_hh_attr`设置为bool类型与PyTorch的作用一致。  
+***PaddlePaddle***：`weight_ih_attr`/`weight_hh_attr`/`bias_ih_attr`/`bias_hh_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_ih_attr`/`bias_hh_attr`设置为bool类型与PyTorch的作用一致。  
