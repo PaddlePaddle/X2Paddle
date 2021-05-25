@@ -12,23 +12,31 @@ X2Paddle致力于帮助其它主流深度学习框架用户快速迁移至飞桨
 
 ## 特性
 
-- **支持主流深度学习框架**：目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的预测模型的转换，PyTorch训练项目的转换，涵盖了目前市面主流深度学习框架。  
-- **支持的模型丰富**：在主流的CV和NLP模型上均支持转换，涵盖了19+个Caffe预测模型转换、27+个TensorFlow预测模型转换、32+个ONNX预测模型转换、27+个PyTorch预测模型转换、2+个PyTorch训练项目转换，详见 ***[支持列表](./docs/introduction/x2paddle_model_zoo.md)***。  
-- **简洁易用**：一条命令行或者一个API即可完成模型转换。  
+- **支持主流深度学习框架**
+
+  - 目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的预测模型的转换，PyTorch训练项目的转换，涵盖了目前市面主流深度学习框架
+   
+- **支持的模型丰富**
+
+  - 在主流的CV和NLP模型上均支持转换，涵盖了19+个Caffe预测模型转换、27+个TensorFlow预测模型转换、32+个ONNX预测模型转换、27+个PyTorch预测模型转换、2+个PyTorch训练项目转换，详见 ***[支持列表](./docs/introduction/x2paddle_model_zoo.md)***
+ 
+- **简洁易用**
+
+  - 一条命令行或者一个API即可完成模型转换
 
 
 
 ## 能力
 
-- 预测模型转换
+- **预测模型转换**
 
   - 支持Caffe/TensorFlow/ONNX/PyTorch的模型一键转为飞桨的预测模型，并使用PaddleInference/PaddleLite进行CPU/GPU/Arm等设备的部署
 
-- PyTorch训练项目转换
+- **PyTorch训练项目转换**
 
   - 支持PyTorch项目Python代码（包括训练、预测）一键转为基于飞桨框架的项目代码，帮助开发者快速迁移项目，并可享受AIStudio平台对于飞桨框架提供的海量免费计算资源 [【新功能，试一下！】](/docs/pytorch_project_convertor/README.md)]
 
-- API对应文档
+- **API对应文档**
 
   - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本 [【新内容，了解一下！】](docs/pytorch_project_convertor/API_docs/README.m)
 
