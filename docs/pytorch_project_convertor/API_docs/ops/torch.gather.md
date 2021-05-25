@@ -5,7 +5,7 @@
 torch.gather(input, dim, index, *, sparse_grad=False, out=None)
 ```
 
-### [paddle.gather](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/manipulation/gather_cn.html#gather)
+### [paddle.gather](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/gather_cn.html#gather)
 
 ```python
 paddle.gather(x, index, axis=None, name=None)

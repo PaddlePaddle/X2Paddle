@@ -6,7 +6,7 @@ torch.nn.Upsample(size=None,
                   mode='nearest',
                   align_corners=False)
 ```
-### [paddle.nn.Upsample](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/common/Upsample_cn.html#upsample)
+### [paddle.nn.Upsample](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/Upsample_cn.html#upsample)
 ```python
 paddle.nn.Upsample(size=None,
                    scale_factor=None,

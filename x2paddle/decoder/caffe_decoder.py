@@ -17,7 +17,6 @@ import sys
 from google.protobuf import text_format
 import numpy as np
 from x2paddle.core.graph import GraphNode, Graph
-from x2paddle.core.fluid_code import FluidCode
 from x2paddle.decoder import caffe_shape_inference
 
 
@@ -55,18 +54,17 @@ class CaffeGraphNode(GraphNode):
             super(CaffeGraphNode, self).__init__(
                 layer, layer_name.replace('/', '_').replace('-', '_').lower())
         self.layer_type = type_str
-        self.fluid_code = FluidCode()
         self.data = None
 
     def set_params(self, params):
         self.data = params
-        
+
     @property
     def name(self):
         if hasattr(self, 'index'):
             return "{}_p{}".format(self.layer_name, self.index)
         return self.layer_name
-    
+
     @property
     def out_shapes(self):
         return self._out_shapes
@@ -74,7 +72,7 @@ class CaffeGraphNode(GraphNode):
     @out_shapes.setter
     def out_shapes(self, value):
         self._out_shapes = value
-        
+
     @property
     def in_shapes(self):
         return self._in_shapes
@@ -258,13 +256,14 @@ class CaffeGraph(Graph):
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
         input_node = self.node_map[input_node_name]
-        if len(input_node.layer.top) > 1 and input_node.layer_type not in ["Input", "MemoryData"]:
+        if len(input_node.layer.top
+               ) > 1 and input_node.layer_type not in ["Input", "MemoryData"]:
             need_idx = list(input_node.layer.top).index(node.layer.bottom[idx])
             name = input_node_name + ':' + str(need_idx)
         else:
             name = input_node_name
         return self.get_node(name, copy=copy)
-    
+
     def set_node_shape(self, node):
         inputs = node.inputs
         input_shape = []
@@ -289,7 +288,7 @@ class CaffeDecoder(object):
         with open(proto_path, 'rb') as proto_file:
             proto_str = proto_file.read()
             text_format.Merge(proto_str, self.net)
-        
+
         self.load_using_pb()
 
         self.caffe_graph = CaffeGraph(self.net, self.params,

@@ -10,7 +10,7 @@ torch.rand(*size,
            requires_grad=False)
 ```
 
-### [paddle.rand](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/creation/rand_cn.html#rand)
+### [paddle.rand](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/rand_cn.html#rand)
 
 ```python
 paddle.rand(shape,

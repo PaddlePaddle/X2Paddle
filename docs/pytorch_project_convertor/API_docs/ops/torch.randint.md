@@ -13,7 +13,7 @@ torch.randint(low=0,
               requires_grad=False)
 ```
 
-### [paddle.randint](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/tensor/random/randint_cn.html#randint)
+### [paddle.randint](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/randint_cn.html#randint)
 ```python
 paddle.randint(low=0,
                high=None,

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode, Graph
-from x2paddle.core.fluid_code import FluidCode
 from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
@@ -44,7 +43,6 @@ class ONNXGraphNode(GraphNode):
         else:
             super(ONNXGraphNode, self).__init__(layer, layer_name)
         self.layer_type = layer.op_type
-        self.fluid_code = FluidCode()
         self.attr_map = self.get_attr_map()
         self.out_shapes = list()
         self.dtype = None
@@ -65,7 +63,7 @@ class ONNXGraphNode(GraphNode):
         if 'value' not in self.attr_map:
             return None
         return self.attr_map['value']
-    
+
     @property
     def name(self):
         if hasattr(self, 'index'):
@@ -97,8 +95,10 @@ class ONNXGraphNode(GraphNode):
         return self.attr_map[name]
 
     def output(self, index=0):
-        if index >0 and len(self.layer.output) <= index:
-            raise IndexError('Output numbers of Node:{} is {} <= index:{}'.format(self.layer_name, len(self.layer.output), index))
+        if index > 0 and len(self.layer.output) <= index:
+            raise IndexError(
+                'Output numbers of Node:{} is {} <= index:{}'.format(
+                    self.layer_name, len(self.layer.output), index))
         return self.layer.output[index]
 
 
@@ -113,7 +113,6 @@ class ONNXGraphDataNode(GraphNode):
         else:
             self.layer_type = 'create_parameter'
         self.layer_name = layer_name
-        self.fluid_code = FluidCode()
         self.weight = None
         self.embeded_as = None
         self.which_child = {}
@@ -147,7 +146,7 @@ class ONNXGraphDataNode(GraphNode):
             out_shapes = list()
             out_shapes.append(values)
             return out_shapes
-        
+
     @property
     def name(self):
         return self.layer_name
@@ -320,7 +319,8 @@ class ONNXGraph(Graph):
                                     if first_i == n_i:
                                         continue
                                     if n_ipt == nd.name:
-                                        new_nd_name = "{}/{}".format(nd.name, n_i)
+                                        new_nd_name = "{}/{}".format(nd.name,
+                                                                     n_i)
                                         if new_nd_name not in node.which_child:
                                             node.which_child[new_nd_name] = idx
                                             break
@@ -350,9 +350,8 @@ class ONNXGraph(Graph):
             else:
                 if ipt_node.layer_name in node.which_child:
                     ipt_node.index = node.which_child[ipt_node.layer_name]
-                
+
             return ipt_node
-        
 
     def graph_weights(self):
         """

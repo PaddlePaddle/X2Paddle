@@ -7,7 +7,7 @@ torch.nn.BatchNorm1d(num_features,
                      affine=True,
                      track_running_stats=True)
 ```
-### [paddle.nn.BatchNorm1D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/norm/BatchNorm1D_cn.html#batchnorm1d)
+### [paddle.nn.BatchNorm1D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/BatchNorm1D_cn.html#batchnorm1d)
 ```python
 paddle.nn.BatchNorm1D(num_features,
                       momentum=0.9,

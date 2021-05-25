@@ -3,7 +3,7 @@
 ```python
 torch.nn.Dropout2d(p=0.5, inplace=False)
 ```
-### [paddle.nn.Dropout2D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/common/Dropout2D_cn.html#dropout2d)
+### [paddle.nn.Dropout2D](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/Dropout2D_cn.html#dropout2d)
 ```python
 paddle.nn.Dropout2D(p=0.5, data_format='NCHW', name=None)
 ```

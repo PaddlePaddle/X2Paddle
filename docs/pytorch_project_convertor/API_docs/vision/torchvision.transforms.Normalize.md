@@ -4,7 +4,7 @@
 torchvision.transforms.Normalize(mean, std, inplace=False)
 ```
 
-### [paddle.vision.transforms.Normalize](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/vision/transforms/transforms/Normalize_cn.html#normalize)
+### [paddle.vision.transforms.Normalize](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/vision/transforms/Normalize_cn.html#normalize)
 ```python
 paddle.vision.transforms.Normalize(mean=0.0, std=1.0, data_format='CHW', to_rgb=False, keys=None)
 ```
