@@ -38,7 +38,7 @@ X2Paddle致力于帮助其它主流深度学习框架用户快速迁移至飞桨
 
 - **API对应文档**
 
-  - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本 [**【新内容，了解一下！】**](docs/pytorch_project_convertor/API_docs/README.m)
+  - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本 [**【新内容，了解一下！】**](docs/pytorch_project_convertor/API_docs/README.md)
 
   
 
