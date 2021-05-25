@@ -34,7 +34,7 @@ X2Paddle致力于帮助其它主流深度学习框架用户快速迁移至飞桨
 
 - **PyTorch训练项目转换**
 
-  - 支持PyTorch项目Python代码（包括训练、预测）一键转为基于飞桨框架的项目代码，帮助开发者快速迁移项目，并可享受AIStudio平台对于飞桨框架提供的海量免费计算资源 [【新功能，试一下！】](/docs/pytorch_project_convertor/README.md)]
+  - 支持PyTorch项目Python代码（包括训练、预测）一键转为基于飞桨框架的项目代码，帮助开发者快速迁移项目，并可享受AIStudio平台对于飞桨框架提供的海量免费计算资源 [【新功能，试一下！】(/docs/pytorch_project_convertor/README.md)]
 
 - **API对应文档**
 
