@@ -527,17 +527,18 @@ class MaxUnpool2D(paddle.nn.Layer):
             flatten_out[flatten_indices[i].tolist()] = flatten_input[i].tolist()
         out = paddle.reshape(flatten_out, out.shape)
         return out
-    
-    
+
+
 class ReLU(paddle.nn.ReLU):
     def __init__(self, inplace=False):
         super().__init__()
         self.inplace = inplace
-     
+
     def forward(self, x):
-        out = super().forward(x)
         if self.inplace:
-            paddle.assign(out, x)
+            out = paddle.nn.functional.relu_(x)
+        else:
+            out = super().forward(x)
         return out
 
 
