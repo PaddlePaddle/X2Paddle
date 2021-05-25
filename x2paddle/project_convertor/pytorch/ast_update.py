@@ -512,6 +512,7 @@ class AstUpdater(ast.NodeVisitor):
         for i, n in enumerate(scope_node.body):
             if father_node == n:
                 for code in prefix_insert_codes:
+                    print(code)
                     scope_node.body.insert(
                         i, ast.parse(code.replace("\n", "")).body[0])
                     i += 1
