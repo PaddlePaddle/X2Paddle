@@ -385,11 +385,11 @@ class ReLUModuleMapper(Mapper):
                  kwargs,
                  target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
-
-    def delete_attrs(self):
-        delete_key(self.kwargs, "inplace")
-        if len(self.args) > 0:
-            self.args.clear()
+            
+    def run(self):
+        if len(self.args) > 0 or len(self.kwargs) > 0:
+            self.func_name = "x2paddle.torch2paddle.ReLU"
+        return super().run()
 
 
 class SoftmaxModuleMapper(Mapper):
@@ -429,7 +429,7 @@ class AvgPoolFuncMapper(Mapper):
 
     def run(self):
         if self.pytorch_api_name == "torch.nn.functional.avg_pool1d" and self.rename_func_name(
-                "x2paddle.torch2paddle.avg_pool1d"):
+                "x2paddle.torch2paddle.ReLUavg_pool1d"):
             return [], generate_api_code(self.func_name, self.args,
                                          self.kwargs), []
         elif self.pytorch_api_name == "torch.nn.functional.avg_pool2d" and self.rename_func_name(
