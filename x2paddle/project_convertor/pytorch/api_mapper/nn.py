@@ -386,10 +386,10 @@ class ReLUModuleMapper(Mapper):
                  target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
 
-    def delete_attrs(self):
-        delete_key(self.kwargs, "inplace")
-        if len(self.args) > 0:
-            self.args.clear()
+    def run(self):
+        if len(self.args) > 0 or len(self.kwargs) > 0:
+            self.func_name = "x2paddle.torch2paddle.ReLU"
+        return super().run()
 
 
 class SoftmaxModuleMapper(Mapper):

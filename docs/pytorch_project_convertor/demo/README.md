@@ -5,5 +5,6 @@
 |------|-----|----------|------|
 | StaGAN | [demo](stargan.md)| [code](https://github.com/yunjey/stargan)|[code](https://github.com/SunAhong1993/stargan/tree/paddle)|
 | Ultra-Light-Fast-Generic-Face-Detector |[demo](ultra_light_fast_generic_face_detector.md)| [code](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB) |[code](https://github.com/SunAhong1993/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/paddle)|
+| CRAFT-pytorch |[demo](craft.md)| [code](https://github.com/clovaai/CRAFT-pytorch) |[code](https://github.com/SunAhong1993/CRAFT-pytorch/tree/paddle)|
 
 ***持续更新...***

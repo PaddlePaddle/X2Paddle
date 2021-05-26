@@ -529,6 +529,19 @@ class MaxUnpool2D(paddle.nn.Layer):
         return out
 
 
+class ReLU(paddle.nn.ReLU):
+    def __init__(self, inplace=False):
+        super().__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        if self.inplace:
+            out = paddle.nn.functional.relu_(x)
+        else:
+            out = super().forward(x)
+        return out
+
+
 class ReflectionPad2D(paddle.nn.Pad2D):
     def __init__(self, padding):
         super().__init__(padding, mode="reflect")
