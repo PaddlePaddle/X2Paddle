@@ -45,16 +45,15 @@ class PaddleDtypes():
             self.t_int64 = paddle.int64
             self.t_bool = paddle.bool
         else:
-            from paddle.fluid.core import VarDesc
-            self.t_float16 = VarDesc.VarType.FP16
-            self.t_float32 = VarDesc.VarType.FP32
-            self.t_float64 = VarDesc.VarType.FP64
-            self.t_uint8 = VarDesc.VarType.UINT8
-            self.t_int8 = VarDesc.VarType.INT8
-            self.t_int16 = VarDesc.VarType.INT16
-            self.t_int32 = VarDesc.VarType.INT32
-            self.t_int64 = VarDesc.VarType.INT64
-            self.t_bool = VarDesc.VarType.BOOL
+            self.t_float16 = "paddle.fluid.core.VarDesc.VarType.FP16"
+            self.t_float32 = "paddle.fluid.core.VarDesc.VarType.FP32"
+            self.t_float64 = "paddle.fluid.core.VarDesc.VarType.FP64"
+            self.t_uint8 = "paddle.fluid.core.VarDesc.VarType.UINT8"
+            self.t_int8 = "paddle.fluid.core.VarDesc.VarType.INT8"
+            self.t_int16 = "paddle.fluid.core.VarDesc.VarType.INT16"
+            self.t_int32 = "paddle.fluid.core.VarDesc.VarType.INT32"
+            self.t_int64 = "paddle.fluid.core.VarDesc.VarType.INT64"
+            self.t_bool = "paddle.fluid.core.VarDesc.VarType.BOOL"
 
 
 is_new_version = check_version()
