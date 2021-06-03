@@ -497,6 +497,8 @@ class AstUpdater(ast.NodeVisitor):
         mapper = API_MAPPER[pytorch_api][1](func_name, pytorch_api, args_list,
                                             kw_dict, target_name)
         prefix_insert_codes, new_code, suffix_insert_codes = mapper.run()
+        if mapper.func_name.startswith("x2paddle."):
+            self.is_import_x2paddle = True
         scope_node = self._get_scope_node()
         if isinstance(ast.parse(new_code).body[0], ast.Assign):
             node_index = self._get_current_index(scope_node, node)

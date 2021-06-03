@@ -39,10 +39,10 @@ class VGG(nn.Layer):
         self.avgpool = nn.AdaptiveAvgPool2D((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
-            nn.ReLU(),
+            torch2paddle.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
-            nn.ReLU(),
+            torch2paddle.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, num_classes), )
         if init_weights:
@@ -81,9 +81,9 @@ def make_layers(cfg: List[Union[str, int]],
             v = cast(int, v)
             conv2d = nn.Conv2D(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [conv2d, nn.BatchNorm2D(v), nn.ReLU()]
+                layers += [conv2d, nn.BatchNorm2D(v), torch2paddle.ReLU(True)]
             else:
-                layers += [conv2d, nn.ReLU()]
+                layers += [conv2d, torch2paddle.ReLU(True)]
             in_channels = v
     return nn.Sequential(*layers)
 

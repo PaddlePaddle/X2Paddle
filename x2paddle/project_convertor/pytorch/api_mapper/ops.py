@@ -93,6 +93,8 @@ class SetDeviceMapper(Mapper):
     def run(self):
         self.process_attrs()
         insert_codes = list()
+        if self.target_name is None:
+            self.target_name = "tmp"
         insert_codes.append("{} = {}".format(self.target_name,
                                              self.useful_attrs["device"]))
         insert_codes.append("{} = {}.replace('cuda', 'gpu')".format(
@@ -539,19 +541,23 @@ class LinspaceMapper(Mapper):
                     out2, self.useful_attrs["requires_grad"])
             return out1, out2, out3
 
+
 class ToTensorMapper(Mapper):
-    def __init__(self, 
+    def __init__(self,
                  func_name,
-                 pytorch_api_name, 
-                 args, kwargs, 
+                 pytorch_api_name,
+                 args,
+                 kwargs,
                  target_name=None):
         super().__init__(func_name, pytorch_api_name, args, kwargs, target_name)
 
     def process_attrs(self):
         rename_key(self.kwargs, "device", "place")
+
     def run(self):
         if self.rename_func_name("paddle.to_tensor"):
-            return [], generate_api_code(self.func_name, self.args, self.kwargs), []
+            return [], generate_api_code(self.func_name, self.args,
+                                         self.kwargs), []
         else:
             self.convert_args2kwargs()
             return self.convert_to_paddle()
