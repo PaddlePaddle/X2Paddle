@@ -309,35 +309,83 @@ class OpSet9():
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
-                var_nc, var_hw = val_sizes.name + '_nc', val_sizes.name + '_hw'
-                self.paddle_graph.add_layer(
-                    'paddle.split',
-                    inputs={"x": val_sizes.name},
-                    outputs=[var_nc, var_hw],
-                    num_or_sections=[2, 2],
-                    axis=0)
-                self.paddle_graph.add_layer(
-                    "paddle.cast",
-                    inputs={"x": var_hw},
-                    outputs=[var_hw],
-                    dtype=string('int32'))
-                inputs['size'] = var_hw
-                attrs = {
-                    "align_corners": False,
-                    "mode": string(node.get_attr('mode', 'nearest'))
-                }
-                mode = node.get_attr('mode', 'nearest')
-                if mode == "linear":
-                    attrs["mode"] = string("bilinear")
-                if node.get_attr('coordinate_transformation_mode',
-                                 'half_pixel') == 'pytorch_half_pixel':
-                    attrs["align_corners"] = False
-                    attrs["align_mode"] = 0
-                self.paddle_graph.add_layer(
-                    kernel="paddle.nn.functional.interpolate",
-                    inputs=inputs,
-                    outputs=[node.name],
-                    **attrs)
+                val_x_shape = val_x.out_shapes[0]
+                if len(val_x_shape) == 3:
+                    var_n, var_hw = val_sizes.name + '_n', val_sizes.name + '_hw'
+                    self.paddle_graph.add_layer(
+                        'paddle.split',
+                        inputs={"x": val_sizes.name},
+                        outputs=[var_n, var_hw],
+                        num_or_sections=[1, 2],
+                        axis=0)
+                    self.paddle_graph.add_layer(
+                        "paddle.cast",
+                        inputs={"x": var_hw},
+                        outputs=[var_hw],
+                        dtype=string('int32'))
+                    inputs['size'] = var_hw
+                    attrs = {
+                        "align_corners": False,
+                        "mode": string(node.get_attr('mode', 'nearest'))
+                    }
+                    mode = node.get_attr('mode', 'nearest')
+                    if mode == "linear":
+                        attrs["mode"] = string("bilinear")
+                    if node.get_attr('coordinate_transformation_mode',
+                                     'half_pixel') == 'pytorch_half_pixel':
+                        attrs["align_corners"] = False
+                        attrs["align_mode"] = 0
+                    if node.get_attr('coordinate_transformation_mode',
+                                     'half_pixel') == 'align_corners':
+                        attrs["align_corners"] = True
+                    self.paddle_graph.add_layer(
+                        'paddle.unsqueeze',
+                        inputs={"x": val_x.name},
+                        outputs=[val_x.name],
+                        axis=0)
+                    self.paddle_graph.add_layer(
+                        kernel="paddle.nn.functional.interpolate",
+                        inputs=inputs,
+                        outputs=[node.name],
+                        **attrs)
+                    self.paddle_graph.add_layer(
+                        'paddle.squeeze',
+                        inputs={"x": node.name},
+                        outputs=[node.name],
+                        axis=0)
+                else:
+                    var_nc, var_hw = val_sizes.name + '_nc', val_sizes.name + '_hw'
+                    self.paddle_graph.add_layer(
+                        'paddle.split',
+                        inputs={"x": val_sizes.name},
+                        outputs=[var_nc, var_hw],
+                        num_or_sections=[2, 2],
+                        axis=0)
+                    self.paddle_graph.add_layer(
+                        "paddle.cast",
+                        inputs={"x": var_hw},
+                        outputs=[var_hw],
+                        dtype=string('int32'))
+                    inputs['size'] = var_hw
+                    attrs = {
+                        "align_corners": False,
+                        "mode": string(node.get_attr('mode', 'nearest'))
+                    }
+                    mode = node.get_attr('mode', 'nearest')
+                    if mode == "linear":
+                        attrs["mode"] = string("bilinear")
+                    if node.get_attr('coordinate_transformation_mode',
+                                     'half_pixel') == 'pytorch_half_pixel':
+                        attrs["align_corners"] = False
+                        attrs["align_mode"] = 0
+                    if node.get_attr('coordinate_transformation_mode',
+                                     'half_pixel') == 'align_corners':
+                        attrs["align_corners"] = True
+                    self.paddle_graph.add_layer(
+                        kernel="paddle.nn.functional.interpolate",
+                        inputs=inputs,
+                        outputs=[node.name],
+                        **attrs)
                 return
         elif node.layer_type == 'Upsample':
             val_scales = self.graph.get_input_node(node, idx=1, copy=True)
