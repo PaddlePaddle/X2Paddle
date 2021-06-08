@@ -83,18 +83,18 @@ def multiclass_nms(bboxes,
 
 
 class NMS(object):
-    def __init__(self, score_threshold, nms_top_k, nms_threshold):
+    def __init__(self, score_threshold, keep_top_k, nms_threshold):
         self.score_threshold = score_threshold
-        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
         self.nms_threshold = nms_threshold
 
     def __call__(self, bboxes, scores):
         attrs = {
             'background_label': -1,
             'score_threshold': self.score_threshold,
-            'nms_top_k': self.nms_top_k,
+            'nms_top_k': -1,
             'nms_threshold': self.nms_threshold,
-            'keep_top_k': -1,
+            'keep_top_k': self.keep_top_k,
             'nms_eta': 1.0,
             'normalized': False,
             'return_index': True
