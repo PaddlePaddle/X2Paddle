@@ -465,12 +465,20 @@ class OpSet9():
             inputs={"input": val_rois.name},
             outputs=[val_rois_shape])
         val_rois_num = val_rois.name + '_num'
-        self.paddle_graph.add_layer(
-            'paddle.split',
-            inputs={"x": val_rois_shape},
-            outputs=[val_rois_num, '_', '_', '_'],
-            num_or_sections=[1, 1, 1, 1],
-            axis=0)
+        if len(val_rois.out_shapes[0]) == 4:
+            self.paddle_graph.add_layer(
+                'paddle.split',
+                inputs={"x": val_rois_shape},
+                outputs=[val_rois_num, ' _', ' _', ' _'],
+                num_or_sections=[1, 1, 1, 1],
+                axis=0)
+        elif len(val_rois.out_shapes[0]) == 2:
+            self.paddle_graph.add_layer(
+                'paddle.split',
+                inputs={"x": val_rois_shape},
+                outputs=[val_rois_num, ' _'],
+                num_or_sections=[1, 1],
+                axis=0)
         layer_attrs = {
             'pooled_height': pooled_height,
             'pooled_width': pooled_width,
