@@ -1329,7 +1329,7 @@ class OpSet9():
     @print_mapping_info
     def Flatten(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        output_shape = node.out_shapes[0]
+        output_shape = val_x.out_shapes[0]
         axis = node.get_attr('axis', 1)
         shape_list = [1, 1]
         if axis == 0:
