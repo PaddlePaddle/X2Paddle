@@ -24,3 +24,8 @@ x2paddle --convert_torch_project --project_dir=torch_project --save_dir=paddle_p
 PaddlePaddle在使用上有部分限制（例如：自定义Dataset必须继承自`paddle.io.Dataset`、部分情况下DataLoader的num_worker只能为0等），用户需要手动修改代码，使代码运行，具体可参见[转换后代码后处理](./after_convert.md)。
 
 ***[注意]*** 转换前后相应操作可以参考[转换示例](./demo/README.md)
+
+## 致谢
+感谢[aiyasin](https://github.com/aiyasin)为本文档贡献issue和PR，同时也感谢[jstzwjr](https://github.com/jstzwjr)、[faded-TJU](https://github.com/faded-TJU)、[freemustard](https://github.com/freemustard)、[156aasdfg](https://github.com/156aasdfg)、
+[hrdwsong](https://github.com/hrdwsong)、[geoyee](https://github.com/geoyee)、[ArlanCooper](https://github.com/ArlanCooper)、
+[Felix-python](https://github.com/Felix-python)、[2U-maker](https://github.com/2U-maker) 、[AlexZou14](https://github.com/AlexZou14)、[skywalk163](https://github.com/skywalk163)、[Darki-luo](https://github.com/Darki-luo)在论文复现营比赛过程中通过issue积极为X2Paddle反馈使用中存在的问题！
