@@ -73,7 +73,11 @@
 |GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
 |CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9|
 |Fcos | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py)|11|
-|Yolov3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py)|11||
+|Yolov3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py)|11|
+|RetinaNet | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py)|11|
+|FSAF | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf/fsaf_r50_fpn_1x_coco.py)|11|
+|SSD | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_coco.py)|11|
+|Faster R-CNN | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)|11||
 
 
 ## PyTorch预测模型
