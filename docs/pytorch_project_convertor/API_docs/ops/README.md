@@ -141,5 +141,8 @@
 | 136  | [torch.cholesky](https://pytorch.org/docs/stable/generated/torch.cholesky.html?highlight=cholesky#torch.cholesky) | [paddle.cholesky](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/cholesky_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
 | 137  | [torch.dot](https://pytorch.org/docs/stable/generated/torch.dot.html?highlight=dot#torch.dot) | [paddle.dot](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/dot_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
 | 138  | [torch.inverse](https://pytorch.org/docs/stable/generated/torch.inverse.html?highlight=inverse#torch.inverse) | [paddle.inverse](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/inverse_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
+| 139  | [torch.trace](https://pytorch.org/docs/stable/generated/torch.trace.html?highlight=trace#torch.trace) | [paddle.trace](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/trace_cn.html) |   [差异对比](./torch.trace.md)                                                           |
+| 140  | [torch.addmv](https://pytorch.org/docs/stable/generated/torch.addmv.html?highlight=addmv#torch.addmv) | 无对应实现               |          [组合实现](./torch.addmv.md)                                                     |
+
 
 ***持续更新...***
