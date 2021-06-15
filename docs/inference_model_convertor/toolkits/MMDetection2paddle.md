@@ -7,8 +7,8 @@ X2Paddle新增对MMDetection模型支持，目前测试支持的列表如下
 | FSAF | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf/fsaf_r50_fpn_1x_coco.py) | 11 | 仅支持batch=1推理；模型导出需固定shape |
 | RetinaNet | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py) | 11 | 仅支持batch=1推理；模型导出需固定shape |
 | SSD | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/ssd/ssd300_coco.py) | 11 | 仅支持batch=1推理；模型导出需固定shape |
-| YOLOv3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py) |11 | 仅支持batch=1；推理模型导出需固定shape |
-| Faster R-CNN | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) |11 | 仅支持batch=1；推理模型导出需固定shape |
+| YOLOv3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py) |11 | 仅支持batch=1推理；模型导出需固定shape |
+| Faster R-CNN | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) |11 | 仅支持batch=1推理；模型导出需固定shape |
 
 ## 导出教程
 
