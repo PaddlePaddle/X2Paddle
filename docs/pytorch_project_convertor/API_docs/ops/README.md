@@ -143,6 +143,8 @@
 | 138  | [torch.inverse](https://pytorch.org/docs/stable/generated/torch.inverse.html?highlight=inverse#torch.inverse) | [paddle.inverse](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/inverse_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
 | 139  | [torch.trace](https://pytorch.org/docs/stable/generated/torch.trace.html?highlight=trace#torch.trace) | [paddle.trace](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/trace_cn.html) |   [差异对比](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.trace.md)                                                           |
 | 140  | [torch.addmv](https://pytorch.org/docs/stable/generated/torch.addmv.html?highlight=addmv#torch.addmv) | 无对应实现               |          [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.addmv.md)                                                     |
-
+| 141  | [torch.addr](https://pytorch.org/docs/stable/generated/torch.addr.html?highlight=addr#torch.addr) | 无对应实现                                                   |              [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.addr.md)    |
+| 142  | [torch.baddbmm](https://pytorch.org/docs/stable/generated/torch.baddbmm.html?highlight=baddbmm#torch.baddbmm) | 无对应实现                                                   |  [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.baddbmm.md)                                                            |
+| 143  | [torch.bmm](https://pytorch.org/docs/stable/generated/torch.bmm.html?highlight=bmm#torch.bmm) | [paddle.bmm](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/bmm_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
 
 ***持续更新...***
