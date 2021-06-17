@@ -1,12 +1,14 @@
 # X2Paddle
 
+[![PyPI - X2Paddle Version](https://img.shields.io/pypi/v/x2paddle.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/x2paddle/)
+[![PyPI Status](https://pepy.tech/badge/x2paddle/month)](https://pepy.tech/project/x2paddle)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 ![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
 ## 简介
 
-X2Paddle致力于帮助其它主流深度学习框架用户快速迁移至飞桨框架，并为此提供了预测模型/训练代码的一键转换工具，以及框架间的API对比文档，提升用户在开发过程中的迁移效率，降低框架间迁移的学习成本。
+X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学习框架用户快速迁移至飞桨框架。目前支持**推理模型的框架转换**与**PyTorch训练代码迁移**，我们还提供了详细的不同框架间API对比文档，降低开发者上手飞桨核心的学习成本。
 
 
 
@@ -44,14 +46,23 @@ X2Paddle致力于帮助其它主流深度学习框架用户快速迁移至飞桨
 
 ## 安装
 
+### 环境依赖
 - python >= 3.5  
 - paddlepaddle >= 2.0.0
-- tensorflow == 1.14.0 (仅在转换TensorFlow模型时需要)
-- onnx >= 1.6.0 (仅在转换ONNX模型时需要)
-- torch >= 1.5.0 (仅在转换PyTorch模型时需要)
+- tensorflow == 1.14 (如需转换TensorFlow模型)
+- onnx >= 1.6.0 (如需转换ONNX模型)
+- torch >= 1.5.0 (如需转换PyTorch模型)
 
-### 方式一：源码安装
+### pip安装(推荐）
 
+如需使用稳定版本，可通过pip方式安装X2Paddle：
+```
+pip install x2paddle
+```
+
+### 源码安装
+
+如需体验最新功能，可使用源码安装方式：
 ```
 git clone https://github.com/PaddlePaddle/X2Paddle.git
 cd X2Paddle
@@ -59,27 +70,23 @@ git checkout develop
 python setup.py install
 ```
 
-### 方式二：pip安装(推荐）
-
-我们会定期更新pip源上的x2paddle版本
-
-```
-pip install x2paddle --index https://pypi.python.org/simple/
-```
-
 ## 快速开始
 
-### 功能一：预测模型转换
+### 功能一：推理模型转换
 
+#### TensorFlow模型转换
 ```shell
-# TensorFlow模型转换
 x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
-# Caffe模型转换
-x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
-# ONNX模型转换
+```
+
+#### ONNX模型转换
+```shell
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model
-# PyTorch模型转换 目前不支持命令行形式转换，参考下面链接文档进行转换
-https://github.com/PaddlePaddle/X2Paddle/blob/develop/docs/inference_model_convertor/pytorch2paddle.md
+```
+
+#### Caffe模型转换
+```shell
+x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel --save_dir=pd_model
 ```
 
 #### 转换参数说明
@@ -94,7 +101,7 @@ https://github.com/PaddlePaddle/X2Paddle/blob/develop/docs/inference_model_conve
 | --caffe_proto        | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/inference_model_convertor/FAQ.md) |
 
-### 功能二：PyTorch训练项目转换
+### 功能二：PyTorch模型训练迁移
 
 项目转换包括3个步骤
 
@@ -108,19 +115,16 @@ https://github.com/PaddlePaddle/X2Paddle/blob/develop/docs/inference_model_conve
 ## 使用教程
 
 1. [TensorFlow预测模型转换教程](./docs/inference_model_convertor/demo/tensorflow2paddle.ipynb)
-2. [PyTorch预测模型转换教程](./docs/inference_model_convertor/demo/pytorch2paddle.ipynb)
-3. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo/README.md)
+2. [MMDetection模型转换指南](./docs/inference_model_convertor/toolkits/MMDetection2paddle.md)
+3. [PyTorch预测模型转换教程](./docs/inference_model_convertor/demo/pytorch2paddle.ipynb)
+4. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo/README.md)
 
 ## 更新历史
 
-**2020.12.09**  
+**2021.05.13**  
 
-1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。  
-   方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。  
-   方式二：script方式，转换后的代码按执行顺序逐行出现。  
-2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
-3. 新增TensorFlow op映射（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2。
-4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
+- 新增PyTorch训练项目功能：
+  支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
 
 **2021.04.30**
 
@@ -131,10 +135,14 @@ https://github.com/PaddlePaddle/X2Paddle/blob/develop/docs/inference_model_conve
 5. 新增ONNX op映射（1个）：DepthToSpace。
 6. 新增Caffe op映射（1个）：MemoryData。
 
-**2021.05.13**  
+**2020.12.09**  
 
-- 新增PyTorch训练项目功能：
-  支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
+1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。  
+   方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。  
+   方式二：script方式，转换后的代码按执行顺序逐行出现。  
+2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
+3. 新增TensorFlow op映射（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2。
+4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
 
 
 ## :hugs:贡献代码:hugs:
