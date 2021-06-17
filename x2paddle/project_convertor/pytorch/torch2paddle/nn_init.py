@@ -149,7 +149,7 @@ def kaiming_normal_(param, a=0, mode='fan_in', nonlinearity='leaky_relu'):
         dtype=param.dtype,
         default_initializer=KaimingNormal(
             a=a, mode=mode, nonlinearity=nonlinearity))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 class XavierNormal(XavierInitializer):
@@ -213,7 +213,7 @@ def xavier_normal_(param, gain=1.0):
         shape=param.shape,
         dtype=param.dtype,
         default_initializer=XavierNormal(gain=gain))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 class XavierUniform(XavierInitializer):
@@ -278,7 +278,7 @@ def xavier_uniform_(param, gain=1.0):
         shape=param.shape,
         dtype=param.dtype,
         default_initializer=XavierUniform(gain=gain))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 def constant_init_(param, val):
@@ -287,7 +287,7 @@ def constant_init_(param, val):
         dtype=param.dtype,
         default_initializer=paddle.nn.initializer.Assign(
             paddle.full(param.shape, val, param.dtype)))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 def normal_init_(param, mean=0.0, std=1.0):
@@ -297,7 +297,7 @@ def normal_init_(param, mean=0.0, std=1.0):
         default_initializer=paddle.nn.initializer.Assign(
             paddle.normal(
                 mean=mean, std=std, shape=param.shape)))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 def ones_init_(param):
@@ -306,7 +306,7 @@ def ones_init_(param):
         dtype=param.dtype,
         default_initializer=paddle.nn.initializer.Assign(
             paddle.ones(param.shape, param.dtype)))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
 
 
 def zeros_init_(param):
@@ -315,4 +315,4 @@ def zeros_init_(param):
         dtype=param.dtype,
         default_initializer=paddle.nn.initializer.Assign(
             paddle.zeros(param.shape, param.dtype)))
-    paddle.assign(param, replaced_param)
+    paddle.assign(replaced_param, param)
