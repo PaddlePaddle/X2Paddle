@@ -145,6 +145,17 @@
 | 140  | [torch.addmv](https://pytorch.org/docs/stable/generated/torch.addmv.html?highlight=addmv#torch.addmv) | 无对应实现               |          [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.addmv.md)                                                     |
 | 141  | [torch.addr](https://pytorch.org/docs/stable/generated/torch.addr.html?highlight=addr#torch.addr) | 无对应实现                                                   |              [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.addr.md)    |
 | 142  | [torch.baddbmm](https://pytorch.org/docs/stable/generated/torch.baddbmm.html?highlight=baddbmm#torch.baddbmm) | 无对应实现                                                   |  [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.baddbmm.md)                                                            |
-| 143  | [torch.bmm](https://pytorch.org/docs/stable/generated/torch.bmm.html?highlight=bmm#torch.bmm) | [paddle.bmm](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/bmm_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
+| 143  | [torch.addmm](https://pytorch.org/docs/stable/generated/torch.addmm.html?highlight=addmm#torch.addmm) | [paddle.addmm](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/addmm_cn.html) | 功能一致，参数名不一致，PaddlePaddle未定义`out`参数代表输出Tensor |
+| 144  | [torch.chain_matmul](https://pytorch.org/docs/stable/generated/torch.chain_matmul.html?highlight=chain_matmul#torch.chain_matmul) | 无对应实现                                                   |                           [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.chain_matmul.md)      |
+
+| 145  | [torch.cholesky_inverse](https://pytorch.org/docs/stable/generated/torch.cholesky_inverse.html?highlight=cholesky_inverse#torch.cholesky_inverse) | 无对应实现                                                   |  [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.cholesky_inverse.md)  |
+| 146  | [torch.cholesky_solve](https://pytorch.org/docs/stable/generated/torch.cholesky_solve.html?highlight=cholesky_solve#torch.cholesky_solve) | 无对应实现                                                   |  [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.cholesky_solve.md)      |
+| 147  | [torch.matmul](https://pytorch.org/docs/stable/generated/torch.matmul.html?highlight=matmul#torch.matmul) | [paddle.matmul](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/matmul_cn.html) |    [差异对比](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.matmul.md) |
+| 148  | [torch.mm](https://pytorch.org/docs/stable/generated/torch.mm.html?highlight=mm#torch.mm) | [paddle.matmul](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/matmul_cn.html) |     [差异对比](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.mm.md)     |
+| 149  | [torch.mv](https://pytorch.org/docs/stable/generated/torch.mv.html?highlight=mv#torch.mv) | 无对应实现                                                   | [组合实现](https://github.com/PaddlePaddle/X2Paddle/tree/develop/docs/pytorch_project_convertor/API_docs/ops/torch.mv.md)  |
+
+
+
+
 
 ***持续更新...***
