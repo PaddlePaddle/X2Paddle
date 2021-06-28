@@ -294,7 +294,7 @@ class PaddleGraph(object):
 
         update(self.layers)
         self.inputs = list(set(self.inputs))
-        if self.inputs is not None:
+        if self.source_type == "pytorch" and self.inputs is not None:
             self.inputs.sort()
 
     def get_outputs(self):

@@ -128,7 +128,6 @@ class CaffeOpMapper():
         self.params = dict()
         self.paddle_graph = PaddleGraph(parent_layer=None, source_type="caffe")
         self.paddle_graph.outputs = self.graph.output_nodes
-        self.input_index = 0
         self.inputs_info = {}
         self.nn_name2id = {}
         print("Total nodes: {}".format(
@@ -193,11 +192,10 @@ class CaffeOpMapper():
             "paddle.to_tensor",
             inputs={},
             outputs=[node.layer_name],
-            data="x{}".format(self.input_index))
+            data=node.name)
         shape = list(node.layer.input_param.shape[0].dim)[1:]
-        self.inputs_info["x{}".format(self.input_index)] = [[-1] + shape,
+        self.inputs_info[node.name] = [[-1] + shape,
                                                             "float32"]
-        self.input_index += 1
 
     def MemoryData(self, node):
         params = node.layer.memory_data_param
@@ -206,7 +204,7 @@ class CaffeOpMapper():
             "paddle.to_tensor",
             inputs={},
             outputs=[node.layer_name],
-            data="x{}".format(self.input_index))
+            data=node.layer_name)
         shape = list()
         shape.append(params.batch_size)
         shape.append(params.channels)
@@ -216,8 +214,7 @@ class CaffeOpMapper():
         else:
             shape.append(params.width)
             shape.append(params.height)
-        self.inputs_info["x{}".format(self.input_index)] = [shape, "float32"]
-        self.input_index += 1
+        self.inputs_info[node.layer_name] = [shape, "float32"]
 
     def Convolution(self, node):
         conv2d_name = name_generator("conv", self.nn_name2id)
