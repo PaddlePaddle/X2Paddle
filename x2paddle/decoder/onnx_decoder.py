@@ -554,7 +554,7 @@ class ONNXDecoder(object):
         """
         if name == '':
             raise ValueError('name should not be empty')
-        for s in ' .*?\\/-:':
+        for s in ' .*?\\/-:;':
             name = name.replace(s, '_')
         return 'x2paddle_' + name
 
