@@ -245,7 +245,7 @@ class OpSet9():
             kernel="paddle.to_tensor",
             inputs={},
             outputs=[node.name],
-            data="x{}".format(self.input_index))
+            data=node.name)
         self.inputs_info[node.name] = [shape, node.dtype]
         self.input_index += 1
 
