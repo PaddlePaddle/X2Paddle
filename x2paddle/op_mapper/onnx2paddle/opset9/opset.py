@@ -246,7 +246,7 @@ class OpSet9():
             inputs={},
             outputs=[node.name],
             data="x{}".format(self.input_index))
-        self.inputs_info["x{}".format(self.input_index)] = [shape, node.dtype]
+        self.inputs_info[node.name] = [shape, node.dtype]
         self.input_index += 1
 
     @print_mapping_info
