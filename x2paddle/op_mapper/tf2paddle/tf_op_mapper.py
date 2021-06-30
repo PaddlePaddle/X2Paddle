@@ -680,11 +680,14 @@ class TFOpMapper():
     def Squeeze(self, node):
         input = self.graph.get_input_node(node, 0)
         squeeze_dims = node.get_attr('squeeze_dims')
+        axis = node.get_attr('axis')
+        if squeeze_dims != None and axis == None:
+            axis = squeeze_dims
         self.paddle_graph.add_layer(
             kernel="paddle.squeeze",
             inputs={"x": input.name},
             outputs=[node.name],
-            axis=squeeze_dims)
+            axis=axis)
 
     def Shape(self, node):
         input = self.graph.get_input_node(node, 0)
