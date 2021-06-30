@@ -1646,3 +1646,26 @@ class TFOpMapper():
             inputs={"x": transpose_name},
             outputs=[node.name],
             shape=shape)
+
+    def Sign(self, node):
+        x = self.graph.get_input_node(node, 0)
+        support_list = ["float16", "float32", "float64"]
+        if x.dtype not in support_list:
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": x.name},
+                outputs=[node.name],
+                dtype=string("float32"))
+            self.paddle_graph.add_layer(
+                kernel="paddle.sign",
+                inputs={"x": node.name},
+                outputs=[node.name])
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                dtype=string(x.dtype))
+        else:
+            self.paddle_graph.add_layer(
+                kernel="paddle.sign", inputs={"x": x.name},
+                outputs=[node.name])
