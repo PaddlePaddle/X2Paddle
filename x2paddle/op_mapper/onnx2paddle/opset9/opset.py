@@ -2146,7 +2146,7 @@ class OpSet9():
         size = node.get_attr('size')
         layer_attrs = {'size': size, 'alpha': alpha, 'beta': beta, 'k': bias}
         self.paddle_graph.add_layer(
-            "custom_layer:LocalResponseNorm",
+            "paddle.nn.LocalResponseNorm",
             inputs={"x": val_x.name},
             outputs=layer_outputs,
             **layer_attrs)
