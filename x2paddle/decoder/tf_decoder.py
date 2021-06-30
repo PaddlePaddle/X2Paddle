@@ -468,13 +468,16 @@ class TFDecoder(object):
                                                                   ":0")
                 if shape.count(-1) > 0:
                     shape[shape.index(-1)] = b
-                feed[input_tensor] = numpy.random.random_sample(shape)
+                if dtype == 3:
+                    feed[input_tensor] = numpy.random.randint(1, 10, size=shape)
+                else:
+                    feed[input_tensor] = numpy.random.random_sample(shape)
             output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
             if use_diff_inputs:
                 results.append(
                     self.sess.run([output_tensor], feed)[0].flatten())
             else:
-                return self.sess.run([output_tensor], feed)[0]
+                return self.sess.run([output_tensor], feed)[0].tolist()
 
         compare01 = (results[0] == results[1])
         compare12 = (results[1] == results[2])
