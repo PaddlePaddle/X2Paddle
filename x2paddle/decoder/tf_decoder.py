@@ -109,6 +109,8 @@ class TFGraphNode(GraphNode):
         attr = self.layer.attr[name]
         field = attr.WhichOneof('value')
         value = getattr(attr, field) if field else None
+        if name == "squeeze_dims" and not value.ListFields():
+            return None
 
         if isinstance(value, attr_value_pb2.AttrValue.ListValue):
             result = list(value.ListFields()[0][1])
