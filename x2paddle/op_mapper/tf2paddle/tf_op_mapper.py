@@ -1522,8 +1522,18 @@ class TFOpMapper():
             attr['axis'] = dim
         else:
             inputs['axis'] = y.name
-        self.paddle_graph.add_layer(
-            "paddle.unsqueeze", inputs=inputs, outputs=[node.name], **attr)
+        if len(x.out_shapes[0]) == 0:
+            value = self.decoder.infer_tensor(x)
+            self.paddle_graph.add_layer(
+                "paddle.full",
+                inputs={},
+                outputs=[node.name],
+                dtype=string(x.dtype),
+                shape=[1],
+                fill_value=value)
+        else:
+            self.paddle_graph.add_layer(
+                "paddle.unsqueeze", inputs=inputs, outputs=[node.name], **attr)
 
     def ReverseV2(self, node):
         x = self.graph.get_input_node(node, 0)
