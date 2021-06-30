@@ -220,6 +220,7 @@ class PaddleGraph(object):
             self.layers.pop(layer_id)
 
         self.get_inputs()
+
         if len(self.outputs) == 0:
             self.get_outputs()
 
@@ -293,7 +294,12 @@ class PaddleGraph(object):
                         self.inputs.extend(block.inputs)
 
         update(self.layers)
-        self.inputs = list(set(self.inputs))
+        new_inputs = list()
+        for input_name in self.inputs:
+            if input_name in new_inputs:
+                continue
+            new_inputs.append(input_name)
+        self.inputs = new_inputs
         if self.source_type == "pytorch" and self.inputs is not None:
             self.inputs.sort()
 
@@ -313,6 +319,15 @@ class PaddleGraph(object):
                         self.outputs.append(output_name)
 
     def gen_code(self, code_dir=None, indent=2):
+        # 去除to_tensor的layer
+        invalid_list = list()
+        for layer_id, layer in self.layers.items():
+            if layer.kernel == "paddle.to_tensor":
+                if layer.attrs["data"] in self.inputs:
+                    invalid_list.append(layer_id)
+        for layer_id in invalid_list:
+            self.layers.pop(layer_id)
+
         def gen_codes(code_list, indent=0):
             indent_blank = "    " * indent
             codes = []
