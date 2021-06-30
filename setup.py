@@ -1,6 +1,6 @@
 import setuptools
 import x2paddle
-abc
+abcd123
 long_description = "X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.\n\n"
 long_description += "Usage: x2paddle --framework tensorflow --model tf_model.pb --save_dir paddle_model\n"
 long_description += "GitHub: https://github.com/PaddlePaddle/X2Paddle\n"
