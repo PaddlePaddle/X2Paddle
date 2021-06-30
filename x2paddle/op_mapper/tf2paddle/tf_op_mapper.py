@@ -1012,13 +1012,6 @@ class TFOpMapper():
             else:
                 new_end.append(end[i])
 
-        if input.dtype == "bool":
-            self.paddle_graph.add_layer(
-                "paddle.cast",
-                inputs={"x": input.name},
-                outputs=[input.name],
-                dtype=string("int32"))
-
         self.paddle_graph.add_layer(
             kernel="paddle.slice",
             inputs={"input": input.name},
@@ -1026,13 +1019,6 @@ class TFOpMapper():
             axes=[i for i in range(len(new_begin))],
             starts=new_begin,
             ends=new_end)
-
-        if input.dtype == "bool":
-            self.paddle_graph.add_layer(
-                "paddle.cast",
-                inputs={"x": node.name},
-                outputs=[node.name],
-                dtype=string("bool"))
 
         if len(new_axes) > 0:
             self.paddle_graph.add_layer(
