@@ -58,7 +58,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        keys = ['dtype', 'T', 'DstT']
+        keys = ['dtype', 'T', 'DstT', 'Tparams']
         for k in keys:
             dtype = self.layer.attr[k].type
             if dtype > 0:
@@ -477,7 +477,7 @@ class TFDecoder(object):
                 results.append(
                     self.sess.run([output_tensor], feed)[0].flatten())
             else:
-                return self.sess.run([output_tensor], feed)[0].tolist()
+                return self.sess.run([output_tensor], feed)[0]
 
         compare01 = (results[0] == results[1])
         compare12 = (results[1] == results[2])
