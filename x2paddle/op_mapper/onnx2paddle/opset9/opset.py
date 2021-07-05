@@ -1173,15 +1173,15 @@ class OpSet9():
                 max_value = max_value[0]
             if min_value.shape == (1, ):
                 min_value = min_value[0]
-        if max_value is not None and min_value is not None:
-            layer_attrs = {'max': max_value, 'min': min_value}
-            self.paddle_graph.add_layer(
-                'paddle.clip',
-                inputs={"x": val_x.name},
-                outputs=[node.name],
-                **layer_attrs)
-        else:
-            raise
+            if max_value is not None and min_value is not None:
+                layer_attrs = {'max': max_value, 'min': min_value}
+                self.paddle_graph.add_layer(
+                    'paddle.clip',
+                    inputs={"x": val_x.name},
+                    outputs=[node.name],
+                    **layer_attrs)
+            else:
+                raise
 
     @print_mapping_info
     def Split(self, node):
@@ -2224,5 +2224,33 @@ class OpSet9():
             "custom_layer:NMS",
             inputs={"bboxes": boxes.name,
                     "scores": scores.name},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+    @print_mapping_info
+    def ReduceL1(self, node):
+        output_name = node.name
+        layer_outputs = [output_name]
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axes = node.get_attr('axes')
+        keepdims = False if node.get_attr('keepdims') == 0 else True
+        layer_attrs = {'p': 1, 'axis': axes, 'keepdim': keepdims}
+        self.paddle_graph.add_layer(
+            "paddle.norm",
+            inputs={"x": val_x.name},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+    @print_mapping_info
+    def ReduceL2(self, node):
+        output_name = node.name
+        layer_outputs = [output_name]
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axes = node.get_attr('axes')
+        keepdims = False if node.get_attr('keepdims') == 0 else True
+        layer_attrs = {'p': 2, 'axis': axes, 'keepdim': keepdims}
+        self.paddle_graph.add_layer(
+            "paddle.norm",
+            inputs={"x": val_x.name},
             outputs=layer_outputs,
             **layer_attrs)
