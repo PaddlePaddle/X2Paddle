@@ -58,7 +58,7 @@ class TFGraphNode(GraphNode):
 
     @property
     def dtype(self):
-        keys = ['dtype', 'T', 'DstT']
+        keys = ['dtype', 'T', 'DstT', 'Tparams']
         for k in keys:
             dtype = self.layer.attr[k].type
             if dtype > 0:
@@ -109,6 +109,8 @@ class TFGraphNode(GraphNode):
         attr = self.layer.attr[name]
         field = attr.WhichOneof('value')
         value = getattr(attr, field) if field else None
+        if name == "squeeze_dims" and not value.ListFields():
+            return None
 
         if isinstance(value, attr_value_pb2.AttrValue.ListValue):
             result = list(value.ListFields()[0][1])
@@ -466,7 +468,10 @@ class TFDecoder(object):
                                                                   ":0")
                 if shape.count(-1) > 0:
                     shape[shape.index(-1)] = b
-                feed[input_tensor] = numpy.random.random_sample(shape)
+                if dtype == 3:
+                    feed[input_tensor] = numpy.random.randint(1, 10, size=shape)
+                else:
+                    feed[input_tensor] = numpy.random.random_sample(shape)
             output_tensor = self.sess.graph.get_tensor_by_name(tensor_name)
             if use_diff_inputs:
                 results.append(
