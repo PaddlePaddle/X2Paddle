@@ -31,13 +31,13 @@ def build_str_map(obj):
     return ret
 
 
-def _rename(name):
+def rename(name):
     name = name.replace("/", "_")
     return name
 
 
 class TensorWrapper(object):
-    """Tensor wrapper for TFLite Tensor"""
+    """用于记录TFLite Tensor相关信息。"""
 
     def __init__(self, tensor_idx, tensor, buffer, qnn_params=None):
         self.tensor_idx = tensor_idx
@@ -81,8 +81,25 @@ class TFLiteOpMapper():
         self.paddle_graph.set_inputs_info(self.inputs_info)
         self.paddle_graph.set_name("TFLiteModel")
 
+    def op_checker(self):
+        unsupported_ops = set()
+        for op_idx in range(self.graph.OperatorsLength()):
+            op = self.graph.Operators(op_idx)
+            op_code_str = self.get_op_code_str(op)
+            if not hasattr(self, op_code_str):
+                unsupported_ops.add(op_code_str)
+        if len(unsupported_ops) == 0:
+            return True
+        else:
+            if len(unsupported_ops) > 0:
+                print("\n========= {} OPs are not supported yet ===========".
+                      format(len(unsupported_ops)))
+            for op_code_str in unsupported_ops:
+                print("========== {} ============".format(op_code_str))
+            return False
+
     def get_op_code_str(self, op):
-        """Get TFLite ops string representation"""
+        """获取TFLite op的名字。"""
         try:
             from tflite.BuiltinOperator import BuiltinOperator
         except ImportError:
@@ -106,23 +123,6 @@ class TFLiteOpMapper():
             raise NotImplementedError(
                 "Custom operators are currently not supported")
         return op_code_str
-
-    def op_checker(self):
-        unsupported_ops = set()
-        for op_idx in range(self.graph.OperatorsLength()):
-            op = self.graph.Operators(op_idx)
-            op_code_str = self.get_op_code_str(op)
-            if not hasattr(self, op_code_str):
-                unsupported_ops.add(op_code_str)
-        if len(unsupported_ops) == 0:
-            return True
-        else:
-            if len(unsupported_ops) > 0:
-                print("\n========= {} OPs are not supported yet ===========".
-                      format(len(unsupported_ops)))
-            for op_code_str in unsupported_ops:
-                print("========== {} ============".format(op_code_str))
-            return False
 
     def get_input_tensors(self, op):
         operator_outputs = op.InputsAsNumpy()
@@ -270,6 +270,68 @@ class TFLiteOpMapper():
             kernel="paddle.to_tensor", inputs={}, outputs=[name], data=name)
         self.inputs_info[name] = [shape, dtype]
 
+    def convert_pool2d(self, op, pool_type):
+        from tflite.Pool2DOptions import Pool2DOptions
+        from tflite.Padding import Padding
+
+        input_tensors = self.get_input_tensors(op)
+        assert len(input_tensors) == 1, "input tensors length should be 1"
+        input_tensor = input_tensors[0]
+        input_tensor_name = input_tensor.tensor.Name().decode("utf8")
+        input_tensor_name = rename(input_tensor_name)
+        _, input_h, input_w, _ = input_tensor.tensor.ShapeAsNumpy()
+
+        output_tensors = self.get_output_tensors(op)
+        assert len(output_tensors) == 1, "output tensors should be 1"
+        output_tensor = output_tensors[0]
+        output_tensor_name = output_tensor.tensor.Name().decode("utf8")
+        output_tensor_name = rename(output_tensor_name)
+
+        pool2d_name = name_generator("pool2d", self.nn_name2id)
+        layer_outputs = [pool2d_name, output_tensor_name]
+
+        assert op.BuiltinOptionsType() == BuiltinOptions.Pool2DOptions
+        op_options = op.BuiltinOptions()
+        pool2d_options = Pool2DOptions()
+        pool2d_options.Init(op_options.Bytes, op_options.Pos)
+        stride_h = pool2d_options.StrideH()
+        stride_w = pool2d_options.StrideW()
+        padding = pool2d_options.Padding()
+        filter_h = pool2d_options.FilterHeight()
+        filter_w = pool2d_options.FilterWidth()
+        fused_activation_fn = pool2d_options.FusedActivationFunction()
+
+        layer_attrs = {
+            "kernel_size": (filter_h, filter_w),
+            "stride": (stride_h, stride_w),
+            "padding": [0, 0],
+        }
+
+        if padding == Padding.VALID:
+            layer_attrs["padding"] = string("VALID")
+        elif padding == Padding.SAME:
+            layer_attrs["padding"] = string("SAME")
+
+        self.paddle_graph.add_layer(
+            kernel="paddle.transpose",
+            inputs={"x": input_tensor_name},
+            outputs=[input_tensor_name + "_transpose"],
+            perm=[0, 3, 1, 2])
+        self.paddle_graph.add_layer(
+            kernel="paddle.nn.MaxPool2D"
+            if pool_type == "max" else "paddle.nn.AvgPool2D",
+            inputs={"input": input_tensor_name + "_transpose"},
+            outputs=layer_outputs,
+            **layer_attrs)
+        self.paddle_graph.add_layer(
+            kernel="paddle.transpose",
+            inputs={"x": output_tensor_name},
+            outputs=[output_tensor_name],
+            perm=[0, 2, 3, 1])
+
+        self.convert_fused_activation_function(fused_activation_fn,
+                                               output_tensor_name)
+
     def CONV_2D(self, op):
         from tflite.Conv2DOptions import Conv2DOptions
         from tflite.Padding import Padding
@@ -279,7 +341,7 @@ class TFLiteOpMapper():
         input_tensor = input_tensors[0]
         _, input_h, input_w, input_c = input_tensor.tensor.ShapeAsNumpy()
         input_tensor_name = input_tensor.tensor.Name().decode("utf8")
-        input_tensor_name = _rename(input_tensor_name)
+        input_tensor_name = rename(input_tensor_name)
         weight_tensor = input_tensors[1]
         output_channels, kernel_h, kernel_w, input_channels = weight_tensor.tensor.ShapeAsNumpy(
         )
@@ -288,7 +350,7 @@ class TFLiteOpMapper():
         assert len(output_tensors) == 1, "output tensors length should be 1"
         output_tensor = output_tensors[0]
         output_tensor_name = output_tensor.tensor.Name().decode("utf8")
-        output_tensor_name = _rename(output_tensor_name)
+        output_tensor_name = rename(output_tensor_name)
 
         conv2d_name = name_generator("cov2d", self.nn_name2id)
         layer_outputs = [conv2d_name, output_tensor_name]
@@ -353,68 +415,6 @@ class TFLiteOpMapper():
         self.convert_fused_activation_function(fused_activation_fn,
                                                output_tensor_name)
 
-    def convert_pool2d(self, op, pool_type):
-        from tflite.Pool2DOptions import Pool2DOptions
-        from tflite.Padding import Padding
-
-        input_tensors = self.get_input_tensors(op)
-        assert len(input_tensors) == 1, "input tensors length should be 1"
-        input_tensor = input_tensors[0]
-        input_tensor_name = input_tensor.tensor.Name().decode("utf8")
-        input_tensor_name = _rename(input_tensor_name)
-        _, input_h, input_w, _ = input_tensor.tensor.ShapeAsNumpy()
-
-        output_tensors = self.get_output_tensors(op)
-        assert len(output_tensors) == 1, "output tensors should be 1"
-        output_tensor = output_tensors[0]
-        output_tensor_name = output_tensor.tensor.Name().decode("utf8")
-        output_tensor_name = _rename(output_tensor_name)
-
-        pool2d_name = name_generator("pool2d", self.nn_name2id)
-        layer_outputs = [pool2d_name, output_tensor_name]
-
-        assert op.BuiltinOptionsType() == BuiltinOptions.Pool2DOptions
-        op_options = op.BuiltinOptions()
-        pool2d_options = Pool2DOptions()
-        pool2d_options.Init(op_options.Bytes, op_options.Pos)
-        stride_h = pool2d_options.StrideH()
-        stride_w = pool2d_options.StrideW()
-        padding = pool2d_options.Padding()
-        filter_h = pool2d_options.FilterHeight()
-        filter_w = pool2d_options.FilterWidth()
-        fused_activation_fn = pool2d_options.FusedActivationFunction()
-
-        layer_attrs = {
-            "kernel_size": (filter_h, filter_w),
-            "stride": (stride_h, stride_w),
-            "padding": [0, 0],
-        }
-
-        if padding == Padding.VALID:
-            layer_attrs["padding"] = string("VALID")
-        elif padding == Padding.SAME:
-            layer_attrs["padding"] = string("SAME")
-
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": input_tensor_name},
-            outputs=[input_tensor_name + "_transpose"],
-            perm=[0, 3, 1, 2])
-        self.paddle_graph.add_layer(
-            kernel="paddle.nn.MaxPool2D"
-            if pool_type == "max" else "paddle.nn.AvgPool2D",
-            inputs={"input": input_tensor_name + "_transpose"},
-            outputs=layer_outputs,
-            **layer_attrs)
-        self.paddle_graph.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": output_tensor_name},
-            outputs=[output_tensor_name],
-            perm=[0, 2, 3, 1])
-
-        self.convert_fused_activation_function(fused_activation_fn,
-                                               output_tensor_name)
-
     def AVERAGE_POOL_2D(self, op):
         self.convert_pool2d(op, pool_type="average")
 
@@ -429,13 +429,13 @@ class TFLiteOpMapper():
         input_tensors_name = list()
         for i in range(len(input_tensors)):
             input_tensors_name.append(
-                _rename(input_tensors[i].tensor.Name().decode("utf8")))
+                rename(input_tensors[i].tensor.Name().decode("utf8")))
 
         output_tensors = self.get_output_tensors(op)
         assert len(output_tensors) == 1, "output tensors length should be 1"
         output_tensor = output_tensors[0]
         output_tensor_name = output_tensor.tensor.Name().decode("utf8")
-        output_tensor_name = _rename(output_tensor_name)
+        output_tensor_name = rename(output_tensor_name)
 
         assert op.BuiltinOptionsType() == BuiltinOptions.ConcatenationOptions
         op_options = op.BuiltinOptions()
@@ -460,12 +460,12 @@ class TFLiteOpMapper():
         assert len(input_tensors) in (1, 2), "input tensors should not be empty"
         input_tensor = input_tensors[0]
         input_tensor_name = input_tensor.tensor.Name().decode("utf8")
-        input_tensor_name = _rename(input_tensor_name)
+        input_tensor_name = rename(input_tensor_name)
 
         output_tensors = self.get_output_tensors(op)
         assert len(output_tensors) == 1, "There should be only 1 output tensor"
         output_tensor_name = output_tensors[0].tensor.Name().decode("utf8")
-        output_tensor_name = _rename(output_tensor_name)
+        output_tensor_name = rename(output_tensor_name)
 
         if len(input_tensors) == 2:
             shape_tensor = input_tensors[1]
@@ -489,12 +489,12 @@ class TFLiteOpMapper():
         assert len(input_tensors) == 1, "input tensors length should be 1"
         input_tensor = input_tensors[0]
         input_tensor_name = input_tensor.tensor.Name().decode("utf8")
-        input_tensor_name = _rename(input_tensor_name)
+        input_tensor_name = rename(input_tensor_name)
 
         output_tensors = self.get_output_tensors(op)
         assert len(output_tensors) == 1, "There should be only 1 output tensor"
         output_tensor_name = output_tensors[0].tensor.Name().decode("utf8")
-        output_tensor_name = _rename(output_tensor_name)
+        output_tensor_name = rename(output_tensor_name)
 
         softmax_name = name_generator("softmax", self.nn_name2id)
         layer_outputs = [softmax_name, output_tensor_name]
