@@ -91,7 +91,6 @@ class TFOpMapper():
             raise Exception("Model is not supported yet.")
         self.params = dict()
         self.nn_name2id = dict()
-        self.input_index = 0
         self.inputs_info = dict()
         self.paddle_graph = PaddleGraph(parent_layer=None, source_type="tf")
         self.paddle_graph.outputs = self.graph.output_nodes
@@ -213,9 +212,8 @@ class TFOpMapper():
             kernel="paddle.to_tensor",
             inputs={},
             outputs=[node.name],
-            data="x{}".format(self.input_index))
-        self.inputs_info["x{}".format(self.input_index)] = [shape, node.dtype]
-        self.input_index += 1
+            data=node.name)
+        self.inputs_info[node.name] = [shape, node.dtype]
 
     def Const(self, node):
         shape = node.out_shapes[0]

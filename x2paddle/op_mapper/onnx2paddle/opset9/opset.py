@@ -180,7 +180,6 @@ class OpSet9():
         super(OpSet9, self).__init__()
         self.graph = decoder.graph
         self.paddle_graph = paddle_graph
-        self.input_index = 0
         self.inputs_info = dict()
         self.weights = dict()
         self.nn_name2id = dict()
@@ -245,9 +244,8 @@ class OpSet9():
             kernel="paddle.to_tensor",
             inputs={},
             outputs=[node.name],
-            data="x{}".format(self.input_index))
-        self.inputs_info["x{}".format(self.input_index)] = [shape, node.dtype]
-        self.input_index += 1
+            data=node.name)
+        self.inputs_info[node.name] = [shape, node.dtype]
 
     @print_mapping_info
     def create_parameter(self, node, parameter=None):
