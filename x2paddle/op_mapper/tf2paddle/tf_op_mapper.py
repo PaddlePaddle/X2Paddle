@@ -678,11 +678,14 @@ class TFOpMapper():
     def Squeeze(self, node):
         input = self.graph.get_input_node(node, 0)
         squeeze_dims = node.get_attr('squeeze_dims')
+        axis = node.get_attr('axis')
+        if squeeze_dims != None and axis == None:
+            axis = squeeze_dims
         self.paddle_graph.add_layer(
             kernel="paddle.squeeze",
             inputs={"x": input.name},
             outputs=[node.name],
-            axis=squeeze_dims)
+            axis=axis)
 
     def Shape(self, node):
         input = self.graph.get_input_node(node, 0)
@@ -1517,8 +1520,18 @@ class TFOpMapper():
             attr['axis'] = dim
         else:
             inputs['axis'] = y.name
-        self.paddle_graph.add_layer(
-            "paddle.unsqueeze", inputs=inputs, outputs=[node.name], **attr)
+        if len(x.out_shapes[0]) == 0:
+            value = self.decoder.infer_tensor(x, use_diff_inputs=False).tolist()
+            self.paddle_graph.add_layer(
+                "paddle.full",
+                inputs={},
+                outputs=[node.name],
+                dtype=string(x.dtype),
+                shape=[1],
+                fill_value=value)
+        else:
+            self.paddle_graph.add_layer(
+                "paddle.unsqueeze", inputs=inputs, outputs=[node.name], **attr)
 
     def ReverseV2(self, node):
         x = self.graph.get_input_node(node, 0)
@@ -1644,3 +1657,26 @@ class TFOpMapper():
             inputs={"x": transpose_name},
             outputs=[node.name],
             shape=shape)
+
+    def Sign(self, node):
+        x = self.graph.get_input_node(node, 0)
+        support_list = ["float16", "float32", "float64"]
+        if x.dtype not in support_list:
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": x.name},
+                outputs=[node.name],
+                dtype=string("float32"))
+            self.paddle_graph.add_layer(
+                kernel="paddle.sign",
+                inputs={"x": node.name},
+                outputs=[node.name])
+            self.paddle_graph.add_layer(
+                "paddle.cast",
+                inputs={"x": node.name},
+                outputs=[node.name],
+                dtype=string(x.dtype))
+        else:
+            self.paddle_graph.add_layer(
+                kernel="paddle.sign", inputs={"x": x.name},
+                outputs=[node.name])
