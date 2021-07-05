@@ -126,13 +126,14 @@ def tflite2paddle(model_path, save_dir):
     # check tensorflow installation and version
     try:
         import os
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
         import tflite
-        # TODO: 版本测试，目前为2.4.0
+        try:
+            from tflite.BuiltinOptions import BuiltinOptions
+        except:
+            print("[ERROR] tflite>=2.1.0 is required")
+            return
     except:
-        print(
-            "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
-        )
+        print("[ERROR] TFLite is not installed, use \"pip install tflite\".")
         return
 
     from x2paddle.decoder.tflite_decoder import TFLiteDecoder
