@@ -99,7 +99,6 @@ class TFGraphNode(GraphNode):
     @property
     def name(self):
         if hasattr(self, 'index'):
-            print(self.layer_type)
             return self.layer_name + "_p{}".format(self.index)
         return self.layer_name
 
