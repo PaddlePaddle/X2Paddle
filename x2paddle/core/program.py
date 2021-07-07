@@ -109,7 +109,7 @@ class PaddleGraph(object):
         layer = PaddleLayer(
             layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
         self.layers[layer_id] = layer
-        if layer.kernel in ["prim.list_unpack" or "prim.tuple_unpack"]:
+        if layer.kernel in ["prim.list_unpack" , "prim.tuple_unpack"]:
             self.has_unpack = True
         return layer_id
 
