@@ -1514,7 +1514,7 @@ class OpSet9():
                 "paddle.minimum",
                 inputs={"x": val_x.name,
                         "y": output_name + "__zeros"},
-                outputs=[output_name + "__max"])
+                outputs=[output_name + "__min"])
             self.paddle_graph.add_layer(
                 "paddle.multiply",
                 inputs={"x": val_slope.name,
