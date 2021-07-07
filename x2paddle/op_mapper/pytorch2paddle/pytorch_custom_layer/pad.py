@@ -31,15 +31,18 @@ class Pad(object):
             data_format = "NCDHW"
         if dim == 3 and len(pad) == 4:
             input = paddle.unsqueeze(input, [0])
-            output = paddle.nn.functional.pad(
-                input, pad, data_format=data_format)
+            output = paddle.nn.functional.pad(input,
+                                              pad,
+                                              data_format=data_format)
             output = paddle.squeeze(output, [0])
         elif dim == 4 and len(pad) == 6:
             input = paddle.unsqueeze(input, [0])
-            output = paddle.nn.functional.pad(
-                input, pad, data_format=data_format)
+            output = paddle.nn.functional.pad(input,
+                                              pad,
+                                              data_format=data_format)
             output = paddle.squeeze(output, [0])
         else:
-            output = paddle.nn.functional.pad(
-                input, pad, data_format=data_format)
+            output = paddle.nn.functional.pad(input,
+                                              pad,
+                                              data_format=data_format)
         return output
