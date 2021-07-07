@@ -983,23 +983,31 @@ def aten_constant_pad_nd(mapper, graph, node):
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     layer_inputs["input"] = inputs_name[0]
+    # 处理输入1，即%4876
+    is_padding_tensor = False
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+        layer_inputs["pad"] = inputs_name[1]
+        is_padding_tensor = True
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    # 处理输入1，即%4876
-    layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
     # 处理输入2，即%42
     layer_attrs["value"] = mapper.attrs[inputs_name[2]]
 
-    graph.add_layer(
-        "prim.shape",
-        inputs={"input": inputs_name[0]},
-        outputs=[inputs_name[0] + "_shape"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.len",
-        inputs={"input": inputs_name[0] + "_shape"},
-        outputs=[inputs_name[0] + "_len"],
-        scope_name=scope_name)
+    if not is_padding_tensor:
+        graph.add_layer(
+            "prim.shape",
+            inputs={"input": inputs_name[0]},
+            outputs=[inputs_name[0] + "_shape"],
+            scope_name=scope_name)
+        graph.add_layer(
+            "prim.len",
+            inputs={"input": inputs_name[0] + "_shape"},
+            outputs=[inputs_name[0] + "_len"],
+            scope_name=scope_name)
 
     def add_pad_layers(kernel, dim):
         graph.add_layer(
@@ -1020,6 +1028,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             inputs={"y": inputs_name[0] + "_len"},
             outputs=[inputs_name[0] + "_len0"],
             scope_name=scope_name,
+            alpha=1.0,
             x=dim)
         block.add_layer(
             "prim.len2list",
@@ -1058,17 +1067,25 @@ def aten_constant_pad_nd(mapper, graph, node):
         if_layer.inputs["input-0"] = inputs_name[0]
         if_layer.inputs["input-1"] = inputs_name[0] + "_len"
 
-    if len(layer_attrs["padding"]) == 2:
-        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad1d")
-        add_pad_layers("paddle.nn.Pad1D", 3)
-    elif len(layer_attrs["padding"]) == 4:
-        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad2d")
-        add_pad_layers("paddle.nn.Pad2D", 4)
-    elif len(layer_attrs["padding"]) == 6:
-        layer_outputs[0] = layer_outputs[0].raplace("pad", "pad3d")
-        add_pad_layers("paddle.nn.Pad3D", 5)
+    if not is_padding_tensor:
+        if len(layer_attrs["padding"]) == 2:
+            layer_outputs[0] = layer_outputs[0].replace("pad", "pad1d")
+            add_pad_layers("paddle.nn.Pad1D", 3)
+        elif len(layer_attrs["padding"]) == 4:
+            layer_outputs[0] = layer_outputs[0].replace("pad", "pad2d")
+            add_pad_layers("paddle.nn.Pad2D", 4)
+        elif len(layer_attrs["padding"]) == 6:
+            layer_outputs[0] = layer_outputs[0].replace("pad", "pad3d")
+            add_pad_layers("paddle.nn.Pad3D", 5)
+        else:
+            raise Exception("The lenght of padding list must be 2, 4 or 6!")
     else:
-        raise Exception("The lenght of padding list must be 2, 4 or 6!")
+        graph.add_layer(
+            "custom_layer:Pad",
+            inputs=layer_inputs,
+            outputs=[output_name],
+            scope_name=scope_name,
+            **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -4191,10 +4208,45 @@ def aten_relu6(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_remainder(mapper, graph, node):
+    """ 构造取余数的PaddleLayer。
+    TorchScript示例:
+        %701 : Tensor = aten::remainder(%661, %139)
+        参数含义:
+        %701 (Tensor): 输出，取余结果的Tensor。
+        %661 (Tensor): 需要取余的Tensor。
+        %139 (Tensor): 除数Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%661
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%139
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    
+    graph.add_layer(
+        "prim.remainder",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_repeat(mapper, graph, node):
     """ 构造根据参数对输入各维度进行复制的PaddleLayer。
     TorchScript示例:
-        701 : Tensor = aten::repeat(%699, %700)
+        %701 : Tensor = aten::repeat(%699, %700)
         参数含义:
         %701 (Tensor): 输出，复制后的Tensor。
         %699 (Tensor): 需要复制的Tensor。
