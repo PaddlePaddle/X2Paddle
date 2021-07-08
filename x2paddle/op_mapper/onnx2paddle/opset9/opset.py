@@ -1181,7 +1181,7 @@ class OpSet9():
                     outputs=[node.name],
                     **layer_attrs)
             else:
-                raise
+                raise Exception("max_value or min_value can't be None")
 
     @print_mapping_info
     def Split(self, node):
