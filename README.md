@@ -127,7 +127,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 2. 新增Pytorch训练代码转换对[CRAFT](https://github.com/clovaai/CRAFT-pytorch)以及[Seg-Swin-Transformer](https://github.com/open-mmlab/mmsegmentation/tree/master/configs/swin)的支持
 3. 优化模型预测速度，去除forward函数开头to_tensor操作。
 4. 新增Tensorflow op映射（1个）：Sign。
-5. 新增ONNX op映射（）：NMS、ReduceL1、ReduceL2，支持3D Interpolate。
+5. 新增ONNX op映射（4个）：NMS、ReduceL1、ReduceL2、3D Interpolate。
 
 **2021.05.13**  
 
