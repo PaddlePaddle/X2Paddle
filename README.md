@@ -17,11 +17,11 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 - **支持主流深度学习框架**
 
   - 目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的预测模型的转换，PyTorch训练项目的转换，涵盖了目前市面主流深度学习框架
-   
+
 - **支持的模型丰富**
 
   - 在主流的CV和NLP模型上均支持转换，涵盖了19+个Caffe预测模型转换、27+个TensorFlow预测模型转换、32+个ONNX预测模型转换、27+个PyTorch预测模型转换、2+个PyTorch训练项目转换，详见 ***[支持列表](./docs/introduction/x2paddle_model_zoo.md)***
- 
+
 - **简洁易用**
 
   - 一条命令行或者一个API即可完成模型转换
@@ -42,7 +42,7 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 
   - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本 [**【新内容，了解一下！】**](docs/pytorch_project_convertor/API_docs/README.md)
 
-  
+
 
 ## 安装
 
@@ -120,6 +120,14 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 4. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo/README.md)
 
 ## 更新历史
+
+**2021.07.09**  
+
+1. 新增MMDetection模型库支持，包括YOLO-V3、FCOS、RetinaNet、SSD、Faster R-CNN以及FSAF，有相关AP精度对比，具体参考[MMDetection模型转换指南](./docs/inference_model_convertor/toolkits/MMDetection2paddle.md)
+2. 新增Pytorch训练代码转换对[CRAFT](https://github.com/clovaai/CRAFT-pytorch)以及[Seg-Swin-Transformer](https://github.com/open-mmlab/mmsegmentation/tree/master/configs/swin)的支持
+3. 优化模型预测速度，去除forward函数开头to_tensor操作。
+4. 新增Tensorflow op映射（1个）：Sign。
+5. 新增ONNX op映射（）：NMS、ReduceL1、ReduceL2，支持3D Interpolate。
 
 **2021.05.13**  
 
