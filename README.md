@@ -124,7 +124,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 **2021.07.09**  
 
 1. 新增MMDetection模型库支持，包括YOLO-V3、FCOS、RetinaNet、SSD、Faster R-CNN以及FSAF，有相关AP精度对比，具体参考[MMDetection模型转换指南](./docs/inference_model_convertor/toolkits/MMDetection2paddle.md)。
-2. 新增PyTorch训练代码转换对[CRAFT](https://github.com/clovaai/CRAFT-pytorch)的支持，新增PyTorch预测模型转换对[Seg-Swin-Transformer](https://github.com/open-mmlab/mmsegmentation/tree/master/configs/swin)的支持。
+2. 新增PyTorch训练代码转换对[CRAFT](https://github.com/clovaai/CRAFT-pytorch)的支持，新增PyTorch预测模型转换对Seg-Swin-Transformer的支持。
 3. 优化模型预测速度，去除forward函数开头to_tensor操作。
 4. 新增Tensorflow op映射（1个）：Sign。
 5. 新增ONNX op映射（4个）：NMS、ReduceL1、ReduceL2、3D Interpolate。
