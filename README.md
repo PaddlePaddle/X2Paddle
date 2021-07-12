@@ -143,15 +143,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 5. 新增ONNX op映射（1个）：DepthToSpace。
 6. 新增Caffe op映射（1个）：MemoryData。
 
-**2020.12.09**  
-
-1. 新增PyTorch2Paddle转换方式，转换得到Paddle动态图代码，并动转静获得inference_model。  
-   方式一：trace方式，转换后的代码有模块划分，每个模块的功能与PyTorch相同。  
-   方式二：script方式，转换后的代码按执行顺序逐行出现。  
-2. 新增Caffe/ONNX/Tensorflow到Paddle动态图的转换。
-3. 新增TensorFlow op映射（14个）：Neg、Greater、FloorMod、LogicalAdd、Prd、Equal、Conv3D、Ceil、AddN、DivNoNan、Where、MirrorPad、Size、TopKv2。
-4. 新增Optimizer模块，主要包括op融合、op消除功能，转换后的代码可读性更强，进行预测时耗时更短。
-
+**更多版本更新记录可查阅[X2Paddle发版历史](https://github.com/PaddlePaddle/X2Paddle/releases)**
 
 ## :hugs:贡献代码:hugs:
 
