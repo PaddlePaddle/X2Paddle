@@ -28,7 +28,7 @@
 | 73 | Greater | 74 | FloorMod | 75 | LogicalAdd | 76 | Prod |
 | 77 | Equal | 78 | Conv3D | 79 | Ceil | 80 | AddN |
 | 81 | DivNoNan | 82 | Where | 83 | MirrorPad | 84 | Size |
-| 85 | TopKv2 | 86 | SplitV |  |  |  |  |
+| 85 | TopKv2 | 86 | SplitV | 87 | Sign |  |  |
 
 ## Caffe
 
@@ -63,7 +63,8 @@
 | 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
 | 53 | Abs      | 54 | Floor     | 56 | ArgMax    | 57 | Sign               |
 | 58 | Reciprocal  | 59 | Size     | 60 | OneHot    | 61 | ReduceProd       |
-| 62 | LogSoftmax  | 63 | LSTM     | 64 |   LRN  |  |        |
+| 62 | LogSoftmax  | 63 | LSTM     | 64 |   LRN  | 65 | NonMaxSuppression   |
+| 66 | ReduceL1  | 67 | ReduceL2     |  |     |  |    |
 
 
 
