@@ -2637,7 +2637,7 @@ def aten_instance_norm(mapper, graph, node):
     # 处理输入1，即%88
     if inputs_name[1] in mapper.pytorch_params:
         weights = mapper.pytorch_params[inputs_name[1]]
-        mapper.paddle_params[op_name + ".weight"] = weights
+        mapper.paddle_params[op_name + ".scale"] = weights
         layer_attrs['num_features'] = weights.shape[0]
     # 处理输入2，即%85
     if inputs_name[2] in mapper.pytorch_params:
