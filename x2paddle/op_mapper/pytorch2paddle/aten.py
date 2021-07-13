@@ -988,8 +988,8 @@ def aten_constant_pad_nd(mapper, graph, node):
     if inputs_name[1] in mapper.attrs:
         layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
     else:
-        mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
-                        scope_name)
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
         layer_inputs["pad"] = inputs_name[1]
         is_padding_tensor = True
     # 获取当前节点输入的list
@@ -1021,8 +1021,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[inputs_name[0] + "_if", output_name],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.sub",
             inputs={"y": inputs_name[0] + "_len"},
@@ -1054,8 +1053,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[output_name],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         layer_inputs["input"] = inputs_name[0]
         block.add_layer(
             kernel,
@@ -1863,8 +1861,7 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[0] + "_if1"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.type",
         inputs={"input": inputs_name[1]},
@@ -1877,8 +1874,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=inputs_name[1] + "_type")
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = inputs_name[0]
     if_layer.inputs["input-1"] = inputs_name[1]
@@ -1892,8 +1888,7 @@ def aten_expand_as(mapper, graph, node):
         outputs=[inputs_name[0] + "_if2"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "paddle.cast",
         inputs={"x": layer_outputs[0]},
@@ -1901,8 +1896,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=string("bool"))
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = layer_outputs[0]
     # TODO(syf): check expand_as
@@ -2104,16 +2098,14 @@ def aten_floor(mapper, graph, node):
         outputs=[inputs_name[0] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "paddle.floor",
         inputs=copy.deepcopy(layer_inputs),
         outputs=copy.deepcopy(layer_outputs),
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.floor",
         inputs=copy.deepcopy(layer_inputs),
@@ -2896,6 +2888,42 @@ def aten_leaky_relu_(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_leaky_relu(mapper, graph, node):
+    """ 构造leaky relu激活的PaddleLayer。
+    TorchScript示例:
+        %input.117 : Tensor = aten::leaky_relu(%input.114, %1570)
+        参数含义:
+        %input.117 (Tensor): 输出，leaky relu后的结果。
+        %input.114 (Tensor): 需要leaky relu的Tensor。
+        %1570 (float): 输入中的元素小于0时的斜率。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("leakly_relu", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%1570
+    layer_attrs["negative_slope"] = mapper.attrs[inputs_name[1]]
+
+    graph.add_layer(
+        "paddle.nn.LeakyReLU",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_len(mapper, graph, node):
     """ 构造获取list长度的PaddleLayer。
     TorchScript示例:
@@ -3210,16 +3238,14 @@ def aten_masked_fill_(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -3322,16 +3348,14 @@ def aten_masked_fill(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -4234,7 +4258,7 @@ def aten_remainder(mapper, graph, node):
     layer_inputs["y"] = inputs_name[1]
     # 获取当前节点输入、输出的list
     current_inputs = list(layer_inputs.values())
-    
+
     graph.add_layer(
         "prim.remainder",
         inputs=layer_inputs,
@@ -5436,16 +5460,14 @@ def aten_upsample_bilinear2d(mapper, graph, node):
             outputs=[inputs_name[0] + "_if1"],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.var2list",
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1]],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     # 处理输入2，即%5421
@@ -5516,16 +5538,14 @@ def aten_upsample_nearest2d(mapper, graph, node):
             outputs=[inputs_name[0] + "_if1"],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.var2list",
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1]],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     if "size" in layer_attrs and layer_attrs["size"] is None:
