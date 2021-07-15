@@ -266,6 +266,7 @@ class TFLiteOpMapper():
                     fused_activation_fn_str))
 
     def convert_input(self, name, shape, dtype):
+        name = rename(name)
         self.paddle_graph.add_layer(
             kernel="paddle.to_tensor", inputs={}, outputs=[name], data=name)
         self.inputs_info[name] = [shape, dtype]
@@ -275,7 +276,7 @@ class TFLiteOpMapper():
         from tflite.Padding import Padding
 
         input_tensors = self.get_input_tensors(op)
-        assert len(input_tensors) == 1, "input tensors length should be 1"
+        assert len(input_tensors) == 1, "There should be only 1 input tensor"
         input_tensor = input_tensors[0]
         input_tensor_name = input_tensor.tensor.Name().decode("utf8")
         input_tensor_name = rename(input_tensor_name)
@@ -311,6 +312,16 @@ class TFLiteOpMapper():
             layer_attrs["padding"] = string("VALID")
         elif padding == Padding.SAME:
             layer_attrs["padding"] = string("SAME")
+            
+        if input_tensor.qnn_params:
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": input_tensor_name},
+                outputs=[dequant_name, input_tensor_name + "_quant"],
+                zero_point=input_tensor.qnn_params["zero_point"],
+                scale=input_tensor.qnn_params["scale"])
+            input_tensor_name = input_tensor_name + "_quant"
 
         self.paddle_graph.add_layer(
             kernel="paddle.transpose",
@@ -331,9 +342,21 @@ class TFLiteOpMapper():
 
         self.convert_fused_activation_function(fused_activation_fn,
                                                output_tensor_name)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
 
-    def CONV_2D(self, op):
+    def convert_conv2d(self, op, conv_type):
         from tflite.Conv2DOptions import Conv2DOptions
+        from tflite.DepthwiseConv2DOptions import DepthwiseConv2DOptions
         from tflite.Padding import Padding
 
         input_tensors = self.get_input_tensors(op)
@@ -356,11 +379,25 @@ class TFLiteOpMapper():
         layer_outputs = [conv2d_name, output_tensor_name]
         self.params[conv2d_name + ".weight"] = np.transpose(
             self.get_tensor_value(weight_tensor), (0, 3, 1, 2))
-
-        assert op.BuiltinOptionsType() == BuiltinOptions.Conv2DOptions
-        op_options = op.BuiltinOptions()
-        conv_options = Conv2DOptions()
-        conv_options.Init(op_options.Bytes, op_options.Pos)
+        
+        if weight_tensor.qnn_params:
+            kernel_zero_point = weight_tensor.qnn_params["zero_point"]
+            kernel_scale = weight_tensor.qnn_params["scale"]
+            self.params[conv2d_name + ".weight"] = self.params[conv2d_name + ".weight"].astype("float32")
+            self.params[conv2d_name + ".weight"] = (self.params[conv2d_name + ".weight"] - kernel_zero_point) * kernel_scale
+        
+        if conv_type == "conv2d":
+            assert op.BuiltinOptionsType() == BuiltinOptions.Conv2DOptions
+            op_options = op.BuiltinOptions()
+            conv_options = Conv2DOptions()
+            conv_options.Init(op_options.Bytes, op_options.Pos)
+        elif conv_type == "dw_conv2d":
+            assert op.BuiltinOptionsType() == BuiltinOptions.DepthwiseConv2DOptions
+            op_options = op.BuiltinOptions()
+            conv_options = DepthwiseConv2DOptions()
+            conv_options.Init(op_options.Bytes, op_options.Pos)
+            depth_multiplier = conv_options.DepthMultiplier()
+            real_input_channels = input_channels * depth_multiplier
 
         stride_h = conv_options.StrideH()
         stride_w = conv_options.StrideW()
@@ -383,11 +420,23 @@ class TFLiteOpMapper():
             "dilation": [dilation_h, dilation_w]
             if dilation_h != dilation_w else dilation_h,
         }
+        
+        if conv_type == "dw_conv2d":
+            self.params[conv2d_name + ".weight"] = np.transpose(
+                self.params[conv2d_name + ".weight"], (1, 0, 2, 3))
+            layer_attrs["groups"] = input_channels
+            layer_attrs["in_channels"] = real_input_channels
+            layer_attrs["out_channels"] = output_channels * layer_attrs["groups"]
 
         if len(input_tensors) == 3:
             bias_tensor = input_tensors[2]
             self.params[conv2d_name + ".bias"] = self.get_tensor_value(
                 bias_tensor)
+            if bias_tensor.qnn_params:
+                bias_zero_point = bias_tensor.qnn_params["zero_point"]
+                bias_scale = bias_tensor.qnn_params["scale"]
+                self.params[conv2d_name + ".bias"] = self.params[conv2d_name + ".bias"].astype("float32")
+                self.params[conv2d_name + ".bias"] = (self.params[conv2d_name + ".bias"] - bias_zero_point) * bias_scale
         else:
             layer_attrs["bias_attr"] = False
 
@@ -395,6 +444,16 @@ class TFLiteOpMapper():
             layer_attrs["padding"] = string("VALID")
         elif padding == Padding.SAME:
             layer_attrs["padding"] = string("SAME")
+            
+        if input_tensor.qnn_params:
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": input_tensor_name},
+                outputs=[dequant_name, input_tensor_name + "_quant"],
+                zero_point=input_tensor.qnn_params["zero_point"],
+                scale=input_tensor.qnn_params["scale"])
+            input_tensor_name = input_tensor_name + "_quant"
 
         self.paddle_graph.add_layer(
             kernel="paddle.transpose",
@@ -414,6 +473,17 @@ class TFLiteOpMapper():
 
         self.convert_fused_activation_function(fused_activation_fn,
                                                output_tensor_name)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
 
     def AVERAGE_POOL_2D(self, op):
         self.convert_pool2d(op, pool_type="average")
@@ -464,13 +534,17 @@ class TFLiteOpMapper():
 
         output_tensors = self.get_output_tensors(op)
         assert len(output_tensors) == 1, "There should be only 1 output tensor"
+        output_tensor = output_tensors[0]
         output_tensor_name = output_tensors[0].tensor.Name().decode("utf8")
         output_tensor_name = rename(output_tensor_name)
 
         if len(input_tensors) == 2:
             shape_tensor = input_tensors[1]
             target_shape = self.get_tensor_value(shape_tensor)
-            target_shape = list(chain(*target_shape))
+            l = list()
+            for i in target_shape:
+                l.append(int(i))
+            target_shape = l
         else:
             assert op.BuiltinOptionsType() == BuiltinOptions.ReshapeOptions
             op_options = op.BuiltinOptions()
@@ -478,11 +552,33 @@ class TFLiteOpMapper():
             reshape_options.Init(op_options.Bytes, op_options.Pos)
             target_shape = reshape_options.NewShapeAsNumpy()
             target_shape = [int(x) for x in target_shape]
+            
+        if input_tensor.qnn_params:
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": input_tensor_name},
+                outputs=[dequant_name, input_tensor_name + "_quant"],
+                zero_point=input_tensor.qnn_params["zero_point"],
+                scale=input_tensor.qnn_params["scale"])
+            input_tensor_name = input_tensor_name + "_quant"
+
         self.paddle_graph.add_layer(
             kernel="paddle.reshape",
             inputs={"x": input_tensor_name},
             outputs=[output_tensor_name],
             shape=target_shape)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
 
     def SOFTMAX(self, op):
         input_tensors = self.get_input_tensors(op)
@@ -493,13 +589,191 @@ class TFLiteOpMapper():
 
         output_tensors = self.get_output_tensors(op)
         assert len(output_tensors) == 1, "There should be only 1 output tensor"
-        output_tensor_name = output_tensors[0].tensor.Name().decode("utf8")
+        output_tensor = output_tensors[0]
+        output_tensor_name = output_tensor.tensor.Name().decode("utf8")
         output_tensor_name = rename(output_tensor_name)
 
         softmax_name = name_generator("softmax", self.nn_name2id)
         layer_outputs = [softmax_name, output_tensor_name]
+        
+        if input_tensor.qnn_params:
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": input_tensor_name},
+                outputs=[dequant_name, input_tensor_name + "_quant"],
+                zero_point=input_tensor.qnn_params["zero_point"],
+                scale=input_tensor.qnn_params["scale"])
+            input_tensor_name = input_tensor_name + "_quant"
 
         self.paddle_graph.add_layer(
             kernel="paddle.nn.Softmax",
             inputs={"x": input_tensor_name},
             outputs=layer_outputs)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
+        
+        
+    def DEPTHWISE_CONV_2D(self, op):
+        self.convert_conv2d(op, "dw_conv2d")
+
+    
+    def CONV_2D(self, op):
+        self.convert_conv2d(op, "conv2d")
+        
+        
+    def ADD(self, op):
+        from tflite.AddOptions import AddOptions
+        
+        input_tensors = self.get_input_tensors(op)
+        assert len(input_tensors) == 2, "input tensors length should be 2"
+        lhs_tensor = input_tensors[0]
+        rhs_tensor = input_tensors[1]
+        lhs_tensor_name = lhs_tensor.tensor.Name().decode("utf8")
+        lhs_tensor_name = rename(lhs_tensor_name)
+        rhs_tensor_name = rhs_tensor.tensor.Name().decode("utf8")
+        rhs_tensor_name = rename(rhs_tensor_name)
+        
+        output_tensors = self.get_output_tensors(op)
+        assert len(output_tensors) == 1, "output tensors length should be 1"
+        output_tensor = output_tensors[0]
+        output_tensor_name = output_tensor.tensor.Name().decode("utf8")
+        output_tensor_name = rename(output_tensor_name)
+        
+        assert op.BuiltinOptionsType() == BuiltinOptions.AddOptions
+        op_options = op.BuiltinOptions()
+        add_options = AddOptions()
+        add_options.Init(op_options.Bytes, op_options.Pos)
+        fused_activation_fn = add_options.FusedActivationFunction()
+        
+        if lhs_tensor.qnn_params:
+            
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": lhs_tensor_name},
+                outputs=[dequant_name, lhs_tensor_name + "_quant"],
+                zero_point=lhs_tensor.qnn_params["zero_point"],
+                scale=lhs_tensor.qnn_params["scale"])
+            lhs_tensor_name = lhs_tensor_name + "_quant"
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": rhs_tensor_name},
+                outputs=[dequant_name, rhs_tensor_name + "_quant"],
+                zero_point=rhs_tensor.qnn_params["zero_point"],
+                scale=rhs_tensor.qnn_params["scale"])
+            rhs_tensor_name = rhs_tensor_name + "_quant"
+            
+        self.paddle_graph.add_layer(
+            kernel="paddle.add",
+            inputs={"x": lhs_tensor_name,
+                    "y": rhs_tensor_name},
+            outputs=[output_tensor_name])
+        
+        self.convert_fused_activation_function(fused_activation_fn,
+                                               output_tensor_name)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
+
+    def FULLY_CONNECTED(self, op):
+        from tflite.FullyConnectedOptions import FullyConnectedOptions
+        
+        input_tensors = self.get_input_tensors(op)
+        assert len(input_tensors) in (2, 3), "input tensors length should be two or three"
+        input_tensor = input_tensors[0]
+        input_n, input_h, input_w, input_c = input_tensor.tensor.ShapeAsNumpy()
+        input_tensor_name = input_tensor.tensor.Name().decode("utf8")
+        input_tensor_name = rename(input_tensor_name)
+        weight_tensor = input_tensors[1]
+        output_channels, input_channels = weight_tensor.tensor.ShapeAsNumpy()
+        
+        output_tensors = self.get_output_tensors(op)
+        assert len(output_tensors) == 1, "output tensors length should be 1"
+        output_tensor = output_tensors[0]
+        output_tensor_name = output_tensor.tensor.Name().decode("utf8")
+        output_tensor_name = rename(output_tensor_name)
+
+        fc_name = name_generator("fc", self.nn_name2id)
+        layer_outputs = [fc_name, output_tensor_name]
+        self.params[fc_name + ".weight"] = np.transpose(self.get_tensor_value(weight_tensor), (1, 0))
+            
+        if weight_tensor.qnn_params:
+            kernel_zero_point = weight_tensor.qnn_params["zero_point"]
+            kernel_scale = weight_tensor.qnn_params["scale"]
+            self.params[fc_name + ".weight"] = self.params[fc_name + ".weight"].astype("float32")
+            self.params[fc_name + ".weight"] = (self.params[fc_name + ".weight"] - kernel_zero_point) * kernel_scale
+            
+        layer_attrs = dict()
+        if len(input_tensors) == 3:
+            bias_tensor = input_tensors[2]
+            self.params[fc_name + ".bias"] = self.get_tensor_value(
+                bias_tensor)
+            if bias_tensor.qnn_params:
+                bias_zero_point = bias_tensor.qnn_params["zero_point"]
+                bias_scale = bias_tensor.qnn_params["scale"]
+                self.params[fc_name + ".bias"] = self.params[fc_name + ".bias"].astype("float32")
+                self.params[fc_name + ".bias"] = (self.params[fc_name + ".bias"] - bias_zero_point) * bias_scale
+        else:
+            layer_attrs["bias_attr"] = False
+            
+        assert op.BuiltinOptionsType() == BuiltinOptions.FullyConnectedOptions
+        op_options = op.BuiltinOptions()
+        fully_connected_options = FullyConnectedOptions()
+        fully_connected_options.Init(op_options.Bytes, op_options.Pos)
+        fused_activation_fn = fully_connected_options.FusedActivationFunction()
+        layer_attrs["in_features"] = input_channels
+        layer_attrs["out_features"] = output_channels
+        
+        if input_tensor.qnn_params:
+            dequant_name = name_generator("dequant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:DequantizeLinear",
+                inputs={"x": input_tensor_name},
+                outputs=[dequant_name, input_tensor_name + "_quant"],
+                zero_point=input_tensor.qnn_params["zero_point"],
+                scale=input_tensor.qnn_params["scale"])
+            input_tensor_name = input_tensor_name + "_quant"
+
+        self.paddle_graph.add_layer(
+            kernel="paddle.reshape",
+            inputs={"x": input_tensor_name},
+            outputs=[input_tensor_name + "_reshape"],
+            shape=[input_n, input_c])
+        self.paddle_graph.add_layer(
+            kernel="paddle.nn.Linear",
+            inputs={"input": input_tensor_name + "_reshape"},
+            outputs=layer_outputs,
+            **layer_attrs)
+
+        self.convert_fused_activation_function(fused_activation_fn,
+                                               output_tensor_name)
+        
+        if output_tensor.qnn_params:
+            dtype = output_tensor.tensor.Type()
+            quant_name = name_generator("quant", self.nn_name2id)
+            self.paddle_graph.add_layer(
+                kernel="custom_layer:QuantizeLinear",
+                inputs={"x": output_tensor_name},
+                outputs=[quant_name, output_tensor_name],
+                zero_point=output_tensor.qnn_params["zero_point"],
+                scale=output_tensor.qnn_params["scale"],
+                dtype=dtype)
