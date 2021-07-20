@@ -988,8 +988,8 @@ def aten_constant_pad_nd(mapper, graph, node):
     if inputs_name[1] in mapper.attrs:
         layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
     else:
-        mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
-                        scope_name)
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
         layer_inputs["pad"] = inputs_name[1]
         is_padding_tensor = True
     # 获取当前节点输入的list
@@ -1021,8 +1021,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[inputs_name[0] + "_if", output_name],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.sub",
             inputs={"y": inputs_name[0] + "_len"},
@@ -1054,8 +1053,7 @@ def aten_constant_pad_nd(mapper, graph, node):
             outputs=[output_name],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         layer_inputs["input"] = inputs_name[0]
         block.add_layer(
             kernel,
@@ -1860,11 +1858,10 @@ def aten_expand_as(mapper, graph, node):
         y=paddle_dtypes.t_bool)
     graph.add_layer(
         "prim.if", {'input': inputs_name[0] + "_cond"},
-        outputs=[inputs_name[0] + "_if1"],
+        outputs=[inputs_name[0] + "_if1", inputs_name[0]],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.type",
         inputs={"input": inputs_name[1]},
@@ -1877,8 +1874,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=inputs_name[1] + "_type")
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = inputs_name[0]
     if_layer.inputs["input-1"] = inputs_name[1]
@@ -1889,11 +1885,10 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name)
     graph.add_layer(
         "prim.if", {'input': inputs_name[0] + "_cond"},
-        outputs=[inputs_name[0] + "_if2"],
+        outputs=[inputs_name[0] + "_if2", output_name],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "paddle.cast",
         inputs={"x": layer_outputs[0]},
@@ -1901,8 +1896,7 @@ def aten_expand_as(mapper, graph, node):
         scope_name=scope_name,
         dtype=string("bool"))
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     if_layer.add_block(block)
     if_layer.inputs["input-0"] = layer_outputs[0]
     # TODO(syf): check expand_as
@@ -2104,16 +2098,14 @@ def aten_floor(mapper, graph, node):
         outputs=[inputs_name[0] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "paddle.floor",
         inputs=copy.deepcopy(layer_inputs),
         outputs=copy.deepcopy(layer_outputs),
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.floor",
         inputs=copy.deepcopy(layer_inputs),
@@ -3210,16 +3202,14 @@ def aten_masked_fill_(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -3322,16 +3312,14 @@ def aten_masked_fill(mapper, graph, node):
         outputs=[inputs_name[2] + "_if"],
         scope_name=scope_name)
     if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.equal",
         inputs={"input": inputs_name[1] + "_mask"},
         outputs=[inputs_name[2] + "_1"],
         scope_name=scope_name)
     if_layer.add_block(block)
-    block = PaddleGraph(
-        source_type="pytorch", parent_layer=if_layer)
+    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
     block.add_layer(
         "prim.mul",
         inputs={"x": inputs_name[1] + "_mask",
@@ -4234,7 +4222,7 @@ def aten_remainder(mapper, graph, node):
     layer_inputs["y"] = inputs_name[1]
     # 获取当前节点输入、输出的list
     current_inputs = list(layer_inputs.values())
-    
+
     graph.add_layer(
         "prim.remainder",
         inputs=layer_inputs,
@@ -5436,16 +5424,14 @@ def aten_upsample_bilinear2d(mapper, graph, node):
             outputs=[inputs_name[0] + "_if1"],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.var2list",
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1]],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     # 处理输入2，即%5421
@@ -5516,16 +5502,14 @@ def aten_upsample_nearest2d(mapper, graph, node):
             outputs=[inputs_name[0] + "_if1"],
             scope_name=scope_name)
         if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         block.add_layer(
             "prim.var2list",
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1]],
             scope_name=scope_name)
         if_layer.add_block(block)
-        block = PaddleGraph(
-            source_type="pytorch", parent_layer=if_layer)
+        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     if "size" in layer_attrs and layer_attrs["size"] is None:
