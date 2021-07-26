@@ -776,18 +776,6 @@ class OpSet9():
     def Expand(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
-        # val_x_dtype = val_x.dtype
-        # name_ones = node.name + '_ones'
-        # attr_ones = {
-        #     'shape': val_shape.name,
-        #     'dtype': string(val_x_dtype),
-        #     'fill_value': 1
-        # }
-        # self.paddle_graph.add_layer(
-        #     'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
-        # inputs_dict = {'x': name_ones, 'y': val_x.name}
-        # self.paddle_graph.add_layer(
-        #     'paddle.multiply', inputs=inputs_dict, outputs=[node.name])
         inputs_dict = {'x': val_x.name, 'shape': val_shape.name}
         self.paddle_graph.add_layer(
             'paddle.expand', inputs=inputs_dict, outputs=[node.name])
