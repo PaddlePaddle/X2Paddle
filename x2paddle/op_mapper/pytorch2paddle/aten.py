@@ -5388,7 +5388,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
         %4963 (list): 上采样后的大小。
         %5421 (bool): 若为True，则将输入和输出张量的4个角落像素的中心对齐，并保留角点像素的值。
         %4995 (float): 高度的乘数因子。
-        %4995 (float): 宽度的乘数因子。
+        %4996 (float): 宽度的乘数因子。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
@@ -5465,7 +5465,7 @@ def aten_upsample_nearest2d(mapper, graph, node):
         %4997 (Tensor): 输出，上采样后的Tensor。
         %x.13 (Tensor): 需要上采样的Tensor。
         %4963 (list): 上采样后的大小。
-        %4995 (float): 高度的乘数因子。
+        %5421 (float): 高度的乘数因子。
         %4995 (float): 宽度的乘数因子。
     """
     scope_name = mapper.normalize_scope_name(node)
