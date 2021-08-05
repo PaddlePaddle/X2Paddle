@@ -1215,8 +1215,8 @@ class OpSet9():
                 
         else:
             layer_attrs = {
-            'num_or_sections': split,
-            'axis': axis,
+                'num_or_sections': split,
+                'axis': axis,
             }
             outputs_list = list()
             if isinstance(split, list) or isinstance(split, tuple):
