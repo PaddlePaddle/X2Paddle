@@ -105,6 +105,7 @@
 | SwinTransformer|[code](https://github.com/microsoft/Swin-Transformer/)  |-|
 | BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
 | DBFace |[code](https://github.com/dlunion/DBFace)  |-|
+| SOLAR |[code](https://github.com/tonyngjichun/SOLAR)  |只支持trace模式|
 
 ## PyTorch训练项目
 | 模型 | 转换前代码 | 转换后代码 |
