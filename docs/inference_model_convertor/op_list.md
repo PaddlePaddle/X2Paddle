@@ -7,28 +7,32 @@
 
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
-| 1  | Relu             | 2  | Relu6          | 3  | Shape          | 4  | Abs                   |
-| 5  | Sigmoid          | 6  | Exp            | 7  | Rsqrt          | 8  | swish_f32             |
-| 9  | Tanh             | 10 | LeakyRelu      | 11 | Add            | 12 | RealDiv               |
-| 13 | Sub              | 14 | Maximum        | 15 | Mul            | 16 | FloorDiv              |
-| 17 | Placeholder      | 18 | Const          | 19 | Transpose      | 20 | FusedBatchNorm        |
-| 21 | Conv2D           | 22 | BiasAdd        | 23 | MaxPool        | 24 | DepthwiseConv2dNative |
-| 25 | Reshape          | 26 | AvgPool        | 27 | SplitV         | 28 | SquaredDifference     |
-| 29 | Tile             | 30 | Pack           | 31 | Pad            | 32 | ResizeBilinear        |
-| 33 | Mean             | 34 | MatMul         | 35 | ArgMax         | 36 | StridedSlice          |
-| 37 | Slice            | 38 | Sum            | 39 | Max            | 40 | Conv2DBackpropInput   |
-| 41 | Cast             | 42 | Split          | 43 | Squeeze        | 44 | ResizeNearestNeighbor |
-| 45 | Softmax          | 46 | Range          | 47 | ConcatV2       | 48 | MirrorPad             |
-| 49 | Identity         | 50 | GreaterEqual   | 51 | StopGradient   | 52 | Minimum               |
-| 53 | RandomUniform    | 54 | Fill           | 55 | Floor          | 56 | DepthToSpace          |
-| 57 | Sqrt             | 58 | Softplus       | 59 | Erf            | 60 | AddV2                 |
-| 61 | LessEqual        | 62 | BatchMatMul    | 63 | BatchMatMulV2  | 64 | ExpandDims            |
-| 65 | BatchToSpaceND   | 66 | SpaceToBatchND | 67 | OneHot         | 68 | Pow                   |
-| 69 | All              | 70 | GatherV2       | 71 | IteratorV2     | 72 | Neg |
-| 73 | Greater | 74 | FloorMod | 75 | LogicalAdd | 76 | Prod |
-| 77 | Equal | 78 | Conv3D | 79 | Ceil | 80 | AddN |
-| 81 | DivNoNan | 82 | Where | 83 | MirrorPad | 84 | Size |
-| 85 | TopKv2 | 86 | SplitV | 87 | Sign |  |  |
+| 1 | Abs | 2 | Add | 3 | AddN | 4 | AddV2 |
+| 5 | All | 6 | ArgMax | 7 | AvgPool | 8 | BatchMatmul |
+| 9 | BatchMatmulV2 | 10 | BatchToSpaceNd | 11 | BiasAdd | 12 | Cast |
+| 13 | Ceil | 14 | Concat | 15 | ConcatV2 | 16 | Const |
+| 17 | Conv2D | 18 | Conv2DBackpropInput | 19 | Conv3D | 20 | DepthToSpace |
+| 21 | DepthwiseConv2DNative | 22 | DivNoNan | 23 | Equal | 24 | Erf |
+| 25 | Exp | 26 | ExpandDims | 27 | Fill | 28 | Floor |
+| 29 | FloorDiv | 30 | FloorMod | 31 | FusedBatchnorm | 32 | FusedBatchnormV3 |
+| 33 | GatherNd | 34 | GatherV2 | 35 | Greater | 36 | GreaterEqual |
+| 37 | Identity | 38 | IteratorV2 | 39 | LeakyRelu | 40 | LessEqual |
+| 41 | LogicalAnd | 42 | Matmul | 43 | Max | 44 | Maximum |
+| 45 | MaxPool | 46 | Mean | 47 | Merge | 48 | Minimum |
+| 49 | MirrorPad | 50 | Mul | 51 | Neg | 52 | NotEqual |
+| 53 | OneHot | 54 | OneShotIterator | 55 | Pack | 56 | Pad |
+| 57 | PadV2 | 58 | Placeholder | 59 | PlaceholderWithDefault | 60 | Pow |
+| 61 | Prod | 62 | RandomUniform | 63 | Range | 64 | RealDiv |
+| 65 | Relu | 66 | Relu6 | 67 | Reshape | 68 | ResizeBilinear |
+| 69 | ResizeNearestNeighbor | 70 | ReverseV2 | 71 | Rsqrt | 72 | Shape |
+| 73 | Sigmoid | 74 | Sign | 75 | Size | 76 | Slice |
+| 77 | Softmax | 78 | Softplus | 79 | SpaceToBatchNd | 80 | Split |
+| 81 | SplitV | 82 | Square | 83 | SquaredDifference | 84 | Squeeze |
+| 85 | StopGradient | 86 | StridedSlice | 87 | Sub | 88 | Sum |
+| 89 | Switch | 90 | Tanh | 91 | Tile | 92 | TopKV2 |
+| 93 | Transpose | 94 | Unpack | 95 | Where | 96 | IteratorGetNext |
+| 97 | swish_f32 | | | | | | |
+
 
 ## Caffe
 
@@ -48,24 +52,27 @@
 
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
-| 1  | Relu     | 2  | LeakyRelu | 3  | Elu       | 4  | ThresholdedRelu    |
-| 5  | Prelu    | 6  | Tanh      | 7  | Shrink    | 8  | Sigmoid            |
-| 9  | Pow      | 10 | Softplus  | 11 | Softsign  | 12 | HardSigmoid        |
-| 13 | Exp      | 14 | Add       | 15 | Div       | 16 | Sub                |
-| 17 | Mul      | 18 | Shape     | 19 | Clip      | 20 | AveragePool        |
-| 21 | Sqrt     | 22 | ReduceSum | 23 | ReduceMin | 24 | ReduceMean         |
-| 25 | Constant | 26 | Pad       | 27 | Unsqueeze | 28 | Resize             |
-| 29 | Upsample | 30 | Expand    | 31 | Gather    | 32 | Slice              |
-| 33 | Cast     | 34 | Split     | 35 | Reshape   | 36 | ConstantOfShape    |
-| 37 | Ceil     | 38 | Concat    | 39 | Flatten   | 40 | ConvTranspose      |
-| 41 | MatMul   | 42 | Sum       | 43 | Transpose | 44 | BatchNormalization |
-| 45 | Squeeze  | 46 | Equal     | 47 | Identity  | 48 | GlobalAveragePool  |
-| 49 | MaxPool  | 50 | Conv      | 51 | Gemm      | 52 | NonZero            |
-| 53 | Abs      | 54 | Floor     | 56 | ArgMax    | 57 | Sign               |
-| 58 | Reciprocal  | 59 | Size     | 60 | OneHot    | 61 | ReduceProd       |
-| 62 | LogSoftmax  | 63 | LSTM     | 64 |   LRN  | 65 | NonMaxSuppression   |
-| 66 | ReduceL1  | 67 | ReduceL2     |  |     |  |    |
-
+| 1 | Abs | 2 | ArgMax | 3 | AverageOool | 4 | BatchNormalization |
+| 5 | Cast | 6 | Ceil | 7 | Clip | 8 | Constant |
+| 9 | ConstantOfShape | 10 | Conv | 11 | ConvTranspose | 12 | DepthToSpace |
+| 13 | Div | 14 | Elu | 15 | Equal | 16 | Erf |
+| 17 | Exp | 18 | Expand | 19 | Flatten | 20 | Floor |
+| 21 | Gather | 22 | Gemm | 23 | GlobalAveragePool | 24 | GlobalMaxPool |
+| 25 | Greater | 26 | HardSigmoid | 27 | Identity | 28 | InstanceNormalization |
+| 29 | LeakyRelu | 30 | Less | 31 | Log | 32 | LogSoftmax |
+| 33 | LRN | 34 | LSTM | 35 | Matmul | 36 | MaxPool |
+| 37 | MaxRoiPool | 38 | Mul | 39 | NonZero | 40 | NonMaxSuppression |
+| 41 | Not | 42 | OneHot | 43 | Pad | 44 | Pow |
+| 45 | PRelu | 46 | Range | 47 | Reciprocal | 48 | ReduceL1 |
+| 49 | ReduceL2 | 50 | ReduceMax | 51 | ReduceMean | 52 | ReduceMin |
+| 53 | ReduceProd | 54 | ReduceSum | 55 | Relu | 56 | Reshape |
+| 57 | Resize | 58 | RoiAlign | 59 | ScatterND | 60 | Shape |
+| 61 | Shrink | 62 | Sigmoid | 63 | Sign | 64 | Size |
+| 65 | Slice | 66 | Softmax | 67 | SoftPlus | 68 | SoftSign |
+| 69 | Split | 70 | Sqrt | 71 | Squeeze | 72 | Sub |
+| 73 | Sum | 74 | Tanh | 75 | Tile | 76 | TopK |
+| 77 | Transpose | 78 | Unsqueeze | 79 | Upsample | 80 | Where |
+| 81 | Add | 82 | Concat | | | |
 
 
 ## PyTorch
