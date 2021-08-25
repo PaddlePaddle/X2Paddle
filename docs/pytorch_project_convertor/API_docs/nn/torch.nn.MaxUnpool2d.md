@@ -9,10 +9,9 @@ torch.nn.MaxUnpool2d(kernel_size, stride=None, padding=0)
 ```python
 import paddle
 import paddle.nn as nn
-TYPE_MAPPER = {"fp16": "float16", "fp32": "float32", "fp64": "float64"}
 
 # 定义MaxUnpool2D
-class MaxUnpool2D(paddle.nn.Layer):
+class MaxUnpool2D(nn.Layer):
     def __init__(self, kernel_size, stride=None, padding=0):
         super().__init__()
         if isinstance(stride, int):
@@ -41,7 +40,6 @@ class MaxUnpool2D(paddle.nn.Layer):
             if len(output_size) == len(self.kernel_size) + 2:
                 output_size = output_size[2:]
         t = str(input.dtype).lower().strip().split(".")[-1]
-        t = TYPE_MAPPER[t]
         out = paddle.zeros(output_size, dtype=t)
         flatten_out = paddle.flatten(out)
         for i in range(indices.shape[0]):
@@ -53,7 +51,7 @@ class MaxUnpool2D(paddle.nn.Layer):
         flatten_indices = paddle.flatten(indices)
         flatten_input = paddle.flatten(input)
         for i in range(flatten_indices.shape[0]):
-            flatten_out[flatten_indices[i].tolist()] = flatten_input[i].tolist()
+            flatten_out[int(flatten_indices[i])] = flatten_input[i]
         out = paddle.reshape(flatten_out, out.shape)
         return out
 

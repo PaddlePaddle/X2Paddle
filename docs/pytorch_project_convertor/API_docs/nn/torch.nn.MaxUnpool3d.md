@@ -8,10 +8,9 @@ torch.nn.MaxUnpool3d(kernel_size, stride=None, padding=0)
 ```python
 import paddle
 import paddle.nn as nn
-TYPE_MAPPER = {"fp16": "float16", "fp32": "float32", "fp64": "float64"}
 
 # 定义MaxUnpool3D
-class MaxUnpool3D(paddle.nn.Layer):
+class MaxUnpool3D(nn.Layer):
     def __init__(self, kernel_size, stride=None, padding=0):
         super().__init__()
         if isinstance(stride, int):
@@ -55,7 +54,7 @@ class MaxUnpool3D(paddle.nn.Layer):
         flatten_indices = paddle.flatten(indices)
         flatten_input = paddle.flatten(input)
         for i in range(flatten_indices.shape[0]):
-            flatten_out[flatten_indices[i].tolist()] = flatten_input[i].tolist()
+            flatten_out[int(flatten_indices[i])] = flatten_input[i]
         out = paddle.reshape(flatten_out, out.shape)
         return out
 
