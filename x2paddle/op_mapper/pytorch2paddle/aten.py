@@ -2679,7 +2679,7 @@ def aten_instance_norm(mapper, graph, node):
     # 处理输入1，即%88
     if inputs_name[1] in mapper.pytorch_params:
         weights = mapper.pytorch_params[inputs_name[1]]
-        mapper.paddle_params[op_name + ".weight"] = weights
+        mapper.paddle_params[op_name + ".scale"] = weights
         layer_attrs['num_features'] = weights.shape[0]
     # 处理输入2，即%85
     if inputs_name[2] in mapper.pytorch_params:
@@ -2898,6 +2898,42 @@ def aten_leaky_relu_(mapper, graph, node):
     """ 构造leaky relu激活的PaddleLayer。
     TorchScript示例:
         %input.117 : Tensor = aten::leaky_relu_(%input.114, %1570)
+        参数含义:
+        %input.117 (Tensor): 输出，leaky relu后的结果。
+        %input.114 (Tensor): 需要leaky relu的Tensor。
+        %1570 (float): 输入中的元素小于0时的斜率。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("leakly_relu", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%1570
+    layer_attrs["negative_slope"] = mapper.attrs[inputs_name[1]]
+
+    graph.add_layer(
+        "paddle.nn.LeakyReLU",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_leaky_relu(mapper, graph, node):
+    """ 构造leaky relu激活的PaddleLayer。
+    TorchScript示例:
+        %input.117 : Tensor = aten::leaky_relu(%input.114, %1570)
         参数含义:
         %input.117 (Tensor): 输出，leaky relu后的结果。
         %input.114 (Tensor): 需要leaky relu的Tensor。
@@ -5172,7 +5208,7 @@ def aten_split(mapper, graph, node):
         %160 (Tensor): 输出，分割后的矩阵。
         %159 (Tensor): 需要分割的Tensor。
         %135 (int): 分割的数量。
-        %723 (int): 轴。
+        %123 (int): 轴。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
@@ -5197,7 +5233,25 @@ def aten_split(mapper, graph, node):
     if "[]" in str(input_type):
         layer_inputs["num_or_sections"] = inputs_name[1]
     else:
-        layer_attrs["num_or_sections"] = mapper.attrs[inputs_name[1]] + 1
+        index = mapper.attrs[inputs_name[2]]
+        graph.add_layer(
+            "prim.shape",
+            inputs={"input": inputs_name[0]},
+            outputs=[inputs_name[0] + '_shape'],
+            scope_name=scope_name)
+        graph.add_layer(
+            "prim.getitem",
+            inputs={"list": inputs_name[0] + '_shape'},
+            outputs=[inputs_name[0] + '_dim'],
+            scope_name=scope_name,
+            index=index)
+        graph.add_layer(
+            "prim.floordiv",
+            inputs={'x': inputs_name[0] + '_dim',
+                    'y': inputs_name[1]},
+            outputs=[inputs_name[1] + '_div'],
+            scope_name=scope_name)
+        layer_attrs["num_or_sections"] = inputs_name[1] + '_div'
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
