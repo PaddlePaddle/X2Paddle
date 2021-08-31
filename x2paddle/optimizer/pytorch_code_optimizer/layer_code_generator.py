@@ -263,7 +263,7 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 layer.kernel.startswith("custom_layer"):
             line = "self.{}".format(layer.outputs[0])
             if layer.kernel.startswith("custom_layer"):
-                line += "= x2paddle_nn.{}(".format(layer.kernel.split(":")[-1])
+                line += " = x2paddle_nn.{}(".format(layer.kernel.split(":")[-1])
             else:
                 line += " = {}(".format(layer.kernel)
             for k, v in layer.attrs.items():
