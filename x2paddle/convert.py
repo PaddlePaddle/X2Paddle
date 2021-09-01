@@ -268,6 +268,9 @@ def main():
             raise Exception(
                 "--framework only support tensorflow/caffe/onnx now")
 
+def test_code_style():
+    testa='abc'
+
 
 if __name__ == "__main__":
     main()
