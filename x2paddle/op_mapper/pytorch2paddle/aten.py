@@ -43,7 +43,6 @@ def aten_sum(mapper, graph, node):
         %1450：keepdim
         %1453：dtype
     """
-    print(node)
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
@@ -56,7 +55,6 @@ def aten_sum(mapper, graph, node):
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     layer_inputs["x"] = inputs_name[0]
-    print("layer_inputs: ",layer_inputs)
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     if inputs_name[1] in mapper.attrs:
@@ -65,7 +63,6 @@ def aten_sum(mapper, graph, node):
         layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
     if inputs_name[3] in mapper.attrs:
         layer_attrs["dtype"] = mapper.attrs[inputs_name[3]]
-    print("layer_attrs: ",layer_attrs)
     graph.add_layer(
         "paddle.sum",
         inputs=layer_inputs,
