@@ -269,8 +269,8 @@ def main():
                 "--framework only support tensorflow/caffe/onnx now")
 
 def test_code_style():
-    testa='abc'
-    testb='ccc'
+    testa = 'abc'
+    testb = 'ccc'
 
 
 if __name__ == "__main__":
