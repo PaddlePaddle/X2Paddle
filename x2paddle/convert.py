@@ -270,6 +270,7 @@ def main():
 
 def test_code_style():
     testa='abc'
+    testb='ccc'
 
 
 if __name__ == "__main__":
