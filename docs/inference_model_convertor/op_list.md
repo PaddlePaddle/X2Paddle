@@ -93,7 +93,7 @@ Aten:
 | 45 | aten::gelu | 46 | aten::\_\_getitem\_\_ | 47 | aten::gt | 48 | aten::hardtanh\_ |
 | 49 | aten::index\_select | 50 | aten::Int | 51 | aten::\_\_is\_\_ | 52 | aten::\_\_isnot\_\_ |
 | 53 | aten::layer\_norm | 54 | aten::le |55|aten::leaky\_relu\_|56|aten::len|
-| 57 | aten::log | 58 | aten::lt |59|aten::masked\_fil\l_|60|aten::masked\_fill|
+| 57 | aten::log | 58 | aten::lt |59|aten::masked\_fill_|60|aten::masked\_fill|
 | 61 | aten::max | 62 | aten::max\_pool2d |63|aten::matmul|64|aten\_min|
 | 65 | aten::mean | 66 | aten::meshgrid |67|aten::mul|68|aten::mul\_|
 | 69 | aten::ne | 70 | aten::neg |71|aten::\_\_not\_\_|72|aten::ones|
@@ -107,7 +107,7 @@ Aten:
 | 101 | aten::upsample\_bilinear2d | 102 | aten::values |103|aten::view|104|aten::warn|
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
-| 113 | aten::upsample\_nearest2d | 114 |aten::split\_with\_sizes  |||||
+| 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance_norm |
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
