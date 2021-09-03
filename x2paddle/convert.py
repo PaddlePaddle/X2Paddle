@@ -267,8 +267,6 @@ def main():
         else:
             raise Exception(
                 "--framework only support tensorflow/caffe/onnx now")
-def test():
-     v="au123"
 
 if __name__ == "__main__":
     main()
