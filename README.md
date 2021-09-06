@@ -42,7 +42,13 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 
   - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本 [**【新内容，了解一下！】**](docs/pytorch_project_convertor/API_docs/README.md)
 
+## 兼容性
+- **下表列出了各X2paddle版本向后兼容的PaddlePaddle版本**
 
+| X2paddle版本     | PaddlePaddle版本    |
+| --------------- | --------------------|
+| 1.3.0          | 2.1.1 - 最新         |
+| 1.3.1           | 2.1.1 - 最新     |
 
 ## 安装
 
