@@ -108,6 +108,7 @@ Aten:
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
 | 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance_norm |
+| 117 | aten::bitwise_not | 118 | aten::bitwise_xor | 119 | aten::bitwise_and |  |  |
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
