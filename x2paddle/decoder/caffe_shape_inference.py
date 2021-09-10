@@ -19,25 +19,25 @@ from functools import reduce
 
 def get_kernel_parameters(params):
     [k_h, k_w] = [1, 1]
-    if isinstance(params.kernel_size, numbers.Number):
+    if params.kernel_h > 0 or params.kernel_w > 0:
+        k_h = params.kernel_h
+        k_w = params.kernel_w
+    elif isinstance(params.kernel_size, numbers.Number):
         [k_h, k_w] = [params.kernel_size] * 2
     elif len(params.kernel_size) > 0:
         k_h = params.kernel_h if params.kernel_h > 0 else params.kernel_size[0]
         k_w = params.kernel_w if params.kernel_w > 0 else params.kernel_size[
             len(params.kernel_size) - 1]
-    elif params.kernel_h > 0 or params.kernel_w > 0:
-        k_h = params.kernel_h
-        k_w = params.kernel_w
     [s_h, s_w] = [1, 1]
-    if isinstance(params.stride, numbers.Number):
+    if params.stride_h > 0 or params.stride_w > 0:
+        s_h = params.stride_h
+        s_w = params.stride_w
+    elif isinstance(params.stride, numbers.Number):
         [s_h, s_w] = [params.stride] * 2
     elif len(params.stride) > 0:
         s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
         s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
             params.stride) - 1]
-    elif params.stride_h > 0 or params.stride_w > 0:
-        s_h = params.stride_h
-        s_w = params.stride_w
     [p_h, p_w] = [0, 0]
     if isinstance(params.pad, numbers.Number):
         [p_h, p_w] = [params.pad] * 2
