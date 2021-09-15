@@ -25,7 +25,7 @@ def arg_parser():
         "-m",
         type=_text_type,
         default=None,
-        help="define model file path for tensorflow or onnx")
+        help="define model file path for tensorflow, tflite or onnx")
     parser.add_argument(
         "--prototxt",
         "-p",
@@ -49,7 +49,7 @@ def arg_parser():
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        help="define which deeplearning framework(tensorflow/tflite/caffe/onnx/paddle2onnx)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -115,6 +115,33 @@ def tf2paddle(model_path, save_dir, define_input_shape=False):
     print("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
     mapper = TFOpMapper(model)
+    mapper.paddle_graph.build()
+    from x2paddle.optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer(source_frame="tf")
+    graph_opt.optimize(mapper.paddle_graph)
+    mapper.paddle_graph.gen_model(save_dir)
+
+
+def tflite2paddle(model_path, save_dir):
+    # check tensorflow installation and version
+    try:
+        import os
+        import tflite
+        try:
+            from tflite.BuiltinOptions import BuiltinOptions
+        except:
+            print("[ERROR] tflite>=2.1.0 is required")
+            return
+    except:
+        print("[ERROR] TFLite is not installed, use \"pip install tflite\".")
+        return
+
+    from x2paddle.decoder.tflite_decoder import TFLiteDecoder
+    from x2paddle.op_mapper.tflite2paddle.tflite_op_mapper import TFLiteOpMapper
+
+    print("Now translating model from tensorflow to paddle.")
+    model = TFLiteDecoder(model_path)
+    mapper = TFLiteOpMapper(model)
     mapper.paddle_graph.build()
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="tf")
@@ -251,6 +278,10 @@ def main():
             if args.define_input_shape:
                 define_input_shape = True
             tf2paddle(args.model, args.save_dir, define_input_shape)
+
+        elif args.framework == "tflite":
+            assert args.model is not None, "--model should be defined while translating tflite model"
+            tflite2paddle(args.model, args.save_dir)
 
         elif args.framework == "caffe":
             assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
