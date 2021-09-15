@@ -71,6 +71,7 @@ def aten_sum(mapper, graph, node):
         **layer_attrs)
     return current_inputs, current_outputs
 
+
 def aten_abs(mapper, graph, node):
     """ 构造获取绝对值的PaddleLayer。
     TorchScript示例:
@@ -746,6 +747,106 @@ def aten_batch_norm(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_not(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_not(%32)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑非运算后的结果。
+        %32 (Tensor): 输入1。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.not",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_xor(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_xor(%32, %8)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑或运算后的结果。
+        %32 (Tensor): 输入1。
+        %8 (Tensor): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%8
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.or",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_and(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_and(%32, %8)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑与运算后的结果。
+        %32 (Tensor): 输入1。
+        %8 (Tensor): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%8
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.and",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
     return current_inputs, current_outputs
 
 
