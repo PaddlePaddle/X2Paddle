@@ -69,8 +69,8 @@
 | EfficientNet | [pytorch(personal practice)](https://github.com/rwightman/gen-efficientnet-pytorch) |9|
 | SqueezeNet | [onnx official](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz) |9|
 |Ultra-Light-Fast-Generic-Face-Detector-1MB| [onnx_model](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/tree/master/models/onnx)|9 |
-|BERT| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
-|GPT2| [pytorch(huggingface)](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
+|BERT| [pytorch(huggingface)](https://github.com/huggingface/notebooks/blob/master/examples/onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
+|GPT2| [pytorch(huggingface)](https://github.com/huggingface/notebooks/blob/master/examples/onnx-export.ipynb)|11|转换时需指定input shape，见[文档Q3](../inference_model_convertor/FAQ.md)|
 |CifarNet | [tensorflow](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)|9|
 |Fcos | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py)|11|
 |Yolov3 | [pytorch(mmdetection)](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo/yolov3_d53_mstrain-608_273e_coco.py)|11|
@@ -105,6 +105,7 @@
 | SwinTransformer|[code](https://github.com/microsoft/Swin-Transformer/)  |-|
 | BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
 | DBFace |[code](https://github.com/dlunion/DBFace)  |-|
+| SOLAR |[code](https://github.com/tonyngjichun/SOLAR)  |只支持trace模式|
 
 ## PyTorch训练项目
 | 模型 | 转换前代码 | 转换后代码 |

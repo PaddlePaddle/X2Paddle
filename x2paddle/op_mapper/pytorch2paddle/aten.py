@@ -32,6 +32,46 @@ dtype_dict = {
 }
 
 
+def aten_sum(mapper, graph, node):
+    """ 构造获取元素求和的paddlelayer。
+    TorchScript示例:
+        %x_gap.15 : Tensor =  aten::sum(%x.58, %2166, %1450, %1453)
+        参数含义:
+        %x_gap.15 (Tensor): 求和后的Tensor。
+        %n.3 (Tensor): 求和前的Tensor。
+        %2166：axis
+        %1450：keepdim
+        %1453：dtype
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%n.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["dtype"] = mapper.attrs[inputs_name[3]]
+    graph.add_layer(
+        "paddle.sum",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_abs(mapper, graph, node):
     """ 构造获取绝对值的PaddleLayer。
     TorchScript示例:
@@ -707,6 +747,106 @@ def aten_batch_norm(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_not(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_not(%32)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑非运算后的结果。
+        %32 (Tensor): 输入1。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.not",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_xor(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_xor(%32, %8)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑或运算后的结果。
+        %32 (Tensor): 输入1。
+        %8 (Tensor): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%8
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.or",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_bitwise_and(mapper, graph, node):
+    """ 构造矩阵相乘的PaddleLayer。
+    TorchScript示例:
+        %x.222 : Tensor = aten::bitwise_and(%32, %8)
+        参数含义:
+        %x.222 (Tensor): 输出，逻辑与运算后的结果。
+        %32 (Tensor): 输入1。
+        %8 (Tensor): 输入2。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%32
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 处理输入1，即%8
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "prim.and",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -2637,7 +2777,7 @@ def aten_instance_norm(mapper, graph, node):
     # 处理输入1，即%88
     if inputs_name[1] in mapper.pytorch_params:
         weights = mapper.pytorch_params[inputs_name[1]]
-        mapper.paddle_params[op_name + ".weight"] = weights
+        mapper.paddle_params[op_name + ".scale"] = weights
         layer_attrs['num_features'] = weights.shape[0]
     # 处理输入2，即%85
     if inputs_name[2] in mapper.pytorch_params:
@@ -2856,6 +2996,42 @@ def aten_leaky_relu_(mapper, graph, node):
     """ 构造leaky relu激活的PaddleLayer。
     TorchScript示例:
         %input.117 : Tensor = aten::leaky_relu_(%input.114, %1570)
+        参数含义:
+        %input.117 (Tensor): 输出，leaky relu后的结果。
+        %input.114 (Tensor): 需要leaky relu的Tensor。
+        %1570 (float): 输入中的元素小于0时的斜率。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("leakly_relu", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%1570
+    layer_attrs["negative_slope"] = mapper.attrs[inputs_name[1]]
+
+    graph.add_layer(
+        "paddle.nn.LeakyReLU",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_leaky_relu(mapper, graph, node):
+    """ 构造leaky relu激活的PaddleLayer。
+    TorchScript示例:
+        %input.117 : Tensor = aten::leaky_relu(%input.114, %1570)
         参数含义:
         %input.117 (Tensor): 输出，leaky relu后的结果。
         %input.114 (Tensor): 需要leaky relu的Tensor。
@@ -5130,7 +5306,7 @@ def aten_split(mapper, graph, node):
         %160 (Tensor): 输出，分割后的矩阵。
         %159 (Tensor): 需要分割的Tensor。
         %135 (int): 分割的数量。
-        %723 (int): 轴。
+        %123 (int): 轴。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
@@ -5155,7 +5331,25 @@ def aten_split(mapper, graph, node):
     if "[]" in str(input_type):
         layer_inputs["num_or_sections"] = inputs_name[1]
     else:
-        layer_attrs["num_or_sections"] = mapper.attrs[inputs_name[1]] + 1
+        index = mapper.attrs[inputs_name[2]]
+        graph.add_layer(
+            "prim.shape",
+            inputs={"input": inputs_name[0]},
+            outputs=[inputs_name[0] + '_shape'],
+            scope_name=scope_name)
+        graph.add_layer(
+            "prim.getitem",
+            inputs={"list": inputs_name[0] + '_shape'},
+            outputs=[inputs_name[0] + '_dim'],
+            scope_name=scope_name,
+            index=index)
+        graph.add_layer(
+            "prim.floordiv",
+            inputs={'x': inputs_name[0] + '_dim',
+                    'y': inputs_name[1]},
+            outputs=[inputs_name[1] + '_div'],
+            scope_name=scope_name)
+        layer_attrs["num_or_sections"] = inputs_name[1] + '_div'
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
@@ -5388,7 +5582,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
         %4963 (list): 上采样后的大小。
         %5421 (bool): 若为True，则将输入和输出张量的4个角落像素的中心对齐，并保留角点像素的值。
         %4995 (float): 高度的乘数因子。
-        %4995 (float): 宽度的乘数因子。
+        %4996 (float): 宽度的乘数因子。
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
@@ -5465,7 +5659,7 @@ def aten_upsample_nearest2d(mapper, graph, node):
         %4997 (Tensor): 输出，上采样后的Tensor。
         %x.13 (Tensor): 需要上采样的Tensor。
         %4963 (list): 上采样后的大小。
-        %4995 (float): 高度的乘数因子。
+        %5421 (float): 高度的乘数因子。
         %4995 (float): 宽度的乘数因子。
     """
     scope_name = mapper.normalize_scope_name(node)
