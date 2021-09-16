@@ -774,26 +774,20 @@ class OpSet9():
 
     @print_mapping_info
     def Expand(self, node):
-        # val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        # val_shape = self.graph.get_input_node(node, idx=1, copy=True)
-        # val_x_dtype = val_x.dtype
-        # name_ones = node.name + '_ones'
-        # attr_ones = {
-        #     'shape': val_shape.name,
-        #     'dtype': string(val_x_dtype),
-        #     'fill_value': 1
-        # }
-        # self.paddle_graph.add_layer(
-        #     'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
-        # inputs_dict = {'x': name_ones, 'y': val_x.name}
-        # self.paddle_graph.add_layer(
-        #     'paddle.multiply', inputs=inputs_dict, outputs=[node.name])	
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
-        inputs_dict = {'x': val_x.name, 'y': val_shape.name}
+        val_x_dtype = val_x.dtype
+        name_ones = node.name + '_ones'
+        attr_ones = {
+            'shape': val_shape.name,
+            'dtype': string(val_x_dtype),
+            'fill_value': 1
+        }
         self.paddle_graph.add_layer(
-           'paddle.expand', inputs=inputs_dict, outputs=[node.name])
-	    
+            'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
+        inputs_dict = {'x': name_ones, 'y': val_x.name}
+        self.paddle_graph.add_layer(
+            'paddle.multiply', inputs=inputs_dict, outputs=[node.name])
 
     @print_mapping_info
     def GatherND(self, node):
@@ -1202,7 +1196,7 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         paddle_op = 'split'
         split = node.get_attr('split')
-        axis = node.get_attr('axis', 0) 
+        axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
             layer_attrs = {
@@ -1223,11 +1217,11 @@ class OpSet9():
                     **layer_attrs)
             else:
                 self.paddle_graph.add_layer(
-                        "paddle.cast",
-                        inputs={"x": val_x.name},
-                        outputs=outputs_list,
-                        dtype=string(val_x.dtype))
-                
+                    "paddle.cast",
+                    inputs={"x": val_x.name},
+                    outputs=outputs_list,
+                    dtype=string(val_x.dtype))
+
         else:
             layer_attrs = {
                 'num_or_sections': split,
