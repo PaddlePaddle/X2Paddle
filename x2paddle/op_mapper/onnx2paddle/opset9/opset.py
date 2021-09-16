@@ -779,7 +779,7 @@ class OpSet9():
         #inputs_dict = {'x': val_x.name, 'shape': val_shape.name}
         #self.paddle_graph.add_layer(
         #    'paddle.expand', inputs=inputs_dict, outputs=[node.name])
-	val_x = self.graph.get_input_node(node, idx=0, copy=True)
+	    val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
         val_x_dtype = val_x.dtype
         name_ones = node.name + '_ones'
