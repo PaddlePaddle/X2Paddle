@@ -774,12 +774,7 @@ class OpSet9():
 
     @print_mapping_info
     def Expand(self, node):
-        #val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        #val_shape = self.graph.get_input_node(node, idx=1, copy=True)
-        #inputs_dict = {'x': val_x.name, 'shape': val_shape.name}
-        #self.paddle_graph.add_layer(
-        #    'paddle.expand', inputs=inputs_dict, outputs=[node.name])
-	    val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
         val_x_dtype = val_x.dtype
         name_ones = node.name + '_ones'
@@ -793,6 +788,12 @@ class OpSet9():
         inputs_dict = {'x': name_ones, 'y': val_x.name}
         self.paddle_graph.add_layer(
             'paddle.multiply', inputs=inputs_dict, outputs=[node.name])	
+        #val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        #val_shape = self.graph.get_input_node(node, idx=1, copy=True)
+        #inputs_dict = {'x': val_x.name, 'shape': val_shape.name}
+        #self.paddle_graph.add_layer(
+        #    'paddle.expand', inputs=inputs_dict, outputs=[node.name])
+	    
 
     @print_mapping_info
     def GatherND(self, node):
