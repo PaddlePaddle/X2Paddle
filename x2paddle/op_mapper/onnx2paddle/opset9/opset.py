@@ -1164,7 +1164,27 @@ class OpSet9():
                 inputs={"x": val_x.name},
                 outputs=[node.name],
                 **layer_attrs)
-        else:
+        if len(node.inputs) == 2:
+            print(
+                "Clip op lacks the maximum or minimum input, we set the maximum value by default, if not, please modify the clip op or raise an issue."
+            )
+            # if max
+            max_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+            max_value = _const_weight_or_none(max_ipt)
+            if max_value.shape == (1, ):
+                max_value = max_value[0]
+            # # if min
+            # min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+            # min_value = _const_weight_or_none(min_ipt)
+            # if min_value.shape == (1, ):
+            #     min_value = min_value[0]
+            layer_attrs = {'max': max_value, 'min': min_value}
+            self.paddle_graph.add_layer(
+                'paddle.clip',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
+        if len(node.inputs) == 3:
             min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
             max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
             min_value = _const_weight_or_none(min_ipt)
@@ -1549,9 +1569,9 @@ class OpSet9():
                 num_parameters = val_x.out_shapes[0][1]
             else:
                 num_parameters = 1
+                slope_data = self.weights[val_slope.name]
                 _rename_or_remove_weight(self.weights, val_slope.name)
-                self.weights[op_name + '._weight'] = np.reshape(
-                    self.weights[val_slope.name], [1])
+                self.weights[op_name + '._weight'] = np.reshape(slope_data, [1])
             self.paddle_graph.add_layer(
                 "paddle.nn.PReLU",
                 inputs={"x": val_x.name},
