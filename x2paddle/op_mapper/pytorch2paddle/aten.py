@@ -2327,6 +2327,40 @@ def aten_floor_divide(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_format(mapper, graph, node):
+    """ 构造取浮点型的PaddleLayer。
+    TorchScript示例:
+        %628 : str = aten::format(%8, %627, %20)
+        参数含义:
+        %628 (str): 输出,为一个字符串
+        %8 (str): 输入字符串
+        %627 (-): format后的参数
+        %20 (-): format后的参数
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入
+    for i in range(len(inputs_node)):
+        mapper._check_input(graph, inputs_node[i], inputs_name[i],
+                            current_outputs, scope_name)
+        layer_inputs["input" + str(i)] = inputs_name[i]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    print(layer_inputs)
+
+    graph.add_layer(
+        "prim.format",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_full_like(mapper, graph, node):
     """ 构造创建一个与输入具有相同的形状并且数据类型固定的Tensor的PaddleLayer。
     TorchScript示例:
