@@ -52,6 +52,7 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 - tensorflow == 1.14 (如需转换TensorFlow模型)
 - onnx >= 1.6.0 (如需转换ONNX模型)
 - torch >= 1.5.0 (如需转换PyTorch模型)
+- paddlelite == 2.9.0 (如需一键转换成Paddle-Lite支持格式)
 
 ### pip安装(推荐）
 
@@ -100,6 +101,9 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 | --model              | 当framework为tensorflow/onnx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
 | --caffe_proto        | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/inference_model_convertor/FAQ.md) |
+
+#### 一键转换Paddle-Lite支持格式
+可参考[使用X2paddle导出Padde-Lite支持格式](https://github.com/PaddlePaddle/Paddle-Lite/blob/develop/docs/user_guides/model_optimize_tool.md)
 
 ### 功能二：PyTorch模型训练迁移
 
