@@ -276,20 +276,6 @@ def prim_floordiv(layer,
     forward_func.extend(gen_codes([line], indent=indent))
 
 
-def prim_format(layer,
-                indent=1,
-                init_func=[],
-                forward_func=[],
-                layer_id=None,
-                different_attrs=None):
-    line = "{} = {}.format({}, {})".format(
-        layer.outputs[0],
-        get_value(layer, "input0", different_attrs),
-        get_value(layer, "input1", different_attrs),
-        get_value(layer, "input2", different_attrs))
-    forward_func.extend(gen_codes([line], indent=indent))
-
-
 def prim_getitem(layer,
                  indent=1,
                  init_func=[],
