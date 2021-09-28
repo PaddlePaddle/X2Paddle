@@ -68,7 +68,7 @@ x2paddle.convert.caffe2paddle(proto_file, weight_file, save_dir, caffe_proto, co
 > > - **proto_file** (str): caffe模型的prototxt文件
 > > - **weight_file** (str): caffe模型的权重文件
 > > - **save_dir** (str): 转换后模型保存路径
-> > - **caffe_proto** (str): 可选：caffe模型的caffe proto文件编译的.py文件
+> > - **caffe_proto** (str): 可选：由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None
 > > - **convert_to_lite** (bool): 是否使用opt工具转成Paddle-Lite支持格式，默认为False
 > > - **lite_valid_places** (str): 指定转换类型，可以同时指定多个backend(以逗号分隔)，opt将会自动选择最佳方式，默认为arm
 > > - **lite_model_type** (str): 指定模型转化类型，目前支持两种类型：protobuf和naive_buffer，默认为naive_buffer
