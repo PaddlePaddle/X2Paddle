@@ -87,16 +87,44 @@ def arg_parser():
         type=_text_type,
         default=None,
         help="pretrain model file of pytorch model")
+    parser.add_argument(
+        "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
+    parser.add_argument(
+        "--lite_valid_places",
+        "-vp",
+        type=_text_type,
+        default="arm",
+        help="Specify the executable backend of the model")
+    parser.add_argument(
+        "--lite_model_type",
+        "-mt",
+        type=_text_type,
+        default="naive_buffer",
+        help="The type of lite model")
 
     return parser
+
+
+def convert2lite(save_dir,
+                 lite_valid_places="arm",
+                 lite_model_type="naive_buffer"):
+    """Convert to Paddle-Lite format."""
+
+    from paddlelite.lite import Opt
+    opt = Opt()
+    opt.set_model_dir(save_dir + "/inference_model")
+    opt.set_valid_places(lite_valid_places)
+    opt.set_model_type(lite_model_type)
+    opt.set_optimize_out(save_dir + "/opt")
+    opt.run()
 
 
 def tf2paddle(model_path,
               save_dir,
               define_input_shape=False,
-              convert_opt=False,
-              valid_places="arm",
-              model_type="naive_buffer"):
+              convert_to_lite=False,
+              lite_valid_places="arm",
+              lite_model_type="naive_buffer"):
     # check tensorflow installation and version
     try:
         import os
@@ -125,34 +153,28 @@ def tf2paddle(model_path,
     graph_opt = GraphOptimizer(source_frame="tf")
     graph_opt.optimize(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
-    if convert_opt:
-        from paddlelite.lite import Opt
-        opt = Opt()
-        opt.set_model_dir(save_dir + "/inference_model")
-        opt.set_valid_places(valid_places)
-        opt.set_model_type(model_type)
-        opt.set_optimize_out(save_dir + "/opt")
-        opt.run()
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
-def caffe2paddle(proto,
-                 weight,
+def caffe2paddle(proto_file,
+                 weight_file,
                  save_dir,
                  caffe_proto,
-                 convert_opt=False,
-                 valid_places="arm",
-                 model_type="naive_buffer"):
+                 convert_to_lite=False,
+                 lite_valid_places="arm",
+                 lite_model_type="naive_buffer"):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
     ver_part = gpb.__version__.split('.')
     version_satisfy = False
     if (int(ver_part[0]) == 3 and int(ver_part[1]) >= 6) \
-        or (int(ver_part[0]) > 3):
+            or (int(ver_part[0]) > 3):
         version_satisfy = True
     assert version_satisfy, '[ERROR] google.protobuf >= 3.6.0 is required'
     print("Now translating model from caffe to paddle.")
-    model = CaffeDecoder(proto, weight, caffe_proto)
+    model = CaffeDecoder(proto_file, weight_file, caffe_proto)
     mapper = CaffeOpMapper(model)
     mapper.paddle_graph.build()
     print("Model optimizing ...")
@@ -161,21 +183,15 @@ def caffe2paddle(proto,
     graph_opt.optimize(mapper.paddle_graph)
     print("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
-    if convert_opt:
-        from paddlelite.lite import Opt
-        opt = Opt()
-        opt.set_model_dir(save_dir + "/inference_model")
-        opt.set_valid_places(valid_places)
-        opt.set_model_type(model_type)
-        opt.set_optimize_out(save_dir + "/opt")
-        opt.run()
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
 def onnx2paddle(model_path,
                 save_dir,
-                convert_opt=False,
-                valid_places="arm",
-                model_type="naive_buffer"):
+                convert_to_lite=False,
+                lite_valid_places="arm",
+                lite_model_type="naive_buffer"):
     # check onnx installation and version
     try:
         import onnx
@@ -196,23 +212,17 @@ def onnx2paddle(model_path,
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     mapper.paddle_graph.gen_model(save_dir)
-    if convert_opt:
-        from paddlelite.lite import Opt
-        opt = Opt()
-        opt.set_model_dir(save_dir + "/inference_model")
-        opt.set_valid_places(valid_places)
-        opt.set_model_type(model_type)
-        opt.set_optimize_out(save_dir + "/opt")
-        opt.run()
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
 def pytorch2paddle(module,
                    save_dir,
                    jit_type="trace",
                    input_examples=None,
-                   convert_opt=False,
-                   valid_places="arm",
-                   model_type="naive_buffer"):
+                   convert_to_lite=False,
+                   lite_valid_places="arm",
+                   lite_model_type="naive_buffer"):
     # check pytorch installation and version
     try:
         import torch
@@ -244,14 +254,8 @@ def pytorch2paddle(module,
     graph_opt.optimize(mapper.paddle_graph)
     print("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir, jit_type=jit_type)
-    if convert_opt:
-        from paddlelite.lite import Opt
-        opt = Opt()
-        opt.set_model_dir(save_dir + "/inference_model")
-        opt.set_valid_places(valid_places)
-        opt.set_model_type(model_type)
-        opt.set_optimize_out(save_dir + "/opt")
-        opt.run()
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
 def main():
@@ -303,15 +307,32 @@ def main():
             define_input_shape = False
             if args.define_input_shape:
                 define_input_shape = True
-            tf2paddle(args.model, args.save_dir, define_input_shape)
+            tf2paddle(
+                args.model,
+                args.save_dir,
+                define_input_shape,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
 
         elif args.framework == "caffe":
             assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
-            caffe2paddle(args.prototxt, args.weight, args.save_dir,
-                         args.caffe_proto)
+            caffe2paddle(
+                args.prototxt,
+                args.weight,
+                args.save_dir,
+                args.caffe_proto,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
         elif args.framework == "onnx":
             assert args.model is not None, "--model should be defined while translating onnx model"
-            onnx2paddle(args.model, args.save_dir)
+            onnx2paddle(
+                args.model,
+                args.save_dir,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
         elif args.framework == "paddle2onnx":
             print(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"

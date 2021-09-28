@@ -101,9 +101,12 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 | --model              | 当framework为tensorflow/onnx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
 | --caffe_proto        | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/inference_model_convertor/FAQ.md) |
+| --to_lite            | **[可选]** 是否使用opt工具转成Paddle-Lite支持格式，默认为False |
+| --lite_valid_places  | **[可选]** 指定转换类型，可以同时指定多个backend(以逗号分隔)，opt将会自动选择最佳方式，默认为arm |
+| --lite_model_type    | **[可选]** 指定模型转化类型，目前支持两种类型：protobuf和naive_buffer，默认为naive_buffer |
 
 #### 一键转换Paddle-Lite支持格式
-可参考[使用X2paddle导出Padde-Lite支持格式](https://github.com/PaddlePaddle/Paddle-Lite/blob/develop/docs/user_guides/model_optimize_tool.md)
+可参考[使用X2paddle导出Padde-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
 
 ### 功能二：PyTorch模型训练迁移
 
