@@ -1166,20 +1166,24 @@ class OpSet9():
                 **layer_attrs)
         else:
             if len(node.inputs) == 2:
-                print(
-                    "Clip op lacks the maximum or minimum input, we set the maximum value by default, if not, please modify the clip op or raise an issue."
-                )
-                # if max
-                max_ipt = self.graph.get_input_node(node, idx=1, copy=True)
-                max_value = _const_weight_or_none(max_ipt)
-                if max_value.shape == (1, ):
-                    max_value = max_value[0]
-                # # if min
-                # min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
-                # min_value = _const_weight_or_none(min_ipt)
-                # if min_value.shape == (1, ):
-                #     min_value = min_value[0]
-                layer_attrs = {'max': max_value, 'min': min_value}
+                val_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+
+                idex = 0
+                for i in range(len(node.layer.input)):
+                    if val_ipt.name == node.layer.input[i]:
+                        index = i
+                        break
+
+                val_value = _const_weight_or_none(val_ipt)
+                if val_value.shape == (1, ):
+                    val_value = val_value[0]
+
+                if index == 1:
+                    layer_attrs = {'min': val_value}
+
+                if index == 2:
+                    layer_attrs = {'max': val_value}
+
                 self.paddle_graph.add_layer(
                     'paddle.clip',
                     inputs={"x": val_x.name},
@@ -1189,19 +1193,14 @@ class OpSet9():
                 if len(node.inputs) == 3:
                     min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
                     max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
-                    min_value = _const_weight_or_none(min_ipt)
-                    max_value = _const_weight_or_none(max_ipt)
-                    if max_value.shape == (1, ):
-                        max_value = max_value[0]
-                    if min_value.shape == (1, ):
-                        min_value = min_value[0]
-                    if max_value is not None and min_value is not None:
-                        layer_attrs = {'max': max_value, 'min': min_value}
-                        self.paddle_graph.add_layer(
-                            'paddle.clip',
-                            inputs={"x": val_x.name},
-                            outputs=[node.name],
-                            **layer_attrs)
+                    self.paddle_graph.add_layer(
+                        'paddle.clip',
+                        inputs={
+                            "x": val_x.name,
+                            "min": min_ipt.name,
+                            "max": max_ipt.name
+                        },
+                        outputs=[node.name])
                 else:
                     raise Exception("max_value or min_value can't be None")
 
