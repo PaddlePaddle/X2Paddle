@@ -14,7 +14,7 @@
 
 **使用方法**：为了简化这一过程，X2Paddle集成了opt工具，提供一键转换功能，包括API以及命令行，以ONNX为例：
 
-API方式
+***API方式***
  ```python
 from x2paddle.convert import onnx2paddle
 
@@ -29,7 +29,7 @@ onnx2paddle(model_path, save_dir,
 # model_type(str)指定模型转化类型，默认为naive_buffer
 ```
 
-命令行方式
+***命令行方式***
 ```shell
 x2paddle --framework=onnx --model=onnx_model.onnx --save_dir=pd_model --to_lite=True --lite_valid_places=arm --lite_model_type=naive_buffer
 ```
