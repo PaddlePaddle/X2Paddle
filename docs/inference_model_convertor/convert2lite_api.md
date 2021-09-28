@@ -19,14 +19,14 @@
 from x2paddle.convert import onnx2paddle
 
 onnx2paddle(model_path, save_dir,
-            convert_opt=True,
-            valid_places="arm",
-            model_type="naive_buffer")
+            convert_to_lite=True,
+            lite_valid_places="arm",
+            lite_model_type="naive_buffer")
 # model_path(str)为ONNX模型路径
 # save_dir(str)为转换后模型保存路径
-# convert_opt(bool)表示是否使用opt工具，默认为False
-# valid_places(str)指定转换类型，默认为arm
-# model_type(str)指定模型转化类型，默认为naive_buffer
+# convert_to_lite(bool)表示是否使用opt工具，默认为False
+# lite_valid_places(str)指定转换类型，默认为arm
+# lite_model_type(str)指定模型转化类型，默认为naive_buffer
 ```
 
 ***命令行方式***
