@@ -662,8 +662,9 @@ class OpSet9():
     @print_mapping_info
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        # axes = node.get_attr('axes')
-        axes = self.graph.get_input_node(node, idx=1, copy=True)
+        axes = node.get_attr('axes')
+        if axes is None:
+            axes = self.graph.get_input_node(node, idx=1, copy=True)
 
         if len(val_x.out_shapes[0]) == 0:
             if node.name:
@@ -673,11 +674,18 @@ class OpSet9():
                     outputs=[node.name],
                     shape=[1])
         else:
-            self.paddle_graph.add_layer(
-                'paddle.unsqueeze',
-                inputs={"x": val_x.name,
-                        "axis": axes.name},
-                outputs=[node.name])
+            if isinstance(axes, list) or isinstance(axes, tuple):
+                self.paddle_graph.add_layer(
+                    'paddle.unsqueeze',
+                    inputs={"x": val_x.name},
+                    axis=axes,
+                    outputs=[node.name])
+            else:
+                self.paddle_graph.add_layer(
+                    'paddle.unsqueeze',
+                    inputs={"x": val_x.name,
+                            "axis": axes.name},
+                    outputs=[node.name])
 
     @print_mapping_info
     def Shrink(self, node):
@@ -1263,6 +1271,8 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         paddle_op = 'split'
         split = node.get_attr('split')
+        if split is None:
+            split = len(node.outputs)
         axis = node.get_attr('axis', 0)
         layer_attrs = {
             'num_or_sections': split,
