@@ -124,7 +124,7 @@ class OpSet9():
         'ReduceMean': [
             'paddle.mean', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdims=1)
+                    axes=None, keepdims=True)
         ],
         # 'ReduceSum': [
         #     'paddle.sum', dict(
@@ -134,17 +134,17 @@ class OpSet9():
         'ReduceMin': [
             'paddle.min', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         'ReduceMax': [
             'paddle.max', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         'ReduceProd': [
             'paddle.prod', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         # active function
         'Relu': ['paddle.nn.ReLU'],
