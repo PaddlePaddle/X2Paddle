@@ -1147,6 +1147,17 @@ class OpSet9():
                 **layer_attrs)
 
     @print_mapping_info
+    def GatherND(self, node):
+        print(len(node.inputs), node.inputs)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd",
+            inputs={"x": val_x.name,
+                    "index": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
     def Clip(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
@@ -1168,11 +1179,7 @@ class OpSet9():
             if len(node.inputs) == 2:
                 val_ipt = self.graph.get_input_node(node, idx=1, copy=True)
 
-                idex = 0
-                for i in range(len(node.layer.input)):
-                    if val_ipt.name == node.layer.input[i]:
-                        index = i
-                        break
+                index = node.get_input_index(val_ipt.name)
 
                 val_value = _const_weight_or_none(val_ipt)
                 if val_value.shape == (1, ):
