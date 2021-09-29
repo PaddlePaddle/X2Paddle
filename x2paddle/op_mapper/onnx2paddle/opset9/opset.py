@@ -126,11 +126,6 @@ class OpSet9():
                 axes='axis', keepdims='keepdim'), dict(
                     axes=None, keepdims=True)
         ],
-        # 'ReduceSum': [
-        #     'paddle.sum', dict(
-        #         axes='axis', keepdims='keepdim'), dict(
-        #             axes=None, keepdims=1)
-        # ],
         'ReduceMin': [
             'paddle.min', dict(
                 axes='axis', keepdims='keepdim'), dict(
@@ -1197,7 +1192,10 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         if len(node.inputs) == 1:
             keepdims = node.get_attr('keepdims')
-            layer_attrs = {'keepdim': keepdims}
+            if keepdims is None:
+                keepdims = True
+            axes_value = node.get_attr('axes')
+            layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
             self.paddle_graph.add_layer(
                 'paddle.sum',
                 inputs={"x": val_x.name},
@@ -1208,7 +1206,12 @@ class OpSet9():
             axes_value = _const_weight_or_none(axes)
             if axes_value.shape == (1, ):
                 axes_value = axes_value[0]
-            layer_attrs = {'axis': axes_value}
+            keepdims = node.get_attr('keepdims')
+            if keepdims in None:
+                layer_attrs = {'axis': axes_value}
+            else:
+                layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
+
             self.paddle_graph.add_layer(
                 'paddle.sum',
                 inputs={"x": val_x.name},
