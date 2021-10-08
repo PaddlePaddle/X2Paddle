@@ -1207,7 +1207,7 @@ class OpSet9():
             if axes_value.shape == (1, ):
                 axes_value = axes_value[0]
             keepdims = node.get_attr('keepdims')
-            if keepdims in None:
+            if keepdims is None:
                 layer_attrs = {'axis': axes_value}
             else:
                 layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
@@ -1220,23 +1220,63 @@ class OpSet9():
 
     @print_mapping_info
     def Max(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.maximum",
-            inputs={"x": val_x.name,
-                    "y": val_y.name},
-            outputs=[node.name])
+        if len(node.inputs) == 2:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            val_y = self.graph.get_input_node(node, idx=1, copy=True)
+            self.paddle_graph.add_layer(
+                "paddle.maximum",
+                inputs={"x": val_x.name,
+                        "y": val_y.name},
+                outputs=[node.name])
+        else:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            temp_name = "max_"
+            for i in range(1, len(node.inputs)):
+                val_y = self.graph.get_input_node(node, idx=i, copy=True)
+                temp_name = temp_name + str(i)
+                if i == len(node.inputs) - 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.maximum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[node.name])
+                else:
+                    self.paddle_graph.add_layer(
+                        "paddle.maximum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[temp_name])
+                val_x.name = temp_name
 
     @print_mapping_info
     def Min(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.minimum",
-            inputs={"x": val_x.name,
-                    "y": val_y.name},
-            outputs=[node.name])
+        if len(node.inputs) == 2:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            val_y = self.graph.get_input_node(node, idx=1, copy=True)
+            self.paddle_graph.add_layer(
+                "paddle.minimum",
+                inputs={"x": val_x.name,
+                        "y": val_y.name},
+                outputs=[node.name])
+        else:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            temp_name = "min_"
+            for i in range(1, len(node.inputs)):
+                val_y = self.graph.get_input_node(node, idx=i, copy=True)
+                temp_name = temp_name + str(i)
+                if i == len(node.inputs) - 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.minimum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[node.name])
+                else:
+                    self.paddle_graph.add_layer(
+                        "paddle.minimum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[temp_name])
+                val_x.name = temp_name
 
     @print_mapping_info
     def GreaterOrEqual(self, node):
