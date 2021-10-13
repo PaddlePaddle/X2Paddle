@@ -109,7 +109,7 @@ def _vgg(arch: str, cfg: str, batch_norm: bool, pretrained: bool,
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
     if pretrained:
-        state_dict = get_weights_path_from_url(model_urls[arch])
+        state_dict = paddle.load(get_weights_path_from_url(model_urls[arch]))
         model.load_dict(state_dict)
     return model
 
