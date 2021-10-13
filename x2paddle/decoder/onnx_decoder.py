@@ -48,6 +48,18 @@ class ONNXGraphNode(GraphNode):
         self.dtype = None
         self.which_child = {}
 
+    def get_input_index(self, input_name):
+        """
+        get the index of input_name in layer.input
+        -1 means input_name is not in the input
+        """
+        index = -1
+        for i in range(len(self.layer.input)):
+            if input_name == self.layer.input[i]:
+                index = i
+                break
+        return index
+
     def get_attr_map(self):
         """
         convert ONNX node attributes to dict
@@ -294,7 +306,6 @@ class ONNXGraph(Graph):
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 self.build_connection(layer_name, node)
-
         #generate topo
         super(ONNXGraph, self).build()
 

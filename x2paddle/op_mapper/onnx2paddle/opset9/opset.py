@@ -1151,6 +1151,17 @@ class OpSet9():
                 **layer_attrs)
 
     @print_mapping_info
+    def GatherND(self, node):
+        print(len(node.inputs), node.inputs)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd",
+            inputs={"x": val_x.name,
+                    "index": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
     def Clip(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
@@ -1169,23 +1180,40 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
         else:
-            min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
-            max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
-            min_value = _const_weight_or_none(min_ipt)
-            max_value = _const_weight_or_none(max_ipt)
-            if max_value.shape == (1, ):
-                max_value = max_value[0]
-            if min_value.shape == (1, ):
-                min_value = min_value[0]
-            if max_value is not None and min_value is not None:
-                layer_attrs = {'max': max_value, 'min': min_value}
+            if len(node.inputs) == 2:
+                val_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+
+                index = node.get_input_index(val_ipt.name)
+
+                val_value = _const_weight_or_none(val_ipt)
+                if val_value.shape == (1, ):
+                    val_value = val_value[0]
+
+                if index == 1:
+                    layer_attrs = {'min': val_value}
+
+                if index == 2:
+                    layer_attrs = {'max': val_value}
+
                 self.paddle_graph.add_layer(
                     'paddle.clip',
                     inputs={"x": val_x.name},
                     outputs=[node.name],
                     **layer_attrs)
             else:
-                raise Exception("max_value or min_value can't be None")
+                if len(node.inputs) == 3:
+                    min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+                    max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
+                    self.paddle_graph.add_layer(
+                        'paddle.clip',
+                        inputs={
+                            "x": val_x.name,
+                            "min": min_ipt.name,
+                            "max": max_ipt.name
+                        },
+                        outputs=[node.name])
+                else:
+                    raise Exception("max_value or min_value can't be None")
 
     @print_mapping_info
     def ReduceSum(self, node):
@@ -1681,9 +1709,9 @@ class OpSet9():
                 num_parameters = val_x.out_shapes[0][1]
             else:
                 num_parameters = 1
+                slope_data = self.weights[val_slope.name]
                 _rename_or_remove_weight(self.weights, val_slope.name)
-                self.weights[op_name + '._weight'] = np.reshape(
-                    self.weights[val_slope.name], [1])
+                self.weights[op_name + '._weight'] = np.reshape(slope_data, [1])
             self.paddle_graph.add_layer(
                 "paddle.nn.PReLU",
                 inputs={"x": val_x.name},
