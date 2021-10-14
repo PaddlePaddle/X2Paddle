@@ -302,7 +302,7 @@ def _resnet(arch: str,
             **kwargs: Any) -> ResNet:
     model = ResNet(block, layers, **kwargs)
     if pretrained:
-        state_dict = get_weights_path_from_url(model_urls[arch])
+        state_dict = paddle.load(get_weights_path_from_url(model_urls[arch]))
         model.load_dict(state_dict)
     return model
 
