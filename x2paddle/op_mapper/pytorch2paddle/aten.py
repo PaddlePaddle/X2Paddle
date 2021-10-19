@@ -3904,6 +3904,56 @@ def aten_neg(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_frobenius_norm(mapper, graph, node):
+    """ 构造计算范数的PaddleLayer。
+    TorchScript示例:
+        %25 = aten::frobenius_norm(%input, %58, %24)
+        参数含义:
+        %25 (Tensor): 取范数后的结果。
+        %input (Tensor): 输入。
+        %58 (int): 使用范数计算的轴。
+        %24 (bool): 是否在输出的Tensor中保留和输入一样的维度。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    layer_attrs["p"] = 2
+    # 处理输入1，即%58
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入2，即%24
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["keepdim"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    graph.add_layer(
+        "paddle.norm",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_norm(mapper, graph, node):
     """ 构造计算范数的PaddleLayer。
     TorchScript示例:
