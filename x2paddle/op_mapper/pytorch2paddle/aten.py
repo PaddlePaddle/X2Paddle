@@ -1241,7 +1241,6 @@ def aten_contiguous(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -1560,7 +1559,6 @@ def aten_detach(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -2727,7 +2725,6 @@ def aten_index_select(mapper, graph, node):
         mapper._check_input(graph, inputs_node[1], inputs_name[1],
                             current_outputs, scope_name)
         layer_inputs["axis"] = inputs_name[1]
-        current_inputs.append(inputs_name[1])
     # 处理输入2，即%371
     mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs,
                         scope_name)
@@ -3309,7 +3306,6 @@ def aten_masked_fill_(mapper, graph, node):
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
-    layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输入的list
     current_inputs = []
@@ -3419,7 +3415,6 @@ def aten_masked_fill(mapper, graph, node):
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
-    layer_inputs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输入的list
     current_inputs = []
@@ -4554,7 +4549,6 @@ def aten_rsub(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -4594,7 +4588,6 @@ def aten_ScalarImplicit(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
@@ -5377,7 +5370,6 @@ def aten_transpose(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
