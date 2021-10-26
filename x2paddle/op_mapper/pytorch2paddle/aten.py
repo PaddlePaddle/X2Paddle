@@ -2735,7 +2735,7 @@ def aten_index_select(mapper, graph, node):
     graph.add_layer(
         "prim.index_select",
         inputs=layer_inputs,
-        outputs=current_outputs,
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
@@ -4645,7 +4645,7 @@ def aten_select(mapper, graph, node):
     graph.add_layer(
         "prim.select",
         inputs=layer_inputs,
-        outputs=current_outputs,
+        outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
