@@ -1645,6 +1645,7 @@ def aten_div_(mapper, graph, node):
         %bx_bw.3 (-): 被除数。
         %2678 (int): 除数。
     """
+    scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
