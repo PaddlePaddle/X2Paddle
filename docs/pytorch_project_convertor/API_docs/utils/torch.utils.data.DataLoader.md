@@ -72,7 +72,7 @@ class DataLoader(paddle.io.DataLoader):
             return_list = True
         else:
             return_list = False
-            
+
         super().__init__(
             dataset,
             feed_list=None,
