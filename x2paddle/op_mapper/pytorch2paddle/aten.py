@@ -4733,7 +4733,7 @@ def aten_silu(mapper, graph, node):
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
-    # 处理输入0，即%result.5
+    # 处理输入0，即%input.5
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     layer_inputs["x"] = inputs_name[0]
