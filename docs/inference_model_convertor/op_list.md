@@ -1,5 +1,5 @@
 # X2Paddle支持OP列表
-> 目前X2Paddle支持90+的TensorFlow OP，30+的Caffe Layer，80+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
+> 目前X2Paddle支持90+的TensorFlow OP，30+的Caffe Layer，80+的ONNX OP，120+的PyTorch Aten，10+的PyTorch Prim覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
 
 **注：** 目前，部分OP暂未支持，如您在转换过程中出现OP不支持的情况，可自行添加或反馈给我们。欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
 
@@ -109,7 +109,7 @@ Aten:
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
 | 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance_norm |
-| 117 | aten::bitwise_not | 118 | aten::bitwise_xor | 119 | aten::bitwise_and |  |  |
+| 117 | aten::bitwise_not | 118 | aten::bitwise_xor | 119 | aten::bitwise_and | 120 | aten::silu |
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
