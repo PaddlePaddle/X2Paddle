@@ -109,7 +109,7 @@ class PaddleGraph(object):
         layer = PaddleLayer(
             layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
         self.layers[layer_id] = layer
-        if layer.kernel in ["prim.list_unpack" , "prim.tuple_unpack"]:
+        if layer.kernel in ["prim.list_unpack", "prim.tuple_unpack"]:
             self.has_unpack = True
         return layer_id
 
@@ -388,7 +388,7 @@ class PaddleGraph(object):
                 gen_codes(
                     [
                         "paddle.disable_static()",
-                        "params = paddle.load('{}')".format(
+                        "params = paddle.load(r'{}')".format(
                             osp.join(osp.abspath(code_dir), "model.pdparams")),
                         "model = {}()".format(self.name),
                         "model.set_dict(params, use_structured_name={})".format(
