@@ -594,7 +594,7 @@ class OpSet9():
                 for i in range(len(pad_data1)):
                     pad_data_all.append(pad_data[i])
                     pad_data_all.append(pad_data[len(pad_data1) + i])
-                
+
                 layer_attrs["pad"] = pad_data_all
                 self.paddle_graph.add_layer(
                     'paddle.nn.functional.pad',
@@ -1812,7 +1812,7 @@ class OpSet9():
             op_name = name_generator("conv", self.nn_name2id)
         else:
             op_name = output_name
-        
+
         layer_outputs = [op_name, output_name]
 
         has_bias = len(node.layer.input) == 3
@@ -1849,7 +1849,7 @@ class OpSet9():
                 "padding": paddings,
                 "dilation": dilations,
                 "groups": num_groups,
-                }
+            }
             layer_inputs['weight'] = val_w.name
             if has_bias:
                 layer_inputs['bias'] = val_b.name
@@ -1861,7 +1861,6 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
             return
-            
 
         layer_attrs = {
             "in_channels": num_in_channels * num_groups,
@@ -1911,7 +1910,7 @@ class OpSet9():
             op_name = name_generator("conv_trans", self.nn_name2id)
         else:
             op_name = output_name
-        
+
         layer_outputs = [op_name, output_name]
 
         val_b = None
@@ -1948,12 +1947,12 @@ class OpSet9():
         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name}
         if val_w.name not in self.weights.keys():
             layer_attrs = {
-                    "stride": strides,
-                    "dilation": dilations,
-                    "padding": paddings,
-                    "groups": num_groups,
-                    "output_padding": out_padding
-                }
+                "stride": strides,
+                "dilation": dilations,
+                "padding": paddings,
+                "groups": num_groups,
+                "output_padding": out_padding
+            }
             paddle_op = 'paddle.nn.functional.conv{}d_transpose'.format(convnd)
 
             inputs_dict['weight'] = val_w.name
@@ -1966,8 +1965,6 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
             return
-
-
 
         layer_attrs = {
             "in_channels": num_in_channels,
