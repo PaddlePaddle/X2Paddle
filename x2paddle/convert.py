@@ -232,6 +232,8 @@ def pytorch2paddle(module,
         if int(ver_part[1]) < 5:
             print("[ERROR] pytorch>=1.5.0 is required")
             return
+        if int(ver_part[1]) > 6:
+            print("[WARNING] pytorch==1.6.0 is recommended")
     except:
         print(
             "[ERROR] Pytorch is not installed, use \"pip install torch==1.5.0 torchvision\"."
