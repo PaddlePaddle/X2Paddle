@@ -203,7 +203,8 @@ def onnx2paddle(model_path,
             logging.info("[ERROR] onnx>=1.6.0 is required")
             return
     except:
-        logging.info("[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
+        logging.info(
+            "[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
     logging.info("Now translating model from onnx to paddle.")
 
@@ -268,7 +269,8 @@ def main():
     logging.basicConfig(level=logging.INFO)
     if len(sys.argv) < 2:
         logging.info("Use \"x2paddle -h\" to print the help information")
-        logging.info("For more information, please follow our github repo below:)")
+        logging.info(
+            "For more information, please follow our github repo below:)")
         logging.info("\nGithub: https://github.com/PaddlePaddle/X2Paddle.git\n")
         return
 
@@ -277,8 +279,8 @@ def main():
 
     if args.version:
         import x2paddle
-        logging.info("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".format(
-            x2paddle.__version__))
+        logging.info("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".
+                     format(x2paddle.__version__))
         return
 
     if not args.convert_torch_project:
@@ -295,7 +297,8 @@ def main():
         v0, v1, v2 = paddle.__version__.split('.')
         logging.info("paddle.__version__ = {}".format(paddle.__version__))
         if v0 == '0' and v1 == '0' and v2 == '0':
-            logging.info("[WARNING] You are use develop version of paddlepaddle")
+            logging.info(
+                "[WARNING] You are use develop version of paddlepaddle")
         elif int(v0) != 2 or int(v1) < 0:
             logging.info("[ERROR] paddlepaddle>=2.0.0 is required")
             return
