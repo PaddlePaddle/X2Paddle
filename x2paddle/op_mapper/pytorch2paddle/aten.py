@@ -4748,6 +4748,38 @@ def aten_silu(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_silu_(mapper, graph, node):
+    """ 构造Silu激活的PaddleLayer。
+    TorchScript示例:
+        %result.3 : Tensor = aten::silu_(%input.5)
+        参数含义:
+        %result.3 (Tensor): 输出，Silu后的结果。
+        %input.5 (Tensor): 需要Silu的Tensor。
+    注意: inplace这个参数在paddle中未实现
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("silu", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input.5
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Silu",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_sin(mapper, graph, node):
     """ 构造数学计算sin的PaddleLayer。
     TorchScript示例:
@@ -5732,9 +5764,9 @@ def aten_upsample_nearest2d(mapper, graph, node):
         if_layer.add_block(block)
         if_layer.inputs["input-0"] = inputs_name[1]
     if "size" in layer_attrs and layer_attrs["size"] is None:
-        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
                             current_outputs, scope_name)
-        layer_inputs["scale_factor"] = inputs_name[3]
+        layer_inputs["scale_factor"] = inputs_name[2]
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("nearest")
     graph.add_layer(
