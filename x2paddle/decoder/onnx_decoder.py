@@ -16,7 +16,6 @@ from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
-from onnx.utils import polish_model
 from onnx import helper, shape_inference
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
