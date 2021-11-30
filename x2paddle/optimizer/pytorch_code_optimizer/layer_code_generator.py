@@ -257,6 +257,14 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
             if is_set_item:
                 outputs.append(layer.outputs[0])
     no_output_count = 0
+    # remove to_tensor layer
+    invalid_list = list()
+    for layer_id, layer in sub_layers.items():
+        if layer.kernel == "paddle.to_tensor":
+            invalid_list.append(layer_id)
+            break
+    for layer_id in invalid_list:
+        sub_layers.pop(layer_id)
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
         _update_attrs(layer, different_attrs)
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel) or \

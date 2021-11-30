@@ -237,11 +237,11 @@ class PaddleGraph(object):
 
         return update(self.layers)
 
-    def gen_model(self, save_dir, jit_type=None):
+    def gen_model(self, save_dir, jit_type=None, code_optimizer=True):
         if not osp.exists(save_dir):
             os.makedirs(save_dir)
         if jit_type == "trace":
-            if not self.has_unpack:
+            if not self.has_unpack and code_optimizer:
                 from x2paddle.optimizer.pytorch_code_optimizer import HierarchicalTree
                 hierarchical_tree = HierarchicalTree(self)
                 for layer_id, layer in self.layers.items():
@@ -252,7 +252,7 @@ class PaddleGraph(object):
                 self.gen_code(save_dir)
                 self.dump_parameter(save_dir)
         else:
-            if self.source_type == "pytorch":
+            if self.source_type == "pytorch" and code_optimizer:
                 from x2paddle.optimizer.pytorch_code_optimizer import ModuleGraph
                 module_graph = ModuleGraph(self)
                 module_graph.save_source_files(save_dir)
