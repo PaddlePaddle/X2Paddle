@@ -388,7 +388,7 @@ class PaddleGraph(object):
                 gen_codes(
                     [
                         "paddle.disable_static()",
-                        "params = paddle.load('{}')".format(
+                        "params = paddle.load(r'{}')".format(
                             osp.join(osp.abspath(code_dir), "model.pdparams")),
                         "model = {}()".format(self.name),
                         "model.set_dict(params, use_structured_name={})".format(

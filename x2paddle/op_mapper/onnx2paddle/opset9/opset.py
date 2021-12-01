@@ -518,6 +518,8 @@ class OpSet9():
             if pads is not None:
                 is_pads_attr = True
         mode = node.get_attr('mode', 'constant')
+        if mode in ["edge"]:
+            mode = "replicate"
         value = node.get_attr('value', 0.)
         data_shape = val_x.out_shapes[0]
         output_shape = node.out_shapes[0]
