@@ -262,7 +262,6 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
     for layer_id, layer in sub_layers.items():
         if layer.kernel == "paddle.to_tensor":
             invalid_list.append(layer_id)
-            break
     for layer_id in invalid_list:
         sub_layers.pop(layer_id)
     for i, (layer_id, layer) in enumerate(sub_layers.items()):
@@ -402,6 +401,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 forward_func.extend(gen_codes([line], indent=2))
             cur_outputs.extend(layer.outputs)
 
+    if inputs is not None:
+        inputs.sort()
     head, init_func_head, forward_func_head = gen_head(inputs, different_attrs)
     output_data_name = ", ".join(outputs)
     code_list = head + init_func_head + init_func + \
