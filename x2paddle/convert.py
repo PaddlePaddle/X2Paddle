@@ -89,6 +89,11 @@ def arg_parser():
         default=None,
         help="pretrain model file of pytorch model")
     parser.add_argument(
+        "--enable_code_optim",
+        "-co",
+        default=True,
+        help="Turn on code optimization")
+    parser.add_argument(
         "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
     parser.add_argument(
         "--lite_valid_places",
@@ -222,6 +227,7 @@ def pytorch2paddle(module,
                    save_dir,
                    jit_type="trace",
                    input_examples=None,
+                   enable_code_optim=True,
                    convert_to_lite=False,
                    lite_valid_places="arm",
                    lite_model_type="naive_buffer"):
@@ -262,7 +268,8 @@ def pytorch2paddle(module,
     graph_opt = GraphOptimizer(source_frame="pytorch", jit_type=jit_type)
     graph_opt.optimize(mapper.paddle_graph)
     logging.info("Model optimized.")
-    mapper.paddle_graph.gen_model(save_dir, jit_type=jit_type)
+    mapper.paddle_graph.gen_model(
+        save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
     if convert_to_lite:
         convert2lite(save_dir, lite_valid_places, lite_model_type)
 
