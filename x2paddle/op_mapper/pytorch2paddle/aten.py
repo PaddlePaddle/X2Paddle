@@ -1629,7 +1629,7 @@ def aten_dim(mapper, graph, node):
 def aten_div(mapper, graph, node):
     """ 构造除法的PaddleLayer。
     TorchScript示例:
-        %bx_bw0.3 : Tensor = aten::div_(%bx_bw.3, %2678)
+        %bx_bw0.3 : Tensor = aten::div(%bx_bw.3, %2678)
         参数含义:
         %bx_bw0.3 (-): 除后的结果。
         %bx_bw.3 (-): 被除数。
@@ -4594,37 +4594,6 @@ def aten__set_item(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-def aten_sigmoid_(mapper, graph, node):
-    """ 构造sigmoid激活的PaddleLayer。
-    TorchScript示例:
-        %55 : Tensor = aten::sigmoid_(%54)
-        参数含义:
-        %55 (Tensor): 输出，sigmoid后的结果。
-        %54 (Tensor): 需要tanh的Tensor。
-    """
-    scope_name = mapper.normalize_scope_name(node)
-    op_name = name_generator("sigmoid", mapper.nn_name2id)
-    output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [op_name, output_name]
-    layer_inputs = {}
-    inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
-    current_outputs = [output_name]
-    # 处理输入0，即%54
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
-                        scope_name)
-    layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
-    current_inputs = list(layer_inputs.values())
-
-    graph.add_layer(
-        "paddle.nn.Sigmoid",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name)
-    return current_inputs, current_outputs
-
-
 def aten_sigmoid(mapper, graph, node):
     """ 构造sigmoid激活的PaddleLayer。
     TorchScript示例:
@@ -5189,19 +5158,6 @@ def aten_sub(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-def aten_sub_(mapper, graph, node):
-    """ 构造数值相减的PaddleLayer。
-    TorchScript示例:
-        %840 : int = aten::sub_(%839, %836, %3)
-        参数含义:
-        %840 (-): 相减结果。
-        %839 (-): 输入数值 x。
-        %836 (-): 输入数值 y。
-        %3 (-): alpha。
-    """
-    return aten_sub(mapper, graph, node)
-
-
 def aten_t(mapper, graph, node):
     """ 构造矩阵转置的PaddleLayer。
     TorchScript示例:
@@ -5230,37 +5186,6 @@ def aten_t(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         perm=[1, 0])
-    return current_inputs, current_outputs
-
-
-def aten_tanh_(mapper, graph, node):
-    """ 构造tanh激活的PaddleLayer。
-    TorchScript示例:
-        %55 : Tensor = aten::tanh_(%54)
-        参数含义:
-        %55 (Tensor): 输出，tanh后的结果。
-        %54 (Tensor): 需要tanh的Tensor。
-    """
-    scope_name = mapper.normalize_scope_name(node)
-    op_name = name_generator("tanh", mapper.nn_name2id)
-    output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [op_name, output_name]
-    layer_inputs = {}
-    inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
-    current_outputs = [output_name]
-    # 处理输入0，即%result.5
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
-                        scope_name)
-    layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入、输出的list
-    current_inputs = list(layer_inputs.values())
-
-    graph.add_layer(
-        "paddle.nn.Tanh",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -5356,96 +5281,6 @@ def aten_split(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
-    return current_inputs, current_outputs
-
-
-def aten_transpose_(mapper, graph, node):
-    """ 构造矩阵转置的PaddleLayer。
-    TorchScript示例:
-        %715 : Tensor = aten::transpose_(%x.21, %704, %705)
-        参数含义:
-        %715 (Tensor): 输出，转置后的矩阵。
-        %x.21 (Tensor): 需要转置的Tensor。
-        %704 (int): 转置的维度1。
-        %705 (int): 转置的维度2。
-    """
-    scope_name = mapper.normalize_scope_name(node)
-    output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [output_name]
-    layer_inputs = {}
-    inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
-    current_outputs = [output_name]
-    # 处理输入0，即%x.21
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
-                        scope_name)
-    layer_inputs["x"] = inputs_name[0]
-    # 处理输入1，即%704
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
-                        scope_name)
-    dim1 = inputs_name[1]
-    # 处理输入2，即%705
-    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs,
-                        scope_name)
-    dim2 = inputs_name[2]
-    # 获取当前节点输入的list
-    current_inputs = list(layer_inputs.values())
-    graph.add_layer(
-        "prim.shape",
-        inputs={"input": inputs_name[0]},
-        outputs=[output_name + "_shape"],
-        scope_name=scope_name)
-    current_outputs.append(output_name + "_shape")
-    graph.add_layer(
-        "prim.len",
-        inputs={"input": output_name + "_shape"},
-        outputs=[output_name + "_len"],
-        scope_name=scope_name)
-    current_outputs.append(output_name + "_len")
-    current_inputs.append(output_name + "_shape")
-    graph.add_layer(
-        "prim.len2list",
-        inputs={"len": output_name + "_len"},
-        outputs=[output_name + "_list"],
-        scope_name=scope_name)
-    current_outputs.append(output_name + "_list")
-    current_inputs.append(output_name + "_len")
-    graph.add_layer(
-        "prim.check_dim",
-        inputs={"len": output_name + "_len",
-                "dim": dim1},
-        outputs=[dim1 + "_new"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.check_dim",
-        inputs={"len": output_name + "_len",
-                "dim": dim2},
-        outputs=[dim2 + "_new"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.replaceitem",
-        inputs={
-            "list": output_name + "_list",
-            "index": dim1 + "_new",
-            "item": dim2 + "_new"
-        },
-        outputs=[],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.replaceitem",
-        inputs={
-            "list": output_name + "_list",
-            "index": dim2 + "_new",
-            "item": dim1 + "_new"
-        },
-        outputs=[],
-        scope_name=scope_name)
-    graph.add_layer(
-        "paddle.transpose",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name,
-        perm=output_name + "_list")
     return current_inputs, current_outputs
 
 
