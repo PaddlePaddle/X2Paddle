@@ -396,8 +396,14 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
 
     head, init_func_head, forward_func_head = gen_head(inputs, different_attrs)
     output_data_name = ", ".join(outputs)
+    # remove to_tensor op
+    forward_func_new = list()
+    for line in forward_func:
+        if "paddle.to_tensor" in line:
+            continue
+        forward_func_new.append(line)
     code_list = head + init_func_head + init_func + \
-                forward_func_head + forward_func + \
+                forward_func_head + forward_func_new + \
                 gen_codes(["return {}".format(output_data_name)], indent=2)
     code_str = "".join(code_list)
     return code_str

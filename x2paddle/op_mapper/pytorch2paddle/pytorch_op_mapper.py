@@ -55,6 +55,10 @@ class PyTorchOpMapper():
         unsupported_ops = []
         for op in op_list:
             func_name = op.replace('::', '_')
+            # Processing suffix is "_" situation, eg: aten_relu_ to aten_relu
+            # avoid aten::__isnot__ situation
+            if func_name[-1] == "_" and func_name[-2] != "_":
+                func_name = func_name[:-1]
             if not (hasattr(prim, func_name) or hasattr(aten, func_name)):
                 unsupported_ops.append(op)
         if len(unsupported_ops) == 0:
@@ -104,6 +108,10 @@ class PyTorchOpMapper():
         for node in script_graph.nodes():
             kind = node.kind()
             func_name = kind.replace('::', '_')
+            # Processing suffix is "_" situation, eg: aten_relu_ to aten_relu
+            # avoid aten::__isnot__ situation
+            if func_name[-1] == "_" and func_name[-2] != "_":
+                func_name = func_name[:-1]
             if hasattr(prim, func_name):
                 func = getattr(prim, func_name)
                 inputs, outputs = func(self, graph, node)
