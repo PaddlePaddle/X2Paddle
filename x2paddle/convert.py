@@ -16,6 +16,7 @@ from six import text_type as _text_type
 from x2paddle import program
 import argparse
 import sys
+import logging
 
 
 def arg_parser():
@@ -87,11 +88,44 @@ def arg_parser():
         type=_text_type,
         default=None,
         help="pretrain model file of pytorch model")
+    parser.add_argument(
+        "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
+    parser.add_argument(
+        "--lite_valid_places",
+        "-vp",
+        type=_text_type,
+        default="arm",
+        help="Specify the executable backend of the model")
+    parser.add_argument(
+        "--lite_model_type",
+        "-mt",
+        type=_text_type,
+        default="naive_buffer",
+        help="The type of lite model")
 
     return parser
 
 
-def tf2paddle(model_path, save_dir, define_input_shape=False):
+def convert2lite(save_dir,
+                 lite_valid_places="arm",
+                 lite_model_type="naive_buffer"):
+    """Convert to Paddle-Lite format."""
+
+    from paddlelite.lite import Opt
+    opt = Opt()
+    opt.set_model_dir(save_dir + "/inference_model")
+    opt.set_valid_places(lite_valid_places)
+    opt.set_model_type(lite_model_type)
+    opt.set_optimize_out(save_dir + "/opt")
+    opt.run()
+
+
+def tf2paddle(model_path,
+              save_dir,
+              define_input_shape=False,
+              convert_to_lite=False,
+              lite_valid_places="arm",
+              lite_model_type="naive_buffer"):
     # check tensorflow installation and version
     try:
         import os
@@ -99,12 +133,12 @@ def tf2paddle(model_path, save_dir, define_input_shape=False):
         import tensorflow as tf
         version = tf.__version__
         if version >= '2.0.0' or version < '1.0.0':
-            print(
+            logging.info(
                 "[ERROR] 1.0.0<=tensorflow<2.0.0 is required, and v1.14.0 is recommended"
             )
             return
     except:
-        print(
+        logging.info(
             "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
         )
         return
@@ -112,7 +146,7 @@ def tf2paddle(model_path, save_dir, define_input_shape=False):
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf2paddle.tf_op_mapper import TFOpMapper
 
-    print("Now translating model from tensorflow to paddle.")
+    logging.info("Now translating model from tensorflow to paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
     mapper = TFOpMapper(model)
     mapper.paddle_graph.build()
@@ -120,31 +154,45 @@ def tf2paddle(model_path, save_dir, define_input_shape=False):
     graph_opt = GraphOptimizer(source_frame="tf")
     graph_opt.optimize(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
-def caffe2paddle(proto, weight, save_dir, caffe_proto):
+def caffe2paddle(proto_file,
+                 weight_file,
+                 save_dir,
+                 caffe_proto,
+                 convert_to_lite=False,
+                 lite_valid_places="arm",
+                 lite_model_type="naive_buffer"):
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
     ver_part = gpb.__version__.split('.')
     version_satisfy = False
     if (int(ver_part[0]) == 3 and int(ver_part[1]) >= 6) \
-        or (int(ver_part[0]) > 3):
+            or (int(ver_part[0]) > 3):
         version_satisfy = True
     assert version_satisfy, '[ERROR] google.protobuf >= 3.6.0 is required'
-    print("Now translating model from caffe to paddle.")
-    model = CaffeDecoder(proto, weight, caffe_proto)
+    logging.info("Now translating model from caffe to paddle.")
+    model = CaffeDecoder(proto_file, weight_file, caffe_proto)
     mapper = CaffeOpMapper(model)
     mapper.paddle_graph.build()
-    print("Model optimizing ...")
+    logging.info("Model optimizing ...")
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="caffe")
     graph_opt.optimize(mapper.paddle_graph)
-    print("Model optimized.")
+    logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
-def onnx2paddle(model_path, save_dir):
+def onnx2paddle(model_path,
+                save_dir,
+                convert_to_lite=False,
+                lite_valid_places="arm",
+                lite_model_type="naive_buffer"):
     # check onnx installation and version
     try:
         import onnx
@@ -152,12 +200,13 @@ def onnx2paddle(model_path, save_dir):
         v0, v1, v2 = version.split('.')
         version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
         if version_sum < 160:
-            print("[ERROR] onnx>=1.6.0 is required")
+            logging.info("[ERROR] onnx>=1.6.0 is required")
             return
     except:
-        print("[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
+        logging.info(
+            "[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
-    print("Now translating model from onnx to paddle.")
+    logging.info("Now translating model from onnx to paddle.")
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
@@ -165,24 +214,39 @@ def onnx2paddle(model_path, save_dir):
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     mapper.paddle_graph.gen_model(save_dir)
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
-def pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None):
+def pytorch2paddle(module,
+                   save_dir,
+                   jit_type="trace",
+                   input_examples=None,
+                   convert_to_lite=False,
+                   lite_valid_places="arm",
+                   lite_model_type="naive_buffer"):
     # check pytorch installation and version
     try:
         import torch
         version = torch.__version__
-        ver_part = version.split('.')
-        print(ver_part)
-        if int(ver_part[1]) < 5:
-            print("[ERROR] pytorch>=1.5.0 is required")
+        v0, v1, v2 = version.split('.')
+        # Avoid the situation where the version is equal to 1.7.0+cu101
+        if '+' in v2:
+            v2 = v2.split('+')[0]
+        version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
+        if version_sum < 150:
+            logging.info(
+                "[ERROR] pytorch>=1.5.0 is required, 1.6.0 is the most recommended"
+            )
             return
+        if version_sum > 160:
+            logging.info("[WARNING] pytorch==1.6.0 is recommended")
     except:
-        print(
-            "[ERROR] Pytorch is not installed, use \"pip install torch==1.5.0 torchvision\"."
+        logging.info(
+            "[ERROR] Pytorch is not installed, use \"pip install torch==1.6.0 torchvision\"."
         )
         return
-    print("Now translating model from pytorch to paddle.")
+    logging.info("Now translating model from pytorch to paddle.")
 
     from x2paddle.decoder.pytorch_decoder import ScriptDecoder, TraceDecoder
     from x2paddle.op_mapper.pytorch2paddle.pytorch_op_mapper import PyTorchOpMapper
@@ -193,19 +257,23 @@ def pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None):
         model = ScriptDecoder(module, input_examples)
     mapper = PyTorchOpMapper(model)
     mapper.paddle_graph.build()
-    print("Model optimizing ...")
+    logging.info("Model optimizing ...")
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="pytorch", jit_type=jit_type)
     graph_opt.optimize(mapper.paddle_graph)
-    print("Model optimized.")
+    logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir, jit_type=jit_type)
+    if convert_to_lite:
+        convert2lite(save_dir, lite_valid_places, lite_model_type)
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     if len(sys.argv) < 2:
-        print("Use \"x2paddle -h\" to print the help information")
-        print("For more information, please follow our github repo below:)")
-        print("\nGithub: https://github.com/PaddlePaddle/X2Paddle.git\n")
+        logging.info("Use \"x2paddle -h\" to print the help information")
+        logging.info(
+            "For more information, please follow our github repo below:)")
+        logging.info("\nGithub: https://github.com/PaddlePaddle/X2Paddle.git\n")
         return
 
     parser = arg_parser()
@@ -213,8 +281,8 @@ def main():
 
     if args.version:
         import x2paddle
-        print("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".format(
-            x2paddle.__version__))
+        logging.info("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".
+                     format(x2paddle.__version__))
         return
 
     if not args.convert_torch_project:
@@ -225,18 +293,19 @@ def main():
         import platform
         v0, v1, v2 = platform.python_version().split('.')
         if not (int(v0) >= 3 and int(v1) >= 5):
-            print("[ERROR] python>=3.5 is required")
+            logging.info("[ERROR] python>=3.5 is required")
             return
         import paddle
         v0, v1, v2 = paddle.__version__.split('.')
-        print("paddle.__version__ = {}".format(paddle.__version__))
+        logging.info("paddle.__version__ = {}".format(paddle.__version__))
         if v0 == '0' and v1 == '0' and v2 == '0':
-            print("[WARNING] You are use develop version of paddlepaddle")
+            logging.info(
+                "[WARNING] You are use develop version of paddlepaddle")
         elif int(v0) != 2 or int(v1) < 0:
-            print("[ERROR] paddlepaddle>=2.0.0 is required")
+            logging.info("[ERROR] paddlepaddle>=2.0.0 is required")
             return
     except:
-        print(
+        logging.info(
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
         )
 
@@ -250,17 +319,34 @@ def main():
             define_input_shape = False
             if args.define_input_shape:
                 define_input_shape = True
-            tf2paddle(args.model, args.save_dir, define_input_shape)
+            tf2paddle(
+                args.model,
+                args.save_dir,
+                define_input_shape,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
 
         elif args.framework == "caffe":
             assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
-            caffe2paddle(args.prototxt, args.weight, args.save_dir,
-                         args.caffe_proto)
+            caffe2paddle(
+                args.prototxt,
+                args.weight,
+                args.save_dir,
+                args.caffe_proto,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
         elif args.framework == "onnx":
             assert args.model is not None, "--model should be defined while translating onnx model"
-            onnx2paddle(args.model, args.save_dir)
+            onnx2paddle(
+                args.model,
+                args.save_dir,
+                convert_to_lite=args.to_lite,
+                lite_valid_places=args.lite_valid_places,
+                lite_model_type=args.lite_model_type)
         elif args.framework == "paddle2onnx":
-            print(
+            logging.info(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"
             )
 

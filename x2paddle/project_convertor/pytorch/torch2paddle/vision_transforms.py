@@ -23,7 +23,7 @@ from paddle.vision.transforms import functional as F
 
 class ToPILImage(BaseTransform):
     def __init__(self, mode=None, keys=None):
-        super(ToTensor, self).__init__(keys)
+        super(ToPILImage, self).__init__(keys)
         self.data_format = data_format
 
     def _apply_image(self, pic):

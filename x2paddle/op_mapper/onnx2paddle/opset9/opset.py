@@ -124,27 +124,22 @@ class OpSet9():
         'ReduceMean': [
             'paddle.mean', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdims=1)
-        ],
-        'ReduceSum': [
-            'paddle.sum', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdims=1)
+                    axes=None, keepdims=True)
         ],
         'ReduceMin': [
             'paddle.min', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         'ReduceMax': [
             'paddle.max', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         'ReduceProd': [
             'paddle.prod', dict(
                 axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=1)
+                    axes=None, keepdim=True)
         ],
         # active function
         'Relu': ['paddle.nn.ReLU'],
@@ -523,6 +518,8 @@ class OpSet9():
             if pads is not None:
                 is_pads_attr = True
         mode = node.get_attr('mode', 'constant')
+        if mode in ["edge"]:
+            mode = "replicate"
         value = node.get_attr('value', 0.)
         data_shape = val_x.out_shapes[0]
         output_shape = node.out_shapes[0]
@@ -677,7 +674,9 @@ class OpSet9():
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
-        layer_attrs = {'axis': axes}
+        if axes is None:
+            axes = self.graph.get_input_node(node, idx=1, copy=True)
+
         if len(val_x.out_shapes[0]) == 0:
             if node.name:
                 self.paddle_graph.add_layer(
@@ -686,11 +685,18 @@ class OpSet9():
                     outputs=[node.name],
                     shape=[1])
         else:
-            self.paddle_graph.add_layer(
-                'paddle.unsqueeze',
-                inputs={"x": val_x.name},
-                outputs=[node.name],
-                **layer_attrs)
+            if isinstance(axes, list) or isinstance(axes, tuple):
+                self.paddle_graph.add_layer(
+                    'paddle.unsqueeze',
+                    inputs={"x": val_x.name},
+                    axis=axes,
+                    outputs=[node.name])
+            else:
+                self.paddle_graph.add_layer(
+                    'paddle.unsqueeze',
+                    inputs={"x": val_x.name,
+                            "axis": axes.name},
+                    outputs=[node.name])
 
     @print_mapping_info
     def Shrink(self, node):
@@ -802,6 +808,14 @@ class OpSet9():
         inputs_dict = {'x': name_ones, 'y': val_x.name}
         self.paddle_graph.add_layer(
             'paddle.multiply', inputs=inputs_dict, outputs=[node.name])
+
+    @print_mapping_info
+    def GatherND(self, node):
+        x = self.graph.get_input_node(node, idx=0, copy=True)
+        index = self.graph.get_input_node(node, idx=1, copy=True)
+        inputs = {'x': x.name, 'index': index.name}
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd", inputs=inputs, outputs=[node.name])
 
     @print_mapping_info
     def Gather(self, node):
@@ -1161,6 +1175,17 @@ class OpSet9():
                 **layer_attrs)
 
     @print_mapping_info
+    def GatherND(self, node):
+        print(len(node.inputs), node.inputs)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd",
+            inputs={"x": val_x.name,
+                    "index": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
     def Clip(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_node(node.layer.output[0], copy=True)
@@ -1179,48 +1204,215 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
         else:
-            min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
-            max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
-            min_value = _const_weight_or_none(min_ipt)
-            max_value = _const_weight_or_none(max_ipt)
-            if max_value.shape == (1, ):
-                max_value = max_value[0]
-            if min_value.shape == (1, ):
-                min_value = min_value[0]
-            if max_value is not None and min_value is not None:
-                layer_attrs = {'max': max_value, 'min': min_value}
+            if len(node.inputs) == 2:
+                val_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+
+                index = node.get_input_index(val_ipt.name)
+
+                val_value = _const_weight_or_none(val_ipt)
+                if val_value.shape == (1, ):
+                    val_value = val_value[0]
+
+                if index == 1:
+                    layer_attrs = {'min': val_value}
+
+                if index == 2:
+                    layer_attrs = {'max': val_value}
+
                 self.paddle_graph.add_layer(
                     'paddle.clip',
                     inputs={"x": val_x.name},
                     outputs=[node.name],
                     **layer_attrs)
             else:
-                raise Exception("max_value or min_value can't be None")
+                if len(node.inputs) == 3:
+                    min_ipt = self.graph.get_input_node(node, idx=1, copy=True)
+                    max_ipt = self.graph.get_input_node(node, idx=2, copy=True)
+                    self.paddle_graph.add_layer(
+                        'paddle.clip',
+                        inputs={
+                            "x": val_x.name,
+                            "min": min_ipt.name,
+                            "max": max_ipt.name
+                        },
+                        outputs=[node.name])
+                else:
+                    raise Exception("max_value or min_value can't be None")
+
+    @print_mapping_info
+    def ReduceSum(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        if len(node.inputs) == 1:
+            keepdims = node.get_attr('keepdims')
+            if keepdims is None:
+                keepdims = True
+            axes_value = node.get_attr('axes')
+            layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
+            self.paddle_graph.add_layer(
+                'paddle.sum',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
+        else:
+            axes = self.graph.get_input_node(node, idx=1, copy=True)
+            axes_value = _const_weight_or_none(axes)
+            if axes_value.shape == (1, ):
+                axes_value = axes_value[0]
+            keepdims = node.get_attr('keepdims')
+            if keepdims is None:
+                layer_attrs = {'axis': axes_value}
+            else:
+                layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
+
+            self.paddle_graph.add_layer(
+                'paddle.sum',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
+
+    @print_mapping_info
+    def Max(self, node):
+        if len(node.inputs) == 2:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            val_y = self.graph.get_input_node(node, idx=1, copy=True)
+            self.paddle_graph.add_layer(
+                "paddle.maximum",
+                inputs={"x": val_x.name,
+                        "y": val_y.name},
+                outputs=[node.name])
+        else:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            temp_name = "max_"
+            for i in range(1, len(node.inputs)):
+                val_y = self.graph.get_input_node(node, idx=i, copy=True)
+                temp_name = temp_name + str(i)
+                if i == len(node.inputs) - 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.maximum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[node.name])
+                else:
+                    self.paddle_graph.add_layer(
+                        "paddle.maximum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[temp_name])
+                val_x.name = temp_name
+
+    @print_mapping_info
+    def Min(self, node):
+        if len(node.inputs) == 2:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            val_y = self.graph.get_input_node(node, idx=1, copy=True)
+            self.paddle_graph.add_layer(
+                "paddle.minimum",
+                inputs={"x": val_x.name,
+                        "y": val_y.name},
+                outputs=[node.name])
+        else:
+            val_x = self.graph.get_input_node(node, idx=0, copy=True)
+            temp_name = "min_"
+            for i in range(1, len(node.inputs)):
+                val_y = self.graph.get_input_node(node, idx=i, copy=True)
+                temp_name = temp_name + str(i)
+                if i == len(node.inputs) - 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.minimum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[node.name])
+                else:
+                    self.paddle_graph.add_layer(
+                        "paddle.minimum",
+                        inputs={"x": val_x.name,
+                                "y": val_y.name},
+                        outputs=[temp_name])
+                val_x.name = temp_name
+
+    @print_mapping_info
+    def GreaterOrEqual(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.greater_equal",
+            inputs={"x": val_x.name,
+                    "y": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
+    def GatherND(self, node):
+        print(len(node.inputs), node.inputs)
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd",
+            inputs={"x": val_x.name,
+                    "index": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
+    def And(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.logical_and",
+            inputs={"x": val_x.name,
+                    "y": val_y.name},
+            outputs=[node.name])
 
     @print_mapping_info
     def Split(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         paddle_op = 'split'
         split = node.get_attr('split')
+        if split is None:
+            split = len(node.outputs)
         axis = node.get_attr('axis', 0)
-        layer_attrs = {
-            'num_or_sections': split,
-            'axis': axis,
-        }
-        outputs_list = list()
-        if isinstance(split, list) or isinstance(split, tuple):
-            if len(split) == 1:
-                outputs_list.append(node.name)
-            else:
-                for i in range(len(split)):
+        if split is None:
+            split_num = len(node.layer.output)
+            layer_attrs = {
+                'num_or_sections': split_num,
+                'axis': axis,
+            }
+            outputs_list = list()
+            for i in range(len(node.layer.output)):
+                if hasattr(node, 'index'):
                     outputs_list.append("{}_p{}".format(node.layer_name, i))
+                else:
+                    outputs_list.append("{}".format(node.layer_name))
+            if split_num > 1:
+                self.paddle_graph.add_layer(
+                    'paddle.split',
+                    inputs={"x": val_x.name},
+                    outputs=outputs_list,
+                    **layer_attrs)
+            else:
+                self.paddle_graph.add_layer(
+                    "paddle.cast",
+                    inputs={"x": val_x.name},
+                    outputs=outputs_list,
+                    dtype=string(val_x.dtype))
+
         else:
-            outputs_list.append(node.name)
-        self.paddle_graph.add_layer(
-            'paddle.split',
-            inputs={"x": val_x.name},
-            outputs=outputs_list,
-            **layer_attrs)
+            layer_attrs = {
+                'num_or_sections': split,
+                'axis': axis,
+            }
+            outputs_list = list()
+            if isinstance(split, list) or isinstance(split, tuple):
+                if len(split) == 1:
+                    outputs_list.append(node.name)
+                else:
+                    for i in range(len(split)):
+                        outputs_list.append("{}_p{}".format(node.layer_name, i))
+            else:
+                outputs_list.append(node.name)
+            self.paddle_graph.add_layer(
+                'paddle.split',
+                inputs={"x": val_x.name},
+                outputs=outputs_list,
+                **layer_attrs)
 
     @print_mapping_info
     def Reshape(self, node):
@@ -1563,9 +1755,9 @@ class OpSet9():
                 num_parameters = val_x.out_shapes[0][1]
             else:
                 num_parameters = 1
+                slope_data = self.weights[val_slope.name]
                 _rename_or_remove_weight(self.weights, val_slope.name)
-                self.weights[op_name + '._weight'] = np.reshape(
-                    self.weights[val_slope.name], [1])
+                self.weights[op_name + '._weight'] = np.reshape(slope_data, [1])
             self.paddle_graph.add_layer(
                 "paddle.nn.PReLU",
                 inputs={"x": val_x.name},

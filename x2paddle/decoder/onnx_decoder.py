@@ -16,7 +16,6 @@ from x2paddle.core.graph import GraphNode, Graph
 from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
-from onnx.utils import polish_model
 from onnx import helper, shape_inference
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
@@ -47,6 +46,18 @@ class ONNXGraphNode(GraphNode):
         self.out_shapes = list()
         self.dtype = None
         self.which_child = {}
+
+    def get_input_index(self, input_name):
+        """
+        get the index of input_name in layer.input
+        -1 means input_name is not in the input
+        """
+        index = -1
+        for i in range(len(self.layer.input)):
+            if input_name == self.layer.input[i]:
+                index = i
+                break
+        return index
 
     def get_attr_map(self):
         """
@@ -294,7 +305,6 @@ class ONNXGraph(Graph):
         for layer_name, node in self.node_map.items():
             if isinstance(node, ONNXGraphNode):
                 self.build_connection(layer_name, node)
-
         #generate topo
         super(ONNXGraph, self).build()
 

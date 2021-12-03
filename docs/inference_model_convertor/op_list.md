@@ -1,5 +1,5 @@
 # X2Paddle支持OP列表
-> 目前X2Paddle支持80+的TensorFlow OP，30+的Caffe Layer，60+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
+> 目前X2Paddle支持90+的TensorFlow OP，30+的Caffe Layer，80+的ONNX OP，110+的PyTorch Aten，10+的PyTorch Prim覆盖了大部分CV分类模型常用的操作。我们在如下列表中给出了目前X2Paddle支持的全部OP。
 
 **注：** 目前，部分OP暂未支持，如您在转换过程中出现OP不支持的情况，可自行添加或反馈给我们。欢迎通过[ISSUE反馈](https://github.com/PaddlePaddle/X2Paddle/issues/new)的方式告知我们(模型名，代码实现或模型获取方式)，我们会及时跟进：）
 
@@ -72,7 +72,8 @@
 | 69 | Split | 70 | Sqrt | 71 | Squeeze | 72 | Sub |
 | 73 | Sum | 74 | Tanh | 75 | Tile | 76 | TopK |
 | 77 | Transpose | 78 | Unsqueeze | 79 | Upsample | 80 | Where |
-| 81 | Add | 82 | Concat | | | |
+| 81 | Add | 82 | Concat | 83 | Max | 84 | Min |
+| 85 | GreaterOrEqual | 86 | GatherND | 87 | And |  |  |
 
 
 ## PyTorch

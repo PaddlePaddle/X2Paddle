@@ -72,7 +72,7 @@ class DataLoader(paddle.io.DataLoader):
             return_list = True
         else:
             return_list = False
-        return_list = True
+
         super().__init__(
             dataset,
             feed_list=None,
@@ -89,5 +89,5 @@ class DataLoader(paddle.io.DataLoader):
             timeout=timeout,
             worker_init_fn=worker_init_fn)
         if sampler is not None:
-            seld.batch_sampler.sampler = sampler
+            self.batch_sampler.sampler = sampler
 ```
