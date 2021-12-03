@@ -12,7 +12,7 @@ about: 第三方模型转换至PaddlePaddle，请说明模型的来源，模型�
 
 ## 具体信息
 
-- 转换模型后用处
+- 转换模型后用处
     - [ ] 使用Paddle框架/PaddleInference推理预测
     - [ ] 使用Paddle-Lite做移动端推理
     - [ ] 转换预训练参数，再使用Paddle进行模型开发
