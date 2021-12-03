@@ -6,6 +6,8 @@
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 ![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
+**【问卷调查】** 为了更好的推进飞桨框架以及X2Paddle的迭代开发，诚邀您参加我们的问卷，期待您的宝贵意见:https://iwenjuan.baidu.com/?code=npyd51
+
 ## 简介
 
 X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学习框架用户快速迁移至飞桨框架。目前支持**推理模型的框架转换**与**PyTorch训练代码迁移**，我们还提供了详细的不同框架间API对比文档，降低开发者上手飞桨核心的学习成本。
