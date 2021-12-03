@@ -609,8 +609,8 @@ def prim_or(layer,
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
-    
-    
+
+
 def prim_remainder(layer,
                    indent=1,
                    init_func=[],
@@ -619,8 +619,8 @@ def prim_remainder(layer,
                    different_attrs=None,
                    is_return_line=False):
     line = "{} = {} % {}".format(layer.outputs[0],
-                                  get_value(layer, "x", different_attrs),
-                                  get_value(layer, "y", different_attrs))
+                                 get_value(layer, "x", different_attrs),
+                                 get_value(layer, "y", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
