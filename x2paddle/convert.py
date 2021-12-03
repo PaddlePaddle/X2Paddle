@@ -89,8 +89,6 @@ def arg_parser():
         default=None,
         help="pretrain model file of pytorch model")
     parser.add_argument(
-        "--enable_optim", "-eo", default=False, help="Turn on ONNX Simplifier")
-    parser.add_argument(
         "--enable_code_optim",
         "-co",
         default=True,
@@ -197,7 +195,6 @@ def caffe2paddle(proto_file,
 
 def onnx2paddle(model_path,
                 save_dir,
-                enable_optim=False,
                 convert_to_lite=False,
                 lite_valid_places="arm",
                 lite_model_type="naive_buffer"):
@@ -215,21 +212,6 @@ def onnx2paddle(model_path,
             "[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
     logging.info("Now translating model from onnx to paddle.")
-
-    # Do optimizer
-    if enable_optim:
-        from onnxsim import simplify
-        onnx_net_opt_path = model_path[:-5] + '_opt.onnx'
-        logging.info("ONNX Model optimizing ...")
-        # load your predefined ONNX model
-        model = onnx.load(model_path)
-        # convert model
-        model_simp, check = simplify(model)
-        assert check, "Simplified ONNX model could not be validated"
-        logging.info("Export optimized onnx model:{}".format(onnx_net_opt_path))
-        onnx.save(model_simp, onnx_net_opt_path)
-        logging.info("ONNX Model optimized!")
-        model_path = onnx_net_opt_path
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
@@ -367,7 +349,6 @@ def main():
             onnx2paddle(
                 args.model,
                 args.save_dir,
-                enable_optim=args.enable_optim,
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
                 lite_model_type=args.lite_model_type)
