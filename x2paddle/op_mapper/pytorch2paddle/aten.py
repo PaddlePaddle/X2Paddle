@@ -1311,12 +1311,16 @@ def aten__convolution(mapper, graph, node):
         %12 (int): 卷积的组数。
     """
     scope_name = mapper.normalize_scope_name(node)
-    op_name = name_generator("conv2d", mapper.nn_name2id)
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    weights = mapper.pytorch_params[inputs_name[1]]
+    if len(weights.shape) == 3:
+        op_name = name_generator("conv1d", mapper.nn_name2id)
+    else:
+        op_name = name_generator("conv2d", mapper.nn_name2id)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [op_name, output_name]
     layer_inputs = {}
     layer_attrs = {}
-    inputs_name, inputs_node = mapper._get_inputs_name(node)
     # 获取当前节点输出的list
     current_outputs = [output_name]
     # 处理输入0，即%input.8
@@ -1326,7 +1330,6 @@ def aten__convolution(mapper, graph, node):
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
     # 处理输入1，即%18
-    weights = mapper.pytorch_params[inputs_name[1]]
     mapper.paddle_params[op_name +
                          ".weight"] = weights  #np.swapaxes(weights, 0, 1)
     if mapper.attrs[inputs_name[6]]:
@@ -1361,20 +1364,36 @@ def aten__convolution(mapper, graph, node):
     else:
         layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[
             inputs_name[8]]
-    if mapper.attrs[inputs_name[6]]:
-        graph.add_layer(
-            "paddle.nn.Conv2DTranspose",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            scope_name=scope_name,
-            **layer_attrs)
+    if len(weights.shape) == 4:
+        if mapper.attrs[inputs_name[6]]:
+            graph.add_layer(
+                "paddle.nn.Conv2DTranspose",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
+        else:
+            graph.add_layer(
+                "paddle.nn.Conv2D",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
     else:
-        graph.add_layer(
-            "paddle.nn.Conv2D",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            scope_name=scope_name,
-            **layer_attrs)
+        if mapper.attrs[inputs_name[6]]:
+            graph.add_layer(
+                "paddle.nn.Conv1DTranspose",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
+        else:
+            graph.add_layer(
+                "paddle.nn.Conv1D",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -1610,7 +1629,7 @@ def aten_dim(mapper, graph, node):
 def aten_div(mapper, graph, node):
     """ 构造除法的PaddleLayer。
     TorchScript示例:
-        %bx_bw0.3 : Tensor = aten::div_(%bx_bw.3, %2678)
+        %bx_bw0.3 : Tensor = aten::div(%bx_bw.3, %2678)
         参数含义:
         %bx_bw0.3 (-): 除后的结果。
         %bx_bw.3 (-): 被除数。
@@ -3341,6 +3360,52 @@ def aten_max(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_max_pool1d(mapper, graph, node):
+    """ 构造最大池化的PaddleLayer。
+    TorchScript示例:
+        %input.8 : Tensor = aten::max_pool1d(%result.11, %20, %23, %21, %22, %19)
+        参数含义:
+        %input.8 (Tensor): 输出，池化后的结果。
+        %result.11 (Tensor): 需要池化的Tensor。
+        %20 (list): 池化kernel的大小。
+        %23 (list): 步长大小。
+        %21 (list): 填充大小。
+        %22 (list): 膨胀系数大小。
+        %19 (bool): 是否用ceil函数计算输出高度和宽度。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pool1d", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%result.11
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%20
+    layer_attrs["kernel_size"] = mapper.attrs[inputs_name[1]]
+    # 处理输入2，即%23
+    layer_attrs["stride"] = mapper.attrs[inputs_name[2]]
+    # 处理输入3，即%21
+    layer_attrs["padding"] = mapper.attrs[inputs_name[3]]
+    # 处理输入5，即%19
+    layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[5]]
+
+    graph.add_layer(
+        "paddle.nn.MaxPool1D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_max_pool2d(mapper, graph, node):
     """ 构造最大池化的PaddleLayer。
     TorchScript示例:
@@ -3653,6 +3718,56 @@ def aten_neg(mapper, graph, node):
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_frobenius_norm(mapper, graph, node):
+    """ 构造计算范数的PaddleLayer。
+    TorchScript示例:
+        %25 = aten::frobenius_norm(%input, %58, %24)
+        参数含义:
+        %25 (Tensor): 取范数后的结果。
+        %input (Tensor): 输入。
+        %58 (int): 使用范数计算的轴。
+        %24 (bool): 是否在输出的Tensor中保留和输入一样的维度。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    layer_attrs["p"] = 2
+    # 处理输入1，即%58
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # 处理输入2，即%24
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["keepdim"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    graph.add_layer(
+        "paddle.norm",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 
@@ -4165,6 +4280,76 @@ def aten_repeat(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_repeat_interleave(mapper, graph, node):
+    """ 构造根据参数对输入各维度进行复制的PaddleLayer。
+    TorchScript示例:
+        %701 : Tensor = aten::repeat(%699, %700, %702)
+        参数含义:
+        %701 (Tensor): 输出，复制后的Tensor。
+        %699 (Tensor): 需要复制的Tensor。
+        %700 (int | Tensor): 指定每个维度复制的次数。
+        %702 (int): 指定在哪个轴上进行复制。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%699
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入、输出的list
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%700
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["repeat_times"] = [int(mapper.attrs[inputs_name[1]])]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["repeat_times"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+
+    graph.add_layer(
+        "paddle.tile",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+
+    layer_attrs_reshape = {}
+    layer_attrs_reshape["shape"] = [0, int(mapper.attrs[inputs_name[1]]), -1]
+    graph.add_layer(
+        "paddle.reshape",
+        inputs={"x": layer_outputs[0]},
+        outputs=[layer_outputs[0] + "_reshape"],
+        scope_name=scope_name,
+        **layer_attrs_reshape)
+
+    layer_attrs_transpose = {}
+    layer_attrs_transpose["perm"] = [0, 2, 1]
+    graph.add_layer(
+        "paddle.transpose",
+        inputs={"x": layer_outputs[0] + "_reshape"},
+        outputs=[layer_outputs[0] + "_transpose"],
+        scope_name=scope_name,
+        **layer_attrs_transpose)
+
+    layer_attrs_reshape = {}
+    layer_attrs_reshape["shape"] = [0, -1]
+    graph.add_layer(
+        "paddle.reshape",
+        inputs={"x": layer_outputs[0] + "_transpose"},
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs_reshape)
+
     return current_inputs, current_outputs
 
 
@@ -4971,19 +5156,6 @@ def aten_sub(mapper, graph, node):
         scope_name=scope_name,
         **layer_attrs)
     return current_inputs, current_outputs
-
-
-def aten_sub_(mapper, graph, node):
-    """ 构造数值相减的PaddleLayer。
-    TorchScript示例:
-        %840 : int = aten::sub_(%839, %836, %3)
-        参数含义:
-        %840 (-): 相减结果。
-        %839 (-): 输入数值 x。
-        %836 (-): 输入数值 y。
-        %3 (-): alpha。
-    """
-    return aten_sub(mapper, graph, node)
 
 
 def aten_t(mapper, graph, node):
