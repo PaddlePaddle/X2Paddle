@@ -89,7 +89,7 @@ pytorch2paddle(module=torch_module,
 # jit_type (str): 转换方式。默认为"trace"。
 # input_examples (list[torch.tensor]): torch.nn.Module的输入示例，list的长度必须与输入的长度一致。默认为None。
 ```
-```script```模式以及更多细节可参考[PyTorch模型转换文档](./docs/inference_model_convertor/pytorch2paddle.md)。
+```script```模式以及更多细节可参考[PyTorch模型转换文档](./docs/inference_model_convertor/pytorch2paddle.md)。
 
 #### TensorFlow模型转换
 ```shell
