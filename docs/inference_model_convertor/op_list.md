@@ -48,6 +48,7 @@
 | 29 | ReLU      | 30 | AbsVal       | 31 | Sigmoid        | 32 | TanH                 |
 | 33 | ReLU6     | 34 | Upsample     | 35 | MemoryData     |    |                      |
 
+
 ## ONNX
 
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
@@ -77,6 +78,7 @@
 
 
 ## PyTorch
+
 Aten:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
 |------|------|------|------|------|------|------|------|
@@ -108,8 +110,9 @@ Aten:
 | 101 | aten::upsample\_bilinear2d | 102 | aten::values |103|aten::view|104|aten::warn|
 | 105 | aten::where | 106 | aten::zeros |107|aten::zeros\_like|108|aten::bmm|
 | 109 | aten::sub\_ | 110 | aten:erf |111|aten::lstm|112|aten::gather|
-| 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance_norm |
-| 117 | aten::bitwise_not | 118 | aten::bitwise_xor | 119 | aten::bitwise_and | 120 | aten::silu |
+| 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance\_norm |
+| 117 | aten::bitwise\_not | 118 | aten::bitwise\_xor | 119 | aten::bitwise\_and | 120 | aten::silu |
+| 121 | aten::repeat\_interleave | 122 | aten::maxpool1d | 123 | aten::frobenius\_norm | 124 | aten::format |
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
