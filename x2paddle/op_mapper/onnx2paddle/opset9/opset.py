@@ -1366,8 +1366,6 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         paddle_op = 'split'
         split = node.get_attr('split')
-        if split is None:
-            split = len(node.outputs)
         axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
@@ -1377,10 +1375,7 @@ class OpSet9():
             }
             outputs_list = list()
             for i in range(len(node.layer.output)):
-                if hasattr(node, 'index'):
-                    outputs_list.append("{}_p{}".format(node.layer_name, i))
-                else:
-                    outputs_list.append("{}".format(node.layer_name))
+                outputs_list.append(node.layer.output[i])
             if split_num > 1:
                 self.paddle_graph.add_layer(
                     'paddle.split',
