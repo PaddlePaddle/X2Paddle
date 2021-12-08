@@ -1522,7 +1522,7 @@ class OpSet9():
         dtypes = set()
         for i in range(len(node.layer.input)):
             ipt = self.graph.get_input_node(node, idx=i, copy=True)
-            inputs_list.append(ipt.name)
+            inputs_list.append(node.layer.input[i])
             dtypes.add(ipt.dtype)
         if len(dtypes) > 1:
             assert 'Unspported situation happened, please create issue on https://github.com/PaddlePaddle/X2Paddle/issues.'
