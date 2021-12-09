@@ -1375,7 +1375,10 @@ class OpSet9():
             }
             outputs_list = list()
             for i in range(len(node.layer.output)):
-                outputs_list.append(node.layer.output[i])
+                if hasattr(node, 'index'):
+                    outputs_list.append("{}_p{}".format(node.layer_name, i))
+                else:
+                    outputs_list.append("{}".format(node.layer_name))
             if split_num > 1:
                 self.paddle_graph.add_layer(
                     'paddle.split',
@@ -1522,7 +1525,7 @@ class OpSet9():
         dtypes = set()
         for i in range(len(node.layer.input)):
             ipt = self.graph.get_input_node(node, idx=i, copy=True)
-            inputs_list.append(node.layer.input[i])
+            inputs_list.append(ipt.name)
             dtypes.add(ipt.dtype)
         if len(dtypes) > 1:
             assert 'Unspported situation happened, please create issue on https://github.com/PaddlePaddle/X2Paddle/issues.'
