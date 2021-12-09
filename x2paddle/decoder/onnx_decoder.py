@@ -573,7 +573,6 @@ class ONNXDecoder(object):
         standardize variable name for paddle's code
         """
         graph = model.graph
-        source_output_names = list()
         for initializer in graph.initializer:
             initializer.name = self.make_variable_name(initializer.name)
         for ipt in graph.input:
@@ -583,8 +582,9 @@ class ONNXDecoder(object):
         for item in graph.value_info:
             item.name = self.make_variable_name(item.name)
         for node in graph.node:
-            if node.output[0] in source_output_names:
-                node.name = node.output[0]
+            node.name = node.output[0]
+            if ":" in node.name:
+                node.name = node.name.split(':')[0]
             node.name = self.make_variable_name(node.name)
             for i in range(len(node.input)):
                 if node.input[i] == '':
