@@ -77,6 +77,20 @@ python setup.py install
 
 ### 功能一：推理模型转换
 
+#### PyTorch模型转换
+``` python
+from x2paddle.convert import pytorch2paddle
+pytorch2paddle(module=torch_module,
+               save_dir="./pd_model",
+               jit_type="trace",
+               input_examples=[torch_input])
+# module (torch.nn.Module): PyTorch的Module。
+# save_dir (str): 转换后模型的保存路径。
+# jit_type (str): 转换方式。默认为"trace"。
+# input_examples (list[torch.tensor]): torch.nn.Module的输入示例，list的长度必须与输入的长度一致。默认为None。
+```
+```script```模式以及更多细节可参考[PyTorch模型转换文档](./docs/inference_model_convertor/pytorch2paddle.md)。
+
 #### TensorFlow模型转换
 ```shell
 x2paddle --framework=tensorflow --model=tf_model.pb --save_dir=pd_model
@@ -103,9 +117,13 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 | --model              | 当framework为tensorflow/onnx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
 | --caffe_proto        | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/inference_model_convertor/FAQ.md) |
+| --enable_code_optim  | **[可选]** For PyTorch, 是否对生成代码进行优化，默认为True |
 | --to_lite            | **[可选]** 是否使用opt工具转成Paddle-Lite支持格式，默认为False |
 | --lite_valid_places  | **[可选]** 指定转换类型，可以同时指定多个backend(以逗号分隔)，opt将会自动选择最佳方式，默认为arm |
 | --lite_model_type    | **[可选]** 指定模型转化类型，目前支持两种类型：protobuf和naive_buffer，默认为naive_buffer |
+
+#### X2Paddle API
+目前X2Paddle提供API方式转换模型，可参考[X2PaddleAPI](docs/inference_model_convertor/x2paddle_api.md)
 
 #### 一键转换Paddle-Lite支持格式
 可参考[使用X2paddle导出Padde-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
