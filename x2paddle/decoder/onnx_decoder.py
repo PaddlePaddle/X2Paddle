@@ -583,6 +583,8 @@ class ONNXDecoder(object):
             item.name = self.make_variable_name(item.name)
         for node in graph.node:
             node.name = node.output[0]
+            if ":" in node.name and len(node.output) > 1:
+                node.name = node.name.split(':')[0]
             node.name = self.make_variable_name(node.name)
             for i in range(len(node.input)):
                 if node.input[i] == '':

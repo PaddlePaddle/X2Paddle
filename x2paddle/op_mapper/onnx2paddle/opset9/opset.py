@@ -1366,8 +1366,6 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         paddle_op = 'split'
         split = node.get_attr('split')
-        if split is None:
-            split = len(node.outputs)
         axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
