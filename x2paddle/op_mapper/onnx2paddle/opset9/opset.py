@@ -348,7 +348,7 @@ class OpSet9():
                         outputs=[node.name],
                         axis=0)
                 else:
-                    if  size_values is not None:
+                    if size_values is not None:
                         attrs["size"] = [size_values[2], size_values[3]]
                     else:
                         var_nc, var_hw = val_sizes.name + '_nc', val_sizes.name + '_hw'
