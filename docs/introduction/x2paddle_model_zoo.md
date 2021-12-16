@@ -106,6 +106,9 @@
 | BASNet|[code](https://github.com/xuebinqin/BASNet)  |-|
 | DBFace |[code](https://github.com/dlunion/DBFace)  |-|
 | SOLAR |[code](https://github.com/tonyngjichun/SOLAR)  |只支持trace模式|
+| YOLOX |[code](https://github.com/Megvii-BaseDetection/YOLOX)  |只支持trace模式|
+| MockingBird |[code](https://github.com/babysor/MockingBird)  |只支持trace模式|
+
 
 ## PyTorch训练项目
 | 模型 | 转换前代码 | 转换后代码 |
