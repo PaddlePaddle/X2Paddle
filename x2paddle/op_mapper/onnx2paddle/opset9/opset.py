@@ -302,6 +302,7 @@ class OpSet9():
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
+                size_values = _const_weight_or_none(val_sizes)
                 val_x_shape = val_x.out_shapes[0]
                 if len(val_x_shape) == 3:
                     var_n, var_hw = val_sizes.name + '_n', val_sizes.name + '_hw'
@@ -347,23 +348,26 @@ class OpSet9():
                         outputs=[node.name],
                         axis=0)
                 else:
-                    var_nc, var_hw = val_sizes.name + '_nc', val_sizes.name + '_hw'
-                    self.paddle_graph.add_layer(
-                        'paddle.split',
-                        inputs={"x": val_sizes.name},
-                        outputs=[var_nc, var_hw],
-                        num_or_sections=[2, 2],
-                        axis=0)
-                    self.paddle_graph.add_layer(
-                        "paddle.cast",
-                        inputs={"x": var_hw},
-                        outputs=[var_hw],
-                        dtype=string('int32'))
-                    inputs['size'] = var_hw
-                    attrs = {
+                    if size_values is not None:
+                        attrs["size"] = [size_values[2], size_values[3]]
+                    else:
+                        var_nc, var_hw = val_sizes.name + '_nc', val_sizes.name + '_hw'
+                        self.paddle_graph.add_layer(
+                            'paddle.split',
+                            inputs={"x": val_sizes.name},
+                            outputs=[var_nc, var_hw],
+                            num_or_sections=[2, 2],
+                            axis=0)
+                        self.paddle_graph.add_layer(
+                            "paddle.cast",
+                            inputs={"x": var_hw},
+                            outputs=[var_hw],
+                            dtype=string('int32'))
+                        inputs['size'] = var_hw
+                    attrs.update({
                         "align_corners": False,
                         "mode": string(node.get_attr('mode', 'nearest'))
-                    }
+                    })
                     mode = node.get_attr('mode', 'nearest')
                     if mode == "linear":
                         attrs["mode"] = string("bilinear")
