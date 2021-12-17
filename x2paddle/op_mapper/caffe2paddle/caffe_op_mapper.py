@@ -966,11 +966,11 @@ class CaffeOpMapper():
             inputs={"x": input.name},
             outputs=[node.layer_name],
             **layer_attrs)
-        self.paddle_graph.add_layer(
-            "paddle.pow",
-            inputs={"x": node.layer_name},
-            outputs=[node.layer_name],
-            exponent=params.power)
+        if params.power != 1:
+            self.paddle_graph.add_layer(
+                "paddle.pow",
+                inputs={"x": node.layer_name, "y": params.power},
+                outputs=[node.layer_name])
 
     def Reduction(self, node):
         assert len(
