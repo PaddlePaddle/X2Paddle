@@ -969,7 +969,7 @@ class CaffeOpMapper():
         if params.power != 1:
             self.paddle_graph.add_layer(
                 "paddle.pow",
-                inputs={"x": node.layer_name, 
+                inputs={"x": node.layer_name,
                         "y": params.power},
                 outputs=[node.layer_name])
 
