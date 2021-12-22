@@ -2128,14 +2128,35 @@ class OpSet9():
 
         paddings, var_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        output_size = [0, 0]
+        if output_size is not None:
+            paddings = [0] * 4
+            total_paddings = list()
+            total_paddings.append((val_x.out_shapes[0][2] - 1) * strides[
+                0] + dilations[0] * (kernel_shape[0] - 1) + 1 + out_padding[0] -
+                                  output_size[0])
+            total_paddings.append((val_x.out_shapes[0][3] - 1) * strides[
+                1] + dilations[1] * (kernel_shape[1] - 1) + 1 + out_padding[1] -
+                                  output_size[1])
+            if auto_pad == "SAME_UPPER":
+                for i in range(len(total_paddings)):
+                    paddings[2 * i] = total_paddings[0] - total_paddings[0] // 2
+                    paddings[2 * i + 1] = total_paddings[0] // 2
+            else:
+                for i in range(len(total_paddings)):
+                    paddings[2 * i] = total_paddings[0] // 2
+                    paddings[2 * i + 1] = total_paddings[0] - total_paddings[
+                        0] // 2
+        else:
+            output_size = [0, 0]
 
-        output_size[0] = (val_x.out_shapes[0][2] - 1
-                          ) * strides[0] - 2 * paddings[0] + dilations[0] * (
-                              kernel_shape[0] - 1) + 1 + out_padding[0]
-        output_size[1] = (val_x.out_shapes[0][3] - 1
-                          ) * strides[1] - 2 * paddings[1] + dilations[1] * (
-                              kernel_shape[1] - 1) + 1 + out_padding[1]
+            output_size[0] = (
+                val_x.out_shapes[0][2] - 1
+            ) * strides[0] - 2 * paddings[0] + dilations[0] * (
+                kernel_shape[0] - 1) + 1 + out_padding[0]
+            output_size[1] = (
+                val_x.out_shapes[0][3] - 1
+            ) * strides[1] - 2 * paddings[1] + dilations[1] * (
+                kernel_shape[1] - 1) + 1 + out_padding[1]
 
         # Conv2DTranspose缺少output_size，只能在forward里头传进output_size
         inputs_dict = {'x': val_x if isinstance(val_x, str) else val_x.name}
