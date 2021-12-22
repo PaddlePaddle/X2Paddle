@@ -61,14 +61,16 @@ def _rename_or_remove_weight(weights,
     '''
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
-    if is_remove:
-        # remove weight
-        data = weights.pop(origin_name)
-    else:
-        data = weights[origin_name]
+    # if is_remove:
+    #     # remove weight
+    #     data = weights.pop(origin_name)
+    # else:
+    data = weights[origin_name]
     if target_name is not None:
         # rename weight
         weights[target_name] = data
+    if "x2paddle_297" in weights.keys():
+        print("keep")
 
 
 def _is_static_shape(shape):
@@ -169,6 +171,8 @@ class OpSet9():
         'Floor': ['paddle.floor'],
         'Abs': ['paddle.abs'],
         'Erf': ['paddle.erf'],
+        'Sin': ['paddle.sin'],
+        'Cos': ['paddle.cos'],
     }
 
     def __init__(self, decoder, paddle_graph):
@@ -229,6 +233,8 @@ class OpSet9():
 
     @print_mapping_info
     def place_holder(self, node):
+        if node.name in ["297", "x2paddle_297"]:
+            print("!!!!!!!find! 1123")
         shape = node.out_shapes[0]
         for i, dim_shape in enumerate(shape):
             if dim_shape == 0 and i == 0:
@@ -248,6 +254,7 @@ class OpSet9():
             node = parameter
         dtype = node.dtype
         shape = node.out_shapes[0]
+
         if hasattr(node.weight, "shape") and len(node.weight.shape) == 0:
             self.paddle_graph.add_layer(
                 "paddle.full",
@@ -257,6 +264,7 @@ class OpSet9():
                 shape=[1],
                 fill_value=node.weight)
         else:
+            print("test point:", node.name)
             self.weights[node.name] = node.weight
             self.paddle_graph.add_layer(
                 "self.create_parameter",
@@ -385,15 +393,21 @@ class OpSet9():
                         **attrs)
                 return
         elif node.layer_type == 'Upsample':
-            val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            self.paddle_graph.add_layer(
-                "paddle.slice",
-                inputs={"input": val_scales.name},
-                outputs=[val_scales.name],
-                axes=[0],
-                starts=[2],
-                ends=[4])
-            inputs['scale_factor'] = val_scales.name
+            if len(node.layer.input) == 2:
+                val_scales = self.graph.get_input_node(node, idx=1, copy=True)
+                self.paddle_graph.add_layer(
+                    "paddle.slice",
+                    inputs={"input": val_scales.name},
+                    outputs=[val_scales.name],
+                    axes=[0],
+                    starts=[2],
+                    ends=[4])
+                inputs['scale_factor'] = val_scales.name
+            else:
+                val_scales = node.get_attr('scales')[2:]
+                print(type(val_scales))
+                print(val_scales)
+                # inputs['scale_factor'] = val_scales
 
         mode = node.get_attr('mode', 'nearest')
         attrs.update({
@@ -401,6 +415,8 @@ class OpSet9():
             "mode": string(mode),
             "align_mode": 1
         })
+        if len(node.layer.input) == 1:
+            attrs["scale_factor"] = val_scales
         val_x_shape = val_x.out_shapes[0]
         if mode == "linear" and len(val_x_shape) == 4:
             attrs["mode"] = string("bilinear")
@@ -680,27 +696,28 @@ class OpSet9():
         axes = node.get_attr('axes')
         if axes is None:
             axes = self.graph.get_input_node(node, idx=1, copy=True)
-
-        if len(val_x.out_shapes[0]) == 0:
-            if node.name:
-                self.paddle_graph.add_layer(
-                    'paddle.reshape',
-                    inputs={"x": val_x.name},
-                    outputs=[node.name],
-                    shape=[1])
+        if node.name in ["x2paddle_vis_local_cost_volume_3d_0_ExpandDims_5_0"]:
+            print("output_shape:", val_x.out_shapes[0])
+        # if len(val_x.out_shapes[0]) == 0:
+        #     if node.name:
+        #         self.paddle_graph.add_layer(
+        #             'paddle.reshape',
+        #             inputs={"x": val_x.name},
+        #             outputs=[node.name],
+        #             shape=[1])
+        # else:
+        if isinstance(axes, list) or isinstance(axes, tuple):
+            self.paddle_graph.add_layer(
+                'paddle.unsqueeze',
+                inputs={"x": val_x.name},
+                axis=axes,
+                outputs=[node.name])
         else:
-            if isinstance(axes, list) or isinstance(axes, tuple):
-                self.paddle_graph.add_layer(
-                    'paddle.unsqueeze',
-                    inputs={"x": val_x.name},
-                    axis=axes,
-                    outputs=[node.name])
-            else:
-                self.paddle_graph.add_layer(
-                    'paddle.unsqueeze',
-                    inputs={"x": val_x.name,
-                            "axis": axes.name},
-                    outputs=[node.name])
+            self.paddle_graph.add_layer(
+                'paddle.unsqueeze',
+                inputs={"x": val_x.name,
+                        "axis": axes.name},
+                outputs=[node.name])
 
     @print_mapping_info
     def Shrink(self, node):
@@ -716,6 +733,8 @@ class OpSet9():
 
     @print_mapping_info
     def Constant(self, node):
+        if node.name in ["297", "x2paddle_297"]:
+            print("!!!!!!!find!")
         val_output = self.graph.get_node(node.layer.output[0], copy=True)
 
         value = node.get_attr('value')
@@ -802,11 +821,21 @@ class OpSet9():
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
         val_x_dtype = val_x.dtype
         name_ones = node.name + '_ones'
-        attr_ones = {
-            'shape': val_shape.name,
-            'dtype': string(val_x_dtype),
-            'fill_value': 1
-        }
+        shape_values = _const_weight_or_none(val_shape)
+        if shape_values is None:
+            attr_ones = {
+                'shape': val_shape.name,
+                'dtype': string(val_x_dtype),
+                'fill_value': 1
+            }
+        else:
+            print("test:", type(shape_values))
+            print(shape_values.tolist())
+            attr_ones = {
+                'shape': shape_values.tolist(),
+                'dtype': string(val_x_dtype),
+                'fill_value': 1
+            }
         self.paddle_graph.add_layer(
             'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
         inputs_dict = {'x': name_ones, 'y': val_x.name}
@@ -826,6 +855,8 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         indices = self.graph.get_input_node(node, idx=1, copy=True)
         indices_shape = indices.out_shapes[0]
+        print("indices_shape:", node.name, " ", indices_shape, " ",
+              val_x.out_shapes[0])
         axis = node.get_attr('axis', 0)
         #assert len(
         #    indices_shape) <= 2, "Gather op don't support dim of indice >2 "
@@ -838,6 +869,11 @@ class OpSet9():
                     outputs=[node.name])
             elif len(val_x.out_shapes[0]) > 1:
                 if len(indices_shape) == 0:
+                    self.paddle_graph.add_layer(
+                        'paddle.reshape',
+                        inputs={"x": indices.name},
+                        outputs=[indices.name],
+                        shape=[-1, ])
                     gather_ = node.name + '_1'
                     self.paddle_graph.add_layer(
                         'paddle.gather',
@@ -1140,6 +1176,11 @@ class OpSet9():
             starts = node.get_attr('starts')
             ends = node.get_attr('ends')
             axes = node.get_attr('axes')
+            output_shape = val_x.out_shapes[0]
+
+            if axes is None:
+                axes = [i for i in range(len(starts))]
+                print("axes:", axes)
             for idx in range(len(ends)):
                 if ends[idx] > 2**31 - 1:
                     ends[idx] = 2**31 - 1
@@ -1975,6 +2016,59 @@ class OpSet9():
             output_size=output_shape[2:])
 
     @print_mapping_info
+    def Neg(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = node.name + "_y"
+        dtype = np.dtype(val_x.dtype)
+        self.paddle_graph.add_layer(
+            "paddle.full",
+            inputs={},
+            outputs=[val_y],
+            dtype=string(dtype),
+            shape=[1],
+            fill_value=-1)
+        self.paddle_graph.add_layer(
+            "paddle.multiply",
+            inputs={'x': val_x.name,
+                    'y': val_y},
+            outputs=[node.name])
+
+    @print_mapping_info
+    def SpaceToDepth(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        blocksize = node.get_attr('blocksize')
+        print(blocksize)
+        val_x_shape = val_x.out_shapes[0]
+        b, c, h, w = val_x_shape
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": val_x.name},
+            outputs=[node.name],
+            shape=[b, c, h // blocksize, blocksize, w // blocksize, blocksize])
+        self.paddle_graph.add_layer(
+            'paddle.transpose',
+            inputs={"x": node.name},
+            outputs=[node.name],
+            perm=[0, 3, 5, 1, 2, 4])
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": node.name},
+            outputs=[node.name],
+            shape=[b, c * (blocksize**2), h // blocksize, w // blocksize])
+
+    @print_mapping_info
+    def GatherElements(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        indices = self.graph.get_input_node(node, idx=1, copy=True)
+        dtype = np.dtype(val_x.dtype)
+        self.paddle_graph.add_layer(
+            "paddle.gather",
+            inputs={'x': val_x.name,
+                    'index': indices.name},
+            axis=node.get_attr('axis'),
+            outputs=[node.name])
+
+    @print_mapping_info
     def GlobalAveragePool(self, node):
         op_name = name_generator("pool", self.nn_name2id)
         output_name = node.name
@@ -2072,6 +2166,7 @@ class OpSet9():
                                  remove_weight)
         if has_bias:
             remove_bias = True if val_b.name in self.done_weight_list else False
+            remove_bias = False
             if remove_bias:
                 self.done_weight_list.append(val_b_name)
             _rename_or_remove_weight(self.weights, val_b.name,
