@@ -2128,7 +2128,7 @@ class OpSet9():
 
         paddings, var_x = self._pad_if_asymmetric(node, pads, val_x)
 
-        if output_size is not None:
+        if len(output_size) != 0:
             paddings = [0] * 4
             total_paddings = list()
             total_paddings.append((val_x.out_shapes[0][2] - 1) * strides[
@@ -2247,6 +2247,18 @@ class OpSet9():
                 inputs={"x": node.name},
                 outputs=[node.name],
                 dtype=string(node.dtype))
+
+    @print_mapping_info
+    def Sin(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.sin", inputs={"x": val_x.name}, outputs=[node.name])
+
+    @print_mapping_info
+    def Cos(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.cos", inputs={"x": val_x.name}, outputs=[node.name])
 
     @print_mapping_info
     def OneHot(self, node):
