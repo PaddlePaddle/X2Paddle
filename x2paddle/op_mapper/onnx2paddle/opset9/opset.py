@@ -169,6 +169,8 @@ class OpSet9():
         'Floor': ['paddle.floor'],
         'Abs': ['paddle.abs'],
         'Erf': ['paddle.erf'],
+        'Sin': ['paddle.sin'],
+        'Cos': ['paddle.cos'],
     }
 
     def __init__(self, decoder, paddle_graph):
@@ -2249,18 +2251,6 @@ class OpSet9():
                 dtype=string(node.dtype))
 
     @print_mapping_info
-    def Sin(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.sin", inputs={"x": val_x.name}, outputs=[node.name])
-
-    @print_mapping_info
-    def Cos(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.cos", inputs={"x": val_x.name}, outputs=[node.name])
-
-    @print_mapping_info
     def OneHot(self, node):
         nn_op_name = name_generator("onehot", self.nn_name2id)
         output_name = node.name
@@ -2306,10 +2296,20 @@ class OpSet9():
         if input_nums > 5 and node.layer.input[5] != '':
             init_h = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": init_h.name},
+                outputs=[init_h.name],
+                shape=init_h.out_shapes[0])
             exist_input_nums += 1
         if input_nums > 6 and node.layer.input[6] != '':
             init_c = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": init_c.name},
+                outputs=[init_c.name],
+                shape=init_c.out_shapes[0])
 
         input_weight_np = _const_weight_or_none(input_weight)
         _rename_or_remove_weight(self.weights, input_weight.name)
