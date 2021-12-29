@@ -2201,6 +2201,8 @@ class OpSet9():
         if val_b is not None:
             _rename_or_remove_weight(self.weights, val_b.name,
                                      op_name + '.bias')
+        else:
+            layer_attrs["bias_attr"] = False
         self.paddle_graph.add_layer(
             kernel=paddle_op,
             inputs=inputs_dict,
