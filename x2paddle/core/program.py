@@ -381,7 +381,6 @@ class PaddleGraph(object):
                     "class {}(paddle.nn.Layer):".format(self.name),
                 ],
                 indent=0)
-            print(self.inputs)
             input_data_name = ', '.join(self.inputs)
             self.init_func.extend(gen_codes(["def __init__(self):"], indent=1))
             self.init_func.extend(
