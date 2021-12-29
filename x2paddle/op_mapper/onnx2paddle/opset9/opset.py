@@ -61,10 +61,6 @@ def _rename_or_remove_weight(weights,
     '''
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
-    # if is_remove:
-    #     # remove weight
-    #     data = weights.pop(origin_name)
-    # else:
     data = weights[origin_name]
     if target_name is not None:
         # rename weight
@@ -2225,7 +2221,6 @@ class OpSet9():
                                  remove_weight)
         if has_bias:
             remove_bias = True if val_b.name in self.done_weight_list else False
-            remove_bias = False
             if remove_bias:
                 self.done_weight_list.append(val_b_name)
             _rename_or_remove_weight(self.weights, val_b.name,
