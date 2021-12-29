@@ -2306,20 +2306,10 @@ class OpSet9():
         if input_nums > 5 and node.layer.input[5] != '':
             init_h = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": init_h.name},
-                outputs=[init_h.name],
-                shape=init_h.out_shapes[0])
             exist_input_nums += 1
         if input_nums > 6 and node.layer.input[6] != '':
             init_c = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": init_c.name},
-                outputs=[init_c.name],
-                shape=init_c.out_shapes[0])
 
         input_weight_np = _const_weight_or_none(input_weight)
         _rename_or_remove_weight(self.weights, input_weight.name)
