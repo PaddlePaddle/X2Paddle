@@ -532,9 +532,9 @@ class PaddleGraph(object):
         paddle.save(self.parameters, save_path)
 
     def dygraph2static(self, save_dir, input_shapes=[], input_types=[]):
-        sepc_list = list()
+        spec_list = list()
         for i, name in enumerate(self.inputs):
-            sepc_list.append(
+            spec_list.append(
                 paddle.static.InputSpec(
                     shape=input_shapes[i], name=name, dtype=input_types[i]))
         path = osp.abspath(save_dir)
@@ -548,7 +548,7 @@ class PaddleGraph(object):
         else:
             model.set_dict(restore)
         model.eval()
-        static_model = paddle.jit.to_static(model, input_spec=sepc_list)
+        static_model = paddle.jit.to_static(model, input_spec=spec_list)
         try:
             paddle.jit.save(static_model,
                             osp.join(save_dir, "inference_model/model"))
