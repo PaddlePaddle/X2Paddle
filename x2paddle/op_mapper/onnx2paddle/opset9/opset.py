@@ -1995,20 +1995,8 @@ class OpSet9():
     @print_mapping_info
     def Neg(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        val_y = node.name + "_y"
-        dtype = np.dtype(val_x.dtype)
         self.paddle_graph.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[val_y],
-            dtype=string(dtype),
-            shape=[1],
-            fill_value=-1)
-        self.paddle_graph.add_layer(
-            "paddle.multiply",
-            inputs={'x': val_x.name,
-                    'y': val_y},
-            outputs=[node.name])
+            "paddle.neg", inputs={'x': val_x.name}, outputs=[node.name])
 
     @print_mapping_info
     def SpaceToDepth(self, node):
