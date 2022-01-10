@@ -59,9 +59,19 @@ def _rename_or_remove_weight(weights,
     Returns:
         None
     '''
+    # if origin_name not in weights:
+    #     raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
+    # data = weights[origin_name]
+    # if target_name is not None:
+    #     # rename weight
+    #     weights[target_name] = data
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
-    data = weights[origin_name]
+    if is_remove:
+        # remove weight
+        data = weights.pop(origin_name)
+    else:
+        data = weights[origin_name]
     if target_name is not None:
         # rename weight
         weights[target_name] = data
