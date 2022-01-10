@@ -1999,6 +1999,7 @@ class OpSet9():
 
     @print_mapping_info
     def Neg(self, node):
+        import paddle
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         v0, v1, v2 = paddle.__version__.split('.')
         if int(v0) >= 2 and int(v1) >= 2:
