@@ -62,7 +62,7 @@ def _rename_or_remove_weight(weights,
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
     if is_remove:
-        # TODO There might be a problem here.
+        # TODO There may be problems when the same data is used as an argument to multiple OPs.
         # remove weight
         data = weights.pop(origin_name)
     else:
