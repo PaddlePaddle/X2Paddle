@@ -62,6 +62,7 @@ def _rename_or_remove_weight(weights,
     if origin_name not in weights:
         raise KeyError('{} not a key in {}'.format(origin_name, weights.keys()))
     if is_remove:
+        # TODO There may be problems when the same data is used as an argument to multiple OPs.
         # remove weight
         data = weights.pop(origin_name)
     else:
@@ -250,6 +251,7 @@ class OpSet9():
             node = parameter
         dtype = node.dtype
         shape = node.out_shapes[0]
+
         if hasattr(node.weight, "shape") and len(node.weight.shape) == 0:
             self.paddle_graph.add_layer(
                 "paddle.full",
@@ -387,15 +389,18 @@ class OpSet9():
                         **attrs)
                 return
         elif node.layer_type == 'Upsample':
-            val_scales = self.graph.get_input_node(node, idx=1, copy=True)
-            self.paddle_graph.add_layer(
-                "paddle.slice",
-                inputs={"input": val_scales.name},
-                outputs=[val_scales.name],
-                axes=[0],
-                starts=[2],
-                ends=[4])
-            inputs['scale_factor'] = val_scales.name
+            if len(node.layer.input) == 2:
+                val_scales = self.graph.get_input_node(node, idx=1, copy=True)
+                self.paddle_graph.add_layer(
+                    "paddle.slice",
+                    inputs={"input": val_scales.name},
+                    outputs=[val_scales.name],
+                    axes=[0],
+                    starts=[2],
+                    ends=[4])
+                inputs['scale_factor'] = val_scales.name
+            else:
+                val_scales = node.get_attr('scales')[2:]
 
         mode = node.get_attr('mode', 'nearest')
         attrs.update({
@@ -403,6 +408,8 @@ class OpSet9():
             "mode": string(mode),
             "align_mode": 1
         })
+        if len(node.layer.input) == 1:
+            attrs["scale_factor"] = val_scales
         val_x_shape = val_x.out_shapes[0]
         if mode == "linear" and len(val_x_shape) == 4:
             attrs["mode"] = string("bilinear")
@@ -682,8 +689,7 @@ class OpSet9():
         axes = node.get_attr('axes')
         if axes is None:
             axes = self.graph.get_input_node(node, idx=1, copy=True)
-
-        if len(val_x.out_shapes[0]) == 0:
+        if len(val_x.out_shapes[0]) == 0 and len(axes) == 1 and axes[0] == 0:
             if node.name:
                 self.paddle_graph.add_layer(
                     'paddle.reshape',
@@ -804,11 +810,19 @@ class OpSet9():
         val_shape = self.graph.get_input_node(node, idx=1, copy=True)
         val_x_dtype = val_x.dtype
         name_ones = node.name + '_ones'
-        attr_ones = {
-            'shape': val_shape.name,
-            'dtype': string(val_x_dtype),
-            'fill_value': 1
-        }
+        shape_values = _const_weight_or_none(val_shape)
+        if shape_values is None:
+            attr_ones = {
+                'shape': val_shape.name,
+                'dtype': string(val_x_dtype),
+                'fill_value': 1
+            }
+        else:
+            attr_ones = {
+                'shape': shape_values.tolist(),
+                'dtype': string(val_x_dtype),
+                'fill_value': 1
+            }
         self.paddle_graph.add_layer(
             'paddle.full', inputs={}, outputs=[name_ones], **attr_ones)
         inputs_dict = {'x': name_ones, 'y': val_x.name}
@@ -840,6 +854,11 @@ class OpSet9():
                     outputs=[node.name])
             elif len(val_x.out_shapes[0]) > 1:
                 if len(indices_shape) == 0:
+                    self.paddle_graph.add_layer(
+                        'paddle.reshape',
+                        inputs={"x": indices.name},
+                        outputs=[indices.name],
+                        shape=[-1, ])
                     gather_ = node.name + '_1'
                     self.paddle_graph.add_layer(
                         'paddle.gather',
@@ -1142,6 +1161,10 @@ class OpSet9():
             starts = node.get_attr('starts')
             ends = node.get_attr('ends')
             axes = node.get_attr('axes')
+            output_shape = val_x.out_shapes[0]
+
+            if axes is None:
+                axes = [i for i in range(len(starts))]
             for idx in range(len(ends)):
                 if ends[idx] > 2**31 - 1:
                     ends[idx] = 2**31 - 1
@@ -1182,7 +1205,6 @@ class OpSet9():
 
     @print_mapping_info
     def GatherND(self, node):
-        print(len(node.inputs), node.inputs)
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
         self.paddle_graph.add_layer(
@@ -1348,7 +1370,6 @@ class OpSet9():
 
     @print_mapping_info
     def GatherND(self, node):
-        print(len(node.inputs), node.inputs)
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
         self.paddle_graph.add_layer(
@@ -1975,6 +1996,143 @@ class OpSet9():
             inputs={'x': val_x.name},
             outputs=layer_outputs,
             output_size=output_shape[2:])
+
+    @print_mapping_info
+    def Neg(self, node):
+        import paddle
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        v0, v1, v2 = paddle.__version__.split('.')
+        if int(v0) >= 2 and int(v1) >= 2:
+            self.paddle_graph.add_layer(
+                "paddle.neg", inputs={'x': val_x.name}, outputs=[node.name])
+        else:
+            val_y = node.name + "_y"
+            dtype = np.dtype(val_x.dtype)
+            self.paddle_graph.add_layer(
+                "paddle.full",
+                inputs={},
+                outputs=[val_y],
+                dtype=string(dtype),
+                shape=[1],
+                fill_value=-1)
+            self.paddle_graph.add_layer(
+                "paddle.multiply",
+                inputs={'x': val_x.name,
+                        'y': val_y},
+                outputs=[node.name])
+
+    @print_mapping_info
+    def SpaceToDepth(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        blocksize = node.get_attr('blocksize')
+        val_x_shape = val_x.out_shapes[0]
+        b, c, h, w = val_x_shape
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": val_x.name},
+            outputs=[node.name],
+            shape=[b, c, h // blocksize, blocksize, w // blocksize, blocksize])
+        self.paddle_graph.add_layer(
+            'paddle.transpose',
+            inputs={"x": node.name},
+            outputs=[node.name],
+            perm=[0, 3, 5, 1, 2, 4])
+        self.paddle_graph.add_layer(
+            'paddle.reshape',
+            inputs={"x": node.name},
+            outputs=[node.name],
+            shape=[b, c * (blocksize**2), h // blocksize, w // blocksize])
+
+    @print_mapping_info
+    def GatherElements(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        indices = self.graph.get_input_node(node, idx=1, copy=True)
+        axis = node.get_attr('axis')
+        val_x_shape = val_x.out_shapes[0]
+        indices_shape = indices.out_shapes[0]
+        axis = axis if axis >= 0 else axis + len(val_x_shape)
+        if axis == 0:
+            axis_perm = [i for i in range(len(val_x_shape))]
+            data_swaped = val_x.name
+            index_swaped = indices.name
+        else:
+            axis_perm = [i for i in range(len(val_x_shape))]
+            axis_perm[axis] = 0
+            axis_perm[0] = axis
+            data_swaped = val_x.name + "_transpose"
+            self.paddle_graph.add_layer(
+                "paddle.transpose",
+                inputs={'x': val_x.name},
+                perm=axis_perm,
+                outputs=[data_swaped])
+            index_swaped = indices.name + "_transpose"
+            self.paddle_graph.add_layer(
+                "paddle.transpose",
+                inputs={'x': indices.name},
+                perm=axis_perm,
+                outputs=[index_swaped])
+            temp = indices_shape[0]
+            indices_shape[0] = indices_shape[axis]
+            indices_shape[axis] = temp
+
+        idx_tensors_per_axis_pre = [
+            indices_shape[i] for i in range(len(indices_shape))
+        ]
+        name_list = list()
+        for i in range(len(idx_tensors_per_axis_pre)):
+            tensor_name = val_x.name + "_meshgrid_" + str(i)
+            self.paddle_graph.add_layer(
+                kernel="paddle.linspace",
+                inputs={},
+                outputs=[tensor_name],
+                start=0,
+                stop=idx_tensors_per_axis_pre[i] - 1,
+                num=idx_tensors_per_axis_pre[i])
+            name_list.append(tensor_name)
+
+        self.paddle_graph.add_layer(
+            "paddle.meshgrid", inputs=name_list, outputs=name_list)
+
+        self.paddle_graph.add_layer(
+            "paddle.cast",
+            inputs={"x": index_swaped},
+            outputs=[index_swaped],
+            dtype=string("float32"))
+        import copy
+        copy_name_list = copy.copy(name_list)
+        copy_name_list[0] = index_swaped
+        new_name_list = list()
+        for i in range(len(copy_name_list)):
+            unsqueeze_name = copy_name_list[i] + "_unsqueeze"
+            self.paddle_graph.add_layer(
+                "paddle.unsqueeze",
+                inputs={"x": copy_name_list[i]},
+                axis=-1,
+                outputs=[unsqueeze_name])
+            new_name_list.append(unsqueeze_name)
+        concat_name = val_x.name + "_concated_layer"
+        self.paddle_graph.add_layer(
+            "paddle.concat",
+            inputs={'x': new_name_list},
+            axis=-1,
+            outputs=[concat_name])
+        self.paddle_graph.add_layer(
+            "paddle.cast",
+            inputs={"x": concat_name},
+            outputs=[concat_name],
+            dtype=string("int32"))
+        gather_nd_name = "gather_nd_layer"
+        self.paddle_graph.add_layer(
+            "paddle.gather_nd",
+            inputs={'x': data_swaped,
+                    "index": concat_name},
+            outputs=[gather_nd_name])
+
+        self.paddle_graph.add_layer(
+            "paddle.transpose",
+            inputs={'x': gather_nd_name},
+            perm=axis_perm,
+            outputs=[node.name])
 
     @print_mapping_info
     def GlobalAveragePool(self, node):
