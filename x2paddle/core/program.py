@@ -27,22 +27,23 @@ from x2paddle.core.util import *
 
 class PaddleLayer(object):
     def __init__(self, id, kernel, inputs, outputs, scope_name="", **kwargs):
-        assert isinstance(
-            inputs,
-            dict), "parameter 'inputs' for PaddleLayer should be type of dict"
+        assert isinstance(inputs, (
+            dict, list
+        )), "parameter 'inputs' for PaddleLayer should be type of dict or list"
         assert isinstance(
             outputs,
             list), "parameter 'outputs' for PaddleLayer should be type of list"
-        for k, v in inputs.items():
-            if isinstance(v, (list, tuple)):
-                for i in v:
-                    assert isinstance(
-                        i, six.string_types
+        if isinstance(inputs, dict):
+            for k, v in inputs.items():
+                if isinstance(v, (list, tuple)):
+                    for i in v:
+                        assert isinstance(
+                            i, six.string_types
+                        ), "value in inputs should be type of string or list of string"
+                else:
+                    assert isinstance(v, six.string_types) or isinstance(
+                        v, list
                     ), "value in inputs should be type of string or list of string"
-            else:
-                assert isinstance(v, six.string_types) or isinstance(
-                    v, list
-                ), "value in inputs should be type of string or list of string"
         for v in outputs:
             assert isinstance(
                 v, six.
@@ -164,11 +165,31 @@ class PaddleGraph(object):
         self.clear_edges()
         outputs_from_nodes = dict()
         for layer_id, layer in self.layers.items():
-            for input_key, input_var in layer.inputs.items():
-                vs = input_var
-                if not isinstance(vs, (list, tuple)):
-                    vs = [vs]
-                for v in vs:
+            if isinstance(layer.inputs, dict):
+                for input_key, input_var in layer.inputs.items():
+                    vs = input_var
+                    if not isinstance(vs, (list, tuple)):
+                        vs = [vs]
+                    for v in vs:
+                        assert v in outputs_from_nodes or (
+                            inputs is not None and v in list(inputs.values())
+                        ) or (
+                            outputs is not None and v in outputs
+                        ), "Couldn't find {} in previous layers, the layers should be make by topological sort".format(
+                            v)
+                        if v in outputs_from_nodes:
+                            in_layer_id = outputs_from_nodes[v]
+                        else:
+                            in_layer_id = -1
+                        if in_layer_id not in self.edges_out:
+                            self.edges_out[in_layer_id] = list()
+                        self.edges_out[in_layer_id].append(layer_id)
+
+                        if layer_id not in self.edges_in:
+                            self.edges_in[layer_id] = list()
+                        self.edges_in[layer_id].append(in_layer_id)
+            else:
+                for v in layer.inputs:
                     assert v in outputs_from_nodes or (
                         inputs is not None and v in list(inputs.values())
                     ) or (
@@ -186,6 +207,7 @@ class PaddleGraph(object):
                     if layer_id not in self.edges_in:
                         self.edges_in[layer_id] = list()
                     self.edges_in[layer_id].append(in_layer_id)
+
             for output in layer.outputs:
                 outputs_from_nodes[output] = layer_id
 
@@ -496,16 +518,20 @@ class PaddleGraph(object):
                 else:
                     line = ','.join(layer.outputs)
                 line += " = {}(".format(layer.kernel)
-                for k, v in layer.inputs.items():
-                    if isinstance(v, list):
-                        line += "{}=[{}], ".format(k, ", ".join(v))
-                    elif isinstance(v, tuple):
-                        line += "{}=({}), ".format(k, ", ".join(v))
-                    else:
-                        if k == "args":
-                            line += v
+                if isinstance(layer.inputs, dict):
+                    for k, v in layer.inputs.items():
+                        if isinstance(v, list):
+                            line += "{}=[{}], ".format(k, ", ".join(v))
+                        elif isinstance(v, tuple):
+                            line += "{}=({}), ".format(k, ", ".join(v))
                         else:
-                            line += "{}={}, ".format(k, v)
+                            if k == "args":
+                                line += v
+                            else:
+                                line += "{}={}, ".format(k, v)
+                else:
+                    line += "{}".format(", ".join(layer.inputs))
+
                 for k, v in layer.attrs.items():
                     line += "{}={}, ".format(k, v)
                 line = line.strip(", ")
@@ -532,9 +558,9 @@ class PaddleGraph(object):
         paddle.save(self.parameters, save_path)
 
     def dygraph2static(self, save_dir, input_shapes=[], input_types=[]):
-        sepc_list = list()
+        spec_list = list()
         for i, name in enumerate(self.inputs):
-            sepc_list.append(
+            spec_list.append(
                 paddle.static.InputSpec(
                     shape=input_shapes[i], name=name, dtype=input_types[i]))
         path = osp.abspath(save_dir)
@@ -548,7 +574,7 @@ class PaddleGraph(object):
         else:
             model.set_dict(restore)
         model.eval()
-        static_model = paddle.jit.to_static(model, input_spec=sepc_list)
+        static_model = paddle.jit.to_static(model, input_spec=spec_list)
         try:
             paddle.jit.save(static_model,
                             osp.join(save_dir, "inference_model/model"))
