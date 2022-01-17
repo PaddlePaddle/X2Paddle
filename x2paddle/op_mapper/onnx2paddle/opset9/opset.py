@@ -61,7 +61,7 @@ def _rename_or_remove_weight(weights,
     Returns:
         None
     '''
-    if origin_name in rename_mapper:
+    if rename_mapper is not None and origin_name in rename_mapper:
         origin_name = rename_mapper[origin_name]
         is_remove = False
     if origin_name not in weights:
