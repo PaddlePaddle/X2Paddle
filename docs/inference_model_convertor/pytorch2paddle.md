@@ -26,8 +26,9 @@ pytorch2paddle(module=torch_module,
 # input_examples (list[torch.tensor]): torch.nn.Module的输入示例，list的长度必须与输入的长度一致。默认为None。
 ```
 
-**注意：** 当jit_type为"trace"时，input_examples不可为None，转换后自动进行动转静；
-          当jit_type为"script"时"，当input_examples为None时，只生成动态图代码；当input_examples不为None时，才能自动动转静。
+**注意：**
+- jit_type为"trace"时，input_examples不可为None，转换后自动进行动转静；
+- jit_type为"script"时"，当input_examples为None时，只生成动态图代码；当input_examples不为None时，才能自动动转静。
 
 ## 使用示例
 
