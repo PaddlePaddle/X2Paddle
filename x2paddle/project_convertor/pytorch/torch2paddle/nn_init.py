@@ -15,7 +15,7 @@
 import math
 from functools import reduce
 import paddle
-from paddle.fluid import framework
+from paddle.fluid import framework, unique_name
 from paddle.fluid.core import VarDesc
 from paddle.fluid.initializer import XavierInitializer, MSRAInitializer
 from paddle.fluid.data_feeder import check_variable_and_dtype
