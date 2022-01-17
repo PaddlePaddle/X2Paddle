@@ -188,6 +188,7 @@ class OpSet9():
         self.nn_name2id = dict()
         self.done_weight_list = list()
         # solve for same data is used as an argument to multiple OPs.
+        # PR link(wangjunjie06): https://github.com/PaddlePaddle/X2Paddle/pull/728
         self.rename_mapper = dict()
 
     @print_mapping_info
