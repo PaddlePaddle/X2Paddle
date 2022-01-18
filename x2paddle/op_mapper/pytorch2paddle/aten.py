@@ -1038,6 +1038,43 @@ def aten_clamp_min(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_complex(mapper, graph, node):
+    """
+    TorchScript示例:
+        %ret.2 : Tensor = aten::complex(%150, %156)
+        参数含义:
+        %ret.2 (Tensor): complex结果Tensor。
+        %150 (Tensor): 实部输入Tensor。
+        %156 (Tensor): 虚部输入Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%150
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["real"] = inputs_name[0]
+    # 处理输入1，即%156
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["imag"] = inputs_name[1]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.complex",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten___contains__(mapper, graph, node):
     """ 构造in的PaddleLayer。
     TorchScript示例:
@@ -2070,6 +2107,86 @@ def aten_feature_dropout(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_fft_rfftn(mapper, graph, node):
+    """
+    TorchScript示例:
+        %x_gap.15 : Tensor =  aten::fft_rfftn(%x.58, %2166, %1450, %1453)
+        参数含义:
+        %x_gap.15 (Tensor): Output Tensor。
+        %x.58 (Tensor): Input Tensor。
+        %2166：Sequence Length
+        %1450：axes
+        %1453：norm mode
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%n.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["s"] = mapper.attrs[inputs_name[1]]
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["axes"] = mapper.attrs[inputs_name[2]]
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["norm"] = mapper.attrs[inputs_name[3]]
+    graph.add_layer(
+        "paddle.fft.rfftn",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_fft_irfftn(mapper, graph, node):
+    """
+    TorchScript示例:
+        %x_gap.15 : Tensor =  aten::fft_irfftn(%x.58, %2166, %1450, %1453)
+        参数含义:
+        %x_gap.15 (Tensor): Output Tensor。
+        %x.58 (Tensor): Input Tensor。
+        %2166：Sequence Length
+        %1450：axes
+        %1453：norm mode
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%n.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["s"] = mapper.attrs[inputs_name[1]]
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["axes"] = mapper.attrs[inputs_name[2]]
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["norm"] = mapper.attrs[inputs_name[3]]
+    graph.add_layer(
+        "paddle.fft.irfftn",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_flatten(mapper, graph, node):
     """ 构造flatten的PaddleLayer。
     TorchScript示例:
@@ -2666,6 +2783,36 @@ def aten_index(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_imag(mapper, graph, node):
+    """ 构造获取绝对值的PaddleLayer。
+    TorchScript示例:
+        %n0.3 : Tensor = aten::imag(%1)
+        参数含义:
+        %1 (Tensor): Complex Tensor。
+        %n0.3 (Tensor): 返回虚部 Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%n.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.imag",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
     return current_inputs, current_outputs
 
 
@@ -4065,6 +4212,36 @@ def aten_prelu(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         num_parameters=weight.shape[0])
+    return current_inputs, current_outputs
+
+
+def aten_real(mapper, graph, node):
+    """
+    TorchScript示例:
+        %n0.3 : Tensor = aten::real(%n.3)
+        参数含义:
+        %n0.3 (Tensor): Return Real Tensor。
+        %n.3 (Tensor): Input Complex Tensor。
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%n.3
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.real",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
     return current_inputs, current_outputs
 
 
