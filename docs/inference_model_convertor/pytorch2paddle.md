@@ -28,7 +28,7 @@ pytorch2paddle(module=torch_module,
 
 **注意:**
 - jit_type为"trace"时，input_examples不可为None，转换后自动进行动转静；
-- jit_type为"script"时"，当input_examples为None时，只生成动态图代码；当input_examples不为None时，才能自动动转静。
+- jit_type为"script"时，当input_examples为None时，只生成动态图代码；当input_examples不为None时，才能自动动转静。
 
 ## 使用示例
 
