@@ -74,8 +74,8 @@
 | 73 | Sum | 74 | Tanh | 75 | Tile | 76 | TopK |
 | 77 | Transpose | 78 | Unsqueeze | 79 | Upsample | 80 | Where |
 | 81 | Add | 82 | Concat | 83 | Max | 84 | Min |
-| 85 | GreaterOrEqual | 86 | GatherND | 87 | And |  |  |
-
+| 85 | GreaterOrEqual | 86 | GatherND | 87 | And | 88 | cos |
+| 89 | Neg | 90 | SpaceToDepth | 91 | GatherElement | 92 | Sin |
 
 ## PyTorch
 
