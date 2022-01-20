@@ -82,8 +82,9 @@ def paddle_gather(x, dim, index):
         else:
             reshape_shape = [1] * len(x.shape)
             reshape_shape[k] = x.shape[k]
-            dim_index = paddle.expand(paddle.reshape(paddle.arange(
-                x.shape[k], dtype=index.dtype), reshape_shape), index_shape).flatten()
+            x_arange = paddle.arange(x.shape[k], dtype=index.dtype)
+            x_arange = x_arange.reshape(reshape_shape)
+            dim_index = paddle.expand(x_arange, index_shape).flatten()
             nd_index.append(dim_index)
     ind2 = paddle.transpose(paddle.stack(nd_index), [1, 0]).astype("int64")
     paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
@@ -96,4 +97,3 @@ paddle_gather(t, 1, paddle.to_tensor([[0, 0], [1, 0]]))
 #        [[1, 1],
 #         [4, 3]])
 ```
-
