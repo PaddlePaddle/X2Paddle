@@ -74,8 +74,8 @@
 | 73 | Sum | 74 | Tanh | 75 | Tile | 76 | TopK |
 | 77 | Transpose | 78 | Unsqueeze | 79 | Upsample | 80 | Where |
 | 81 | Add | 82 | Concat | 83 | Max | 84 | Min |
-| 85 | GreaterOrEqual | 86 | GatherND | 87 | And |  |  |
-
+| 85 | GreaterOrEqual | 86 | GatherND | 87 | And | 88 | cos |
+| 89 | Neg | 90 | SpaceToDepth | 91 | GatherElement | 92 | Sin |
 
 ## PyTorch
 
@@ -113,6 +113,9 @@ Aten:
 | 113 | aten::upsample\_nearest2d | 114 | aten::split\_with\_sizes | 115 | aten::sum | 116 | aten::instance\_norm |
 | 117 | aten::bitwise\_not | 118 | aten::bitwise\_xor | 119 | aten::bitwise\_and | 120 | aten::silu |
 | 121 | aten::repeat\_interleave | 122 | aten::maxpool1d | 123 | aten::frobenius\_norm | 124 | aten::format |
+| 125 | aten::complex | 126 | aten::real | 127 | aten::imag | 128 | aten::fft\_rfftn |
+| 129 | aten::fft\_irfftn |  |  |  |  |  |  |
+
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |
