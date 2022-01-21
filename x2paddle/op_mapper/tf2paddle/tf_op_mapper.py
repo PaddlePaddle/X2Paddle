@@ -18,7 +18,7 @@ from x2paddle.core.util import *
 import traceback
 import math
 import inspect
-import numpy
+import numpy as np
 import sys
 
 name_counter = dict()
@@ -416,8 +416,8 @@ class TFOpMapper():
             kernel_value = self.decoder.infer_tensor(
                 kernel, use_diff_inputs=False)
         kernel_weight_name = op_name + ".weight"
-        self.params[kernel_weight_name] = numpy.transpose(kernel_value,
-                                                          (3, 2, 0, 1))
+        self.params[kernel_weight_name] = np.transpose(kernel_value,
+                                                       (3, 2, 0, 1))
 
         input_name = input.name
         if data_format == "NHWC":
@@ -482,8 +482,8 @@ class TFOpMapper():
             kernel_value = self.decoder.infer_tensor(
                 kernel, use_diff_inputs=False)
         kernel_weight_name = op_name + ".weight"
-        self.params[kernel_weight_name] = numpy.transpose(kernel_value,
-                                                          (4, 3, 0, 1, 2))
+        self.params[kernel_weight_name] = np.transpose(kernel_value,
+                                                       (4, 3, 0, 1, 2))
 
         input_name = input.name
         if data_format == "NDHWC":
@@ -630,7 +630,7 @@ class TFOpMapper():
                         "shape": param.name},
                 outputs=[node.name])
         if param.layer_type != "Const":
-            out_shape = numpy.array(node.out_shapes[0])
+            out_shape = np.array(node.out_shapes[0])
             if (out_shape > 0).any():
                 out_shape[out_shape < 0] = 0
                 self.paddle_graph.add_layer(
@@ -774,8 +774,8 @@ class TFOpMapper():
         pad_mode = node.get_attr("padding").decode()
 
         kernel_weight_name = op_name + ".weight"
-        self.params[kernel_weight_name] = numpy.transpose(kernel.value,
-                                                          (2, 3, 0, 1))
+        self.params[kernel_weight_name] = np.transpose(kernel.value,
+                                                       (2, 3, 0, 1))
 
         input_name = input.name
         if data_format == "NHWC":
@@ -1304,7 +1304,7 @@ class TFOpMapper():
         data_format = node.get_attr("data_format").decode()
 
         kernel_name = op_name + ".weight"
-        self.params[kernel_name] = numpy.transpose(kernel.value, (3, 2, 0, 1))
+        self.params[kernel_name] = np.transpose(kernel.value, (3, 2, 0, 1))
 
         input_name = input.name
         if data_format == "NHWC":
@@ -1591,7 +1591,7 @@ class TFOpMapper():
             kernel="paddle.reshape",
             inputs={"x": transpose_name},
             outputs=[reshape_name],
-            shape=shape)
+            shape=list(shape))
         #crop
         attrs = {}
         crop_shape = shape
@@ -1622,17 +1622,27 @@ class TFOpMapper():
         #zero-pad
         constant_values = 0
         pad_name = gen_name("space_to_batch", "pad")
-        paddings = [0, 0] + paddings + [0, 0]
+        paddings = [0, 0, 0, 0] + paddings
+        self.paddle_graph.add_layer(
+            kernel="paddle.transpose",
+            inputs={"x": input_name},
+            outputs=[input_name + "_transpose"],
+            perm=[0, 3, 1, 2])
         self.paddle_graph.add_layer(
             kernel="paddle.nn.functional.pad",
-            inputs={"x": input_name},
+            inputs={"x": input_name + "_transpose"},
             outputs=[pad_name],
             pad=paddings,
             value=constant_values)
+        self.paddle_graph.add_layer(
+            kernel="paddle.transpose",
+            inputs={"x": pad_name},
+            outputs=[pad_name + "_transpose"],
+            perm=[0, 2, 3, 1])
         #reshape
         n, h, w, c = x.out_shapes[0]
-        h = h + paddings[2] + paddings[3]
-        w = w + paddings[4] + paddings[5]
+        h = h + paddings[4] + paddings[5]
+        w = w + paddings[6] + paddings[7]
         shape = [
             n, h // block_shape[0], block_shape[0], w // block_shape[1],
             block_shape[1], c
@@ -1640,7 +1650,7 @@ class TFOpMapper():
         reshape_name = gen_name("space_to_batch", "reshape")
         self.paddle_graph.add_layer(
             kernel="paddle.reshape",
-            inputs={"x": pad_name},
+            inputs={"x": pad_name + "_transpose"},
             outputs=[reshape_name],
             shape=shape)
         #transpose
