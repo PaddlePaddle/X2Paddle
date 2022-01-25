@@ -100,7 +100,7 @@ class Apriori(object):
         
 
 class DP(object):
-    """ 使用动态规划找到使代码最短的组合方式。
+    """ 使用动动态规划找到使代码最短的组合方式。
     """
     def __init__(self, combination_itemset):
         self.combination_itemset = combination_itemset
