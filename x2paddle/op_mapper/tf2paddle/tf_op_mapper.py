@@ -563,7 +563,6 @@ class TFOpMapper():
             n, h, w, c = input.out_shapes[0]
         else:
             n, c, h, w = input.out_shapes[0]
-
         self.params["{}_{}".format(node.name, gamma.name)] = self.params[
             gamma.name]
         self.params["{}_{}".format(node.name, beta.name)] = self.params[
@@ -584,7 +583,8 @@ class TFOpMapper():
                                                    moving_mean.name)),
             moving_variance_name=string("{}_{}".format(node.name,
                                                        moving_var.name)),
-            is_test=True)
+            is_test=True,
+            trainable_statistics=node.get_attr("is_training"))
 
         if data_format == "NHWC":
             self.paddle_graph.add_layer(
