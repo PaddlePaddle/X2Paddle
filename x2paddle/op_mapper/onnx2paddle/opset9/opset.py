@@ -122,6 +122,7 @@ class OpSet9():
         'Mul': 'paddle.multiply',
         'Pow': 'paddle.pow',
         'Less': 'paddle.less_than',
+        'LessOrEqual': 'paddle.less_equal',
     }
 
     directly_map_ops = {
@@ -402,11 +403,11 @@ class OpSet9():
                 self.paddle_graph.add_layer(
                     "paddle.slice",
                     inputs={"input": val_scales.name},
-                    outputs=[val_scales.name],
+                    outputs=[val_scales.name+'_slice'],
                     axes=[0],
                     starts=[2],
                     ends=[4])
-                inputs['scale_factor'] = val_scales.name
+                inputs['scale_factor'] = val_scales.name + '_slice'
             else:
                 val_scales = node.get_attr('scales')[2:]
 
@@ -596,15 +597,11 @@ class OpSet9():
                         pads)  # NCHW
                 if assume_pad:
                     paddle_op = 'paddle.nn.Pad2D'
+                    # x1_begin,x2_begin,x3_begin,x4_begin,x1_end,x2_end,x3_end,x4_end -> x1_begin,x1_end,x2_begin,x2_end,x3_begin,x3_end,x4_begin,x4_end
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
-                    paddings = np.flip(paddings, axis=0).flatten().tolist()
-                    if sum(paddings[:4]) == 0:
-                        paddings = paddings[4:]
-                        layer_attrs['padding'] = paddings
-                    else:
-                        layer_attrs["pad"] = paddings
-                        paddle_op = "custom_layer:PadAllDim4WithOneInput"
+                    paddings = paddings.flatten().tolist()
+                    layer_attrs['padding'] = paddings
             else:
                 pad_data = node.get_attr('pads')
                 pad_data1 = pad_data[0::2]
@@ -1305,6 +1302,45 @@ class OpSet9():
                 inputs={"x": val_x.name},
                 outputs=[node.name],
                 **layer_attrs)
+
+    @print_mapping_info
+    def ReduceSumSquare(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        if len(node.inputs) == 1:
+            keepdims = node.get_attr('keepdims')
+            if keepdims is None:
+                keepdims = True
+            axes_value = node.get_attr('axes')
+            layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
+            self.paddle_graph.add_layer(
+                'paddle.sum',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
+            self.paddle_graph.add_layer(
+                'paddle.square',
+                inputs={"x": node.name},
+                outputs=[node.name])
+        else:
+            axes = self.graph.get_input_node(node, idx=1, copy=True)
+            axes_value = _const_weight_or_none(axes)
+            if axes_value.shape == (1, ):
+                axes_value = axes_value[0]
+            keepdims = node.get_attr('keepdims')
+            if keepdims is None:
+                layer_attrs = {'axis': axes_value}
+            else:
+                layer_attrs = {'axis': axes_value, 'keepdim': keepdims}
+
+            self.paddle_graph.add_layer(
+                'paddle.sum',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
+            self.paddle_graph.add_layer(
+                'paddle.square',
+                inputs={"x": node.name},
+                outputs=[node.name])
 
     @print_mapping_info
     def Max(self, node):
