@@ -403,7 +403,7 @@ class OpSet9():
                 self.paddle_graph.add_layer(
                     "paddle.slice",
                     inputs={"input": val_scales.name},
-                    outputs=[val_scales.name+'_slice'],
+                    outputs=[val_scales.name + '_slice'],
                     axes=[0],
                     starts=[2],
                     ends=[4])
@@ -597,7 +597,7 @@ class OpSet9():
                         pads)  # NCHW
                 if assume_pad:
                     paddle_op = 'paddle.nn.Pad2D'
-                    # x1_begin,x2_begin,x3_begin,x4_begin,x1_end,x2_end,x3_end,x4_end -> x1_begin,x1_end,x2_begin,x2_end,x3_begin,x3_end,x4_begin,x4_end
+                    # x1_begin,x2_begin,x3_begin,x4_begin,x1_end,x2_end,x3_end,x4_end->x1_begin,x1_end,x2_begin,x2_end,x3_begin,x3_end,x4_begin,x4_end
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
                     paddings = paddings.flatten().tolist()
@@ -1318,9 +1318,7 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
             self.paddle_graph.add_layer(
-                'paddle.square',
-                inputs={"x": node.name},
-                outputs=[node.name])
+                'paddle.square', inputs={"x": node.name}, outputs=[node.name])
         else:
             axes = self.graph.get_input_node(node, idx=1, copy=True)
             axes_value = _const_weight_or_none(axes)
@@ -1338,9 +1336,7 @@ class OpSet9():
                 outputs=[node.name],
                 **layer_attrs)
             self.paddle_graph.add_layer(
-                'paddle.square',
-                inputs={"x": node.name},
-                outputs=[node.name])
+                'paddle.square', inputs={"x": node.name}, outputs=[node.name])
 
     @print_mapping_info
     def Max(self, node):
