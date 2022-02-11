@@ -600,8 +600,17 @@ class OpSet9():
                     # x1_begin,x2_begin,x3_begin,x4_begin,x1_end,x2_end,x3_end,x4_end->x1_begin,x1_end,x2_begin,x2_end,x3_begin,x3_end,x4_begin,x4_end
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
-                    paddings = paddings.flatten().tolist()
-                    layer_attrs['padding'] = paddings
+                    if mode == 'constant':
+                        paddings = paddings.flatten().tolist()
+                        layer_attrs['padding'] = paddings
+                    else:
+                        paddings = np.flip(paddings, axis=0).flatten().tolist()
+                        if sum(paddings[:4]) == 0:
+                            paddings = paddings[4:]
+                            layer_attrs['padding'] = paddings
+                        else:
+                            layer_attrs["pad"] = paddings
+                            paddle_op = "custom_layer:PadAllDim4WithOneInput"
             else:
                 pad_data = node.get_attr('pads')
                 pad_data1 = pad_data[0::2]
