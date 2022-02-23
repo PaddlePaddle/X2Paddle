@@ -16,6 +16,8 @@ treelib
 
 ```python
 from x2paddle.convert import pytorch2paddle
+
+torch_module.eval()
 pytorch2paddle(module=torch_module,
                save_dir="./pd_model",
                jit_type="trace",
