@@ -630,7 +630,7 @@ class OpSet9():
                         layer_attrs["pad"] = paddings
                         paddle_op = "custom_layer:PadAllDim4WithOneInput"
             else:
-                pad_data = node.get_attr('pads')
+                pad_data = pads
                 pad_data1 = pad_data[0::2]
                 pad_data_all = []
                 for i in range(len(pad_data1)):
