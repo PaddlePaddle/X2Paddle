@@ -630,12 +630,11 @@ class OpSet9():
                         layer_attrs["pad"] = paddings
                         paddle_op = "custom_layer:PadAllDim4WithOneInput"
             else:
-                pad_data = node.get_attr('pads')
-                pad_data1 = pad_data[0::2]
+                pad_data_temp = pads[0::2]
                 pad_data_all = []
-                for i in range(len(pad_data1)):
-                    pad_data_all.append(pad_data[i])
-                    pad_data_all.append(pad_data[len(pad_data1) + i])
+                for i in range(len(pad_data_temp)):
+                    pad_data_all.append(pads[i])
+                    pad_data_all.append(pads[len(pad_data_temp) + i])
 
                 layer_attrs["pad"] = pad_data_all
                 self.paddle_graph.add_layer(
