@@ -346,7 +346,15 @@ def shape_argmax(layer, input_shape):
 
 def shape_crop(layer, input_shape):
     assert len(input_shape) == 2, "the number of crop's inputs must be 2"
-    return [input_shape[1]]
+    params = layer.crop_param
+    axis = params.axis
+    if axis < 0:
+        axis += len(input_shape[0])
+    if axis > 0:
+        crop_shape = input_shape[0][:axis] + input_shape[1][axis:]
+    else:
+        crop_shape = input_shape[1]
+    return [crop_shape]
 
 
 def shape_flatten(layer, input_shape):
