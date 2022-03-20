@@ -29,5 +29,5 @@ class LayerNormFusePass(Pass):
         fuser.operate(graph, match_kind="edge")
 
 
-# 用于注册
+# register layernorm pass
 onnx_layernorm_fuse_pass = LayerNormFusePass()

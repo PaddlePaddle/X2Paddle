@@ -1,4 +1,4 @@
-#   Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -109,13 +109,9 @@ class LayerNormFuser(FuseBase):
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer, new_layer_id = self.gen_new_layer(parameters, matches)
-        print("new_layer:", new_layer)
-        print("=========:", new_layer.outputs[0])
-        # new_layer_id = list(matches.keys())[0]
         graph.layers[new_layer_id] = new_layer
         matches_copy = copy.deepcopy(matches)
         for layer_id, layer in matches_copy.items():
-            print(layer.kernel)
             if layer.kernel in ["self.create_parameter", "paddle.full"]:
                 matches.pop(layer_id)
         matches.pop(new_layer_id)
@@ -130,14 +126,11 @@ class LayerNormFuser(FuseBase):
             if layer.kernel == "paddle.mean":
                 layer_inputs.append(layer.inputs)
                 layer_inputs_ids.append(layer_id)
-                print("layer_inputs:", layer_inputs)
             if layer.kernel == "self.create_parameter":
                 param_name.append(layer.outputs[0])
             if layer.kernel == "paddle.add":
                 output_name = layer.outputs[0]
-                print("output_name:", output_name)
         param = parameters[param_name[0]]
-        print("param.shape:", param.shape)
         c = param.shape[0]
         weight_param = parameters.pop(param_name[0])
         parameters["{}.weight".format(output_name)] = weight_param
@@ -149,6 +142,4 @@ class LayerNormFuser(FuseBase):
             inputs=layer_inputs[0],
             outputs=[output_name],
             normalized_shape=[c])
-        # weight_attr=string(param_name[0]),
-        # bias_attr=string(param_name[1]))
         return new_layer, layer_inputs_ids[0]
