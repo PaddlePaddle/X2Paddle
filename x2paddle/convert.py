@@ -139,28 +139,33 @@ def tf2paddle(model_path,
         version = tf.__version__
         if version >= '2.0.0' or version < '1.0.0':
             logging.info(
-                "[ERROR] 1.0.0<=tensorflow<2.0.0 is required, and v1.14.0 is recommended"
+                "[ERROR] 1.0.0<=TensorFlow<2.0.0 is required, and v1.14.0 is recommended"
             )
             return
     except:
         logging.info(
-            "[ERROR] Tensorflow is not installed, use \"pip install tensorflow\"."
+            "[ERROR] TensorFlow is not installed, use \"pip install TensorFlow\"."
         )
         return
 
     from x2paddle.decoder.tf_decoder import TFDecoder
     from x2paddle.op_mapper.tf2paddle.tf_op_mapper import TFOpMapper
 
-    logging.info("Now translating model from tensorflow to paddle.")
+    logging.info("Now translating model from TensorFlow to Paddle.")
     model = TFDecoder(model_path, define_input_shape=define_input_shape)
     mapper = TFOpMapper(model)
     mapper.paddle_graph.build()
+    logging.info("Model optimizing ...")
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="tf")
     graph_opt.optimize(mapper.paddle_graph)
+    logging.info("Model optimized!")
     mapper.paddle_graph.gen_model(save_dir)
+    logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
+        logging.info("Now translating model from Paddle to Paddle lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        logging.info("Successfully exported Paddle Lite support model!")
 
 
 def caffe2paddle(proto_file,
@@ -187,10 +192,13 @@ def caffe2paddle(proto_file,
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="caffe")
     graph_opt.optimize(mapper.paddle_graph)
-    logging.info("Model optimized.")
+    logging.info("Model optimized!")
     mapper.paddle_graph.gen_model(save_dir)
+    logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
+        logging.info("Now translating model from Paddle to Paddle lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        logging.info("Successfully exported Paddle Lite support model!")
 
 
 def onnx2paddle(model_path,
@@ -219,8 +227,11 @@ def onnx2paddle(model_path,
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     mapper.paddle_graph.gen_model(save_dir)
+    logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
+        logging.info("Now translating model from Paddle to Paddle lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        logging.info("Successfully exported Paddle Lite support model!")
 
 
 def pytorch2paddle(module,
@@ -242,17 +253,17 @@ def pytorch2paddle(module,
         version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
         if version_sum < 150:
             logging.info(
-                "[ERROR] pytorch>=1.5.0 is required, 1.6.0 is the most recommended"
+                "[ERROR] PyTorch>=1.5.0 is required, 1.6.0 is the most recommended"
             )
             return
         if version_sum > 160:
-            logging.info("[WARNING] pytorch==1.6.0 is recommended")
+            logging.info("[WARNING] PyTorch==1.6.0 is recommended")
     except:
         logging.info(
-            "[ERROR] Pytorch is not installed, use \"pip install torch==1.6.0 torchvision\"."
+            "[ERROR] PyTorch is not installed, use \"pip install torch==1.6.0 torchvision\"."
         )
         return
-    logging.info("Now translating model from pytorch to paddle.")
+    logging.info("Now translating model from PyTorch to Paddle.")
 
     from x2paddle.decoder.pytorch_decoder import ScriptDecoder, TraceDecoder
     from x2paddle.op_mapper.pytorch2paddle.pytorch_op_mapper import PyTorchOpMapper
@@ -267,11 +278,14 @@ def pytorch2paddle(module,
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="pytorch", jit_type=jit_type)
     graph_opt.optimize(mapper.paddle_graph)
-    logging.info("Model optimized.")
+    logging.info("Model optimized!")
     mapper.paddle_graph.gen_model(
         save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
+    logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
+        logging.info("Now translating model from Paddle to Paddle lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        logging.info("Successfully exported Paddle Lite support model!")
 
 
 def main():
