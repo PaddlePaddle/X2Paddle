@@ -163,7 +163,7 @@ def tf2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
-        logging.info("Now translating model from Paddle to Paddle lite ...")
+        logging.info("Now translating model from Paddle to Paddle Lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
 
@@ -196,7 +196,7 @@ def caffe2paddle(proto_file,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
-        logging.info("Now translating model from Paddle to Paddle lite ...")
+        logging.info("Now translating model from Paddle to Paddle Lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
 
@@ -229,7 +229,7 @@ def onnx2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
-        logging.info("Now translating model from Paddle to Paddle lite ...")
+        logging.info("Now translating model from Paddle to Paddle Lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
 
@@ -283,7 +283,7 @@ def pytorch2paddle(module,
         save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
     logging.info("Successfully exported Paddle static graph model!")
     if convert_to_lite:
-        logging.info("Now translating model from Paddle to Paddle lite ...")
+        logging.info("Now translating model from Paddle to Paddle Lite ...")
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
 
