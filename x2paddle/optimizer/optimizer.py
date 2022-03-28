@@ -36,6 +36,8 @@ class GraphOptimizer(object):
                 "conv2d_add_fuse_pass", "tf_batchnorm_fuse_pass",
                 "prelu_fuse_pass", "transpose_eliminate_pass"
             ]
+        elif source_frame == "onnx":
+            self.passes = ["onnx_layernorm_fuse_pass"]
         else:
             self.passes = []
 
