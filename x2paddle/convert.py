@@ -14,8 +14,6 @@
 
 from six import text_type as _text_type
 from x2paddle import program
-# import sys
-# sys.path.append('.')
 from x2paddle.utils import ConverterCheck
 import argparse
 import sys
