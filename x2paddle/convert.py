@@ -14,6 +14,7 @@
 
 from six import text_type as _text_type
 from x2paddle import program
+from utils import ConverterCheck
 import argparse
 import sys
 import logging
@@ -131,6 +132,7 @@ def tf2paddle(model_path,
               convert_to_lite=False,
               lite_valid_places="arm",
               lite_model_type="naive_buffer"):
+    ConverterCheck(task="TensorFlow", convert_state="Start").start()
     # check tensorflow installation and version
     try:
         import os
@@ -159,8 +161,11 @@ def tf2paddle(model_path,
     graph_opt = GraphOptimizer(source_frame="tf")
     graph_opt.optimize(mapper.paddle_graph)
     mapper.paddle_graph.gen_model(save_dir)
+    ConverterCheck(task="TensorFlow", convert_state="Success").start()
     if convert_to_lite:
+        ConverterCheck(task="TensorFlow", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        ConverterCheck(task="TensorFlow", lite_state="Success").start()
 
 
 def caffe2paddle(proto_file,
@@ -170,6 +175,7 @@ def caffe2paddle(proto_file,
                  convert_to_lite=False,
                  lite_valid_places="arm",
                  lite_model_type="naive_buffer"):
+    ConverterCheck(task="Caffe", convert_state="Start").start()
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
@@ -189,8 +195,11 @@ def caffe2paddle(proto_file,
     graph_opt.optimize(mapper.paddle_graph)
     logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
+    ConverterCheck(task="Caffe", convert_state="Success").start()
     if convert_to_lite:
+        ConverterCheck(task="Caffe", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        ConverterCheck(task="Caffe", lite_state="Success").start()
 
 
 def onnx2paddle(model_path,
@@ -198,6 +207,7 @@ def onnx2paddle(model_path,
                 convert_to_lite=False,
                 lite_valid_places="arm",
                 lite_model_type="naive_buffer"):
+    ConverterCheck(task="ONNX", convert_state="Start").start()
     # check onnx installation and version
     try:
         import onnx
@@ -224,8 +234,11 @@ def onnx2paddle(model_path,
     graph_opt.optimize(mapper.paddle_graph)
     logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
+    ConverterCheck(task="ONNX", convert_state="Success").start()
     if convert_to_lite:
+        ConverterCheck(task="ONNX", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        ConverterCheck(task="ONNX", lite_state="Success").start()
 
 
 def pytorch2paddle(module,
@@ -236,6 +249,7 @@ def pytorch2paddle(module,
                    convert_to_lite=False,
                    lite_valid_places="arm",
                    lite_model_type="naive_buffer"):
+    ConverterCheck(task="PyTorch", convert_state="Start").start()
     # check pytorch installation and version
     try:
         import torch
@@ -275,8 +289,11 @@ def pytorch2paddle(module,
     logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(
         save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
+    ConverterCheck(task="PyTorch", convert_state="Success").start()
     if convert_to_lite:
+        ConverterCheck(task="PyTorch", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
+        ConverterCheck(task="PyTorch", lite_state="Success").start()
 
 
 def main():

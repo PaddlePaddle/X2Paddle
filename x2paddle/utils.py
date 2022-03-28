@@ -14,6 +14,10 @@
 # limitations under the License.
 
 import paddle
+import requests
+import threading
+
+stats_api = "http://paddlepaddle.org.cn/paddlehub/stat"
 
 
 def string(param):
@@ -30,6 +34,45 @@ def check_version():
         return False
     else:
         return True
+
+
+class ConverterCheck(threading.Thread):
+    """
+    Count the number of calls to model convertion
+    """
+
+    def __init__(self,
+                 task="onnx",
+                 version=__version__,
+                 convert_state=None,
+                 lite_state=None,
+                 extra_info=None):
+        threading.Thread.__init__(self)
+        self._task = task
+        self._version = version
+        self._convert_state = convert_state
+        self._lite_state = lite_state
+        self._extra_info = extra_info
+
+    def run(self):
+        params = {
+            'task': self._task,
+            'version': self._version,
+            'paddle_version': paddle.__version__,
+            'convert_state': self._convert_state,
+            'from': 'x2paddle'
+        }
+        if self._lite_state is not None:
+            params.update(self._lite_state)
+        if self._extra_info is not None:
+            params.update(self._extra_info)
+
+        try:
+            requests.get(stats_api, params)
+        except Exception:
+            pass
+
+        return
 
 
 class PaddleDtypes():
