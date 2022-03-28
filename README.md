@@ -50,11 +50,11 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 
 ### 环境依赖
 - python >= 3.5  
-- paddlepaddle >= 2.0.0
+- paddlepaddle >= 2.2.2
 - tensorflow == 1.14 (如需转换TensorFlow模型)
 - onnx >= 1.6.0 (如需转换ONNX模型)
 - torch >= 1.5.0 (如需转换PyTorch模型)
-- paddlelite == 2.9.0 (如需一键转换成Paddle-Lite支持格式)
+- paddlelite >= 2.9.0 (如需一键转换成Paddle-Lite支持格式,推荐最新版本)
 
 ### pip安装(推荐）
 
