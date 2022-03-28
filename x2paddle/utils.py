@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import paddle
+import x2paddle
 import requests
 import threading
 
@@ -43,13 +44,12 @@ class ConverterCheck(threading.Thread):
 
     def __init__(self,
                  task="onnx",
-                 version=__version__,
                  convert_state=None,
                  lite_state=None,
                  extra_info=None):
         threading.Thread.__init__(self)
         self._task = task
-        self._version = version
+        self._version = x2paddle.__version__
         self._convert_state = convert_state
         self._lite_state = lite_state
         self._extra_info = extra_info
@@ -57,13 +57,13 @@ class ConverterCheck(threading.Thread):
     def run(self):
         params = {
             'task': self._task,
-            'version': self._version,
+            'x2paddle_version': self._version,
             'paddle_version': paddle.__version__,
             'convert_state': self._convert_state,
             'from': 'x2paddle'
         }
         if self._lite_state is not None:
-            params.update(self._lite_state)
+            params.update({'lite_state': self._lite_state})
         if self._extra_info is not None:
             params.update(self._extra_info)
 
