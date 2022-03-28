@@ -620,15 +620,23 @@ class OpSet9():
                         pads)  # NCHW
                 if assume_pad:
                     paddle_op = 'paddle.nn.Pad2D'
+                    # x1_begin,x2_begin,x3_begin,x4_begin,x1_end,x2_end,x3_end,x4_end->x1_begin,x1_end,x2_begin,x2_end,x3_begin,x3_end,x4_begin,x4_end
                     paddings = np.array(pads).reshape(
                         (2, -1)).transpose().astype("int32")
-                    paddings = np.flip(paddings, axis=0).flatten().tolist()
-                    if sum(paddings[:4]) == 0:
-                        paddings = paddings[4:]
+                    if mode == 'constant':
+                        paddings = paddings.flatten().tolist()
                         layer_attrs['padding'] = paddings
                     else:
-                        layer_attrs["pad"] = paddings
-                        paddle_op = "custom_layer:PadAllDim4WithOneInput"
+                        paddings = np.flip(paddings, axis=0).flatten().tolist()
+                        if sum(paddings[:4]) == 0:
+                            paddings = paddings[4:]
+                            layer_attrs['padding'] = paddings
+                        else:
+                            layer_attrs["pad"] = paddings
+                            paddle_op = "custom_layer:PadAllDim4WithOneInput"
+                else:
+                    paddle_op = 'paddle.nn.functional.pad'
+                    layer_attrs["pad"] = np.array(pads).tolist()
             else:
                 pad_data_temp = pads[0::2]
                 pad_data_all = []
@@ -1464,11 +1472,18 @@ class OpSet9():
                         outputs_list.append("{}_p{}".format(node.layer_name, i))
             else:
                 outputs_list.append(node.name)
-            self.paddle_graph.add_layer(
-                'paddle.split',
-                inputs={"x": val_x.name},
-                outputs=outputs_list,
-                **layer_attrs)
+            if len(split) > 1:
+                self.paddle_graph.add_layer(
+                    'paddle.split',
+                    inputs={"x": val_x.name},
+                    outputs=outputs_list,
+                    **layer_attrs)
+            else:
+                self.paddle_graph.add_layer(
+                    "paddle.cast",
+                    inputs={"x": val_x.name},
+                    outputs=outputs_list,
+                    dtype=string(val_x.dtype))
 
     @print_mapping_info
     def Reshape(self, node):
@@ -2698,28 +2713,36 @@ class OpSet9():
         layer_outputs = [nn_op_name, output_name]
         boxes = self.graph.get_input_node(node, idx=0, copy=True)
         scores = self.graph.get_input_node(node, idx=1, copy=True)
-        num_classes = scores.out_shapes[0][1]
         inputs_len = len(node.layer.input)
         layer_attrs = dict()
+        layer_attrs["keep_top_k"] = -1
+        layer_attrs["nms_threshold"] = 0.0
+        layer_attrs["score_threshold"] = 0.0
         if inputs_len > 2:
             max_output_boxes_per_class = self.graph.get_input_node(
                 node, idx=2, copy=True)
-            layer_attrs["keep_top_k"] = _const_weight_or_none(
-                max_output_boxes_per_class).tolist()[0] * num_classes
-        else:
-            layer_attrs["keep_top_k"] = 0
+            max_output_boxes_per_class = _const_weight_or_none(
+                max_output_boxes_per_class)
+            if len(scores.out_shapes[0]) != 0:
+                num_classes = scores.out_shapes[0][1]
+            else:
+                num_classes = 1
+            if max_output_boxes_per_class is not None:
+                max_output_boxes_per_class = max_output_boxes_per_class.tolist()
+                if isinstance(max_output_boxes_per_class, int):
+                    layer_attrs[
+                        "keep_top_k"] = max_output_boxes_per_class * num_classes
+                else:
+                    layer_attrs["keep_top_k"] = max_output_boxes_per_class[
+                        0] * num_classes
         if inputs_len > 3:
             iou_threshold = self.graph.get_input_node(node, idx=3, copy=True)
             layer_attrs["nms_threshold"] = _const_weight_or_none(
                 iou_threshold).tolist()[0]
-        else:
-            layer_attrs["nms_threshold"] = 0.0
         if inputs_len > 4:
             score_threshold = self.graph.get_input_node(node, idx=4, copy=True)
             layer_attrs["score_threshold"] = _const_weight_or_none(
                 score_threshold).tolist()[0]
-        else:
-            layer_attrs["score_threshold"] = 0.0
         self.paddle_graph.add_layer(
             "custom_layer:NMS",
             inputs={"bboxes": boxes.name,

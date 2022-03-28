@@ -106,7 +106,8 @@ class NMS(object):
         if bboxes.shape[0] == 1:
             batch = paddle.zeros_like(clas, dtype="int64")
         else:
-            bboxes_count = bboxes.shape[1]
+            bboxes_count = paddle.shape(bboxes)[1]
+            bboxes_count = paddle.cast(bboxes_count, dtype="int64")
             batch = paddle.divide(index, bboxes_count)
             index = paddle.mod(index, bboxes_count)
         res = paddle.concat([batch, clas, index], axis=1)

@@ -38,3 +38,5 @@ from .tf_batchnorm_fuser import TFBatchNormFuser
 from .tf_batchnorm_fuse_pass import TFBatchNormFusePass
 from .trace_fc_fuser import TraceFcFuser
 from .trace_fc_fuse_pass import TraceFcFusePass
+from .onnx_layernorm_fuser import LayerNormFuser
+from .onnx_layernorm_fuse_pass import LayerNormFusePass
