@@ -218,6 +218,11 @@ def onnx2paddle(model_path,
     model = ONNXDecoder(model_path)
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
+    logging.info("Model optimizing ...")
+    from x2paddle.optimizer.optimizer import GraphOptimizer
+    graph_opt = GraphOptimizer(source_frame="onnx")
+    graph_opt.optimize(mapper.paddle_graph)
+    logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
     if convert_to_lite:
         convert2lite(save_dir, lite_valid_places, lite_model_type)
