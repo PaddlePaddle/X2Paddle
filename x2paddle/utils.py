@@ -52,7 +52,7 @@ class ConverterCheck(threading.Thread):
 
     def __init__(self,
                  task="onnx",
-                 time_info=time_info,
+                 time_info=None,
                  convert_state=None,
                  lite_state=None,
                  extra_info=None):
