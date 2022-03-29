@@ -95,6 +95,11 @@ def arg_parser():
         default=True,
         help="Turn on code optimization")
     parser.add_argument(
+        "--disable_feedback",
+        "-df",
+        default=False,
+        help="Turn off user info feedback")
+    parser.add_argument(
         "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
     parser.add_argument(
         "--lite_valid_places",
@@ -131,8 +136,10 @@ def tf2paddle(model_path,
               define_input_shape=False,
               convert_to_lite=False,
               lite_valid_places="arm",
-              lite_model_type="naive_buffer"):
-    ConverterCheck(task="TensorFlow", convert_state="Start").start()
+              lite_model_type="naive_buffer",
+              disable_feedback=False):
+    if not disable_feedback:
+        ConverterCheck(task="TensorFlow", convert_state="Start").start()
     # check tensorflow installation and version
     try:
         import os
@@ -164,13 +171,16 @@ def tf2paddle(model_path,
     logging.info("Model optimized!")
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
-    ConverterCheck(task="TensorFlow", convert_state="Success").start()
+    if not disable_feedback:
+        ConverterCheck(task="TensorFlow", convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
-        ConverterCheck(task="TensorFlow", lite_state="Start").start()
+        if not disable_feedback:
+            ConverterCheck(task="TensorFlow", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
-        ConverterCheck(task="TensorFlow", lite_state="Success").start()
+        if not disable_feedback:
+            ConverterCheck(task="TensorFlow", lite_state="Success").start()
 
 
 def caffe2paddle(proto_file,
@@ -179,8 +189,10 @@ def caffe2paddle(proto_file,
                  caffe_proto,
                  convert_to_lite=False,
                  lite_valid_places="arm",
-                 lite_model_type="naive_buffer"):
-    ConverterCheck(task="Caffe", convert_state="Start").start()
+                 lite_model_type="naive_buffer",
+                 disable_feedback=False):
+    if not disable_feedback:
+        ConverterCheck(task="Caffe", convert_state="Start").start()
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
@@ -201,21 +213,26 @@ def caffe2paddle(proto_file,
     logging.info("Model optimized!")
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
-    ConverterCheck(task="Caffe", convert_state="Success").start()
+    if not disable_feedback:
+        ConverterCheck(task="Caffe", convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
-        ConverterCheck(task="Caffe", lite_state="Start").start()
+        if not disable_feedback:
+            ConverterCheck(task="Caffe", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
-        ConverterCheck(task="Caffe", lite_state="Success").start()
+        if not disable_feedback:
+            ConverterCheck(task="Caffe", lite_state="Success").start()
 
 
 def onnx2paddle(model_path,
                 save_dir,
                 convert_to_lite=False,
                 lite_valid_places="arm",
-                lite_model_type="naive_buffer"):
-    ConverterCheck(task="ONNX", convert_state="Start").start()
+                lite_model_type="naive_buffer",
+                disable_feedback=False):
+    if not disable_feedback:
+        ConverterCheck(task="ONNX", convert_state="Start").start()
     # check onnx installation and version
     try:
         import onnx
@@ -243,13 +260,16 @@ def onnx2paddle(model_path,
     logging.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
-    ConverterCheck(task="ONNX", convert_state="Success").start()
+    if not disable_feedback:
+        ConverterCheck(task="ONNX", convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
-        ConverterCheck(task="ONNX", lite_state="Start").start()
+        if not disable_feedback:
+            ConverterCheck(task="ONNX", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
-        ConverterCheck(task="ONNX", lite_state="Success").start()
+        if not disable_feedback:
+            ConverterCheck(task="ONNX", lite_state="Success").start()
 
 
 def pytorch2paddle(module,
@@ -259,8 +279,10 @@ def pytorch2paddle(module,
                    enable_code_optim=True,
                    convert_to_lite=False,
                    lite_valid_places="arm",
-                   lite_model_type="naive_buffer"):
-    ConverterCheck(task="PyTorch", convert_state="Start").start()
+                   lite_model_type="naive_buffer",
+                   disable_feedback=False):
+    if not disable_feedback:
+        onverterCheck(task="PyTorch", convert_state="Start").start()
     # check pytorch installation and version
     try:
         import torch
@@ -301,13 +323,16 @@ def pytorch2paddle(module,
     mapper.paddle_graph.gen_model(
         save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
     logging.info("Successfully exported Paddle static graph model!")
-    ConverterCheck(task="PyTorch", convert_state="Success").start()
+    if not disable_feedback:
+        ConverterCheck(task="PyTorch", convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
-        ConverterCheck(task="PyTorch", lite_state="Start").start()
+        if not disable_feedback:
+            ConverterCheck(task="PyTorch", lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
-        ConverterCheck(task="PyTorch", lite_state="Success").start()
+        if not disable_feedback:
+            ConverterCheck(task="PyTorch", lite_state="Success").start()
 
 
 def main():
@@ -368,7 +393,8 @@ def main():
                 define_input_shape,
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type)
+                lite_model_type=args.lite_model_type,
+                disable_feedback=args.disable_feedback)
 
         elif args.framework == "caffe":
             assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
@@ -379,7 +405,8 @@ def main():
                 args.caffe_proto,
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type)
+                lite_model_type=args.lite_model_type,
+                disable_feedback=args.disable_feedback)
         elif args.framework == "onnx":
             assert args.model is not None, "--model should be defined while translating onnx model"
             onnx2paddle(
@@ -387,7 +414,8 @@ def main():
                 args.save_dir,
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type)
+                lite_model_type=args.lite_model_type,
+                disable_feedback=args.disable_feedback)
         elif args.framework == "paddle2onnx":
             logging.info(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"

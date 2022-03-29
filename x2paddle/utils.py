@@ -15,8 +15,11 @@
 
 import paddle
 import x2paddle
+import hashlib
 import requests
 import threading
+import time
+import uuid
 
 stats_api = "http://paddlepaddle.org.cn/paddlehub/stat"
 
@@ -37,6 +40,12 @@ def check_version():
         return True
 
 
+def _md5(text: str):
+    '''Calculate the md5 value of the input text.'''
+    md5code = hashlib.md5(text.encode())
+    return md5code.hexdigest()
+
+
 class ConverterCheck(threading.Thread):
     """
     Count the number of calls to model convertion
@@ -53,6 +62,9 @@ class ConverterCheck(threading.Thread):
         self._convert_state = convert_state
         self._lite_state = lite_state
         self._extra_info = extra_info
+        self._convert_id = _md5(str(uuid.uuid1())[-12:])
+        self._hash_flag = _md5(str(uuid.uuid1())[-12:]) + "-" + str(
+            int(time.time()))
 
     def run(self):
         params = {
@@ -60,6 +72,8 @@ class ConverterCheck(threading.Thread):
             'x2paddle_version': self._version,
             'paddle_version': paddle.__version__,
             'convert_state': self._convert_state,
+            'convert_id': self._convert_id,
+            'cache_info': self._hash_flag,
             'from': 'x2paddle'
         }
         if self._lite_state is not None:
