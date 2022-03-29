@@ -18,7 +18,6 @@ import x2paddle
 import hashlib
 import requests
 import threading
-import time
 import uuid
 
 stats_api = "http://paddlepaddle.org.cn/paddlehub/stat"
@@ -53,6 +52,7 @@ class ConverterCheck(threading.Thread):
 
     def __init__(self,
                  task="onnx",
+                 time_info=time_info,
                  convert_state=None,
                  lite_state=None,
                  extra_info=None):
@@ -62,9 +62,7 @@ class ConverterCheck(threading.Thread):
         self._convert_state = convert_state
         self._lite_state = lite_state
         self._extra_info = extra_info
-        self._convert_id = _md5(str(uuid.uuid1())[-12:])
-        self._hash_flag = _md5(str(uuid.uuid1())[-12:]) + "-" + str(
-            int(time.time()))
+        self._convert_id = _md5(str(uuid.uuid1())[-12:]) + "-" + str(time_info)
 
     def run(self):
         params = {
@@ -73,7 +71,6 @@ class ConverterCheck(threading.Thread):
             'paddle_version': paddle.__version__,
             'convert_state': self._convert_state,
             'convert_id': self._convert_id,
-            'cache_info': self._hash_flag,
             'from': 'x2paddle'
         }
         if self._lite_state is not None:
@@ -82,7 +79,7 @@ class ConverterCheck(threading.Thread):
             params.update(self._extra_info)
 
         try:
-            requests.get(stats_api, params)
+            requests.get(stats_api, params, timeout=2)
         except Exception:
             pass
 

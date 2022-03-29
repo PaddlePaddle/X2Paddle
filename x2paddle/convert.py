@@ -18,6 +18,7 @@ from x2paddle.utils import ConverterCheck
 import argparse
 import sys
 import logging
+import time
 
 
 def arg_parser():
@@ -98,7 +99,7 @@ def arg_parser():
         "--disable_feedback",
         "-df",
         default=False,
-        help="Turn off user info feedback")
+        help="Tune off feedback of model conversion.")
     parser.add_argument(
         "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
     parser.add_argument(
@@ -138,8 +139,12 @@ def tf2paddle(model_path,
               lite_valid_places="arm",
               lite_model_type="naive_buffer",
               disable_feedback=False):
+    # for convert_id
+    time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(task="TensorFlow", convert_state="Start").start()
+        ConverterCheck(
+            task="TensorFlow", time_info=time_info,
+            convert_state="Start").start()
     # check tensorflow installation and version
     try:
         import os
@@ -172,15 +177,21 @@ def tf2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(task="TensorFlow", convert_state="Success").start()
+        ConverterCheck(
+            task="TensorFlow", time_info=time_info,
+            convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(task="TensorFlow", lite_state="Start").start()
+            ConverterCheck(
+                task="TensorFlow", time_info=time_info,
+                lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(task="TensorFlow", lite_state="Success").start()
+            ConverterCheck(
+                task="TensorFlow", time_info=time_info,
+                lite_state="Success").start()
 
 
 def caffe2paddle(proto_file,
@@ -191,8 +202,11 @@ def caffe2paddle(proto_file,
                  lite_valid_places="arm",
                  lite_model_type="naive_buffer",
                  disable_feedback=False):
+    # for convert_id
+    time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(task="Caffe", convert_state="Start").start()
+        ConverterCheck(
+            task="Caffe", time_info=time_info, convert_state="Start").start()
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
@@ -214,15 +228,18 @@ def caffe2paddle(proto_file,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(task="Caffe", convert_state="Success").start()
+        ConverterCheck(
+            task="Caffe", time_info=time_info, convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(task="Caffe", lite_state="Start").start()
+            ConverterCheck(
+                task="Caffe", time_info=time_info, lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(task="Caffe", lite_state="Success").start()
+            ConverterCheck(
+                task="Caffe", time_info=time_info, lite_state="Success").start()
 
 
 def onnx2paddle(model_path,
@@ -231,8 +248,11 @@ def onnx2paddle(model_path,
                 lite_valid_places="arm",
                 lite_model_type="naive_buffer",
                 disable_feedback=False):
+    # for convert_id
+    time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(task="ONNX", convert_state="Start").start()
+        ConverterCheck(
+            task="ONNX", time_info=time_info, convert_state="Start").start()
     # check onnx installation and version
     try:
         import onnx
@@ -261,15 +281,18 @@ def onnx2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(task="ONNX", convert_state="Success").start()
+        ConverterCheck(
+            task="ONNX", time_info=time_info, convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(task="ONNX", lite_state="Start").start()
+            ConverterCheck(
+                task="ONNX", time_info=time_info, lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(task="ONNX", lite_state="Success").start()
+            ConverterCheck(
+                task="ONNX", time_info=time_info, lite_state="Success").start()
 
 
 def pytorch2paddle(module,
@@ -281,8 +304,11 @@ def pytorch2paddle(module,
                    lite_valid_places="arm",
                    lite_model_type="naive_buffer",
                    disable_feedback=False):
+    # for convert_id
+    time_info = int(time.time())
     if not disable_feedback:
-        onverterCheck(task="PyTorch", convert_state="Start").start()
+        ConverterCheck(
+            task="PyTorch", time_info=time_info, convert_state="Start").start()
     # check pytorch installation and version
     try:
         import torch
@@ -324,15 +350,20 @@ def pytorch2paddle(module,
         save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(task="PyTorch", convert_state="Success").start()
+        ConverterCheck(
+            task="PyTorch", time_info=time_info,
+            convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(task="PyTorch", lite_state="Start").start()
+            ConverterCheck(
+                task="PyTorch", time_info=time_info, lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(task="PyTorch", lite_state="Success").start()
+            ConverterCheck(
+                task="PyTorch", time_info=time_info,
+                lite_state="Success").start()
 
 
 def main():
