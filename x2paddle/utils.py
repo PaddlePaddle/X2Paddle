@@ -19,6 +19,7 @@ import hashlib
 import requests
 import threading
 import uuid
+import json
 
 stats_api = "http://paddlepaddle.org.cn/paddlehub/stat"
 
@@ -69,15 +70,18 @@ class ConverterCheck(threading.Thread):
             'task': self._task,
             'x2paddle_version': self._version,
             'paddle_version': paddle.__version__,
-            'convert_state': self._convert_state,
-            'convert_id': self._convert_id,
             'from': 'x2paddle'
         }
+        extra = {
+            'convert_state': self._convert_state,
+            'convert_id': self._convert_id,
+        }
         if self._lite_state is not None:
-            params.update({'lite_state': self._lite_state})
+            extra.update({'lite_state': self._lite_state})
         if self._extra_info is not None:
-            params.update(self._extra_info)
+            extra.update(self._extra_info)
 
+        params.update({"extra": json.dumps(extra)})
         try:
             requests.get(stats_api, params, timeout=2)
         except Exception:
