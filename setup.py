@@ -6,9 +6,6 @@ long_description += "Usage: x2paddle --framework tensorflow --model tf_model.pb 
 long_description += "GitHub: https://github.com/PaddlePaddle/X2Paddle\n"
 long_description += "Email: dltp-sz@baidu.com"
 
-with open("requirements.txt") as fin:
-    REQUIRED_PACKAGES = fin.read()
-
 setuptools.setup(
     name="x2paddle",
     version=x2paddle.__version__,
@@ -19,7 +16,6 @@ setuptools.setup(
     long_description_content_type="text/plain",
     url="https://github.com/PaddlePaddle/x2paddle",
     packages=setuptools.find_packages(),
-    install_requires=REQUIRED_PACKAGES,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
