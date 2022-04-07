@@ -121,6 +121,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 | --to_lite            | **[可选]** 是否使用opt工具转成Paddle-Lite支持格式，默认为False |
 | --lite_valid_places  | **[可选]** 指定转换类型，可以同时指定多个backend(以逗号分隔)，opt将会自动选择最佳方式，默认为arm |
 | --lite_model_type    | **[可选]** 指定模型转化类型，目前支持两种类型：protobuf和naive_buffer，默认为naive_buffer |
+| --disable_feedback   | **[可选]** 是否关闭X2Paddle使用反馈；X2Paddle默认会统计用户在进行模型转换时的成功率，以及转换框架来源等信息，以便于帮忙X2Paddle根据用户需求进行迭代，不会上传用户的模型文件。如若不想参与反馈，可指定此参数为False即可 |
 
 #### X2Paddle API
 目前X2Paddle提供API方式转换模型，可参考[X2PaddleAPI](docs/inference_model_convertor/x2paddle_api.md)
