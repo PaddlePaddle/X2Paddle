@@ -3176,6 +3176,55 @@ def aten_len(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_linear(mapper, graph, node):
+    """
+    TorchScript Code:
+        %x.6 : Float(1, 128, strides=[128, 1]) = aten::linear(%input.305, %weight.629, %bias.317)
+        Parameter meaning:
+        %x.6 (Tensor): output
+        %input.305 (Tensor): input tensor
+        %weight.629 (Tensor): weight tensor
+        %bias.317 (Tensor): bias tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # transpose weight
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_attrs_transpose = {}
+    layer_attrs_transpose["perm"] = [1, 0]
+    graph.add_layer(
+        "paddle.transpose",
+        inputs={"x": inputs_name[1]},
+        outputs=[inputs_name[1] + "_transpose"],
+        scope_name=scope_name,
+        **layer_attrs_transpose)
+    layer_inputs["weight"] = inputs_name[1] + "_transpose"
+    if len(inputs_name) == 3:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["bias"] = inputs_name[2]
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.functional.linear",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_log(mapper, graph, node):
     """ 构构造log的PaddleLayer。
     TorchScript示例:
