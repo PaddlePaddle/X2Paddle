@@ -56,10 +56,7 @@ class LayerNormFuser(FuseBase):
             shape=[1],
             fill_value=0.5)
         self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(3)],
-            shape=[1])
+            "paddle.full", inputs={}, outputs=[gen_name(3)], shape=[1])
         self.pattern.add_layer(
             "paddle.mean",
             inputs={"x": "layernorm-input-0"},
