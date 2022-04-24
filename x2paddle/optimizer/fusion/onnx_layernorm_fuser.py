@@ -59,8 +59,7 @@ class LayerNormFuser(FuseBase):
             "paddle.full",
             inputs={},
             outputs=[gen_name(3)],
-            shape=[1],
-            fill_value=9.999999747378752e-06)
+            shape=[1])
         self.pattern.add_layer(
             "paddle.mean",
             inputs={"x": "layernorm-input-0"},
@@ -122,6 +121,7 @@ class LayerNormFuser(FuseBase):
         layer_inputs = list()
         layer_inputs_ids = list()
         param_name = list()
+        fill_value_list = list()
         for layer_id, layer in matches.items():
             if layer.kernel == "paddle.mean":
                 layer_inputs.append(layer.inputs)
@@ -130,6 +130,8 @@ class LayerNormFuser(FuseBase):
                 param_name.append(layer.outputs[0])
             if layer.kernel == "paddle.add":
                 output_name = layer.outputs[0]
+            if layer.kernel == "paddle.full":
+                fill_value_list.append(layer.attrs["fill_value"])
         param = parameters[param_name[0]]
         c = param.shape[0]
         weight_param = parameters.pop(param_name[0])
@@ -141,5 +143,6 @@ class LayerNormFuser(FuseBase):
             "paddle.nn.LayerNorm",
             inputs=layer_inputs[0],
             outputs=[output_name],
-            normalized_shape=[c])
+            normalized_shape=[c],
+            epsilon=fill_value_list[-1])
         return new_layer, layer_inputs_ids[0]
