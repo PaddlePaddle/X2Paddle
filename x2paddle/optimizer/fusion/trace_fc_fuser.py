@@ -113,10 +113,11 @@ class TraceFcFuser(FuseBase):
         attrs["out_features"] = parameters[weight_name].shape[0]
         linear_name = "linear{}".format(self.linear_index)
         self.linear_index += 1
-        parameters["{}.weight".format(linear_name)] = parameters[
-            weight_name].transpose((1, 0))
-        parameters["{}.bias".format(linear_name)] = np.squeeze(parameters[
-            bias_name])
+        weight_numpy = parameters.pop(weight_name)
+        parameters["{}.weight".format(linear_name)] = weight_numpy.transpose(
+            (1, 0))
+        bias_numpy = parameters.pop(bias_name)
+        parameters["{}.bias".format(linear_name)] = np.squeeze(bias_numpy)
         new_layer = PaddleLayer(
             layers_id[0],
             "paddle.nn.Linear",
