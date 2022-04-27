@@ -4740,6 +4740,36 @@ def aten_rsub(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_rsqrt(mapper, graph, node):
+    """
+    TorchScript Code:
+        %n0.3 : Tensor = aten::rsqrt(%n.3)
+        Parameter meaning:
+        %n0.3 (Tensor): output tensor
+        %n.3 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.rsqrt",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_ScalarImplicit(mapper, graph, node):
     """ 构造获取scalar的PaddleLayer。
     TorchScript示例:
