@@ -2743,6 +2743,68 @@ def aten_hardtanh(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_hardsigmoid(mapper, graph, node):
+    """
+    TorchScript Code:
+        %55 : Tensor = aten::hardsigmoid(%54)
+        Parameter meaning:
+        %55 (Tensor): output
+        %54 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("hardsigmoid", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Hardsigmoid",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_hardswish(mapper, graph, node):
+    """
+    TorchScript Code:
+        %55 : Tensor = aten::hardswish(%54)
+        Parameter meaning:
+        %55 (Tensor): output
+        %54 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("hardswish", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Hardswish",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_index(mapper, graph, node):
     """ 构造选择元素的PaddleLayer。
     TorchScript示例:
