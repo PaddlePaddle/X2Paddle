@@ -325,6 +325,7 @@ class FuseBase(object):
     def __init__(self):
         self.pattern = PaddleGraph()
         self.patterns = list()
+        self.rm_params = set()
 
     def operate(self, graph, match_kind="topo"):
         parameters = graph.parameters
@@ -335,6 +336,8 @@ class FuseBase(object):
             subgraph = get_subgraph("", first_layer_id, graph)
             self.insert_new_layer(subgraph, parameters, match)
         self.delete_match(graph)
+        for param_name in self.rm_params:
+            parameters.pop(param_name)
         graph.build()
 
     def perform_pattern_matcher(self, graph, match_kind="topo"):
