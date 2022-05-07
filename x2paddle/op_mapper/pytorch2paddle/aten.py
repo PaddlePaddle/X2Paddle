@@ -2818,7 +2818,6 @@ def aten_index(mapper, graph, node):
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
     # output list
     current_outputs = [output_name]
