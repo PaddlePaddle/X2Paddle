@@ -3263,27 +3263,25 @@ def aten_linear(mapper, graph, node):
     # transpose weight
     mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
                         scope_name)
-    layer_attrs_transpose = {}
-    layer_attrs_transpose["perm"] = [1, 0]
+    layer_inputs["y"] = inputs_name[1]
+    layer_attrs["transpose_y"] = True
     graph.add_layer(
-        "paddle.transpose",
-        inputs={"x": inputs_name[1]},
-        outputs=[inputs_name[1] + "_transpose"],
-        scope_name=scope_name,
-        **layer_attrs_transpose)
-    layer_inputs["weight"] = inputs_name[1] + "_transpose"
-    if len(inputs_name) == 3:
-        mapper._check_input(graph, inputs_node[2], inputs_name[2],
-                            current_outputs, scope_name)
-        layer_inputs["bias"] = inputs_name[2]
-    current_inputs = list(layer_inputs.values())
-
-    graph.add_layer(
-        "paddle.nn.functional.linear",
+        "paddle.matmul",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    if len(inputs_name) == 3:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        graph.add_layer(
+            "paddle.add",
+            inputs={"x": output_name,
+                    "y": inputs_name[2]},
+            outputs=layer_outputs,
+            scope_name=scope_name)
+    current_inputs = list(layer_inputs.values())
+
     return current_inputs, current_outputs
 
 
@@ -4654,6 +4652,42 @@ def aten_repeat_interleave(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs_reshape)
+
+    return current_inputs, current_outputs
+
+
+def aten_replication_pad1d(mapper, graph, node):
+    """
+    TorchScript Code:
+        %58 : Tensor = aten::replication_pad1d(%input.1, %152)
+        Parameter meaning:
+        %58 (Tensor): Output Tensor
+        %input.1 (Tensor): Input Tensor
+        %%152 (list): Padding size
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    # input list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+    layer_attrs["mode"] = string("replicate")
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Pad1D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
 
     return current_inputs, current_outputs
 
