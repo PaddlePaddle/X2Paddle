@@ -2416,6 +2416,53 @@ def aten_format(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_full(mapper, graph, node):
+    """
+    TorchScript Code:
+        %159 : Tensor = aten::full(%775, %50, %49, %56, %48, %53)
+        Parameter meaning:
+        %159 (Tensor): Output Tensor
+        %775 (Tensor): size
+        %50 (int/float/bool): fill_value
+        %49 (int): dtype
+        %56 (int): layout
+        %48 (int): device
+        %53 (bool): requires_grad
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["shape"] = inputs_name[0]
+    # input list
+    current_inputs = list(layer_inputs.values())
+
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["fill_value"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["fill_value"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # dtype
+    if mapper.attrs[inputs_name[2]] is not None:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[2]]]
+
+    graph.add_layer(
+        "paddle.full",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_full_like(mapper, graph, node):
     """ 构造创建一个与输入具有相同的形状并且数据类型固定的Tensor的PaddleLayer。
     TorchScript示例:
@@ -3487,109 +3534,62 @@ def aten_lt(mapper, graph, node):
 
 
 def aten_masked_fill(mapper, graph, node):
-    """ 构造填充mask的PaddleLayer。
-    TorchScript示例:
+    """
+    TorchScript Code:
         %input.4 : Tensor = aten::masked_fill(%scores.2, %mask.2, %46)
-        参数含义:
-        %input.4 (Tensor): 输出，填充后的结果。
-        %scores.2 (Tensor): 需要填充的Tensor。
-        %mask.2 (Tensor): bool型的Tensor，哪些位置需要填充。
-        %46 (-): 填充的值。
+        Parameter meaning:
+        %input.4 (Tensor): Output Tensor
+        %scores.2 (Tensor): Input Tensor
+        %mask.2 (Tensor): bool mask
+        %46 (-): fill value
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输入的list
+    layer_full_inputs = {}
+    layer_full_attrs = {}
+    layer_where_inputs = {}
     current_inputs = []
-    # 获取当前节点输出的list
     current_outputs = [output_name]
-    # 处理输入0，即%input.4
+    # input list
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     current_inputs.append(inputs_name[0])
+    # paddle.full
+    graph.add_layer(
+        "prim.shape",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_shape"],
+        scope_name=scope_name)
+    layer_full_inputs["shape"] = inputs_name[0] + "_shape"
+    if inputs_name[2] in mapper.attrs:
+        layer_full_attrs["fill_value"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_full_inputs["fill_value"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
     graph.add_layer(
         "prim.type",
         inputs={"input": inputs_name[0]},
         outputs=[inputs_name[0] + "_type"],
         scope_name=scope_name)
-    # 处理输入1，即%scores.2
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
-                        scope_name)
-    current_inputs.append(inputs_name[1])
+    layer_full_attrs["dtype"] = inputs_name[0] + "_type"
     graph.add_layer(
-        "paddle.logical_not",
-        inputs={"x": inputs_name[1]},
-        outputs=[inputs_name[1] + "_not"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "paddle.cast",
-        inputs={"x": inputs_name[1]},
-        outputs=[inputs_name[1] + "_mask"],
+        "paddle.full",
+        inputs=layer_full_inputs,
+        outputs=[inputs_name[0] + "_full"],
         scope_name=scope_name,
-        dtype=inputs_name[0] + "_type")
+        **layer_full_attrs)
+    # paddle.where
+    layer_where_inputs["condition"] = inputs_name[1]
+    layer_where_inputs["x"] = inputs_name[0] + "_full"
+    layer_where_inputs["y"] = inputs_name[0]
     graph.add_layer(
-        "paddle.cast",
-        inputs={"x": inputs_name[1] + "_not"},
-        outputs=[inputs_name[1] + "_not_mask"],
-        scope_name=scope_name,
-        dtype=inputs_name[0] + "_type")
-    graph.add_layer(
-        "paddle.multiply",
-        inputs={"x": inputs_name[0],
-                "y": inputs_name[1] + "_not_mask"},
-        outputs=[inputs_name[0] + "_not_mask"],
-        scope_name=scope_name)
-    # 处理输入2，即%46
-    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs,
-                        scope_name)
-    graph.add_layer(
-        "prim.eq",
-        inputs={"x": inputs_name[2]},
-        outputs=[inputs_name[2] + "_cond1"],
-        scope_name=scope_name,
-        y="-float('inf')")
-    graph.add_layer(
-        "prim.eq",
-        inputs={"x": inputs_name[2]},
-        outputs=[inputs_name[2] + "_cond2"],
-        scope_name=scope_name,
-        y="float('inf')")
-    graph.add_layer(
-        "prim.or",
-        inputs={
-            "x": inputs_name[2] + "_cond1",
-            "y": inputs_name[2] + "_cond2"
-        },
-        outputs=[inputs_name[2] + "_cond"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.if", {'input': inputs_name[2] + "_cond"},
-        outputs=[inputs_name[2] + "_if"],
-        scope_name=scope_name)
-    if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-    block.add_layer(
-        "prim.equal",
-        inputs={"input": inputs_name[1] + "_mask"},
-        outputs=[inputs_name[2] + "_1"],
-        scope_name=scope_name)
-    if_layer.add_block(block)
-    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-    block.add_layer(
-        "prim.mul",
-        inputs={"x": inputs_name[1] + "_mask",
-                "y": inputs_name[2]},
-        outputs=[inputs_name[2] + "_1"],
-        scope_name=scope_name)
-    if_layer.add_block(block)
-    if_layer.inputs["input-0"] = inputs_name[1] + "_mask"
-    if_layer.inputs["input-1"] = inputs_name[2]
-    if_layer.outputs.append(inputs_name[2] + "_1")
-    graph.add_layer(
-        "paddle.add",
-        inputs={"x": inputs_name[2] + "_1",
-                "y": inputs_name[0] + "_not_mask"},
+        "paddle.where",
+        inputs=layer_where_inputs,
         outputs=layer_outputs,
         scope_name=scope_name)
     return current_inputs, current_outputs
