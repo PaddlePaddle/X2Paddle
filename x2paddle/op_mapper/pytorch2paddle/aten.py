@@ -2654,6 +2654,59 @@ def aten_gt(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_group_norm(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.81 : Tensor = aten::group_norm(%input.2, %25, %60, %59, %26, %30)
+        Parameter meaning:
+        %input.81 (Tensor): Output Tensor
+        %input.2 (Tensor): Input Tensor
+        %25 (Tensor): num_groups
+        %60 (Tensor): weight
+        %59 (Tensor): bias
+        %26 (Tensor): eps
+        %30 (bool): enabled cudnn
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("groupnorm", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    # input list
+    current_inputs = list(layer_inputs.values())
+    # process num_groups
+    layer_attrs['num_groups'] = mapper.attrs[inputs_name[1]]
+    # process weight
+    weights = mapper.pytorch_params[inputs_name[2]]
+    mapper.paddle_params[op_name + ".weight"] = weights
+    layer_attrs['num_channels'] = weights.shape[0]
+    # process bias
+    if inputs_name[2] in mapper.pytorch_params:
+        bias = mapper.pytorch_params[inputs_name[3]]
+        if bias is not None:
+            mapper.paddle_params[op_name + ".bias"] = bias
+    else:
+        mapper.paddle_params[op_name + ".bias"] = False
+    # process eps
+    layer_attrs["epsilon"] = mapper.attrs[inputs_name[4]]
+
+    graph.add_layer(
+        "paddle.nn.GroupNorm",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_gru(mapper, graph, node):
     """ 构造门控循环单元网络（GRU）的PaddleLayer。
     TorchScript示例:
