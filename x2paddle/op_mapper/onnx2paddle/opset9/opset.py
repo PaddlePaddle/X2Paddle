@@ -458,6 +458,18 @@ class OpSet9():
             **attrs)
 
     @print_mapping_info
+    def CumSum(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axis = self.graph.get_input_node(node, idx=1, copy=True)
+        axis_values = _const_weight_or_none(axis)
+        layer_attrs = {'axis': axis_values}
+        self.paddle_graph.add_layer(
+            'paddle.cumsum',
+            inputs={"x": val_x.name},
+            outputs=[node.name],
+            **layer_attrs)
+
+    @print_mapping_info
     def HardSigmoid(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         alpha = node.get_attr('alpha', 0.2)
