@@ -14,6 +14,14 @@
 # limitations under the License.
 
 import paddle
+import x2paddle
+import hashlib
+import requests
+import threading
+import uuid
+import json
+
+stats_api = "http://paddlepaddle.org.cn/paddlehub/stat"
 
 
 def string(param):
@@ -30,6 +38,56 @@ def check_version():
         return False
     else:
         return True
+
+
+def _md5(text: str):
+    '''Calculate the md5 value of the input text.'''
+    md5code = hashlib.md5(text.encode())
+    return md5code.hexdigest()
+
+
+class ConverterCheck(threading.Thread):
+    """
+    Count the number of calls to model convertion
+    """
+
+    def __init__(self,
+                 task="ONNX",
+                 time_info=None,
+                 convert_state=None,
+                 lite_state=None,
+                 extra_info=None):
+        threading.Thread.__init__(self)
+        self._task = task
+        self._version = x2paddle.__version__
+        self._convert_state = convert_state
+        self._lite_state = lite_state
+        self._extra_info = extra_info
+        self._convert_id = _md5(str(uuid.uuid1())[-12:]) + "-" + str(time_info)
+
+    def run(self):
+        params = {
+            'task': self._task,
+            'x2paddle_version': self._version,
+            'paddle_version': paddle.__version__,
+            'from': 'x2paddle'
+        }
+        extra = {
+            'convert_state': self._convert_state,
+            'convert_id': self._convert_id,
+        }
+        if self._lite_state is not None:
+            extra.update({'lite_state': self._lite_state})
+        if self._extra_info is not None:
+            extra.update(self._extra_info)
+
+        params.update({"extra": json.dumps(extra)})
+        try:
+            requests.get(stats_api, params, timeout=2)
+        except Exception:
+            pass
+
+        return
 
 
 class PaddleDtypes():

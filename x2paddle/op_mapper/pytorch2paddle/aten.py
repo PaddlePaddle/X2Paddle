@@ -2416,6 +2416,53 @@ def aten_format(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_full(mapper, graph, node):
+    """
+    TorchScript Code:
+        %159 : Tensor = aten::full(%775, %50, %49, %56, %48, %53)
+        Parameter meaning:
+        %159 (Tensor): Output Tensor
+        %775 (Tensor): size
+        %50 (int/float/bool): fill_value
+        %49 (int): dtype
+        %56 (int): layout
+        %48 (int): device
+        %53 (bool): requires_grad
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["shape"] = inputs_name[0]
+    # input list
+    current_inputs = list(layer_inputs.values())
+
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["fill_value"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["fill_value"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # dtype
+    if mapper.attrs[inputs_name[2]] is not None:
+        layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[2]]]
+
+    graph.add_layer(
+        "paddle.full",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_full_like(mapper, graph, node):
     """ 构造创建一个与输入具有相同的形状并且数据类型固定的Tensor的PaddleLayer。
     TorchScript示例:
@@ -2743,46 +2790,101 @@ def aten_hardtanh(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_hardsigmoid(mapper, graph, node):
+    """
+    TorchScript Code:
+        %55 : Tensor = aten::hardsigmoid(%54)
+        Parameter meaning:
+        %55 (Tensor): output
+        %54 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("hardsigmoid", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Hardsigmoid",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_hardswish(mapper, graph, node):
+    """
+    TorchScript Code:
+        %55 : Tensor = aten::hardswish(%54)
+        Parameter meaning:
+        %55 (Tensor): output
+        %54 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("hardswish", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Hardswish",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_index(mapper, graph, node):
-    """ 构造选择元素的PaddleLayer。
-    TorchScript示例:
+    """
+    TorchScript Code:
         %1681 : Float = aten::index(%1653, %1680)
-        参数含义:
-        %1681 (Tensor): 输出，选择后的Tensor。
-        %1653 (Tensor): 需要选择的Tensor。
-        %1680 (int): 选择的索引。
+        Parameter meaning:
+        %1681 (Tensor): Output Tensor
+        %1653 (Tensor): Input Tensor
+        %1680 (int): Index
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     layer_inputs = {}
-    layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
+    # output list
     current_outputs = [output_name]
-    # 处理输入0，即%1653
+    # process Input Tensor
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     layer_inputs["x"] = inputs_name[0]
-    # 处理输入1，即%1680
+    # process Index
     mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
                         scope_name)
     layer_inputs["index"] = inputs_name[1]
-    # 获取当前节点输入的list
+
     current_inputs = list(layer_inputs.values())
 
     graph.add_layer(
         "prim.getitem",
-        inputs={"list": layer_inputs["index"]},
-        outputs=[layer_inputs["index"]],
-        scope_name=scope_name,
-        index=0)
-    graph.add_layer(
-        "paddle.index_select",
-        inputs=layer_inputs,
+        inputs={"list": layer_inputs["x"]},
         outputs=layer_outputs,
         scope_name=scope_name,
-        **layer_attrs)
+        index=layer_inputs["index"])
     return current_inputs, current_outputs
 
 
@@ -3176,6 +3278,53 @@ def aten_len(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_linear(mapper, graph, node):
+    """
+    TorchScript Code:
+        %x.6 : Float(1, 128, strides=[128, 1]) = aten::linear(%input.305, %weight.629, %bias.317)
+        Parameter meaning:
+        %x.6 (Tensor): output
+        %input.305 (Tensor): input tensor
+        %weight.629 (Tensor): weight tensor
+        %bias.317 (Tensor): bias tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # transpose weight
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["y"] = inputs_name[1]
+    layer_attrs["transpose_y"] = True
+    graph.add_layer(
+        "paddle.matmul",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    if len(inputs_name) == 3:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        graph.add_layer(
+            "paddle.add",
+            inputs={"x": output_name,
+                    "y": inputs_name[2]},
+            outputs=layer_outputs,
+            scope_name=scope_name)
+    current_inputs = list(layer_inputs.values())
+
+    return current_inputs, current_outputs
+
+
 def aten_log(mapper, graph, node):
     """ 构构造log的PaddleLayer。
     TorchScript示例:
@@ -3378,109 +3527,62 @@ def aten_lt(mapper, graph, node):
 
 
 def aten_masked_fill(mapper, graph, node):
-    """ 构造填充mask的PaddleLayer。
-    TorchScript示例:
+    """
+    TorchScript Code:
         %input.4 : Tensor = aten::masked_fill(%scores.2, %mask.2, %46)
-        参数含义:
-        %input.4 (Tensor): 输出，填充后的结果。
-        %scores.2 (Tensor): 需要填充的Tensor。
-        %mask.2 (Tensor): bool型的Tensor，哪些位置需要填充。
-        %46 (-): 填充的值。
+        Parameter meaning:
+        %input.4 (Tensor): Output Tensor
+        %scores.2 (Tensor): Input Tensor
+        %mask.2 (Tensor): bool mask
+        %46 (-): fill value
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [output_name]
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输入的list
+    layer_full_inputs = {}
+    layer_full_attrs = {}
+    layer_where_inputs = {}
     current_inputs = []
-    # 获取当前节点输出的list
     current_outputs = [output_name]
-    # 处理输入0，即%input.4
+    # input list
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     current_inputs.append(inputs_name[0])
+    # paddle.full
+    graph.add_layer(
+        "prim.shape",
+        inputs={"input": inputs_name[0]},
+        outputs=[inputs_name[0] + "_shape"],
+        scope_name=scope_name)
+    layer_full_inputs["shape"] = inputs_name[0] + "_shape"
+    if inputs_name[2] in mapper.attrs:
+        layer_full_attrs["fill_value"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_full_inputs["fill_value"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
     graph.add_layer(
         "prim.type",
         inputs={"input": inputs_name[0]},
         outputs=[inputs_name[0] + "_type"],
         scope_name=scope_name)
-    # 处理输入1，即%scores.2
-    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
-                        scope_name)
-    current_inputs.append(inputs_name[1])
+    layer_full_attrs["dtype"] = inputs_name[0] + "_type"
     graph.add_layer(
-        "paddle.logical_not",
-        inputs={"x": inputs_name[1]},
-        outputs=[inputs_name[1] + "_not"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "paddle.cast",
-        inputs={"x": inputs_name[1]},
-        outputs=[inputs_name[1] + "_mask"],
+        "paddle.full",
+        inputs=layer_full_inputs,
+        outputs=[inputs_name[0] + "_full"],
         scope_name=scope_name,
-        dtype=inputs_name[0] + "_type")
+        **layer_full_attrs)
+    # paddle.where
+    layer_where_inputs["condition"] = inputs_name[1]
+    layer_where_inputs["x"] = inputs_name[0] + "_full"
+    layer_where_inputs["y"] = inputs_name[0]
     graph.add_layer(
-        "paddle.cast",
-        inputs={"x": inputs_name[1] + "_not"},
-        outputs=[inputs_name[1] + "_not_mask"],
-        scope_name=scope_name,
-        dtype=inputs_name[0] + "_type")
-    graph.add_layer(
-        "paddle.multiply",
-        inputs={"x": inputs_name[0],
-                "y": inputs_name[1] + "_not_mask"},
-        outputs=[inputs_name[0] + "_not_mask"],
-        scope_name=scope_name)
-    # 处理输入2，即%46
-    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs,
-                        scope_name)
-    graph.add_layer(
-        "prim.eq",
-        inputs={"x": inputs_name[2]},
-        outputs=[inputs_name[2] + "_cond1"],
-        scope_name=scope_name,
-        y="-float('inf')")
-    graph.add_layer(
-        "prim.eq",
-        inputs={"x": inputs_name[2]},
-        outputs=[inputs_name[2] + "_cond2"],
-        scope_name=scope_name,
-        y="float('inf')")
-    graph.add_layer(
-        "prim.or",
-        inputs={
-            "x": inputs_name[2] + "_cond1",
-            "y": inputs_name[2] + "_cond2"
-        },
-        outputs=[inputs_name[2] + "_cond"],
-        scope_name=scope_name)
-    graph.add_layer(
-        "prim.if", {'input': inputs_name[2] + "_cond"},
-        outputs=[inputs_name[2] + "_if"],
-        scope_name=scope_name)
-    if_layer = graph.layers[list(graph.layers.keys())[-1]]
-    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-    block.add_layer(
-        "prim.equal",
-        inputs={"input": inputs_name[1] + "_mask"},
-        outputs=[inputs_name[2] + "_1"],
-        scope_name=scope_name)
-    if_layer.add_block(block)
-    block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-    block.add_layer(
-        "prim.mul",
-        inputs={"x": inputs_name[1] + "_mask",
-                "y": inputs_name[2]},
-        outputs=[inputs_name[2] + "_1"],
-        scope_name=scope_name)
-    if_layer.add_block(block)
-    if_layer.inputs["input-0"] = inputs_name[1] + "_mask"
-    if_layer.inputs["input-1"] = inputs_name[2]
-    if_layer.outputs.append(inputs_name[2] + "_1")
-    graph.add_layer(
-        "paddle.add",
-        inputs={"x": inputs_name[2] + "_1",
-                "y": inputs_name[0] + "_not_mask"},
+        "paddle.where",
+        inputs=layer_where_inputs,
         outputs=layer_outputs,
         scope_name=scope_name)
     return current_inputs, current_outputs
@@ -4547,6 +4649,42 @@ def aten_repeat_interleave(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_replication_pad1d(mapper, graph, node):
+    """
+    TorchScript Code:
+        %58 : Tensor = aten::replication_pad1d(%input.1, %152)
+        Parameter meaning:
+        %58 (Tensor): Output Tensor
+        %input.1 (Tensor): Input Tensor
+        %%152 (list): Padding size
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [op_name, output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    # input list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+    layer_attrs["mode"] = string("replicate")
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.nn.Pad1D",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+
+    return current_inputs, current_outputs
+
+
 def aten_reshape(mapper, graph, node):
     """ 构造调整大小的PaddleLayer。
     TorchScript示例:
@@ -4672,6 +4810,36 @@ def aten_rsub(mapper, graph, node):
 
     graph.add_layer(
         "prim.rsub",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_rsqrt(mapper, graph, node):
+    """
+    TorchScript Code:
+        %n0.3 : Tensor = aten::rsqrt(%n.3)
+        Parameter meaning:
+        %n0.3 (Tensor): output tensor
+        %n.3 (Tensor): input tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # outputs list
+    current_outputs = [output_name]
+    # inputs list
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.rsqrt",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name)

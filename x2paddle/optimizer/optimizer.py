@@ -42,17 +42,22 @@ class GraphOptimizer(object):
             self.passes = []
 
     def optimize(self, graph):
+        show_pass_log = False
         for pass_name in self.passes:
             pass_ = PassManager.lookup(pass_name)()
             if pass_name.endswith("_eliminate_pass") or pass_name.endswith(
                     "conv2d_add_fuse_pass"):
                 pass_.apply(graph)
+                show_pass_log = True
             else:
                 while True:
                     before_len = len(graph.layers)
                     pass_.apply(graph)
                     after_len = len(graph.layers)
+                    if after_len < before_len:
+                        show_pass_log = True
                     if before_len == after_len:
                         break
-            print("{} done!".format(pass_name))
+            if show_pass_log:
+                print("{} done!".format(pass_name))
         return graph
