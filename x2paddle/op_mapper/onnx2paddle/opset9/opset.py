@@ -2354,7 +2354,8 @@ class OpSet9():
         output_size = node.get_attr('output_shape', [])
         pads = node.get_attr('pads', [0] * (convnd * 2))
 
-        paddings, var_x = self._pad_if_asymmetric(node, pads, val_x)
+        paddings = np.array(pads).reshape((2, -1)).transpose().astype("int32")
+        paddings = paddings.flatten().tolist()
 
         if len(output_size) != 0:
             paddings = [0] * 4
