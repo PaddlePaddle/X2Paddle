@@ -484,6 +484,55 @@ def aten_arange(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_argmax(mapper, graph, node):
+    """
+    TorchScript:
+        %x.28 : Tensor = aten::argmax(%result.1, %4967, %3, %2)
+        Parameter meaning:
+        %x.28 (Tensor): Output Tensor
+        %result.1 (Tensor): Input Tensor
+        %4967 (int/list): Axis
+        %3 (bool): Keepdim
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # process Axis
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # process Keepdim
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["keepdim"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    graph.add_layer(
+        "paddle.argmax",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_avg_pool2d(mapper, graph, node):
     """ 构造最大池化的PaddleLayer。
     TorchScript示例:
@@ -1072,6 +1121,35 @@ def aten_complex(mapper, graph, node):
         outputs=layer_outputs,
         scope_name=scope_name,
         **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_copy(mapper, graph, node):
+    """
+    TorchScript Code:
+        %107 : Tensor = aten::copy(%new_mem.1)
+        Parameter meaning:
+        %107 (Tensor): Output Tensor
+        %new_mem.1 (Tensor): Input Tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["input"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    graph.add_layer(
+        "prim.equal",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+
     return current_inputs, current_outputs
 
 
