@@ -911,6 +911,13 @@ class OpSet9():
                         'index': indices.name},
                 outputs=[node.name],
                 axis=axis)
+            # deal with indice is scalar(0D) Tensor
+            if isinstance(indices_values, int) and len(val_x_shape) > 1:
+                self.paddle_graph.add_layer(
+                    'paddle.squeeze',
+                    inputs={'x': node.name},
+                    outputs=[node.name],
+                    axis=[axis])
         else:
             # if val_x is DataNode, convert gather to embedding
             if axis == 0 and isinstance(val_x, ONNXGraphDataNode):
