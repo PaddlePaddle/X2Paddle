@@ -1150,6 +1150,14 @@ class OpSet9():
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         starts, ends, axes, steps = None, None, None, None
         layer_attrs = {}
+        if val_x.dtype not in [
+                "float16", "float32", "float64", "int32", "int64"
+        ]:
+            self.paddle_graph.add_layer(
+                'paddle.cast',
+                inputs={"x": val_x.name},
+                outputs=[val_x.name],
+                dtype=string('int32'))
         if len(node.inputs) > 1:
             starts = self.graph.get_input_node(node, idx=1, copy=True)
             ends = self.graph.get_input_node(node, idx=2, copy=True)
@@ -1178,8 +1186,9 @@ class OpSet9():
                 starts_value = starts_value.copy()
                 ends_value = ends_value.copy()
                 for idx in range(len(ends_value)):
-                    if starts_value[idx] >= val_x.out_shapes[0][axes[
-                            idx]] and val_x.out_shapes[0][axes[idx]] > 0:
+                    if len(val_x.out_shapes[0]) != 0 and starts_value[
+                            idx] >= val_x.out_shapes[0][axes[
+                                idx]] and val_x.out_shapes[0][axes[idx]] > 0:
                         starts_value[idx] = val_x.out_shapes[0][axes[idx]] - 1
                         ends_value[idx] = val_x.out_shapes[0][axes[idx]]
                     elif ends_value[idx] > 2**31 - 1:
@@ -1866,7 +1875,10 @@ class OpSet9():
     def Squeeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
-        if len(val_x.out_shapes[0]) == 1:
+        if axes is None:
+            axes_node = self.graph.get_input_node(node, idx=1, copy=True)
+            axes = _const_weight_or_none(axes_node, necessary=True)
+        if len(val_x.out_shapes[0]) <= 1 and len(axes) == 1 and axes[0] == 0:
             self.paddle_graph.add_layer(
                 "paddle.cast",
                 inputs={"x": val_x.name},
