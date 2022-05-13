@@ -261,6 +261,8 @@ class OpSet9():
         shape = node.out_shapes[0]
 
         if hasattr(node.weight, "shape") and len(node.weight.shape) == 0:
+            if node.weight == float('inf') or node.weight == float('-inf'):
+                node.weight = string(node.weight)
             self.paddle_graph.add_layer(
                 "paddle.full",
                 inputs={},
@@ -797,6 +799,8 @@ class OpSet9():
         if len(value) == 1:
             value = value.tolist()
             value = value[0]
+            if value == float('inf') or value == float('-inf'):
+                value = string(value)
             self.paddle_graph.add_layer(
                 "paddle.full",
                 inputs={},
