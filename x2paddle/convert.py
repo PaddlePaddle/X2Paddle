@@ -192,6 +192,14 @@ def tf2paddle(model_path,
             ConverterCheck(
                 task="TensorFlow", time_info=time_info,
                 lite_state="Success").start()
+    # for convert survey
+    logging.info("================================================")
+    logging.info("")
+    logging.info(
+        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+    )
+    logging.info("")
+    logging.info("================================================")
 
 
 def caffe2paddle(proto_file,
@@ -240,6 +248,14 @@ def caffe2paddle(proto_file,
         if not disable_feedback:
             ConverterCheck(
                 task="Caffe", time_info=time_info, lite_state="Success").start()
+    # for convert survey
+    logging.info("================================================")
+    logging.info("")
+    logging.info(
+        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+    )
+    logging.info("")
+    logging.info("================================================")
 
 
 def onnx2paddle(model_path,
@@ -293,6 +309,14 @@ def onnx2paddle(model_path,
         if not disable_feedback:
             ConverterCheck(
                 task="ONNX", time_info=time_info, lite_state="Success").start()
+    # for convert survey
+    logging.info("================================================")
+    logging.info("")
+    logging.info(
+        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+    )
+    logging.info("")
+    logging.info("================================================")
 
 
 def pytorch2paddle(module,
@@ -364,6 +388,14 @@ def pytorch2paddle(module,
             ConverterCheck(
                 task="PyTorch", time_info=time_info,
                 lite_state="Success").start()
+    # for convert survey
+    logging.info("================================================")
+    logging.info("")
+    logging.info(
+        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+    )
+    logging.info("")
+    logging.info("================================================")
 
 
 def main():
