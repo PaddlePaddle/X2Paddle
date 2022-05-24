@@ -45,8 +45,8 @@ class GraphOptimizer(object):
             self.passes = []
 
     def optimize(self, graph):
-        show_pass_log = False
         for pass_name in self.passes:
+            show_pass_log = False
             pass_ = PassManager.lookup(pass_name)()
             if pass_name.endswith("_eliminate_pass") or pass_name.endswith(
                     "conv2d_add_fuse_pass"):

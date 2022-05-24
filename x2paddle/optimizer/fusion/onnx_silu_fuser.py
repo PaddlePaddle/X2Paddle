@@ -48,8 +48,19 @@ class SiluFuser(FuseBase):
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer, new_layer_id = self.gen_new_layer(parameters, matches)
-        graph.layers[new_layer_id] = new_layer
-        matches.pop(new_layer_id)
+        # Determine whether Sigmoid and multiply input are the same
+        sigmoid_input = list()
+        multiply_input = list()
+        for layer_id, layer in matches.items():
+            if layer.kernel == "paddle.nn.Sigmoid":
+                sigmoid_input.append(layer.inputs['x'])
+            if layer.kernel == "paddle.multiply":
+                multiply_input.append(layer.inputs['x'])
+        if sigmoid_input[0] == multiply_input[0]:
+            graph.layers[new_layer_id] = new_layer
+            matches.pop(new_layer_id)
+        else:
+            matches.clear()
 
     def gen_new_layer(self, parameters, matches):
         layer_id_list = list(matches.keys())

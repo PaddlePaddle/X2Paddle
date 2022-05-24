@@ -26,7 +26,7 @@ class SiluFusePass(Pass):
 
     def apply(self, graph):
         fuser = SiluFuser()
-        fuser.operate(graph, match_kind="edge")
+        fuser.operate(graph, match_kind="topo")
 
 
 # register silu pass
