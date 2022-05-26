@@ -1242,6 +1242,12 @@ class OpSet9():
                 inputs={"input": val_x.name},
                 outputs=[node.name],
                 **layer_attrs)
+        if val_x.dtype == 'uint8':
+            self.paddle_graph.add_layer(
+                'paddle.cast',
+                inputs={"x": node.name},
+                outputs=[node.name],
+                dtype=string('uint8'))
 
     @print_mapping_info
     def ConstantOfShape(self, node):
