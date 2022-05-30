@@ -118,7 +118,9 @@ class TraceFcFuser(FuseBase):
             (1, 0))
         self.rm_params.add(weight_name)
         bias_numpy = parameters[bias_name]
-        parameters["{}.bias".format(linear_name)] = np.squeeze(bias_numpy)
+        if len(bias_numpy.shape) == 2:
+            bias_numpy = np.squeeze(bias_numpy)
+        parameters["{}.bias".format(linear_name)] = bias_numpy
         self.rm_params.add(bias_name)
         new_layer = PaddleLayer(
             layers_id[0],
