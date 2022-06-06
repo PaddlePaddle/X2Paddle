@@ -13,7 +13,50 @@
 # limitations under the License.
 
 import paddle
-import paddle.fluid as fluid
+from paddle import _C_ops
+from paddle import in_dynamic_mode
+from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
+
+
+def roi_pool(input,
+             rois,
+             pooled_height,
+             pooled_width,
+             spatial_scale=1.0,
+             rois_num=None,
+             name=None):
+    if in_dynamic_mode():
+        assert rois_num is not None, "rois_num should not be None in dygraph mode."
+        pool_out, argmaxes = _C_ops.roi_pool(
+            input, rois, rois_num, "pooled_height", pooled_height,
+            "pooled_width", pooled_width, "spatial_scale", spatial_scale)
+        return pool_out, argmaxes
+
+    else:
+        check_variable_and_dtype(input, 'input', ['float32'], 'roi_pool')
+        check_variable_and_dtype(rois, 'rois', ['float32'], 'roi_pool')
+        helper = LayerHelper('roi_pool', **locals())
+        dtype = helper.input_dtype()
+        pool_out = helper.create_variable_for_type_inference(dtype)
+        argmaxes = helper.create_variable_for_type_inference(dtype='int32')
+
+        inputs = {
+            "X": input,
+            "ROIs": rois,
+        }
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+        helper.append_op(
+            type="roi_pool",
+            inputs=inputs,
+            outputs={"Out": pool_out,
+                     "Argmax": argmaxes},
+            attrs={
+                "pooled_height": pooled_height,
+                "pooled_width": pooled_width,
+                "spatial_scale": spatial_scale
+            })
+        return pool_out, argmaxes
 
 
 class ROIPooling(object):
@@ -26,6 +69,5 @@ class ROIPooling(object):
 
     def __call__(self, x0, x1):
         slice_x1 = paddle.slice(input=x1, axes=[1], starts=[1], ends=[5])
-        out = fluid.layers.roi_pool(
-            input=x0, rois=slice_x1, **self.roipooling_layer_attrs)
+        out = roi_pool(input=x0, rois=slice_x1, **self.roipooling_layer_attrs)
         return out
