@@ -2583,14 +2583,11 @@ class OpSet9():
                                                        1) == 1 else False
         layer_attrs["sorted"] = True if node.get_attr('sorted',
                                                       1) == 1 else False
-        is_k_attr = False
         k = _const_weight_or_none(val_k)
         if isinstance(k, (list, tuple, np.ndarray)):
             k = k[0]
         if k is not None:
-            is_k_attr = True
             layer_attrs["k"] = k
-        if is_k_attr:
             self.paddle_graph.add_layer(
                 "paddle.topk",
                 inputs={"x": val_x.name},
