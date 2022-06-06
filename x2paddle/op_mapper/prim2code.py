@@ -612,7 +612,7 @@ def prim_shape_dim(layer,
                    forward_func=[],
                    layer_id=None,
                    different_attrs=None):
-    line = "{} = fluid.layers.shape({})[{}]".format(
+    line = "{} = paddle.shape({})[{}]".format(
         layer.outputs[0],
         get_value(layer, "input", different_attrs),
         get_value(layer, "dim", different_attrs))

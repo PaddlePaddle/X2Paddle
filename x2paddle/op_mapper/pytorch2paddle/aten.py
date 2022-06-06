@@ -6025,7 +6025,7 @@ def aten_upsample_bilinear2d(mapper, graph, node):
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1] + "_isinstance"],
             scope_name=scope_name,
-            cls="paddle.fluid.Variable")
+            cls="paddle.static.Variable")
         # TODO(syf): paddle.Variable
         graph.add_layer(
             "prim.if", {"input": inputs_name[1] + "_isinstance"},
@@ -6103,7 +6103,7 @@ def aten_upsample_nearest2d(mapper, graph, node):
             inputs={"input": inputs_name[1]},
             outputs=[inputs_name[1] + "_isinstance"],
             scope_name=scope_name,
-            cls="paddle.fluid.Variable")
+            cls="paddle.static.Variable")
         # TODO(syf): paddle.Variable
         graph.add_layer(
             "prim.if", {"input": inputs_name[1] + "_isinstance"},

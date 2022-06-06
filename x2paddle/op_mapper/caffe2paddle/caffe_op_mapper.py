@@ -435,7 +435,7 @@ class CaffeOpMapper():
             "beta": params.beta,
         }
         self.paddle_graph.add_layer(
-            "paddle.fluid.layers.lrn",
+            "paddle.nn.LocalResponseNorm",
             inputs={"input": input.name},
             outputs=[node.layer_name],
             **layer_attrs)
