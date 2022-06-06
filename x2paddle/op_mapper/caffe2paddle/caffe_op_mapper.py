@@ -429,10 +429,10 @@ class CaffeOpMapper():
         assert params.local_size % 2 == 1
         alpha = params.alpha / float(params.local_size)
         layer_attrs = {
-            "n": params.local_size,
-            "k": params.k,
+            "size": params.local_size,
             "alpha": alpha,
             "beta": params.beta,
+            "k": params.k,
         }
         self.paddle_graph.add_layer(
             "paddle.nn.LocalResponseNorm",
