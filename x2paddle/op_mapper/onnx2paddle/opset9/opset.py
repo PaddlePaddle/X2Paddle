@@ -2586,6 +2586,7 @@ class OpSet9():
         k = _const_weight_or_none(val_k)
         if isinstance(k, (list, tuple, np.ndarray)):
             k = k[0]
+        # If k can get the value directly, it is used as an attribute; otherwise it is used as an input tensor
         if k is not None:
             layer_attrs["k"] = k
             self.paddle_graph.add_layer(
