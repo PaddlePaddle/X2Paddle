@@ -538,12 +538,14 @@ class OpSet9():
             'pooled_width': pooled_width,
             'spatial_scale': spatial_scale,
             'sampling_ratio': sampling_ratio,
-            'rois_num': val_rois_num,
         }
         self.paddle_graph.add_layer(
             'custom_layer:ROIAlign',
-            inputs={'input': val_x.name,
-                    'rois': val_rois.name},
+            inputs={
+                'input': val_x.name,
+                'rois': val_rois.name,
+                'rois_num': val_rois_num
+            },
             outputs=[node.name],
             **layer_attrs)
 
