@@ -37,13 +37,16 @@ class GraphOptimizer(object):
                 "prelu_fuse_pass", "transpose_eliminate_pass"
             ]
         elif source_frame == "onnx":
-            self.passes = ["onnx_layernorm_fuse_pass"]
+            self.passes = [
+                "onnx_layernorm_fuse_pass",
+                "onnx_silu_fuse_pass",
+            ]
         else:
             self.passes = []
 
     def optimize(self, graph):
-        show_pass_log = False
         for pass_name in self.passes:
+            show_pass_log = False
             pass_ = PassManager.lookup(pass_name)()
             if pass_name.endswith("_eliminate_pass") or pass_name.endswith(
                     "conv2d_add_fuse_pass"):
