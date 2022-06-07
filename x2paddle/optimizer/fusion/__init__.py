@@ -40,3 +40,5 @@ from .trace_fc_fuser import TraceFcFuser
 from .trace_fc_fuse_pass import TraceFcFusePass
 from .onnx_layernorm_fuser import LayerNormFuser
 from .onnx_layernorm_fuse_pass import LayerNormFusePass
+from .onnx_gelu_fuser import GeluFuser
+from .onnx_gelu_fuse_pass import GeluFusePass
