@@ -14,9 +14,11 @@
 
 import paddle
 from paddle import _C_ops
+from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 
+@paddle.jit.not_to_static
 def prior_box(input,
               image,
               min_sizes,

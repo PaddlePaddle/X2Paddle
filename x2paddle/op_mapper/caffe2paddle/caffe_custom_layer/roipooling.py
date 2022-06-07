@@ -18,6 +18,7 @@ from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 
+@paddle.jit.not_to_static
 def roi_pool(input,
              rois,
              pooled_height,
