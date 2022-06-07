@@ -1209,10 +1209,10 @@ class CaffeOpMapper():
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.shuffle_channel_param
         self.paddle_graph.add_layer(
-            "paddle.fluid.layers.shuffle_channel",
+            "paddle.nn.functional.channel_shuffle",
             inputs={"x": input.name},
             outputs=[node.layer_name],
-            group=params.group)
+            groups=params.group)
 
     def Upsample(self, node):
         assert len(
