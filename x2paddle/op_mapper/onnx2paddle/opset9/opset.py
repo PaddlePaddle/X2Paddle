@@ -541,7 +541,7 @@ class OpSet9():
             'rois_num': val_rois_num,
         }
         self.paddle_graph.add_layer(
-            'paddle.fluid.layers.roi_align',
+            'custom_layer:ROIAlign',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
@@ -560,7 +560,7 @@ class OpSet9():
             'spatial_scale': spatial_scale,
         }
         self.paddle_graph.add_layer(
-            'paddle.fluid.layers.roi_pool',
+            'custom_layer:ROIPooling',
             inputs={'input': val_x.name,
                     'rois': val_rois.name},
             outputs=[node.name],
