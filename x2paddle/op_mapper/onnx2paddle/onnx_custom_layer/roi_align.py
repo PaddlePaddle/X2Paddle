@@ -26,7 +26,7 @@ def roi_align(input,
               spatial_scale=1.0,
               sampling_ratio=-1,
               rois_num=None,
-              aligned=True,
+              aligned=False,
               name=None):
     if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
