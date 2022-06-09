@@ -34,7 +34,7 @@ class DetectionOutput(object):
         pbv = priorbox_list[1]
         pb = paddle.reshape(x=pb, shape=[-1, 4])
         pbv = paddle.reshape(x=pbv, shape=[-1, 4])
-        pb_dim = fluid.layers.shape(pb)[0]
+        pb_dim = paddle.shape(pb)[0]
         loc = paddle.reshape(x0, shape=[-1, pb_dim, 4])
         conf_flatten = paddle.reshape(x1, shape=[0, pb_dim, -1])
         out = fluid.layers.detection_output(

@@ -69,6 +69,5 @@ class ROIPooling(object):
         }
 
     def __call__(self, x0, x1):
-        slice_x1 = paddle.slice(input=x1, axes=[1], starts=[1], ends=[5])
-        out = roi_pool(input=x0, rois=slice_x1, **self.roipooling_layer_attrs)
+        out = roi_pool(input=x0, rois=x1, **self.roipooling_layer_attrs)
         return out

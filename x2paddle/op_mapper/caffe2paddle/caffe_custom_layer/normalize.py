@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import paddle
-import paddle.fluid as fluid
 
 
 class Normalize(object):
@@ -21,7 +20,7 @@ class Normalize(object):
         self.axis = axis
 
     def __call__(self, x, param):
-        l2_norm = fluid.layers.l2_normalize(x=x, axis=1)
+        l2_norm = paddle.norm(x=x, p=2, axis=1, keepdim=True)
         param = paddle.reshape(param, [param.shape[-1]])
         perm = list(range(len(l2_norm.shape)))
         perm.pop(self.axis)
