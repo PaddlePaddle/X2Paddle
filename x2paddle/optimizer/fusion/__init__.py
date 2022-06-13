@@ -42,3 +42,5 @@ from .onnx_layernorm_fuser import LayerNormFuser
 from .onnx_layernorm_fuse_pass import LayerNormFusePass
 from .onnx_gelu_fuser import GeluFuser
 from .onnx_gelu_fuse_pass import GeluFusePass
+from .replace_div_to_scale import Div2Scale
+from .replace_div_to_scale_pass import Div2ScalePass
