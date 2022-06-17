@@ -37,7 +37,11 @@ class GraphOptimizer(object):
                 "prelu_fuse_pass", "transpose_eliminate_pass"
             ]
         elif source_frame == "onnx":
-            self.passes = ["onnx_layernorm_fuse_pass", "onnx_gelu_fuse_pass"]
+            self.passes = [
+                "onnx_layernorm_fuse_pass",
+                "onnx_gelu_fuse_pass",
+                "replace_div_to_scale_pass",
+            ]
         else:
             self.passes = []
 
@@ -54,7 +58,7 @@ class GraphOptimizer(object):
                     before_len = len(graph.layers)
                     pass_.apply(graph)
                     after_len = len(graph.layers)
-                    if after_len < before_len:
+                    if after_len <= before_len:
                         show_pass_log = True
                     if before_len == after_len:
                         break
