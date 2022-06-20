@@ -6065,6 +6065,66 @@ def aten_upsample_bilinear2d(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_upsample_trilinear3d(mapper, graph, node):
+    """
+    TorchScript Code:
+        %4997 : Tensor = aten::upsample_trilinear3d(%x.13, %4963, %5421, %4995)
+        Parameter meaning:
+        %4997 (Tensor): Output Tensor
+        %x.13 (Tensor): Input Tensor
+        %4963 (list): output_size
+        %5421 (bool): align_corners
+        %4995 (float): scale_factors
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # process output_size
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["size"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["size"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # process align_corners
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["align_corners"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["align_corners"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+    # process scale_factor
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["scale_factor"] = mapper.attrs[inputs_name[3]]
+    else:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
+        current_inputs.append(inputs_name[3])
+    layer_attrs["align_mode"] = 0
+    layer_attrs["mode"] = string("trilinear")
+    layer_attrs["data_format"] = string("NCDHW")
+    graph.add_layer(
+        "paddle.nn.functional.interpolate",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_upsample_nearest2d(mapper, graph, node):
     """ 构造使用nearest上采样的PaddleLayer。
     TorchScript示例:
