@@ -1189,129 +1189,66 @@ def aten___contains__(mapper, graph, node):
 
 
 def aten_constant_pad_nd(mapper, graph, node):
-    """ 构造填充固定值的PaddleLayer。
-    TorchScript示例:
+    """
+    TorchScript Code:
         %58 : Tensor = aten::constant_pad_nd(%input1.24, %4876, %42)
-        参数含义:
-        %58 (Tensor): 输出，填充后的Tensor。
-        %input1.24 (Tensor): 需要填充的Tensor。
-        %4876 (list): 填充大小。
-        %42 (-): 填充值。
+        Parameter meaning:
+        %58 (Tensor): Output Tensor
+        %input1.24 (Tensor): Input Tensor
+        %4876 (list): pad
+        %42 (-): value
     """
     scope_name = mapper.normalize_scope_name(node)
     op_name = name_generator("pad", mapper.nn_name2id)
     output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [op_name, output_name]
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
+    # Output list
     current_outputs = [output_name]
-    # 处理输入0，即%input1.24
+    # process Input Tensor
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
-    layer_inputs["input"] = inputs_name[0]
-    # 处理输入1，即%4876
-    is_padding_tensor = False
+    # process pad
+    padding_attr = None
     if inputs_name[1] in mapper.attrs:
-        layer_attrs["padding"] = mapper.attrs[inputs_name[1]]
+        padding_attr = mapper.attrs[inputs_name[1]]
     else:
         mapper._check_input(graph, inputs_node[1], inputs_name[1],
                             current_outputs, scope_name)
         layer_inputs["pad"] = inputs_name[1]
-        is_padding_tensor = True
-    # 获取当前节点输入的list
-    current_inputs = list(layer_inputs.values())
-    # 处理输入2，即%42
+    # process value
     layer_attrs["value"] = mapper.attrs[inputs_name[2]]
 
-    if not is_padding_tensor:
-        graph.add_layer(
-            "prim.shape",
-            inputs={"input": inputs_name[0]},
-            outputs=[inputs_name[0] + "_shape"],
-            scope_name=scope_name)
-        graph.add_layer(
-            "prim.len",
-            inputs={"input": inputs_name[0] + "_shape"},
-            outputs=[inputs_name[0] + "_len"],
-            scope_name=scope_name)
-
-    def add_pad_layers(kernel, dim):
-        graph.add_layer(
-            "prim.ne",
-            inputs={"x": inputs_name[0] + "_len"},
-            outputs=[inputs_name[0] + "_cond"],
-            scope_name=scope_name,
-            y=dim)
-        graph.add_layer(
-            "prim.if", {'input': inputs_name[0] + "_cond"},
-            outputs=[inputs_name[0] + "_if", output_name],
-            scope_name=scope_name)
-        if_layer = graph.layers[list(graph.layers.keys())[-1]]
-        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-        block.add_layer(
-            "prim.sub",
-            inputs={"y": inputs_name[0] + "_len"},
-            outputs=[inputs_name[0] + "_len0"],
-            scope_name=scope_name,
-            alpha=1.0,
-            x=dim)
-        block.add_layer(
-            "prim.len2list",
-            inputs={"len": inputs_name[0] + "_len0"},
-            outputs=[inputs_name[0] + "_list"],
-            scope_name=scope_name)
-        block.add_layer(
-            "paddle.unsqueeze",
-            inputs={"x": inputs_name[0],
-                    "axis": inputs_name[0] + "_list"},
-            outputs=[inputs_name[0] + "_var"],
-            scope_name=scope_name)
-        block.add_layer(
-            kernel,
-            inputs={"input": inputs_name[0] + "_var"},
-            outputs=copy.deepcopy(layer_outputs),
-            scope_name=scope_name,
-            **layer_attrs)
-        block.add_layer(
-            "paddle.squeeze",
-            inputs={"x": output_name,
-                    "axis": inputs_name[0] + "_list"},
-            outputs=[output_name],
-            scope_name=scope_name)
-        if_layer.add_block(block)
-        block = PaddleGraph(source_type="pytorch", parent_layer=if_layer)
-        layer_inputs["input"] = inputs_name[0]
-        block.add_layer(
-            kernel,
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            scope_name=scope_name,
-            **layer_attrs)
-        if_layer.add_block(block)
-        if_layer.inputs["input-0"] = inputs_name[0]
-        if_layer.inputs["input-1"] = inputs_name[0] + "_len"
-
-    if not is_padding_tensor:
-        if len(layer_attrs["padding"]) == 2:
-            layer_outputs[0] = layer_outputs[0].replace("pad", "pad1d")
-            add_pad_layers("paddle.nn.Pad1D", 3)
-        elif len(layer_attrs["padding"]) == 4:
-            layer_outputs[0] = layer_outputs[0].replace("pad", "pad2d")
-            add_pad_layers("paddle.nn.Pad2D", 4)
-        elif len(layer_attrs["padding"]) == 6:
-            layer_outputs[0] = layer_outputs[0].replace("pad", "pad3d")
-            add_pad_layers("paddle.nn.Pad3D", 5)
+    if padding_attr is not None:
+        layer_inputs["x"] = inputs_name[0]
+        kernel_name = "paddle.nn.functional.pad"
+        if len(padding_attr) == 2:
+            layer_attrs["pad"] = [0, 0, 0, 0, 0, 0] + padding_attr
+        elif len(padding_attr) == 4:
+            layer_inputs["x"] = inputs_name[0]
+            layer_attrs["pad"] = [0, 0, 0, 0] + padding_attr
+        elif len(padding_attr) == 6:
+            layer_inputs["x"] = inputs_name[0]
+            layer_attrs["pad"] = [0, 0] + padding_attr
         else:
-            raise Exception("The lenght of padding list must be 2, 4 or 6!")
+            layer_inputs["x"] = inputs_name[0]
+            layer_attrs["pad"] = padding_attr
+        graph.add_layer(
+            kernel_name,
+            inputs=layer_inputs,
+            outputs=[output_name],
+            scope_name=scope_name,
+            **layer_attrs)
     else:
+        layer_inputs["input"] = inputs_name[0]
         graph.add_layer(
             "custom_layer:Pad",
             inputs=layer_inputs,
             outputs=[output_name],
             scope_name=scope_name,
             **layer_attrs)
+    current_inputs = list(layer_inputs.values())
     return current_inputs, current_outputs
 
 
