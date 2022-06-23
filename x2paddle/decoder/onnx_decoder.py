@@ -583,6 +583,9 @@ class ONNXDecoder(object):
             item.name = self.make_variable_name(item.name)
         for node in graph.node:
             node.name = node.output[0]
+            # Avoid topological sort errors caused by :: in the name
+            if "::" in node.name and len(node.output) > 1:
+                node.name = node.name.replace('::', '_')
             if ":" in node.name and len(
                     node.output) > 1 and node.op_type != "LSTM":
                 node.name = node.name.split(':')[0]
