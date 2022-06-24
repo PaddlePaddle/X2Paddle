@@ -429,13 +429,13 @@ class CaffeOpMapper():
         assert params.local_size % 2 == 1
         alpha = params.alpha / float(params.local_size)
         layer_attrs = {
-            "n": params.local_size,
-            "k": params.k,
+            "size": params.local_size,
             "alpha": alpha,
             "beta": params.beta,
+            "k": params.k,
         }
         self.paddle_graph.add_layer(
-            "paddle.fluid.layers.lrn",
+            "paddle.nn.LocalResponseNorm",
             inputs={"input": input.name},
             outputs=[node.layer_name],
             **layer_attrs)
@@ -1209,10 +1209,10 @@ class CaffeOpMapper():
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.shuffle_channel_param
         self.paddle_graph.add_layer(
-            "paddle.fluid.layers.shuffle_channel",
+            "paddle.nn.functional.channel_shuffle",
             inputs={"x": input.name},
             outputs=[node.layer_name],
-            group=params.group)
+            groups=params.group)
 
     def Upsample(self, node):
         assert len(

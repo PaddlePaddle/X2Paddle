@@ -14,7 +14,7 @@
 
 import paddle
 from paddle.nn.functional import instance_norm
-from paddle.fluid.initializer import Constant
+from paddle.nn.initializer import Constant
 
 
 class InstanceNorm(paddle.nn.Layer):

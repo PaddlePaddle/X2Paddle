@@ -1,4 +1,4 @@
-# Copyright (c) 2020  PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle
+from x2paddle.optimizer.pass_ import Pass
+from x2paddle.optimizer.fusion import Div2Scale
+from x2paddle.optimizer.pass_manager import pass_register
 
 
-class Select(object):
-    def __init__(self, input_shape, point, axis):
-        self.point = point
-        self.input_shape = input_shape
-        self.axis = axis
+@pass_register
+class Div2ScalePass(Pass):
+    name = "replace_div_to_scale_pass"
 
-    def __call__(self, x):
-        start = self.point[0]
-        if len(self.point) == 2:
-            end = self.point[1]
-        else:
-            end = self.input_shape[self.axis]
-        out = paddle.slice(x=x, start=start, end=end, axes=[self.axis])
-        return out
+    def __init__(self):
+        Pass.__init__(self)
+
+    def apply(self, graph):
+        fuser = Div2Scale()
+        fuser.operate(graph, match_kind="edge")
+
+
+# register huggingface div2scale pass
+replace_div_to_scale_pass = Div2ScalePass()

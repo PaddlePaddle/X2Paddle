@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import paddle
-from paddle.fluid import core
-from paddle.fluid.framework import Variable, in_dygraph_mode
-from paddle.fluid.layer_helper import LayerHelper
+from paddle import _C_ops
+from paddle import in_dynamic_mode
+from paddle.common_ops_import import Variable, LayerHelper
 
 
 def multiclass_nms(bboxes,
@@ -33,13 +33,13 @@ def multiclass_nms(bboxes,
                    name=None):
     helper = LayerHelper('multiclass_nms3', **locals())
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
-                                                               rois_num, *attrs)
+        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
+                                                             rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index

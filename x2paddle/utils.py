@@ -103,15 +103,7 @@ class PaddleDtypes():
             self.t_int64 = paddle.int64
             self.t_bool = paddle.bool
         else:
-            self.t_float16 = "paddle.fluid.core.VarDesc.VarType.FP16"
-            self.t_float32 = "paddle.fluid.core.VarDesc.VarType.FP32"
-            self.t_float64 = "paddle.fluid.core.VarDesc.VarType.FP64"
-            self.t_uint8 = "paddle.fluid.core.VarDesc.VarType.UINT8"
-            self.t_int8 = "paddle.fluid.core.VarDesc.VarType.INT8"
-            self.t_int16 = "paddle.fluid.core.VarDesc.VarType.INT16"
-            self.t_int32 = "paddle.fluid.core.VarDesc.VarType.INT32"
-            self.t_int64 = "paddle.fluid.core.VarDesc.VarType.INT64"
-            self.t_bool = "paddle.fluid.core.VarDesc.VarType.BOOL"
+            raise Exception("Paddle>=2.0.0 is required, Please update version!")
 
 
 is_new_version = check_version()

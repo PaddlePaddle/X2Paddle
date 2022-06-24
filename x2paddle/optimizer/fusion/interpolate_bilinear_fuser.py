@@ -46,7 +46,7 @@ class InterpolateBilinearFuser(FuseBase):
                 if x2271 :
                     x2274 = x2197[0]
                     x2275 = x2197[1]
-                    x2233_isinstance = isinstance(x2233, paddle.fluid.Variable)
+                    x2233_isinstance = isinstance(x2233, paddle.static.Variable)
                     if x2233_isinstance :
                         x2233 = x2233.numpy().tolist()
                     x2276 = paddle.nn.functional.interpolate(x=x2181, size=x2233, scale_factor=x2274, align_corners=False, align_mode=0, mode='bilinear')
@@ -146,7 +146,7 @@ class InterpolateBilinearFuser(FuseBase):
             "prim.isinstance",
             inputs={"input": "interpolate-input-3"},
             outputs=["interpolate-input-0_isinstance"],
-            cls="paddle.fluid.Variable")
+            cls="paddle.static.Variable")
         pattern_block_block.add_layer(
             "prim.if", {"input": "interpolate-input-0_isinstance"},
             outputs=["interpolate-input-0_if1"])
