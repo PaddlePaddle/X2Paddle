@@ -196,7 +196,7 @@ def tf2paddle(model_path,
     logging.info("================================================")
     logging.info("")
     logging.info(
-        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+        "Model Converted! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
     )
     logging.info("")
     logging.info("================================================")
@@ -252,7 +252,7 @@ def caffe2paddle(proto_file,
     logging.info("================================================")
     logging.info("")
     logging.info(
-        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+        "Model Converted! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
     )
     logging.info("")
     logging.info("================================================")
@@ -313,7 +313,7 @@ def onnx2paddle(model_path,
     logging.info("================================================")
     logging.info("")
     logging.info(
-        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+        "Model Converted! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
     )
     logging.info("")
     logging.info("================================================")
@@ -392,7 +392,7 @@ def pytorch2paddle(module,
     logging.info("================================================")
     logging.info("")
     logging.info(
-        "Model Convertd! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
+        "Model Converted! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
     )
     logging.info("")
     logging.info("================================================")
