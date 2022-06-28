@@ -349,7 +349,7 @@ class FuseBase(object):
                 pattern_matcher = PatternMatcher(pattern)
                 match = pattern_matcher.operate(graph, match_kind)
                 # Return if one of the patterns matches
-                if match is not None:
+                if len(match) > 0:
                     self.matches.extend(match)
                     return
         else:
