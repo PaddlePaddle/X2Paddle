@@ -32,7 +32,7 @@ Notes:
 <font size=0.5>
 
 | | <font size=2> CausalLM  |<font size=2> MaskedLM  | <font size=2> Seq2SeqLM | <font size=2>SequenceClassification |<font size=2>TokenClassification | <font size=2>QuestionAnswering |
-|---|---|---|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | <font size=2> [BERT](https://huggingface.co/docs/transformers/main/model_doc/bert#transformers.BertModel) |✅ | ✅ | None |✅|✅|✅|
 | <font size=2> [RoBERTa](https://huggingface.co/docs/transformers/main/model_doc/roberta#transformers.RobertaModel) |✅ |✅ | None |✅|✅|✅|
 |<font size=2>  [T5](https://huggingface.co/docs/transformers/main/model_doc/t5#transformers.T5Model) | None | None |✅|None|None|None|
