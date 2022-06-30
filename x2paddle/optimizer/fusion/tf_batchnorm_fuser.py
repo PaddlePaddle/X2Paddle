@@ -188,7 +188,7 @@ class TFBatchNormFuser(FuseBase):
             inputs={"x": input_name},
             outputs=["{}_transpose_for_bn".format(input_name)],
             perm=[0, 3, 1, 2])
-        bn_name = "merge_bn{}".format(self.bn_index)
+        bn_name = "merge_bn_{}".format(input_name)
         self.bn_index += 1
         params = parameters[gamma_layer.outputs[0]]
         c = params.shape[0]
