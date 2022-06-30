@@ -1,6 +1,6 @@
-# HuggingFace 模型导出为 Paddle 模型教程
+# HuggingFace 模型转换为 Paddle 模型教程
 
-X2Paddle 新增对 HuggingFace 模型支持，目前模型支持的列表如下
+X2Paddle 新增对 HuggingFace 模型支持，TorchScript 支持55+模型，ONNX 支持40+模型，目前模型支持的列表如下
 
 ## TorchScript
 
@@ -31,19 +31,19 @@ Notes:
 
 <font size=0.5>
 
-| | <font size=2> CausalLM  |<font size=2> MaskedLM  | <font size=2> Seq2SeqLM | <font size=2>SequenceClassification |<font size=2> MultipleChoice |<font size=2>NextSentencePrediction |<font size=2>TokenClassification | <font size=2>QuestionAnswering |<font size=2> AudioClassification |
+| | <font size=2> CausalLM  |<font size=2> MaskedLM  | <font size=2> Seq2SeqLM | <font size=2>SequenceClassification |<font size=2>TokenClassification | <font size=2>QuestionAnswering |
 |---|---|---|---|---|---|---|---|---|---|
-| <font size=2> [BERT](https://huggingface.co/docs/transformers/main/model_doc/bert#transformers.BertModel) |✅ | ✅ | None |✅|None|None|✅|✅|None|
-| <font size=2> [RoBERTa](https://huggingface.co/docs/transformers/main/model_doc/roberta#transformers.RobertaModel) |✅ |✅ | None |✅|None| None |✅|✅| None |
-|<font size=2>  [T5](https://huggingface.co/docs/transformers/main/model_doc/t5#transformers.T5Model) | None | None |✅|None|None|None|None|None|None|
-|<font size=2>  [GPT2](https://huggingface.co/docs/transformers/main/model_doc/gpt2#transformers.GPT2Model) |✅ | None |None|✅|None|None|✅|None|None|
-|<font size=2>  [MarianMT](https://huggingface.co/docs/transformers/main/model_doc/marian#transformers.MarianModel) |✅ | None |✅|None|None|None|None|None|None|
-|<font size=2>  [ELECTRA](https://huggingface.co/docs/transformers/main/model_doc/electra#transformers.ElectraModel) | None | ✅ |None|✅|None|None|✅|✅|None|
-|<font size=2>  [DistilBERT](https://huggingface.co/docs/transformers/main/model_doc/distilbert#transformers.DistilBertModel)|None | ✅ |None|✅|None|None|✅|✅|None|
-|<font size=2>  [BART](https://huggingface.co/docs/transformers/main/model_doc/bart#transformers.BartModel) |✅ |None |✅|✅|None|None|None|✅|None|
-|<font size=2>  [XLM-RoBERTa](https://huggingface.co/docs/transformers/main/model_doc/xlm-roberta#transformers.XLMRobertaModel) |✅ |✅ | None |✅|None|None|✅|✅|None|
-|<font size=2>  [ALBERT](https://huggingface.co/docs/transformers/main/model_doc/albert#transformers.AlbertModel) |None | ✅ |None|✅|None|None|✅|✅|None|
-|<font size=2>  [LayoutLM](https://huggingface.co/docs/transformers/main/model_doc/layoutlm#transformers.LayoutLMModel) |None | ✅ |None|✅|None|None|✅|None|None|
+| <font size=2> [BERT](https://huggingface.co/docs/transformers/main/model_doc/bert#transformers.BertModel) |✅ | ✅ | None |✅|✅|✅|
+| <font size=2> [RoBERTa](https://huggingface.co/docs/transformers/main/model_doc/roberta#transformers.RobertaModel) |✅ |✅ | None |✅|✅|✅|
+|<font size=2>  [T5](https://huggingface.co/docs/transformers/main/model_doc/t5#transformers.T5Model) | None | None |✅|None|None|None|
+|<font size=2>  [GPT2](https://huggingface.co/docs/transformers/main/model_doc/gpt2#transformers.GPT2Model) |✅ | None |None|✅|✅|None|
+|<font size=2>  [MarianMT](https://huggingface.co/docs/transformers/main/model_doc/marian#transformers.MarianModel) |✅ | None |✅|None|None|None|
+|<font size=2>  [ELECTRA](https://huggingface.co/docs/transformers/main/model_doc/electra#transformers.ElectraModel) | None | ✅ |None|✅|✅|✅|
+|<font size=2>  [DistilBERT](https://huggingface.co/docs/transformers/main/model_doc/distilbert#transformers.DistilBertModel)|None | ✅ |None|✅|✅|✅|
+|<font size=2>  [BART](https://huggingface.co/docs/transformers/main/model_doc/bart#transformers.BartModel) |✅ |None |✅|✅|None|✅|
+|<font size=2>  [XLM-RoBERTa](https://huggingface.co/docs/transformers/main/model_doc/xlm-roberta#transformers.XLMRobertaModel) |✅ |✅ | None |✅|✅|✅|
+|<font size=2>  [ALBERT](https://huggingface.co/docs/transformers/main/model_doc/albert#transformers.AlbertModel) |None | ✅ |None|✅|✅|✅|
+|<font size=2>  [LayoutLM](https://huggingface.co/docs/transformers/main/model_doc/layoutlm#transformers.LayoutLMModel) |None | ✅ |None|✅|✅|None|
 
 Notes:
 
