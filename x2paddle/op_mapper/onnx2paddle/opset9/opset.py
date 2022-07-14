@@ -337,9 +337,11 @@ class OpSet9():
                 # opset 11
                 try:
                     #to avoid the error causeed by NULL value of resize inputs.
-                    val_scales = self.graph.get_input_node(node, idx=2, copy=True)
+                    val_scales = self.graph.get_input_node(
+                        node, idx=2, copy=True)
                 except:
-                    val_scales = self.graph.get_input_node(node, idx=1, copy=True)
+                    val_scales = self.graph.get_input_node(
+                        node, idx=1, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length
                 # which is the same as the rank of input.
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[
