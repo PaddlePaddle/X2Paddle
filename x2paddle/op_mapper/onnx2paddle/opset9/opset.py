@@ -336,7 +336,7 @@ class OpSet9():
             elif len(node.layer.input) == 3:
                 # opset 11
                 try:
-                    #to avoid the error causeed by NULL value of resize inputs.
+                    #to  avoid the error causeed by NULL value of resize inputs.
                     val_scales = self.graph.get_input_node(
                         node, idx=2, copy=True)
                 except:
