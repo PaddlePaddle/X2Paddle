@@ -1397,10 +1397,19 @@ class OpSet9():
         axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
-            layer_attrs = {
-                'num_or_sections': split_num,
-                'axis': axis,
-            }
+            try:
+                #split is an input of this node
+                split_node = self.graph.get_input_node(node, idx=1, copy=True)
+                split_value = _const_weight_or_none(split_node)
+                layer_attrs = {
+                    'num_or_sections': split_value.tolist(),
+                    'axis': axis,
+                }
+            except:
+                layer_attrs = {
+                    'num_or_sections': split_num,
+                    'axis': axis,
+                }
             outputs_list = list()
             for i in range(len(node.layer.output)):
                 if hasattr(node, 'index'):
