@@ -46,11 +46,10 @@ def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
     if tensor.dim() == 2:  # single image H x W
         tensor = tensor.unsqueeze(0)
     if tensor.dim() == 3:  # single image
-        if tensor.size(0) == 1:  # if single-channel, convert to 3-channel
+        if tensor.shape[0] == 1:  # if single-channel, convert to 3-channel
             tensor = paddle.concat((tensor, tensor, tensor), 0)
         tensor = tensor.unsqueeze(0)
-
-    if tensor.dim() == 4 and tensor.size(1) == 1:  # single-channel images
+    if tensor.dim() == 4 and tensor.shape[1] == 1:  # single-channel images
         tensor = paddle.concat((tensor, tensor, tensor), 1)
 
     if normalize is True:
@@ -75,11 +74,11 @@ def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
         else:
             norm_range(tensor, value_range)
 
-    if tensor.size(0) == 1:
+    if tensor.shape[0] == 1:
         return tensor.squeeze(0)
 
     # make the mini-batch of images into a grid
-    nmaps = tensor.size(0)
+    nmaps = tensor.shape[0]
     xmaps = min(nrow, nmaps)
     ymaps = int(math.ceil(float(nmaps) / xmaps))
     height, width = int(tensor.shape[2] + padding), int(tensor.shape[3] +
