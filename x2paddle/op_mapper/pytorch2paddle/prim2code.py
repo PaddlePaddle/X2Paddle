@@ -72,7 +72,7 @@ def prim_add_(layer,
               forward_func=[],
               layer_id=None,
               different_attrs=None):
-    if layer.attrs["alpha"] == 1:
+    if abs(layer.attrs["alpha"] - 1.) < 1e-6:
         line = "{} = {} + {}".format(layer.outputs[0],
                                      get_value(layer, "x", different_attrs),
                                      get_value(layer, "y", different_attrs))
