@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -117,74 +117,9 @@ def print_mapping_info(func):
     return run_mapping
 
 
-class OpSet9():
-    elementwise_ops = {
-        'Add': 'paddle.add',
-        'Div': 'paddle.divide',
-        'Sub': 'paddle.subtract',
-        'Mul': 'paddle.multiply',
-        'Pow': 'paddle.pow',
-        'Less': 'paddle.less_than',
-        'LessOrEqual': 'paddle.less_equal',
-    }
-
-    directly_map_ops = {
-        'Ceil': ['paddle.ceil'],
-        # reduce function
-        'ReduceMean': [
-            'paddle.mean', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdims=True)
-        ],
-        'ReduceMin': [
-            'paddle.min', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        'ReduceMax': [
-            'paddle.max', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        'ReduceProd': [
-            'paddle.prod', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        # active function
-        'Relu': ['paddle.nn.ReLU'],
-        'LeakyRelu': [
-            'paddle.nn.LeakyReLU', dict(alpha='negative_slope'),
-            dict(negative_slope=.01)
-        ],
-        'Elu':
-        ['paddle.nn.functional.elu', dict(alpha='alpha'), dict(alpha=1.)],
-        'ThresholdedRelu': [
-            'paddle.nn.functional.thresholded_relu', dict(alpha='threshold'),
-            dict(alpha=1.)
-        ],
-        'Tanh': ['paddle.nn.Tanh'],
-        'Sigmoid': ['paddle.nn.Sigmoid'],
-        'Softsign': ['paddle.nn.Softsign'],
-        'Softplus': [
-            'paddle.nn.Softplus', dict(threshold='threshold'),
-            dict(threshold=float(sys.maxsize))
-        ],
-        'Exp': ['paddle.exp'],
-        'Log': ['paddle.log'],
-        'LogSoftmax':
-        ['paddle.nn.functional.log_softmax', dict(axis='axis'), dict(axis=1)],
-        'Softmax': ['paddle.nn.Softmax', dict(axis='axis'), dict(axis=1)],
-        'Sqrt': ['paddle.sqrt'],
-        'Floor': ['paddle.floor'],
-        'Abs': ['paddle.abs'],
-        'Erf': ['paddle.erf'],
-        'Sin': ['paddle.sin'],
-        'Cos': ['paddle.cos'],
-    }
-
+class OpSet():
     def __init__(self, decoder, paddle_graph):
-        super(OpSet9, self).__init__()
+        super(OpSet, self).__init__()
         self.graph = decoder.graph
         self.paddle_graph = paddle_graph
         self.inputs_info = dict()
@@ -194,6 +129,72 @@ class OpSet9():
         # solve for same data is used as an argument to multiple OPs.
         # PR link(wangjunjie06): https://github.com/PaddlePaddle/X2Paddle/pull/728
         self.rename_mapper = dict()
+        self.elementwise_ops = {
+            'Add': 'paddle.add',
+            'Div': 'paddle.divide',
+            'Sub': 'paddle.subtract',
+            'Mul': 'paddle.multiply',
+            'Pow': 'paddle.pow',
+            'Less': 'paddle.less_than',
+            'LessOrEqual': 'paddle.less_equal',
+        }
+
+        self.directly_map_ops = {
+            'Ceil': ['paddle.ceil'],
+            # reduce function
+            'ReduceMean': [
+                'paddle.mean', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdims=True)
+            ],
+            'ReduceMin': [
+                'paddle.min', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            'ReduceMax': [
+                'paddle.max', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            'ReduceProd': [
+                'paddle.prod', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            # active function
+            'Relu': ['paddle.nn.ReLU'],
+            'LeakyRelu': [
+                'paddle.nn.LeakyReLU', dict(alpha='negative_slope'),
+                dict(negative_slope=.01)
+            ],
+            'Elu':
+            ['paddle.nn.functional.elu', dict(alpha='alpha'), dict(alpha=1.)],
+            'ThresholdedRelu': [
+                'paddle.nn.functional.thresholded_relu',
+                dict(alpha='threshold'), dict(alpha=1.)
+            ],
+            'Tanh': ['paddle.nn.Tanh'],
+            'Sigmoid': ['paddle.nn.Sigmoid'],
+            'Softsign': ['paddle.nn.Softsign'],
+            'Softplus': [
+                'paddle.nn.Softplus', dict(threshold='threshold'),
+                dict(threshold=float(sys.maxsize))
+            ],
+            'Exp': ['paddle.exp'],
+            'Log': ['paddle.log'],
+            'LogSoftmax': [
+                'paddle.nn.functional.log_softmax', dict(axis='axis'),
+                dict(axis=1)
+            ],
+            'Softmax': ['paddle.nn.Softmax', dict(axis='axis'), dict(axis=1)],
+            'Sqrt': ['paddle.sqrt'],
+            'Floor': ['paddle.floor'],
+            'Abs': ['paddle.abs'],
+            'Erf': ['paddle.erf'],
+            'Sin': ['paddle.sin'],
+            'Cos': ['paddle.cos'],
+        }
 
     @print_mapping_info
     def directly_map(self, node, *args, **kwargs):

@@ -99,7 +99,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "inputs_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "outputs_shape": [[-1, kernel_size[0], -1, -1]],
             "outputs_dtype": [['float32']],
-            "opset_version": [7, 9],
+            "opset_version": [7, 9, 14],
             "inputs_name": ["x", "W"],
             "outputs_name": ["y"],
             "delta": 1e-4,
