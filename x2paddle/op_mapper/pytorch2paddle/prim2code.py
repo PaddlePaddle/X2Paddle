@@ -72,10 +72,15 @@ def prim_add_(layer,
               forward_func=[],
               layer_id=None,
               different_attrs=None):
-    line = "{} = {} + {} * {}".format(layer.outputs[0],
-                                      get_value(layer, "x", different_attrs),
-                                      layer.attrs["alpha"],
-                                      get_value(layer, "y", different_attrs))
+    if abs(layer.attrs["alpha"] - 1.) < 1e-6:
+        line = "{} = {} + {}".format(layer.outputs[0],
+                                     get_value(layer, "x", different_attrs),
+                                     get_value(layer, "y", different_attrs))
+    else:
+        line = "{} = {} + {} * {}".format(
+            layer.outputs[0],
+            get_value(layer, "x", different_attrs), layer.attrs["alpha"],
+            get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
