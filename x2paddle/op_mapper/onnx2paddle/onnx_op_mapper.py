@@ -84,7 +84,7 @@ class ONNXOpMapper():
                 else:
                     break
             opset = 'OpSet' + str(run_op_set)
-        print('Now, onnx2paddle support convert onnx model opset_verison {},'
+        print('Now, onnx2paddle support convert onnx model opset_verison {}, '
               'opset_verison of your onnx model is {}.'
               .format(self.support_op_sets, decoder.op_set))
         return eval(opset)(decoder, self.paddle_graph)

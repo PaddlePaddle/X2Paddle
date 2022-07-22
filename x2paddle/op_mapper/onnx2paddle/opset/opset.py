@@ -28,7 +28,7 @@ import copy
 import sys
 import shutil
 
-_logger = _logging.getLogger(__name__)
+_logger = _logging.getLogger()
 
 
 def _const_weight_or_none(node, necessary=False):
@@ -2203,8 +2203,12 @@ class OpSet():
         paddings = np.array(pads).reshape((2, -1)).transpose().astype("int32")
         paddings = paddings.flatten().tolist()
 
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
-            assert -1 not in input_shape, 'SAME_UPPER and SAME_LOWER does not yet support dynamic shapes'
+        if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
+            # Warning: SAME_UPPER and SAME_LOWER does not yet support dynamic shapes
+            if input_shape[2] == -1 or input_shape[3] == -1:
+                _logger.warning(
+                    'SAME_UPPER and SAME_LOWER does not yet support dynamic shapes, the conversion result may have a diff!!!'
+                )
             pad_h = _get_same_padding(input_shape[2], kernel_shape[0],
                                       strides[0], auto_pad)
             pad_w = _get_same_padding(input_shape[3], kernel_shape[1],
