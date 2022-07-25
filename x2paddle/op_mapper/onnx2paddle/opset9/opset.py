@@ -32,6 +32,7 @@ _logger = _logging.getLogger(__name__)
 
 
 def _const_weight_or_none(node, necessary=False):
+    # haha
     if 'Constant' in node.layer_type:
         return node.value
     if isinstance(node, ONNXGraphDataNode):
