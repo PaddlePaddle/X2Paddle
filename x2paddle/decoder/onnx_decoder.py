@@ -335,13 +335,13 @@ class ONNXGraph(Graph):
                                             node.which_child[new_nd_name] = idx
                                             break
                             else:
+                                first_i = node.inputs.index(nd.name)
                                 # deal with Multiple outputs correspond to one node
                                 if self.node_map[nd.name].outputs.count(layer_name) > 1:
                                     new_child_name = "{}/{}".format(nd.name, idx)
                                     node.which_child[new_child_name] = idx
                                 else:
                                     node.which_child[nd.name] = idx
-                                first_i = node.inputs.index(nd.name)
                             self.node_map[nd.name].index = 0
                             break
                     if flag == 1:
