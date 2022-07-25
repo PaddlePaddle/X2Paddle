@@ -169,6 +169,9 @@ pd_reshape = partial(paddle.Tensor.reshape)
 
 @add_tensor_function
 def reshape(self, *shape):
+    # deal with list or tuple type
+    if isinstance(shape, (list, tuple)):
+        shape = shape[0]
     return pd_reshape(self, shape)
 
 

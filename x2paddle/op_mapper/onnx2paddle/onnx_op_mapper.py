@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,15 @@
 # limitations under the License.
 
 import sys
-from x2paddle.op_mapper.onnx2paddle.opset import OpSet7, OpSet8, OpSet9, OpSet10, OpSet11, OpSet12, OpSet13, OpSet14, OpSet15
+from .opset7 import OpSet7
+from .opset8 import OpSet8
+from .opset9 import OpSet9
+from .opset10 import OpSet10
+from .opset11 import OpSet11
+from .opset12 import OpSet12
+from .opset13 import OpSet13
+from .opset14 import OpSet14
+from .opset15 import OpSet15
 from x2paddle.decoder.onnx_decoder import ONNXGraphNode
 from x2paddle.core.program import PaddleGraph
 
