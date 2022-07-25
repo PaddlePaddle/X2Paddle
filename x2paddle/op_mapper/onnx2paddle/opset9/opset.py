@@ -208,7 +208,7 @@ class OpSet9():
         if len(op_info) > 1:
             attrs_name_map_dict = op_info[1]
             for onnx_attr_name, pd_attr_name in attrs_name_map_dict.items():
-               if onnx_attr_name in onnx_attrs:
+                if onnx_attr_name in onnx_attrs:
                     # trans 1 to True, 0 to False
                     if onnx_attr_name == "keepdims":
                         if onnx_attrs[onnx_attr_name] == 1:
