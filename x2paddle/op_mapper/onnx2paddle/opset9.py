@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .opset_legacy import OpSet
+from .opset8 import OpSet8
 
 
-class OpSet9(OpSet):
+class OpSet9(OpSet8):
     def __init__(self, decoder, paddle_graph):
         super(OpSet9, self).__init__(decoder, paddle_graph)
