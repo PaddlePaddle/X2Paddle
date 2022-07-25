@@ -209,7 +209,14 @@ class OpSet9():
             attrs_name_map_dict = op_info[1]
             for onnx_attr_name, pd_attr_name in attrs_name_map_dict.items():
                 if onnx_attr_name in onnx_attrs:
-                    layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
+                    # trans 1 to True, 0 to False
+                    if onnx_attr_name == "keepdims":
+                        if onnx_attrs[onnx_attr_name] == 1:
+                            layer_attrs[pd_attr_name]=True
+                        else:
+                            layer_attrs[pd_attr_name]=False
+                    else:
+                        layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
                 else:
                     layer_attrs[pd_attr_name] = op_info[2][onnx_attr_name]
         if paddle_op.startswith("paddle.nn") and 'functional' not in paddle_op:
