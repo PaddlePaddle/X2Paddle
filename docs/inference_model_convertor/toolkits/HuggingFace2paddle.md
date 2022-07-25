@@ -55,10 +55,10 @@ Notes:
 ### 环境依赖
 
 - python >= 3.5
-- Huggingface 4.16.0
-- PyTorch 1.7.1
-- PaddlePaddle 2.3.0
-- ONNX 1.9.0
+- transformers 4.16.0
+- pytorch 1.7.1
+- paddlepaddle 2.3.0
+- onnx 1.9.0
 
 ### Torch模型转换到Paddle
 

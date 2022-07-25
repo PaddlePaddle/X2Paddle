@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,22 @@
 # limitations under the License.
 
 import sys
-from x2paddle.op_mapper.onnx2paddle.opset9 import OpSet9
+from .opset7 import OpSet7
+from .opset8 import OpSet8
+from .opset9 import OpSet9
+from .opset10 import OpSet10
+from .opset11 import OpSet11
+from .opset12 import OpSet12
+from .opset13 import OpSet13
+from .opset14 import OpSet14
+from .opset15 import OpSet15
 from x2paddle.decoder.onnx_decoder import ONNXGraphNode
 from x2paddle.core.program import PaddleGraph
 
 
 class ONNXOpMapper():
     def __init__(self, decoder):
-        self.support_op_sets = [9, ]
+        self.support_op_sets = [7, 8, 9, 10, 11, 12, 13, 14, 15]
         self.default_op_set = 9
         self.graph = decoder.graph
         self.paddle_graph = PaddleGraph(parent_layer=None, source_type="onnx")
@@ -84,8 +92,7 @@ class ONNXOpMapper():
                 else:
                     break
             opset = 'OpSet' + str(run_op_set)
-        print(
-            'Now, onnx2paddle support convert onnx model opset_verison {},'
-            'opset_verison of your onnx model is {}, automatically treated as op_set: {}.'
-            .format(self.support_op_sets, decoder.op_set, run_op_set))
+        print('Now, onnx2paddle support convert onnx model opset_verison {}, '
+              'opset_verison of your onnx model is {}.'
+              .format(self.support_op_sets, decoder.op_set))
         return eval(opset)(decoder, self.paddle_graph)
