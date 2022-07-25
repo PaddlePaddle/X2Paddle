@@ -25,8 +25,16 @@ import unittest
 class TestConv2dConvert(OPConvertAutoScanTest):
     """
     ONNX op: Conv
-    OPset version: 7, 9
+    OPset version: 7~15
     """
+
+    def add_ignore_pass_case(self, configs):
+        config, attrs = configs
+        # Warning: SAME_UPPER and SAME_LOWER does not yet support dynamic shapes
+        if "SAME" in attrs["auto_pad"] and -1 in config["inputs_shape"][0]:
+            return True
+        else:
+            return False
 
     def sample_convert_config(self, draw):
         input_shape = draw(
@@ -97,31 +105,12 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape, kernel_size],
             "test_data_types": [['float32'], ['float32']],
             "inputs_shape": [[-1, input_shape[1], -1, -1], kernel_size],
-            "outputs_shape": [[-1, kernel_size[0], -1, -1]],
-            "outputs_dtype": [['float32']],
-            "opset_version": [7, 9, 14],
+            "min_opset_version": 7,
             "inputs_name": ["x", "W"],
             "outputs_name": ["y"],
             "delta": 1e-4,
             "rtol": 1e-4
         }
-
-        # Warning:
-        # 1、SAME_UPPER and SAME_LOWER does not yet support dynamic shapes
-        # 2、dilations only support 1
-        if "SAME" in auto_pad:
-            dilations = [1, 1]
-            config["inputs_shape"] = [input_shape, kernel_size]
-            config["outputs_shape"] = [[
-                input_shape[0], kernel_size[0],
-                int(input_shape[2] / strides[0]),
-                int(input_shape[3] / strides[1])
-            ]]
-
-        if not isinstance(dilations, (tuple, list)):
-            dilations = [dilations]
-        if not isinstance(strides, (tuple, list)):
-            strides = [strides]
 
         attrs = {
             "auto_pad": auto_pad,
@@ -132,10 +121,14 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             "strides": strides,
         }
 
+        # if autopad equal SAME_UPPER and SAME_LOWER, dilations only support 1
+        if "SAME" in auto_pad:
+            attrs["dilations"] = [1, 1]
+
         return (config, attrs)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=50)
 
 
 if __name__ == "__main__":

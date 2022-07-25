@@ -59,11 +59,15 @@ class OPConvertAutoScanTest(unittest.TestCase):
         super(OPConvertAutoScanTest, self).__init__(*args, **kwargs)
         np.random.seed(1024)
         paddle.enable_static()
-        self.num_ran_models = 0
+        self.num_ran_tests = 0
+        self.num_ignore_tests = 0
+
+    def add_ignore_pass_case(self, configs):
+        return
 
     def run_and_statis(self,
                        max_examples=100,
-                       opset_version=[7, 9, 15],
+                       min_opset_version=7,
                        reproduce=None,
                        min_success_num=25,
                        max_duration=-1):
@@ -83,6 +87,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             report_multiple_bugs=False, )
         settings.load_profile("ci")
 
+        # self.add_ignore_pass_case(configs)
+
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
 
@@ -101,8 +107,11 @@ class OPConvertAutoScanTest(unittest.TestCase):
         logging.info(
             "===================Statistical Information===================")
         logging.info("Number of Generated Programs: {}".format(
-            self.num_ran_models))
-        successful_ran_programs = int(self.num_ran_models)
+            self.num_ran_tests))
+        logging.info("Number of Ignore Programs: {}".format(
+            self.num_ignore_tests))
+        successful_ran_programs = int(self.num_ran_tests -
+                                      self.num_ignore_tests)
         if successful_ran_programs < min_success_num:
             logging.warning("satisfied_programs = ran_programs")
             logging.error(
@@ -128,41 +137,34 @@ class OPConvertAutoScanTest(unittest.TestCase):
         ), "config must include test_data_shapes in dict keys"
         assert "test_data_types" in config.keys(
         ), "config must include test_data_types in dict keys"
-        assert "opset_version" in config.keys(
-        ), "config must include opset_version in dict keys"
+        assert "min_opset_version" in config.keys(
+        ), "config must include min_opset_version in dict keys"
         assert "inputs_name" in config.keys(
         ), "config must include inputs_name in dict keys"
         assert "outputs_name" in config.keys(
         ), "config must include outputs_name in dict keys"
         assert "inputs_shape" in config.keys(
         ), "config must include inputs_shape in dict keys"
-        assert "outputs_shape" in config.keys(
-        ), "config must include outputs_shape in dict keys"
-        assert "outputs_dtype" in config.keys(
-        ), "config must include outputs_dtype in dict keys"
 
         op_names = config["op_names"]
         test_data_shapes = config["test_data_shapes"]
         test_data_types = config["test_data_types"]
-        opset_version = config["opset_version"]
+        min_opset_version = config["min_opset_version"]
         inputs_name = config["inputs_name"]
         outputs_name = config["outputs_name"]
         inputs_shape = config["inputs_shape"]
-        outputs_shape = config["outputs_shape"]
-        outputs_dtype = config["outputs_dtype"]
 
-        use_gpu = True
-        if "use_gpu" in config.keys():
-            use_gpu = config["use_gpu"]
+        # max_opset_version is a fixed value
+        max_opset_version = 15
 
-        self.num_ran_models += 1
+        self.num_ran_tests += 1
+        # add ignore testcases
+        if self.add_ignore_pass_case(configs):
+            self.num_ignore_tests += 1
+            return
 
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
-        if not isinstance(opset_version[0], (tuple, list)):
-            opset_version = [opset_version]
-        if len(opset_version) == 1 and len(op_names) != len(opset_version):
-            opset_version = opset_version * len(op_names)
 
         input_type_list = None
         if len(test_data_types) > 1:
@@ -181,12 +183,13 @@ class OPConvertAutoScanTest(unittest.TestCase):
             delta = config["delta"]
         if "rtol" in config.keys():
             rtol = config["rtol"]
+        if "max_opset_version" in config.keys():
+            max_opset_version = config["max_opset_version"]
 
         for i in range(len(op_names)):
-            obj = ONNXConverter(op_names[i], opset_version[i], op_names[i],
-                                inputs_name, outputs_name, inputs_shape,
-                                outputs_shape, outputs_dtype, delta, rtol,
-                                use_gpu, attrs)
+            obj = ONNXConverter(op_names[i], min_opset_version,
+                                max_opset_version, op_names[i], inputs_name,
+                                outputs_name, inputs_shape, delta, rtol, attrs)
             for input_type in input_type_list:
                 input_data = list()
                 for j, shape in enumerate(test_data_shapes):

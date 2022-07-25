@@ -33,11 +33,11 @@ DTYPE_ONNX_STR_MAP = {
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
-    比较函数
-    :param result: 输入值
-    :param expect: 输出值
-    :param delta: 误差值
-    :return:
+    param meaning:
+    result: onnx result
+    expect: paddle result
+    delta: absolute error
+    rtol: relative error
     """
     if type(result) == np.ndarray:
         if type(expect) == list:
@@ -66,8 +66,9 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
                 compare(result[i], expect[i], delta, rtol)
             else:
                 compare(result[i].numpy(), expect[i], delta, rtol)
-    elif len(result) == 1:
-        compare(result[0], expect[0], delta, rtol)
+    # deal with scalar tensor
+    elif len(expect) == 1:
+        compare(result, expect[0], delta, rtol)
 
 
 def randtool(dtype, low, high, shape):
@@ -91,16 +92,14 @@ class ONNXConverter(object):
 
     def __init__(self,
                  file_name,
-                 ver_list,
+                 min_opset_version,
+                 max_opset_version,
                  op_type=[],
                  inputs_name=[],
                  outputs_name=[],
                  inputs_shape=[],
-                 outputs_shape=[],
-                 outputs_dtype=[],
                  delta=1e-5,
                  rtol=1e-5,
-                 use_gpu=True,
                  attrs=[]):
         self.op_type = op_type
         assert isinstance(self.op_type,
@@ -108,12 +107,10 @@ class ONNXConverter(object):
         self.seed = 33
         np.random.seed(self.seed)
         paddle.seed(self.seed)
-        if use_gpu and paddle.device.is_compiled_with_cuda() is True:
-            self.places = ['gpu']
-        else:
-            self.places = ['cpu']
+        self.places = ['cpu']
         self.name = file_name
-        self._version = ver_list
+        self.min_opset_version = min_opset_version
+        self.max_opset_version = max_opset_version
         self.pwd = os.getcwd()
         self.delta = delta
         self.rtol = rtol
@@ -124,8 +121,6 @@ class ONNXConverter(object):
         self.inputs_name = inputs_name
         self.outputs_name = outputs_name
         self.inputs_shape = inputs_shape
-        self.outputs_shape = outputs_shape
-        self.outputs_dtype = outputs_dtype
         self.attrs = attrs
 
     def set_input_data(self, group_name, *args):
@@ -189,7 +184,6 @@ class ONNXConverter(object):
             result = tuple(out.numpy() for out in result)
         else:
             result = (result.numpy(), )
-        print("paddle result:", result[0].shape)
         return result
 
     def _mk_onnx_res(self, ver):
@@ -200,7 +194,6 @@ class ONNXConverter(object):
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
                          '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
-        print("onnx result:", ort_outs[0].shape)
         return ort_outs
 
     def set_onnx_inputs(self):
@@ -216,10 +209,7 @@ class ONNXConverter(object):
     def set_onnx_outputs(self):
         graph_outputs = list()
         for i in range(len(self.outputs_name)):
-            graph_outputs.append(
-                helper.make_tensor_value_info(self.outputs_name[
-                    i], DTYPE_ONNX_STR_MAP[self.outputs_dtype[i][0]],
-                                              self.outputs_shape[i]))
+            graph_outputs.append(onnx.ValueInfoProto(name=self.outputs_name[i]))
 
         return graph_outputs
 
@@ -243,6 +233,7 @@ class ONNXConverter(object):
         opset_imports = [helper.make_opsetid("", ver)]
         model = helper.make_model(
             graph, producer_name='onnx-example', opset_imports=opset_imports)
+        model = onnx.shape_inference.infer_shapes(model)
         onnx.save(model,
                   os.path.join(self.pwd, self.name,
                                self.name + '_' + str(ver) + '.onnx'))
@@ -261,13 +252,13 @@ class ONNXConverter(object):
             onnx_res = {}
             paddle_res = {}
             # export onnx models and make onnx res
-            for v in self._version:
+            for v in range(self.min_opset_version, self.max_opset_version + 1):
                 self._mk_onnx_graph(ver=v)
                 self._onnx_to_paddle(ver=v)
                 onnx_res[str(v)] = self._mk_onnx_res(ver=v)
                 paddle_res[str(v)] = self._mk_paddle_res(ver=v)
 
-            for v in self._version:
+            for v in range(self.min_opset_version, self.max_opset_version + 1):
                 compare(
                     onnx_res[str(v)],
                     paddle_res[str(v)],
