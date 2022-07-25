@@ -28,7 +28,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
     OPset version: 7~15
     """
 
-    def add_ignore_pass_case(self, configs):
+    def add_ignore_test_case(self, configs):
         config, attrs = configs
         # Warning: SAME_UPPER and SAME_LOWER does not yet support dynamic shapes
         if "SAME" in attrs["auto_pad"] and -1 in config["inputs_shape"][0]:

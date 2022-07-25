@@ -62,7 +62,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         self.num_ran_tests = 0
         self.num_ignore_tests = 0
 
-    def add_ignore_pass_case(self, configs):
+    def add_ignore_test_case(self, configs):
         return
 
     def run_and_statis(self,
@@ -86,8 +86,6 @@ class OPConvertAutoScanTest(unittest.TestCase):
             derandomize=True,
             report_multiple_bugs=False, )
         settings.load_profile("ci")
-
-        # self.add_ignore_pass_case(configs)
 
         def sample_convert_generator(draw):
             return self.sample_convert_config(draw)
@@ -159,7 +157,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         self.num_ran_tests += 1
         # add ignore testcases
-        if self.add_ignore_pass_case(configs):
+        if self.add_ignore_test_case(configs):
             self.num_ignore_tests += 1
             return
 
