@@ -154,6 +154,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
 
         # max_opset_version is a fixed value
         max_opset_version = 15
+        enable_onnx_checker = True
 
         self.num_ran_tests += 1
         # add ignore testcases
@@ -183,11 +184,14 @@ class OPConvertAutoScanTest(unittest.TestCase):
             rtol = config["rtol"]
         if "max_opset_version" in config.keys():
             max_opset_version = config["max_opset_version"]
+        if "enable_onnx_checker" in config.keys():
+            enable_onnx_checker = config["enable_onnx_checker"]
 
         for i in range(len(op_names)):
             obj = ONNXConverter(op_names[i], min_opset_version,
                                 max_opset_version, op_names[i], inputs_name,
-                                outputs_name, inputs_shape, delta, rtol, attrs)
+                                outputs_name, inputs_shape, delta, rtol, attrs,
+                                enable_onnx_checker)
             for input_type in input_type_list:
                 input_data = list()
                 for j, shape in enumerate(test_data_shapes):

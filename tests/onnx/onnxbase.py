@@ -100,7 +100,8 @@ class ONNXConverter(object):
                  inputs_shape=[],
                  delta=1e-5,
                  rtol=1e-5,
-                 attrs=[]):
+                 attrs=[],
+                 enable_onnx_checker=True):
         self.op_type = op_type
         assert isinstance(self.op_type,
                           str), "The dtype of op_type must be string!"
@@ -122,6 +123,7 @@ class ONNXConverter(object):
         self.outputs_name = outputs_name
         self.inputs_shape = inputs_shape
         self.attrs = attrs
+        self.enable_onnx_checker = enable_onnx_checker
 
     def set_input_data(self, group_name, *args):
         """
@@ -132,17 +134,24 @@ class ONNXConverter(object):
             self.kwargs_dict[group_name] = self.kwargs_dict[group_name][0]
 
         i = 0
+        add_inputs_shape = False
+        if len(self.inputs_shape) == 0:
+            add_inputs_shape = True
         for in_data in self.kwargs_dict[group_name]:
             if isinstance(in_data, list):
                 for data in in_data:
                     self.inputs_dtype.append(str(data.dtype))
                     self.input_feed[self.inputs_name[i]] = data
+                    if add_inputs_shape:
+                        self.inputs_shape.append(data.shape)
                     i += 1
             else:
                 if isinstance(in_data, tuple):
                     in_data = in_data[0]
                 self.inputs_dtype.append(str(in_data.dtype))
                 self.input_feed[self.inputs_name[i]] = in_data
+                if add_inputs_shape:
+                    self.inputs_shape.append(in_data.shape)
                 i += 1
 
     def _mkdir(self):
@@ -162,7 +171,11 @@ class ONNXConverter(object):
                                  self.name + '_' + str(ver) + '.onnx')
         paddle_path = os.path.join(self.pwd, self.name,
                                    self.name + '_' + str(ver) + '_paddle')
-        onnx2paddle(onnx_path, paddle_path, convert_to_lite=False)
+        onnx2paddle(
+            onnx_path,
+            paddle_path,
+            convert_to_lite=False,
+            enable_onnx_checker=self.enable_onnx_checker)
 
     def _mk_paddle_res(self, ver):
         """
@@ -237,7 +250,8 @@ class ONNXConverter(object):
         onnx.save(model,
                   os.path.join(self.pwd, self.name,
                                self.name + '_' + str(ver) + '.onnx'))
-        onnx.checker.check_model(model)
+        if self.enable_onnx_checker:
+            onnx.checker.check_model(model)
 
     def run(self):
         """
