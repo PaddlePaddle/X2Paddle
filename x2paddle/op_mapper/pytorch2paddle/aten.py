@@ -4527,7 +4527,8 @@ def aten_randn(mapper, graph, node):
         "paddle.randn",
         inputs=layer_inputs,
         outputs=layer_outputs,
-        scope_name=scope_name)
+        scope_name=scope_name,
+        **layer_attrs)
     return current_inputs, current_outputs
 
 
