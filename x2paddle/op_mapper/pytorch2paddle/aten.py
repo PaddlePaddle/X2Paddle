@@ -1364,106 +1364,139 @@ def aten__convolution(mapper, graph, node):
     """
     scope_name = mapper.normalize_scope_name(node)
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    weights = mapper.pytorch_params[inputs_name[1]]
-    if len(weights.shape) == 3:
-        op_name = name_generator("conv1d", mapper.nn_name2id)
-    elif len(weights.shape) == 4:
-        op_name = name_generator("conv2d", mapper.nn_name2id)
+    # for weight is nn.functional.conv2d input
+    if inputs_name[1] not in mapper.pytorch_params.keys():
+        output_name = mapper._get_outputs_name(node)[0]
+        layer_outputs = [output_name]
+        layer_inputs = {}
+        layer_attrs = {}
+        current_outputs = [output_name]
+        # input
+        mapper._check_input(graph, inputs_node[0], inputs_name[0],
+                            current_outputs, scope_name)
+        layer_inputs["x"] = inputs_name[0]
+        # weight
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["weight"] = inputs_name[1]
+        current_inputs = list(layer_inputs.values())
+        layer_attrs["bias"] = mapper.attrs[inputs_name[2]]
+        # 处理输入3，即%19
+        layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
+        # 处理输入4，即%20
+        layer_attrs["padding"] = mapper.attrs[inputs_name[4]]
+        # 处理输入5，即%21
+        layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
+        # 处理输入8，即%12
+        layer_attrs["groups"] = mapper.attrs[inputs_name[8]]
+        graph.add_layer(
+            "paddle.nn.functional.conv2d",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
+        return current_inputs, current_outputs
     else:
-        op_name = name_generator("conv3d", mapper.nn_name2id)
-    output_name = mapper._get_outputs_name(node)[0]
-    layer_outputs = [op_name, output_name]
-    layer_inputs = {}
-    layer_attrs = {}
-    # 获取当前节点输出的list
-    current_outputs = [output_name]
-    # 处理输入0，即%input.8
-    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
-                        scope_name)
-    layer_inputs["input"] = inputs_name[0]
-    # 获取当前节点输入的list
-    current_inputs = list(layer_inputs.values())
-    # 处理输入1，即%18
-    mapper.paddle_params[op_name +
-                         ".weight"] = weights  #np.swapaxes(weights, 0, 1)
-    if mapper.attrs[inputs_name[6]]:
-        layer_attrs["out_channels"] = weights.shape[1]
-    else:
-        layer_attrs["out_channels"] = weights.shape[0]
-    layer_attrs["kernel_size"] = weights.shape[2:]
-    # 处理输入2，即%10
-    if inputs_name[2] in mapper.pytorch_params:
-        bias = mapper.pytorch_params[inputs_name[2]]
-        if bias is not None:
-            mapper.paddle_params[op_name + ".bias"] = bias
+        weights = mapper.pytorch_params[inputs_name[1]]
+        if len(weights.shape) == 3:
+            op_name = name_generator("conv1d", mapper.nn_name2id)
+        elif len(weights.shape) == 4:
+            op_name = name_generator("conv2d", mapper.nn_name2id)
+        else:
+            op_name = name_generator("conv3d", mapper.nn_name2id)
+        output_name = mapper._get_outputs_name(node)[0]
+        layer_outputs = [op_name, output_name]
+        layer_inputs = {}
+        layer_attrs = {}
+        # 获取当前节点输出的list
+        current_outputs = [output_name]
+        # 处理输入0，即%input.8
+        mapper._check_input(graph, inputs_node[0], inputs_name[0],
+                            current_outputs, scope_name)
+        layer_inputs["input"] = inputs_name[0]
+        # 获取当前节点输入的list
+        current_inputs = list(layer_inputs.values())
+        # 处理输入1，即%18
+        mapper.paddle_params[op_name +
+                             ".weight"] = weights  #np.swapaxes(weights, 0, 1)
+        if mapper.attrs[inputs_name[6]]:
+            layer_attrs["out_channels"] = weights.shape[1]
+        else:
+            layer_attrs["out_channels"] = weights.shape[0]
+        layer_attrs["kernel_size"] = weights.shape[2:]
+        # 处理输入2，即%10
+        if inputs_name[2] in mapper.pytorch_params:
+            bias = mapper.pytorch_params[inputs_name[2]]
+            if bias is not None:
+                mapper.paddle_params[op_name + ".bias"] = bias
+            else:
+                layer_attrs["bias_attr"] = False
         else:
             layer_attrs["bias_attr"] = False
-    else:
-        layer_attrs["bias_attr"] = False
-    # 处理输入3，即%19
-    layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
-    # 处理输入4，即%20
-    layer_attrs["padding"] = mapper.attrs[inputs_name[4]]
-    # 处理输入5，即%21
-    layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
-    # 处理输入6，即%13
-    if mapper.attrs[inputs_name[6]]:
-        # 处理输入7，即%22
-        layer_attrs["output_padding"] = mapper.attrs[inputs_name[7]]
-    # 处理输入8，即%12
-    layer_attrs["groups"] = mapper.attrs[inputs_name[8]]
-    if mapper.attrs[inputs_name[6]]:
-        layer_attrs['in_channels'] = weights.shape[0] * mapper.attrs[
-            inputs_name[8]]
-    else:
-        layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[
-            inputs_name[8]]
-    if len(weights.shape) == 3:
+        # 处理输入3，即%19
+        layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
+        # 处理输入4，即%20
+        layer_attrs["padding"] = mapper.attrs[inputs_name[4]]
+        # 处理输入5，即%21
+        layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
+        # 处理输入6，即%13
         if mapper.attrs[inputs_name[6]]:
-            graph.add_layer(
-                "paddle.nn.Conv1DTranspose",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
-        else:
-            graph.add_layer(
-                "paddle.nn.Conv1D",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
-    elif len(weights.shape) == 4:
+            # 处理输入7，即%22
+            layer_attrs["output_padding"] = mapper.attrs[inputs_name[7]]
+        # 处理输入8，即%12
+        layer_attrs["groups"] = mapper.attrs[inputs_name[8]]
         if mapper.attrs[inputs_name[6]]:
-            graph.add_layer(
-                "paddle.nn.Conv2DTranspose",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
+            layer_attrs['in_channels'] = weights.shape[0] * mapper.attrs[
+                inputs_name[8]]
         else:
-            graph.add_layer(
-                "paddle.nn.Conv2D",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
-    else:
-        if mapper.attrs[inputs_name[6]]:
-            graph.add_layer(
-                "paddle.nn.Conv3DTranspose",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
+            layer_attrs['in_channels'] = weights.shape[1] * mapper.attrs[
+                inputs_name[8]]
+        if len(weights.shape) == 3:
+            if mapper.attrs[inputs_name[6]]:
+                graph.add_layer(
+                    "paddle.nn.Conv1DTranspose",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+            else:
+                graph.add_layer(
+                    "paddle.nn.Conv1D",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+        elif len(weights.shape) == 4:
+            if mapper.attrs[inputs_name[6]]:
+                graph.add_layer(
+                    "paddle.nn.Conv2DTranspose",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+            else:
+                graph.add_layer(
+                    "paddle.nn.Conv2D",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
         else:
-            graph.add_layer(
-                "paddle.nn.Conv3D",
-                inputs=layer_inputs,
-                outputs=layer_outputs,
-                scope_name=scope_name,
-                **layer_attrs)
-    return current_inputs, current_outputs
+            if mapper.attrs[inputs_name[6]]:
+                graph.add_layer(
+                    "paddle.nn.Conv3DTranspose",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+            else:
+                graph.add_layer(
+                    "paddle.nn.Conv3D",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+        return current_inputs, current_outputs
 
 
 def aten_conv_transpose2d(mapper, graph, node):
@@ -2233,6 +2266,41 @@ def aten_flatten(mapper, graph, node):
 
     graph.add_layer(
         "paddle.flatten",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_flip(mapper, graph, node):
+    """
+    TorchScript Code:
+        %n0.3 : Tensor = aten::flip(%n.3, %288)
+        Parameter meaning:
+        %n0.3 (Tensor): Output Tensor
+        %n.3 (Tensor): Input Tensor
+        %288 (int): Axis
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # Process Axis
+    layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    # Input list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.flip",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name,
@@ -4234,6 +4302,44 @@ def aten_ones(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_ones_like(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.49 : Tensor = aten::ones_like(%23, %8, %6, %24, %5)
+        Parameter meaning:
+        %input.49 (Tensor): Output
+        %23 (list): Input
+        %8 (int): dtype
+        %6 (int): layout
+        %24 (Device): device
+        %5 (bool): requires_grad
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output
+    current_outputs = [output_name]
+    current_inputs = []
+    # Process input
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs.append(inputs_name[0])
+    # Process dtype
+    layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
+
+    graph.add_layer(
+        "paddle.ones_like",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
 def aten_permute(mapper, graph, node):
     """ 构造对bool型取负的PaddleLayer。
     TorchScript示例:
@@ -4385,6 +4491,46 @@ def aten_prelu(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_randn(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.49 : Tensor = aten::randn(%23, %8, %6, %24, %5)
+        Parameter meaning:
+        %input.49 (Tensor): Output Tensor
+        %23 (list): size
+        %8 (int): dtype
+        %6 (int): layout。
+        %24 (Device): device
+        %5 (bool): requires_grad
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # Input list
+    current_inputs = list(layer_inputs.values())
+    # process size
+    if inputs_name[0] in mapper.attrs:
+        layer_attrs["shape"] = mapper.attrs[inputs_name[0]]
+    else:
+        mapper._check_input(graph, inputs_node[0], inputs_name[0],
+                            current_outputs, scope_name)
+        layer_inputs["shape"] = inputs_name[0]
+        current_inputs.append(inputs_name[0])
+    # process dtype
+    layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
+    graph.add_layer(
+        "paddle.randn",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_real(mapper, graph, node):
     """
     TorchScript示例:
@@ -4409,6 +4555,36 @@ def aten_real(mapper, graph, node):
 
     graph.add_layer(
         "paddle.real",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_reciprocal(mapper, graph, node):
+    """
+    TorchScript Code:
+        %n0.3 : Tensor = aten::reciprocal(%n.3)
+        Parameter meaning:
+        %n0.3 (Tensor): Output Tensor
+        %n.3 (Tensor): Input Tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # Input list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.reciprocal",
         inputs=layer_inputs,
         outputs=layer_outputs,
         scope_name=scope_name)
@@ -5459,6 +5635,36 @@ def aten_sqrt(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_square(mapper, graph, node):
+    """
+    TorchScript Code:
+        %n0.3 : Tensor = aten::square(%n.3)
+        Parameter meaning:
+        %n0.3 (Tensor): Output Tensor
+        %n.3 (Tensor): Input Tensor
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    # Input list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer(
+        "paddle.square",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
 def aten_squeeze(mapper, graph, node):
     """ 构造删除位数为1的维度的PaddleLayer。
     TorchScript示例:
@@ -6053,6 +6259,66 @@ def aten_upsample_trilinear3d(mapper, graph, node):
     layer_attrs["align_mode"] = 0
     layer_attrs["mode"] = string("trilinear")
     layer_attrs["data_format"] = string("NCDHW")
+    graph.add_layer(
+        "paddle.nn.functional.interpolate",
+        inputs=layer_inputs,
+        outputs=layer_outputs,
+        scope_name=scope_name,
+        **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_upsample_linear1d(mapper, graph, node):
+    """
+    TorchScript Code:
+        %4997 : Tensor = aten::upsample_linear1d(%x.13, %4963, %5421, %4995)
+        Parameter meaning:
+        %4997 (Tensor): Output Tensor
+        %x.13 (Tensor): Input Tensor
+        %4963 (list): output_size
+        %5421 (bool): align_corners
+        %4995 (float): scale_factors
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # process output_size
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["size"] = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["size"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+    # process align_corners
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["align_corners"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["align_corners"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+    # process scale_factor
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["scale_factor"] = mapper.attrs[inputs_name[3]]
+    else:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["scale_factor"] = inputs_name[3]
+        current_inputs.append(inputs_name[3])
+    layer_attrs["align_mode"] = 0
+    layer_attrs["mode"] = string("linear")
+    layer_attrs["data_format"] = string("NCW")
     graph.add_layer(
         "paddle.nn.functional.interpolate",
         inputs=layer_inputs,
