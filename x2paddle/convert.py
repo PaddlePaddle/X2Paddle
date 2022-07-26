@@ -96,6 +96,11 @@ def arg_parser():
         default=True,
         help="Turn on code optimization")
     parser.add_argument(
+        "--enable_onnx_checker",
+        "-oc",
+        default=True,
+        help="Turn on onnx model checker")
+    parser.add_argument(
         "--disable_feedback",
         "-df",
         default=False,
@@ -479,7 +484,8 @@ def main():
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
                 lite_model_type=args.lite_model_type,
-                disable_feedback=args.disable_feedback)
+                disable_feedback=args.disable_feedback,
+                enable_onnx_checker=args.enable_onnx_checker)
         elif args.framework == "paddle2onnx":
             logging.info(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"
