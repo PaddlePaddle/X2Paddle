@@ -1,4 +1,4 @@
-# Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022  PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import copy
 import sys
 import shutil
 
-_logger = _logging.getLogger(__name__)
+_logger = _logging.getLogger()
 
 
 def _const_weight_or_none(node, necessary=False):
@@ -92,12 +92,15 @@ def _is_static_shape(shape):
     return True
 
 
-def _get_same_padding(in_size, kernel_size, stride):
+def _get_same_padding(in_size, kernel_size, stride, autopad):
     new_size = int(math.ceil(in_size * 1.0 / stride))
     pad_size = (new_size - 1) * stride + kernel_size - in_size
     pad0 = int(pad_size / 2)
     pad1 = pad_size - pad0
-    return [pad0, pad1]
+    if autopad == "SAME_UPPER":
+        return [pad0, pad1]
+    if autopad == "SAME_LOWER":
+        return [pad1, pad0]
 
 
 def print_mapping_info(func):
@@ -114,74 +117,9 @@ def print_mapping_info(func):
     return run_mapping
 
 
-class OpSet9():
-    elementwise_ops = {
-        'Add': 'paddle.add',
-        'Div': 'paddle.divide',
-        'Sub': 'paddle.subtract',
-        'Mul': 'paddle.multiply',
-        'Pow': 'paddle.pow',
-        'Less': 'paddle.less_than',
-        'LessOrEqual': 'paddle.less_equal',
-    }
-
-    directly_map_ops = {
-        'Ceil': ['paddle.ceil'],
-        # reduce function
-        'ReduceMean': [
-            'paddle.mean', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdims=True)
-        ],
-        'ReduceMin': [
-            'paddle.min', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        'ReduceMax': [
-            'paddle.max', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        'ReduceProd': [
-            'paddle.prod', dict(
-                axes='axis', keepdims='keepdim'), dict(
-                    axes=None, keepdim=True)
-        ],
-        # active function
-        'Relu': ['paddle.nn.ReLU'],
-        'LeakyRelu': [
-            'paddle.nn.LeakyReLU', dict(alpha='negative_slope'),
-            dict(negative_slope=.01)
-        ],
-        'Elu':
-        ['paddle.nn.functional.elu', dict(alpha='alpha'), dict(alpha=1.)],
-        'ThresholdedRelu': [
-            'paddle.nn.functional.thresholded_relu', dict(alpha='threshold'),
-            dict(alpha=1.)
-        ],
-        'Tanh': ['paddle.nn.Tanh'],
-        'Sigmoid': ['paddle.nn.Sigmoid'],
-        'Softsign': ['paddle.nn.Softsign'],
-        'Softplus': [
-            'paddle.nn.Softplus', dict(threshold='threshold'),
-            dict(threshold=float(sys.maxsize))
-        ],
-        'Exp': ['paddle.exp'],
-        'Log': ['paddle.log'],
-        'LogSoftmax':
-        ['paddle.nn.functional.log_softmax', dict(axis='axis'), dict(axis=1)],
-        'Softmax': ['paddle.nn.Softmax', dict(axis='axis'), dict(axis=1)],
-        'Sqrt': ['paddle.sqrt'],
-        'Floor': ['paddle.floor'],
-        'Abs': ['paddle.abs'],
-        'Erf': ['paddle.erf'],
-        'Sin': ['paddle.sin'],
-        'Cos': ['paddle.cos'],
-    }
-
+class OpSet():
     def __init__(self, decoder, paddle_graph):
-        super(OpSet9, self).__init__()
+        super(OpSet, self).__init__()
         self.graph = decoder.graph
         self.paddle_graph = paddle_graph
         self.inputs_info = dict()
@@ -191,6 +129,72 @@ class OpSet9():
         # solve for same data is used as an argument to multiple OPs.
         # PR link(wangjunjie06): https://github.com/PaddlePaddle/X2Paddle/pull/728
         self.rename_mapper = dict()
+        self.elementwise_ops = {
+            'Add': 'paddle.add',
+            'Div': 'paddle.divide',
+            'Sub': 'paddle.subtract',
+            'Mul': 'paddle.multiply',
+            'Pow': 'paddle.pow',
+            'Less': 'paddle.less_than',
+            'LessOrEqual': 'paddle.less_equal',
+        }
+
+        self.directly_map_ops = {
+            'Ceil': ['paddle.ceil'],
+            # reduce function
+            'ReduceMean': [
+                'paddle.mean', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdims=True)
+            ],
+            'ReduceMin': [
+                'paddle.min', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            'ReduceMax': [
+                'paddle.max', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            'ReduceProd': [
+                'paddle.prod', dict(
+                    axes='axis', keepdims='keepdim'), dict(
+                        axes=None, keepdim=True)
+            ],
+            # active function
+            'Relu': ['paddle.nn.ReLU'],
+            'LeakyRelu': [
+                'paddle.nn.LeakyReLU', dict(alpha='negative_slope'),
+                dict(negative_slope=.01)
+            ],
+            'Elu':
+            ['paddle.nn.functional.elu', dict(alpha='alpha'), dict(alpha=1.)],
+            'ThresholdedRelu': [
+                'paddle.nn.functional.thresholded_relu',
+                dict(alpha='threshold'), dict(alpha=1.)
+            ],
+            'Tanh': ['paddle.nn.Tanh'],
+            'Sigmoid': ['paddle.nn.Sigmoid'],
+            'Softsign': ['paddle.nn.Softsign'],
+            'Softplus': [
+                'paddle.nn.Softplus', dict(threshold='threshold'),
+                dict(threshold=float(sys.maxsize))
+            ],
+            'Exp': ['paddle.exp'],
+            'Log': ['paddle.log'],
+            'LogSoftmax': [
+                'paddle.nn.functional.log_softmax', dict(axis='axis'),
+                dict(axis=1)
+            ],
+            'Softmax': ['paddle.nn.Softmax', dict(axis='axis'), dict(axis=1)],
+            'Sqrt': ['paddle.sqrt'],
+            'Floor': ['paddle.floor'],
+            'Abs': ['paddle.abs'],
+            'Erf': ['paddle.erf'],
+            'Sin': ['paddle.sin'],
+            'Cos': ['paddle.cos'],
+        }
 
     @print_mapping_info
     def directly_map(self, node, *args, **kwargs):
@@ -342,7 +346,13 @@ class OpSet9():
                 return
             elif len(node.layer.input) == 3:
                 # opset 11
-                val_scales = self.graph.get_input_node(node, idx=2, copy=True)
+                try:
+                    #to avoid the error causeed by NULL value of resize inputs.
+                    val_scales = self.graph.get_input_node(
+                        node, idx=2, copy=True)
+                except:
+                    val_scales = self.graph.get_input_node(
+                        node, idx=1, copy=True)
                 # TODO(syf): paddle.nn.functional.interpolate will support the length
                 # which is the same as the rank of input.
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[
@@ -1398,10 +1408,19 @@ class OpSet9():
         axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
-            layer_attrs = {
-                'num_or_sections': split_num,
-                'axis': axis,
-            }
+            try:
+                #split is an input of this node
+                split_node = self.graph.get_input_node(node, idx=1, copy=True)
+                split_value = _const_weight_or_none(split_node)
+                layer_attrs = {
+                    'num_or_sections': split_value.tolist(),
+                    'axis': axis,
+                }
+            except:
+                layer_attrs = {
+                    'num_or_sections': split_num,
+                    'axis': axis,
+                }
             outputs_list = list()
             for i in range(len(node.layer.output)):
                 if hasattr(node, 'index'):
@@ -1532,9 +1551,9 @@ class OpSet9():
         if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             input_shape = val_x.out_shapes[0]
             pad_h = _get_same_padding(input_shape[2], kernel_shape[0],
-                                      strides[0])
+                                      strides[0], auto_pad)
             pad_w = _get_same_padding(input_shape[3], kernel_shape[1],
-                                      strides[1])
+                                      strides[1], auto_pad)
             paddings = pad_h + pad_w
 
         op_name = name_generator("pool", self.nn_name2id)
@@ -1959,9 +1978,9 @@ class OpSet9():
         if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
             input_shape = val_x.out_shapes[0]
             pad_h = _get_same_padding(input_shape[2], kernel_shape[0],
-                                      strides[0])
+                                      strides[0], auto_pad)
             pad_w = _get_same_padding(input_shape[3], kernel_shape[1],
-                                      strides[1])
+                                      strides[1], auto_pad)
             paddings = pad_h + pad_w
 
         layer_attrs = {
@@ -2188,13 +2207,19 @@ class OpSet9():
         pads = node.get_attr('pads', [0] * (convnd * 2))
 
         input_shape = val_x.out_shapes[0]
-        paddings, val_x = self._pad_if_asymmetric(node, pads, val_x)
+        paddings = np.array(pads).reshape((2, -1)).transpose().astype("int32")
+        paddings = paddings.flatten().tolist()
 
-        if auto_pad == "SAME_UPPER" or auto_pad == "SAME_LOWER":
+        if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
+            # Warning: SAME_UPPER and SAME_LOWER does not yet support dynamic shapes
+            if input_shape[2] == -1 or input_shape[3] == -1:
+                _logger.warning(
+                    'SAME_UPPER and SAME_LOWER does not yet support dynamic shapes, the conversion result may have a diff!!!'
+                )
             pad_h = _get_same_padding(input_shape[2], kernel_shape[0],
-                                      strides[0])
+                                      strides[0], auto_pad)
             pad_w = _get_same_padding(input_shape[3], kernel_shape[1],
-                                      strides[1])
+                                      strides[1], auto_pad)
             paddings = pad_h + pad_w
 
         layer_inputs = {'x': val_x if isinstance(val_x, str) else val_x.name}

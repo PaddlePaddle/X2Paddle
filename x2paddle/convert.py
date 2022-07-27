@@ -96,6 +96,11 @@ def arg_parser():
         default=True,
         help="Turn on code optimization")
     parser.add_argument(
+        "--enable_onnx_checker",
+        "-oc",
+        default=True,
+        help="Turn on onnx model checker")
+    parser.add_argument(
         "--disable_feedback",
         "-df",
         default=False,
@@ -263,7 +268,8 @@ def onnx2paddle(model_path,
                 convert_to_lite=False,
                 lite_valid_places="arm",
                 lite_model_type="naive_buffer",
-                disable_feedback=False):
+                disable_feedback=False,
+                enable_onnx_checker=True):
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
@@ -286,7 +292,7 @@ def onnx2paddle(model_path,
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
-    model = ONNXDecoder(model_path)
+    model = ONNXDecoder(model_path, enable_onnx_checker)
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     logging.info("Model optimizing ...")
@@ -478,7 +484,8 @@ def main():
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
                 lite_model_type=args.lite_model_type,
-                disable_feedback=args.disable_feedback)
+                disable_feedback=args.disable_feedback,
+                enable_onnx_checker=args.enable_onnx_checker)
         elif args.framework == "paddle2onnx":
             logging.info(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"
