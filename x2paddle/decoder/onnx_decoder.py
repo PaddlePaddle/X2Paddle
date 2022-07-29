@@ -416,13 +416,14 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model):
+    def __init__(self, onnx_model, enable_onnx_checker):
         onnx_model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             onnx_model.ir_version, onnx_model.opset_import[0].version))
         self.op_set = onnx_model.opset_import[0].version
 
-        check_model(onnx_model)
+        if enable_onnx_checker:
+            check_model(onnx_model)
 
         onnx_model = self.optimize_model_skip_op(onnx_model)
         onnx_model = self.optimize_node_name(onnx_model)

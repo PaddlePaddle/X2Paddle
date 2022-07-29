@@ -15,6 +15,20 @@
 from .opset7 import OpSet7
 
 
+def print_mapping_info(func):
+    def run_mapping(*args, **kwargs):
+        node = args[1]
+        try:
+            res = func(*args, **kwargs)
+        except:
+            raise Exception("convert failed node:{}, op_type is {}".format(
+                node.name[9:], node.layer_type))
+        else:
+            return res
+
+    return run_mapping
+
+
 class OpSet8(OpSet7):
     def __init__(self, decoder, paddle_graph):
         super(OpSet8, self).__init__(decoder, paddle_graph)

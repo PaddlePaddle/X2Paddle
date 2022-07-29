@@ -15,6 +15,38 @@
 from .opset_legacy import OpSet
 
 
+def print_mapping_info(func):
+    def run_mapping(*args, **kwargs):
+        node = args[1]
+        try:
+            res = func(*args, **kwargs)
+        except:
+            raise Exception("convert failed node:{}, op_type is {}".format(
+                node.name[9:], node.layer_type))
+        else:
+            return res
+
+    return run_mapping
+
+
 class OpSet7(OpSet):
     def __init__(self, decoder, paddle_graph):
         super(OpSet7, self).__init__(decoder, paddle_graph)
+
+    @print_mapping_info
+    def Unsqueeze(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axes = node.get_attr('axes')
+        # deal with scalar(0D) tensor
+        if len(val_x.out_shapes[0]) == 0 and len(axes) == 1 and axes[0] == 0:
+            self.paddle_graph.add_layer(
+                'paddle.reshape',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                shape=[1])
+        else:
+            self.paddle_graph.add_layer(
+                'paddle.unsqueeze',
+                inputs={"x": val_x.name},
+                axis=axes,
+                outputs=[node.name])
