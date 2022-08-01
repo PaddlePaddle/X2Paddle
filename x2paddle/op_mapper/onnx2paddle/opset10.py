@@ -32,3 +32,5 @@ def print_mapping_info(func):
 class OpSet10(OpSet9):
     def __init__(self, decoder, paddle_graph):
         super(OpSet10, self).__init__(decoder, paddle_graph)
+        # Support Mod op
+        self.elementwise_ops.update({"Mod": "paddle.mod"})
