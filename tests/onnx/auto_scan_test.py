@@ -48,7 +48,7 @@ settings.register_profile(
     derandomize=True,
     report_multiple_bugs=False)
 if float(os.getenv('TEST_NUM_PERCENT_CASES', default='1.0')) < 1 or \
-    os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
+        os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
     settings.load_profile("ci")
 else:
     settings.load_profile("dev")

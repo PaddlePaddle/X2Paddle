@@ -189,12 +189,12 @@ class ONNXConverter(object):
         paddle_tensor_feed = list()
         for i in range(len(self.input_feed)):
             paddle_numpy_feed.append(self.input_feed[self.inputs_name[i]])
-            paddle_tensor_feed.append(paddle.to_tensor(self.input_feed[self.inputs_name[i]]))
+            paddle_tensor_feed.append(
+                paddle.to_tensor(self.input_feed[self.inputs_name[i]]))
 
         if self.run_dynamic:
-            paddle_path = os.path.join(
-                self.pwd, self.name,
-                self.name + '_' + str(ver) + '_paddle/')
+            paddle_path = os.path.join(self.pwd, self.name,
+                                       self.name + '_' + str(ver) + '_paddle/')
             import sys
             sys.path.append(paddle_path)
             from x2paddle_code import main
