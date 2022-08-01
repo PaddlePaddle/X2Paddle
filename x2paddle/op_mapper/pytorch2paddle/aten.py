@@ -1389,12 +1389,21 @@ def aten__convolution(mapper, graph, node):
         layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
         # 处理输入8，即%12
         layer_attrs["groups"] = mapper.attrs[inputs_name[8]]
-        graph.add_layer(
-            "paddle.nn.functional.conv2d",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            scope_name=scope_name,
-            **layer_attrs)
+        # Determine whether it is conv or convtranspose according to the attribute
+        if mapper.attrs[inputs_name[6]]:
+            graph.add_layer(
+                "paddle.nn.functional.conv2d_transpose",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
+        else:
+            graph.add_layer(
+                "paddle.nn.functional.conv2d",
+                inputs=layer_inputs,
+                outputs=layer_outputs,
+                scope_name=scope_name,
+                **layer_attrs)
         return current_inputs, current_outputs
     else:
         weights = mapper.pytorch_params[inputs_name[1]]
