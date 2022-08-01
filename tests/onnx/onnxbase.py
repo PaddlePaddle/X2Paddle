@@ -175,7 +175,8 @@ class ONNXConverter(object):
             onnx_path,
             paddle_path,
             convert_to_lite=False,
-            enable_onnx_checker=self.enable_onnx_checker)
+            enable_onnx_checker=self.enable_onnx_checker,
+            disable_feedback=True)
 
     def _mk_paddle_res(self, ver):
         """
