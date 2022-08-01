@@ -58,7 +58,7 @@ class GraphOptimizer(object):
                     before_len = len(graph.layers)
                     pass_.apply(graph)
                     after_len = len(graph.layers)
-                    if after_len <= before_len:
+                    if after_len < before_len:
                         show_pass_log = True
                     if before_len == after_len:
                         break
