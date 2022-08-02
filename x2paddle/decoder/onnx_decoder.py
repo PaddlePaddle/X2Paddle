@@ -336,7 +336,7 @@ class ONNXGraph(Graph):
                                             break
                             else:
                                 first_i = node.inputs.index(nd.name)
-                                node.which_child[new_child_name] = idx
+                                node.which_child[nd.name] = idx
                             self.node_map[nd.name].index = 0
                             break
                     if flag == 1:
