@@ -76,7 +76,7 @@
 | 81 | Add | 82 | Concat | 83 | Max | 84 | Min |
 | 85 | GreaterOrEqual | 86 | GatherND | 87 | And | 88 | cos |
 | 89 | Neg | 90 | SpaceToDepth | 91 | GatherElement | 92 | Sin |
-| 93 | CumSum |  |  |  |  |  |  |
+| 93 | CumSum | 94 | Or | 95 | Xor |  |  |
 
 ## PyTorch
 

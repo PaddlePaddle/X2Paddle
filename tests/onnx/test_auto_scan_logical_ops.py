@@ -21,6 +21,8 @@ import unittest
 
 min_opset_version_map = {
     "And": 7,
+    "Or": 7,
+    "Xor": 7,
 }
 
 
@@ -47,7 +49,7 @@ class TestLogicalopsConvert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["bool"]))
 
         config = {
-            "op_names": ["And"],
+            "op_names": ["And", "Or", "Xor"],
             "test_data_shapes": [input1_shape, input2_shape],
             "test_data_types": [[input_dtype], [input_dtype]],
             "inputs_shape": [],

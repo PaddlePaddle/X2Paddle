@@ -34,6 +34,26 @@ class OpSet7(OpSet):
         super(OpSet7, self).__init__(decoder, paddle_graph)
 
     @print_mapping_info
+    def Or(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.logical_or",
+            inputs={"x": val_x.name,
+                    "y": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
+    def Xor(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        self.paddle_graph.add_layer(
+            "paddle.logical_xor",
+            inputs={"x": val_x.name,
+                    "y": val_y.name},
+            outputs=[node.name])
+
+    @print_mapping_info
     def Unsqueeze(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = node.get_attr('axes')
