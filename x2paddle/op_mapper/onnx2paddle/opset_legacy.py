@@ -357,7 +357,6 @@ class OpSet():
                 if len(val_x_shape) == 3:
                     val_scales = self.graph.get_input_node(
                         node, idx=2, copy=True)
-                    val_scales_values = _const_weight_or_none(val_scales)
 
                     attrs = {
                         "align_corners": False,
