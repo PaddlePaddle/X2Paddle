@@ -194,6 +194,14 @@ class OpSet():
             'Erf': ['paddle.erf'],
             'Sin': ['paddle.sin'],
             'Cos': ['paddle.cos'],
+            'Atan': ['paddle.atan'],
+            'Acos': ['paddle.acos'],
+            'Asin': ['paddle.asin'],
+            'IsInf':['paddle.isinf'],
+            'IsNaN':['paddle.isnan'],
+            'Cosh': ['paddle.cosh'],
+            'Acosh': ['paddle.acosh'],
+            'Asinh': ['paddle.asinh'],
         }
 
     @print_mapping_info
