@@ -165,6 +165,9 @@ class OPConvertAutoScanTest(unittest.TestCase):
         if not isinstance(op_names, (tuple, list)):
             op_names = [op_names]
 
+        if not isinstance(min_opset_version, (tuple, list)):
+            min_opset_version = [min_opset_version]
+
         input_type_list = None
         if len(test_data_types) > 1:
             input_type_list = list(product(*test_data_types))
@@ -188,7 +191,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
             enable_onnx_checker = config["enable_onnx_checker"]
 
         for i in range(len(op_names)):
-            obj = ONNXConverter(op_names[i], min_opset_version,
+            obj = ONNXConverter(op_names[i], min_opset_version[i],
                                 max_opset_version, op_names[i], inputs_name,
                                 outputs_name, inputs_shape, delta, rtol, attrs,
                                 enable_onnx_checker)
