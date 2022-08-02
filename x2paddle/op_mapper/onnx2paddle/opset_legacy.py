@@ -350,43 +350,6 @@ class OpSet():
                 # which is the same as the rank of input.
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[
                     2:]
-                if len(val_x_shape) == 3:
-                    val_scales = self.graph.get_input_node(
-                        node, idx=2, copy=True)
-                    val_scales_values = _const_weight_or_none(val_scales)
-
-                    attrs = {
-                        "align_corners": False,
-                        "mode": string(node.get_attr('mode', 'nearest')),
-                        "scale_factor":
-                        self.weights[val_scales.name].tolist()[1:]
-                    }
-                    mode = node.get_attr('mode', 'nearest')
-                    if mode == "linear":
-                        attrs["mode"] = string("bilinear")
-                    if node.get_attr('coordinate_transformation_mode',
-                                     'half_pixel') == 'pytorch_half_pixel':
-                        attrs["align_corners"] = False
-                        attrs["align_mode"] = 0
-                    if node.get_attr('coordinate_transformation_mode',
-                                     'half_pixel') == 'align_corners':
-                        attrs["align_corners"] = True
-                    self.paddle_graph.add_layer(
-                        'paddle.unsqueeze',
-                        inputs={"x": val_x.name},
-                        outputs=[val_x.name],
-                        axis=0)
-                    self.paddle_graph.add_layer(
-                        kernel="paddle.nn.functional.interpolate",
-                        inputs=inputs,
-                        outputs=[node.name],
-                        **attrs)
-                    self.paddle_graph.add_layer(
-                        'paddle.squeeze',
-                        inputs={"x": node.name},
-                        outputs=[node.name],
-                        axis=0)
-                    return
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
