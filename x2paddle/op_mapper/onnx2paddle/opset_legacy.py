@@ -1642,9 +1642,8 @@ class OpSet():
             inputs=matmul_inputs,
             outputs=[val_mm],
             **attr_matmul)
-        
         self.paddle_graph.add_layer(
-                "paddle.scale", inputs={"x": val_mm}, outputs=[node.name])
+            "paddle.scale", inputs={"x": val_mm}, outputs=[val_mm],scale=alpha)
 
         if beta != 0:
             if beta == 1.:
