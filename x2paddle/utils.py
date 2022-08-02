@@ -83,6 +83,7 @@ class ConverterCheck(threading.Thread):
 
         params.update({"extra": json.dumps(extra)})
         try:
+            logging.basicConfig(level=logging.INFO)
             requests.get(stats_api, params, timeout=2)
         except Exception:
             pass
