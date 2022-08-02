@@ -1662,7 +1662,8 @@ class OpSet():
     def Gemm(self, node):
         val_a = self.graph.get_input_node(node, idx=0, copy=True)
         val_b = self.graph.get_input_node(node, idx=1, copy=True)
-
+        val_c = self.graph.get_input_node(node, idx=2, copy=True)
+        
         alpha = node.get_attr('alpha', 1.)  # optional
         beta = node.get_attr('beta', 1.)  # optional
         trans_a = bool(node.get_attr('transA', 0))  # optional
@@ -1678,19 +1679,11 @@ class OpSet():
             inputs=matmul_inputs,
             outputs=[val_mm],
             **attr_matmul)
-        if beta != 0:
-            self.paddle_graph.add_layer(
-                "paddle.scale",
-                inputs={"x": val_mm},
-                outputs=[val_mm],
-                scale=alpha)
-        else:
-            self.paddle_graph.add_layer(
+        
+        self.paddle_graph.add_layer(
                 "paddle.scale", inputs={"x": val_mm}, outputs=[node.name])
 
         if beta != 0:
-            # when beta is equal to 0, there is no val_c
-            val_c = self.graph.get_input_node(node, idx=2, copy=True)
             if beta == 1.:
                 add_inputs = {"x": val_mm, "y": val_c.name}
                 self.paddle_graph.add_layer(
