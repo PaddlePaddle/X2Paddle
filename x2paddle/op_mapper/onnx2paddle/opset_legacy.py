@@ -197,11 +197,12 @@ class OpSet():
             'Atan': ['paddle.atan'],
             'Acos': ['paddle.acos'],
             'Asin': ['paddle.asin'],
-            'IsInf':['paddle.isinf'],
-            'IsNaN':['paddle.isnan'],
+            'IsInf': ['paddle.isinf'],
+            'IsNaN': ['paddle.isnan'],
             'Cosh': ['paddle.cosh'],
             'Acosh': ['paddle.acosh'],
             'Asinh': ['paddle.asinh'],
+            'Tan': ['paddle.tan'],
         }
 
     @print_mapping_info
@@ -1634,7 +1635,7 @@ class OpSet():
         val_a = self.graph.get_input_node(node, idx=0, copy=True)
         val_b = self.graph.get_input_node(node, idx=1, copy=True)
         val_c = self.graph.get_input_node(node, idx=2, copy=True)
-        
+
         alpha = node.get_attr('alpha', 1.)  # optional
         beta = node.get_attr('beta', 1.)  # optional
         trans_a = bool(node.get_attr('transA', 0))  # optional
