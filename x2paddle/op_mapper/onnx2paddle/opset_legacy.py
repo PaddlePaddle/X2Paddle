@@ -1677,38 +1677,48 @@ class OpSet():
             "transpose_x": trans_a,
             "transpose_y": trans_b,
         }
-        self.paddle_graph.add_layer(
-            'paddle.matmul',
-            inputs=matmul_inputs,
-            outputs=[val_mm],
-            **attr_matmul)
-        if beta != 0:
+
+        if alpha == 1 and beta == 0:
             self.paddle_graph.add_layer(
-                "paddle.scale",
-                inputs={"x": val_mm},
-                outputs=[val_mm],
-                scale=alpha)
+                'paddle.matmul',
+                inputs=matmul_inputs,
+                outputs=[node.name],
+                **attr_matmul)
         else:
             self.paddle_graph.add_layer(
-                "paddle.scale", inputs={"x": val_mm}, outputs=[node.name])
-
-        if beta != 0:
-            # when beta is equal to 0, there is no val_c
-            val_c = self.graph.get_input_node(node, idx=2, copy=True)
-            if beta == 1.:
-                add_inputs = {"x": val_mm, "y": val_c.name}
-                self.paddle_graph.add_layer(
-                    "paddle.add", inputs=add_inputs, outputs=[node.name])
-            else:
-                var_beta = node.name + '_beta'
+                'paddle.matmul',
+                inputs=matmul_inputs,
+                outputs=[val_mm],
+                **attr_matmul)
+            if beta != 0:
+                if alpha != 1:
+                    self.paddle_graph.add_layer(
+                        "paddle.scale",
+                        inputs={"x": val_mm},
+                        outputs=[val_mm],
+                        scale=alpha)
+                # when beta is equal to 0, there is no val_c
+                val_c = self.graph.get_input_node(node, idx=2, copy=True)
+                if beta == 1.:
+                    add_inputs = {"x": val_mm, "y": val_c.name}
+                    self.paddle_graph.add_layer(
+                        "paddle.add", inputs=add_inputs, outputs=[node.name])
+                else:
+                    var_beta = node.name + '_beta'
+                    self.paddle_graph.add_layer(
+                        "paddle.scale",
+                        inputs={"x": val_c.name},
+                        outputs=[var_beta],
+                        scale=beta)
+                    add_inputs = {"x": val_mm, "y": var_beta}
+                    self.paddle_graph.add_layer(
+                        "paddle.add", inputs=add_inputs, outputs=[node.name])
+            if alpha != 1:
                 self.paddle_graph.add_layer(
                     "paddle.scale",
-                    inputs={"x": val_c.name},
-                    outputs=[var_beta],
-                    scale=beta)
-                add_inputs = {"x": val_mm, "y": var_beta}
-                self.paddle_graph.add_layer(
-                    "paddle.add", inputs=add_inputs, outputs=[node.name])
+                    inputs={"x": val_mm},
+                    outputs=[node.name],
+                    scale=alpha)
 
     @print_mapping_info
     def Sum(self, node):
