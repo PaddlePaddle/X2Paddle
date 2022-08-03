@@ -35,7 +35,8 @@ min_opset_version_map = {
     "Acosh": 9,
     "Acos": 7,
     "Exp": 7,
-    "Floor": 7
+    "Floor": 7,
+    "Tan": 7
 }
 
 
@@ -56,7 +57,7 @@ class TestIsinfConcert(OPConvertAutoScanTest):
         config = {
             "op_names": [
                 "Elu", "Log", "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos",
-                "Cosh", "Exp", "Floor"
+                "Cosh", "Exp", "Floor", "Tan"
             ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
