@@ -349,15 +349,11 @@ def pytorch2paddle(module,
             v2 = v2.split('+')[0]
         version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
         if version_sum < 150:
-            logging.info(
-                "[ERROR] PyTorch>=1.5.0 is required, 1.6.0 is the most recommended"
-            )
+            logging.info("[ERROR] PyTorch>=1.5.0 is required")
             return
-        if version_sum > 160:
-            logging.info("[WARNING] PyTorch==1.6.0 is recommended")
     except:
         logging.info(
-            "[ERROR] PyTorch is not installed, use \"pip install torch==1.6.0 torchvision\"."
+            "[ERROR] PyTorch is not installed, use \"pip install torch torchvision\"."
         )
         return
     logging.info("Now translating model from PyTorch to Paddle.")
