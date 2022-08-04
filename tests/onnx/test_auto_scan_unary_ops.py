@@ -34,6 +34,7 @@ min_opset_version_map = {
     "Exp": 7,
     "Floor": 7,
     "Tan": 7,
+    "Ceil": 7
 }
 
 
@@ -52,10 +53,7 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            "op_names": [
-                "Log", "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh",
-                "Exp", "Floor", "Tan"
-            ],
+            "op_names": ["Ceil"],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
             "inputs_shape": [input_shape],
