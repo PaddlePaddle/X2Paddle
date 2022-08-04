@@ -59,11 +59,25 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            # "op_names": [
-            #     "Log", "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh",
-            #     "Exp", "Floor", "Tan", "Erf", "Sin", "Sinh", "Tanh", "Atanh",
-            # ],
-            "op_names": ["Sqrt", ],
+            "op_names": [
+                "Log",
+                "Cos",
+                "Atan",
+                "Asinh",
+                "Asin",
+                "Acosh",
+                "Acos",
+                "Cosh",
+                "Exp",
+                "Floor",
+                "Tan",
+                "Erf",
+                "Sin",
+                "Sinh",
+                "Tanh",
+                "Atanh",
+                "Sqrt",
+            ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
             "inputs_shape": [input_shape],
