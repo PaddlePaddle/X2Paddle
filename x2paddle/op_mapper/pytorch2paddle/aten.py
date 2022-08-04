@@ -1221,7 +1221,9 @@ def aten_constant_pad_nd(mapper, graph, node):
     layer_attrs["value"] = mapper.attrs[inputs_name[2]]
 
     if padding_attr is not None:
-        padding_attr.reverse()
+        ## convert torch pad attr to paddle pad attr, eg:(x1,x2,x3,x4)->(x3,x4,x1,x2)
+        padding_attr = np.array(padding_attr).reshape((-1, 2))
+        padding_attr = np.flip(padding_attr, axis=0).flatten().tolist()
         layer_inputs["x"] = inputs_name[0]
         kernel_name = "paddle.nn.functional.pad"
         if len(padding_attr) == 2:
