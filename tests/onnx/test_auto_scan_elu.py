@@ -24,7 +24,7 @@ import random
 
 
 class TestEluConvert(OPConvertAutoScanTest):
-            """
+    """
     ONNX op: Elu
     OPset version: 7~15
     """
