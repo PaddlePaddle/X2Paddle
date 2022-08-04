@@ -36,11 +36,6 @@ class OpSet7(OpSet):
             'Atan': ['paddle.atan'],
             'Acos': ['paddle.acos'],
             'Asin': ['paddle.asin'],
-            'IsInf': ['paddle.isinf'],
-            'IsNaN': ['paddle.isnan'],
-            'Cosh': ['paddle.cosh'],
-            'Acosh': ['paddle.acosh'],
-            'Asinh': ['paddle.asinh'],
             'Tan': ['paddle.tan'],
         })
 
