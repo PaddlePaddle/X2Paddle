@@ -38,6 +38,7 @@ class TestEluConvert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["float32"]))
         for i in range(2):
             alpha = random.random()
+
         config = {
             "op_names": ["Elu"],
             "test_data_shapes": [input_shape],
