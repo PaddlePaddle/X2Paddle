@@ -58,8 +58,21 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
 
         config = {
             "op_names": [
-                "Log", "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh",
-                "Exp", "Floor", "Tan", "Erf"
+                "Log",
+                "Cos",
+                "Atan",
+                "Asinh",
+                "Asin",
+                "Acosh",
+                "Acos",
+                "Cosh",
+                "Exp",
+                "Floor",
+                "Tan",
+                "Erf",
+                "Sin",
+                "Sinh",
+                "Tanh",
             ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
