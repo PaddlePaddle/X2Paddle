@@ -357,7 +357,6 @@ class OpSet():
                 if len(val_x_shape) == 3:
                     val_scales = self.graph.get_input_node(
                         node, idx=2, copy=True)
-                    val_scales_values = _const_weight_or_none(val_scales)
 
                     attrs = {
                         "align_corners": False,
@@ -1677,7 +1676,6 @@ class OpSet():
             "transpose_x": trans_a,
             "transpose_y": trans_b,
         }
-
         if alpha == 1 and beta == 0:
             self.paddle_graph.add_layer(
                 'paddle.matmul',
