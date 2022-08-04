@@ -32,3 +32,10 @@ def print_mapping_info(func):
 class OpSet9(OpSet8):
     def __init__(self, decoder, paddle_graph):
         super(OpSet9, self).__init__(decoder, paddle_graph)
+        self.directly_map_ops.update({
+            'Cosh': ['paddle.cosh'],
+            'Sinh': ['paddle.sinh'],
+            'Acosh': ['paddle.acosh'],
+            'Asinh': ['paddle.asinh'],
+        })
+        
