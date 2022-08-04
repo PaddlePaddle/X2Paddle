@@ -40,6 +40,7 @@ min_opset_version_map = {
     "Sinh": 9,
     "Tanh": 7,
     "Atanh": 9,
+    "Sqrt": 7
 }
 
 
@@ -59,8 +60,23 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
 
         config = {
             "op_names": [
-                "Log", "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh",
-                "Exp", "Floor", "Tan", "Erf", "Sin", "Sinh", "Tanh", "Atanh"
+                "Log",
+                "Cos",
+                "Atan",
+                "Asinh",
+                "Asin",
+                "Acosh",
+                "Acos",
+                "Cosh",
+                "Exp",
+                "Floor",
+                "Tan",
+                "Erf",
+                "Sin",
+                "Sinh",
+                "Tanh",
+                "Atanh",
+                "Sqrt",
             ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
