@@ -37,5 +37,5 @@ class OpSet9(OpSet8):
             'Sinh': ['paddle.sinh'],
             'Acosh': ['paddle.acosh'],
             'Asinh': ['paddle.asinh'],
+            'Atanh': ['paddle.atanh'],
         })
-        
