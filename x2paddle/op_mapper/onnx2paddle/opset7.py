@@ -32,8 +32,7 @@ def print_mapping_info(func):
 class OpSet7(OpSet):
     def __init__(self, decoder, paddle_graph):
         super(OpSet7, self).__init__(decoder, paddle_graph)
-        self.directly_map_ops.update
-        self.directly_map_ops = {
+        self.directly_map_ops.update({
             'Atan': ['paddle.atan'],
             'Acos': ['paddle.acos'],
             'Asin': ['paddle.asin'],
@@ -43,7 +42,7 @@ class OpSet7(OpSet):
             'Acosh': ['paddle.acosh'],
             'Asinh': ['paddle.asinh'],
             'Tan': ['paddle.tan'],
-        }
+        })
 
     @print_mapping_info
     def Unsqueeze(self, node):
