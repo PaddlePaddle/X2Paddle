@@ -32,7 +32,7 @@ class TestReluConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=2, max_value=6), min_size=2, max_size=5))
 
-        input_dtype = draw(st.sampled_from(["int32"]))
+        input_dtype = draw(st.sampled_from(["int32", "float32"]))
 
         config = {
             "op_names": ["Relu"],
