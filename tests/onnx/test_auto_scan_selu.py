@@ -37,8 +37,8 @@ class TestSeluConvert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["float32"]))
         for i in range(2):
             alpha = random.random()
-        
-        gamma =random.uniform(1.1, 3)
+
+        gamma = random.uniform(1.1, 3)
         config = {
             "op_names": ["Selu"],
             "test_data_shapes": [input_shape],
@@ -52,7 +52,7 @@ class TestSeluConvert(OPConvertAutoScanTest):
             "rtol": 1e-4
         }
 
-        attrs = {"alpha": alpha,"gamma":gamma}
+        attrs = {"alpha": alpha, "gamma": gamma}
 
         return (config, attrs)
 
