@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .opset13 import OpSet13
+from x2paddle.core.util import *
 
 
 def print_mapping_info(func):
@@ -32,3 +33,23 @@ def print_mapping_info(func):
 class OpSet14(OpSet13):
     def __init__(self, decoder, paddle_graph):
         super(OpSet14, self).__init__(decoder, paddle_graph)
+
+    @print_mapping_info
+    def Relu(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+
+        # if val_x.dtypes!='float':
+        indices_cast = val_x.name + '_cast'
+        mid_relu = val_x.name + '_relu'
+        self.paddle_graph.add_layer(
+            'paddle.cast',
+            inputs={"x": val_x.name},
+            outputs=[indices_cast],
+            dtype=string('float32'))
+        self.paddle_graph.add_layer(
+            'paddle.nn.ReLU', inputs={"x": indices_cast}, outputs=[mid_relu])
+        self.paddle_graph.add_layer(
+            'paddle.cast',
+            inputs={"x": mid_relu},
+            outputs=[node.name],
+            dtype=string(val_x.dtype))
