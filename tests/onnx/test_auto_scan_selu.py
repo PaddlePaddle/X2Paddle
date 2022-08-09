@@ -32,8 +32,8 @@ class TestSeluConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=20, max_value=30), min_size=3, max_size=5))
         input_dtype = draw(st.sampled_from(["float32"]))
-        for i in range(2):
-            alpha = random.random()
+        
+        alpha = random.random()
 
         gamma = random.uniform(1.1, 3)
         config = {
