@@ -21,6 +21,7 @@ import sys
 import os
 import six
 import pickle
+import importlib
 from os import path as osp
 from x2paddle.core.util import *
 
@@ -566,6 +567,8 @@ class PaddleGraph(object):
         path = osp.abspath(save_dir)
         sys.path.insert(0, save_dir)
         import x2paddle_code
+        # Solve the problem of function overloading caused by traversing the model
+        importlib.reload(x2paddle_code)
         paddle.disable_static()
         restore = paddle.load(osp.join(save_dir, "model.pdparams"))
         model = getattr(x2paddle_code, self.name)()

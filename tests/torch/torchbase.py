@@ -32,6 +32,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
+        print("result:", res)
         # print wrong result
         if res is False:
             if result.dtype == np.bool_:
@@ -166,10 +167,8 @@ class TorchConverter(object):
         make paddle res
         """
         # input data
-        paddle_numpy_feed = list()
         paddle_tensor_feed = list()
         for i in range(len(self.input_feed)):
-            paddle_numpy_feed.append(self.input_feed[str(i)])
             paddle_tensor_feed.append(paddle.to_tensor(self.input_feed[str(i)]))
 
         if self.run_dynamic:
@@ -186,7 +185,7 @@ class TorchConverter(object):
             paddle.disable_static()
             # run
             model = paddle.jit.load(paddle_path)
-            result = model(*paddle_numpy_feed)
+            result = model(*paddle_tensor_feed)
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             result = tuple(out.numpy() for out in result)
@@ -225,6 +224,7 @@ class TorchConverter(object):
             # run torch api and make torch res
             self._torch_to_paddle()
             torch_res = self._mk_torch_res()
+            print(torch_res[0].shape)
             paddle_res = self._mk_paddle_res()
 
             compare(torch_res, paddle_res, delta=self.delta, rtol=self.rtol)

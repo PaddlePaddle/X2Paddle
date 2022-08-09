@@ -29,19 +29,20 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.nn.functional.conv2d(
+        x = torch.nn.functional.conv_transpose2d(
             inputs,
             weight,
             stride=self.config["stride"],
             padding=self.config["padding"],
+            output_padding=self.config["output_padding"],
             dilation=self.config["dilation"],
             groups=self.config["groups"])
         return x
 
 
-class TestConv2dConvert(OPConvertAutoScanTest):
+class TestConvtranspose2dConvert(OPConvertAutoScanTest):
     """
-    Torch API: torch.nn.functional.conv2d
+    Torch API: torch.nn.functional.conv_transpose2d
     """
 
     def add_ignore_test_case(self, configs):
@@ -55,14 +56,32 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         else:
             if config["padding"] == "same" and config["stride"] > 1:
                 result = True
+        # Warning: output padding must be smaller than either stride or dilation
+        if isinstance(config["stride"], list):
+            stride = config["stride"][0]
+        else:
+            stride = config["stride"]
+        if isinstance(config["dilation"], list):
+            dilation = config["dilation"][0]
+        else:
+            dilation = config["dilation"]
+        if isinstance(config["output_padding"], int):
+            if config["output_padding"] >= stride or config[
+                    "output_padding"] >= dilation:
+                result = True
+        else:
+            if config["output_padding"][0] >= stride or config[
+                    "output_padding"][0] >= dilation:
+                result = True
         return result
 
     def sample_convert_config(self, draw):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=30), min_size=4, max_size=4))
-
+                    min_value=10, max_value=20), min_size=4, max_size=4))
+        # BS = 1
+        input_shape[0] = 1
         kernel_size = draw(
             st.lists(
                 st.integers(
@@ -71,7 +90,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         groups = draw(st.integers(min_value=1, max_value=4))
         muti1 = draw(st.integers(min_value=1, max_value=4))
         kernel_size[0] = groups * muti1
-        input_shape[1] = kernel_size[1] * groups
+        input_shape[1] = kernel_size[0]
 
         strides = draw(
             st.lists(
@@ -89,16 +108,29 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             if strides[1] > kernel_size[3]:
                 strides[1] = kernel_size[3]
 
+        padding_type = draw(st.sampled_from(["int", "tuple"]))
         padding = None
-        if draw(st.booleans()):
+        if padding_type == "int":
+            padding = draw(st.integers(min_value=1, max_value=3))
+        else:
             padding = draw(
                 st.lists(
                     st.integers(
                         min_value=1, max_value=5),
                     min_size=2,
                     max_size=2))
+
+        output_padding_type = draw(st.sampled_from(["int", "tuple"]))
+        output_padding = None
+        if output_padding_type == "int":
+            output_padding = draw(st.integers(min_value=0, max_value=1))
         else:
-            padding = draw(st.sampled_from(["valid", "same"]))
+            output_padding = draw(
+                st.lists(
+                    st.integers(
+                        min_value=0, max_value=1),
+                    min_size=2,
+                    max_size=2))
 
         dilations = draw(
             st.lists(
@@ -106,17 +138,16 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                     min_value=1, max_value=3), min_size=1, max_size=2))
         if len(dilations) == 1:
             dilations = dilations[0]
-        if padding == "same":
-            dilations = 1
 
         config = {
-            "op_names": ["conv2d"],
+            "op_names": ["conv_transpose2d"],
             "test_data_shapes": [input_shape, kernel_size],
             "test_data_types": [['float32'], ['float32']],
             "inputs_shape": [[-1, input_shape[1], -1, -1], kernel_size],
             "dilation": dilations,
             "groups": groups,
             "padding": padding,
+            "output_padding": output_padding,
             "stride": strides,
             "delta": 1e-4,
             "rtol": 1e-4,
