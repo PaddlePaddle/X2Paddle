@@ -39,7 +39,6 @@ min_opset_version_map = {
     "Sinh": 9,
     "Tanh": 7,
     "Atanh": 9,
-    "Shape": 7,
     "Sign": 9,
 }
 
@@ -75,7 +74,6 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
                 "Sinh",
                 "Tanh",
                 "Atanh",
-                "Shape",
                 "Sign",
             ],
             "test_data_shapes": [input_shape],
