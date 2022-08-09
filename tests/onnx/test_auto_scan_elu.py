@@ -24,37 +24,41 @@ import random
 
 
 class TestEluConvert(OPConvertAutoScanTest):
- """
- ONNX op: Elu
- OPset version: 7~15
- """
+    """
+    ONNX op: Elu
+    OPset version: 7~15
+    """
 
- def sample_convert_config(self, draw):
-     input_shape = draw(
-         st.lists(
-             st.integers(
-                 min_value=20, max_value=30), min_size=3, max_size=5))
+    def sample_convert_config(self, draw):
+        input_shape = draw(
+            st.lists(
+                st.integers(
+                    min_value=20, max_value=30), min_size=3, max_size=5))
 
-     input_dtype = draw(st.sampled_from(["float32"]))
-     for i in range(2):
-         alpha = random.random()
+        input_dtype = draw(st.sampled_from(["float32"]))
+        for i in range(2):
+            alpha = random.random()
 
-     config = {
-         "op_names": ["Elu"],
-         "test_data_shapes": [input_shape],
-         "test_data_types": [input_dtype],
-         "inputs_shape": [input_shape],
-         "min_opset_version": 7,
-         "max_opset_version": 15,
-         "inputs_name": ["x"],
-         "outputs_name": ["y"],
-         "delta": 1e-4,
-         "rtol": 1e-4
-     }
+        config = {
+            "op_names": ["Elu"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [input_dtype],
+            "inputs_shape": [input_shape],
+            "min_opset_version": 7,
+            "max_opset_version": 15,
+            "inputs_name": ["x"],
+            "outputs_name": ["y"],
+            "delta": 1e-4,
+            "rtol": 1e-4
+        }
 
-     attrs = {"alpha": alpha}
+        attrs = {"alpha": alpha}
 
-     return (config, attrs)
+        return (config, attrs)
 
- def test(self):
-     self.run_and_statis(max_examples=50)
+    def test(self):
+        self.run_and_statis(max_examples=50)
+
+
+if __name__ == "__main__":
+    unittest.main()
