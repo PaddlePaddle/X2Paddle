@@ -81,8 +81,10 @@ class OpSet7(OpSet):
         keepdims = False if node.get_attr('keepdims') == 0 else True
         layer_attrs = {'p': 1, 'axis': axes, 'keepdim': keepdims}
         if val_x.dtype == 'int32':
+
             indices_cast = val_x.name + '_cast'
             mid_norm = val_x.name + '_norm'
+
             self.paddle_graph.add_layer(
                 'paddle.cast',
                 inputs={"x": val_x.name},
@@ -116,6 +118,7 @@ class OpSet7(OpSet):
         if val_x.dtype == 'int32':
             indices_cast = val_x.name + '_cast'
             mid_norm = val_x.name + '_norm'
+
             self.paddle_graph.add_layer(
                 'paddle.cast',
                 inputs={"x": val_x.name},

@@ -32,3 +32,16 @@ def print_mapping_info(func):
 class OpSet12(OpSet11):
     def __init__(self, decoder, paddle_graph):
         super(OpSet12, self).__init__(decoder, paddle_graph)
+
+    @print_mapping_info
+    def Celu(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        alphas = node.get_attr('alpha', 1.0)
+        layer_attrs = dict()
+
+        self.paddle_graph.add_layer(
+            "paddle.nn.functional.celu",
+            inputs={"x": val_x.name},
+            alpha=alphas,
+            outputs=[node.name],
+            **layer_attrs)
