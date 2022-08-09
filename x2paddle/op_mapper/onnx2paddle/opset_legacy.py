@@ -213,14 +213,7 @@ class OpSet():
             attrs_name_map_dict = op_info[1]
             for onnx_attr_name, pd_attr_name in attrs_name_map_dict.items():
                 if onnx_attr_name in onnx_attrs:
-                    # trans 1 to True, 0 to False
-                    if onnx_attr_name == "keepdims":
-                        if onnx_attrs[onnx_attr_name] == 1:
-                            layer_attrs[pd_attr_name] = True
-                        else:
-                            layer_attrs[pd_attr_name] = False
-                    else:
-                        layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
+                    layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
                 else:
                     layer_attrs[pd_attr_name] = op_info[2][onnx_attr_name]
         if paddle_op.startswith("paddle.nn") and 'functional' not in paddle_op:
@@ -357,43 +350,6 @@ class OpSet():
                 # which is the same as the rank of input.
                 attrs['scale_factor'] = self.weights[val_scales.name].tolist()[
                     2:]
-                if len(val_x_shape) == 3:
-                    val_scales = self.graph.get_input_node(
-                        node, idx=2, copy=True)
-                    val_scales_values = _const_weight_or_none(val_scales)
-
-                    attrs = {
-                        "align_corners": False,
-                        "mode": string(node.get_attr('mode', 'nearest')),
-                        "scale_factor":
-                        self.weights[val_scales.name].tolist()[1:]
-                    }
-                    mode = node.get_attr('mode', 'nearest')
-                    if mode == "linear":
-                        attrs["mode"] = string("bilinear")
-                    if node.get_attr('coordinate_transformation_mode',
-                                     'half_pixel') == 'pytorch_half_pixel':
-                        attrs["align_corners"] = False
-                        attrs["align_mode"] = 0
-                    if node.get_attr('coordinate_transformation_mode',
-                                     'half_pixel') == 'align_corners':
-                        attrs["align_corners"] = True
-                    self.paddle_graph.add_layer(
-                        'paddle.unsqueeze',
-                        inputs={"x": val_x.name},
-                        outputs=[val_x.name],
-                        axis=0)
-                    self.paddle_graph.add_layer(
-                        kernel="paddle.nn.functional.interpolate",
-                        inputs=inputs,
-                        outputs=[node.name],
-                        **attrs)
-                    self.paddle_graph.add_layer(
-                        'paddle.squeeze',
-                        inputs={"x": node.name},
-                        outputs=[node.name],
-                        axis=0)
-                    return
             elif len(node.layer.input) == 4:
                 # opset 11
                 val_sizes = self.graph.get_input_node(node, idx=3, copy=True)
@@ -1669,6 +1625,7 @@ class OpSet():
     def Gemm(self, node):
         val_a = self.graph.get_input_node(node, idx=0, copy=True)
         val_b = self.graph.get_input_node(node, idx=1, copy=True)
+        val_c = self.graph.get_input_node(node, idx=2, copy=True)
 
         alpha = node.get_attr('alpha', 1.)  # optional
         beta = node.get_attr('beta', 1.)  # optional
@@ -1685,19 +1642,10 @@ class OpSet():
             inputs=matmul_inputs,
             outputs=[val_mm],
             **attr_matmul)
-        if beta != 0:
-            self.paddle_graph.add_layer(
-                "paddle.scale",
-                inputs={"x": val_mm},
-                outputs=[val_mm],
-                scale=alpha)
-        else:
-            self.paddle_graph.add_layer(
-                "paddle.scale", inputs={"x": val_mm}, outputs=[node.name])
+        self.paddle_graph.add_layer(
+            "paddle.scale", inputs={"x": val_mm}, outputs=[val_mm], scale=alpha)
 
         if beta != 0:
-            # when beta is equal to 0, there is no val_c
-            val_c = self.graph.get_input_node(node, idx=2, copy=True)
             if beta == 1.:
                 add_inputs = {"x": val_mm, "y": val_c.name}
                 self.paddle_graph.add_layer(
