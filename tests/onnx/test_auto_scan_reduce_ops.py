@@ -15,8 +15,6 @@
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-from onnx import helper
-from onnx import TensorProto
 import numpy as np
 import unittest
 import random
