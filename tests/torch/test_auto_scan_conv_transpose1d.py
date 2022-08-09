@@ -123,12 +123,12 @@ class TestConvtranspose1dConvert(OPConvertAutoScanTest):
         output_padding_type = draw(st.sampled_from(["int", "tuple"]))
         output_padding = None
         if output_padding_type == "int":
-            output_padding = draw(st.integers(min_value=0, max_value=0))
+            output_padding = draw(st.integers(min_value=0, max_value=1))
         else:
             output_padding = draw(
                 st.lists(
                     st.integers(
-                        min_value=0, max_value=0),
+                        min_value=0, max_value=1),
                     min_size=1,
                     max_size=1))
 
