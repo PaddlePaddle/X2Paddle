@@ -22,10 +22,33 @@ import numpy as np
 import unittest
 import random
 
+min_opset_version_map = {
+    "Log": 7,
+    "Cosh": 9,
+    "Cos": 7,
+    "Atan": 7,
+    "Asinh": 9,
+    "Asin": 7,
+    "Acosh": 9,
+    "Acos": 7,
+    "Exp": 7,
+    "Floor": 7,
+    "Tan": 7,
+    "Ceil": 7,
+    "Erf": 9,
+    "Sin": 7,
+    "Sinh": 9,
+    "Tanh": 7,
+    "Atanh": 9,
+    "Sqrt": 7,
+    "Shape": 7,
+    "Sign": 9,
+}
 
-class TestSeluConvert(OPConvertAutoScanTest):
+
+class TestUnaryopsConcert(OPConvertAutoScanTest):
     """
-    ONNX op: Selu
+    ONNX op: unary ops
     OPset version: 7~15
     """
 
@@ -34,25 +57,45 @@ class TestSeluConvert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=20, max_value=30), min_size=3, max_size=5))
-        input_dtype = draw(st.sampled_from(["float32"]))
-        for i in range(2):
-            alpha = random.random()
 
-        gamma = random.uniform(1.1, 3)
+        input_dtype = draw(st.sampled_from(["float32"]))
+
         config = {
-            "op_names": ["Selu"],
+            "op_names": [
+                "Cos",
+                "Atan",
+                "Asinh",
+                "Asin",
+                "Acosh",
+                "Acos",
+                "Cosh",
+                "Exp",
+                "Floor",
+                "Tan",
+                "Erf",
+                "Sin",
+                "Sinh",
+                "Tanh",
+                "Atanh",
+                "Shape",
+                "Sign",
+            ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
             "inputs_shape": [input_shape],
             "min_opset_version": 7,
-            "max_opset_version": 15,
             "inputs_name": ["x"],
             "outputs_name": ["y"],
             "delta": 1e-4,
             "rtol": 1e-4
         }
 
-        attrs = {"alpha": alpha, "gamma": gamma}
+        min_opset_versions = list()
+        for op_name in config["op_names"]:
+            min_opset_versions.append(min_opset_version_map[op_name])
+        config["min_opset_version"] = min_opset_versions
+
+        attrs = {}
 
         return (config, attrs)
 
