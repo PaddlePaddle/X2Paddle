@@ -89,16 +89,27 @@ class TestConv1dConvert(OPConvertAutoScanTest):
             if strides[0] > kernel_size[2]:
                 strides[0] = kernel_size[2]
 
+        # calculate torch version
+        version = torch.__version__
+        v0, v1, v2 = version.split('.')
+        # Avoid the situation where the version is equal to 1.7.0+cu101
+        if '+' in v2:
+            v2 = v2.split('+')[0]
+        version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
+        # Only torch >= 1.9.0, padding can be string dtype
+        is_padding_str = False
+        if version_sum >= 190:
+            is_padding_str = True
         padding = None
-        if draw(st.booleans()):
+        if draw(st.booleans()) and is_padding_str:
+            padding = draw(st.sampled_from(["valid", "same"]))
+        else:
             padding = draw(
                 st.lists(
                     st.integers(
                         min_value=1, max_value=5),
                     min_size=1,
                     max_size=1))
-        else:
-            padding = draw(st.sampled_from(["valid", "same"]))
 
         dilations_type = draw(st.sampled_from(["int", "tuple"]))
         dilations = None

@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+import sys
+import importlib
+import shutil
 import numpy as np
 import logging
 import paddle
@@ -32,7 +35,6 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
-        print("result:", res)
         # print wrong result
         if res is False:
             if result.dtype == np.bool_:
@@ -174,10 +176,16 @@ class TorchConverter(object):
         if self.run_dynamic:
             paddle_path = os.path.join(self.pwd, self.name,
                                        self.name + '_paddle/')
-            import sys
-            sys.path.append(paddle_path)
-            from x2paddle_code import main
-            result = main(*paddle_tensor_feed)
+            restore = paddle.load(os.path.join(paddle_path, "model.pdparams"))
+            sys.path.insert(0, paddle_path)
+            import x2paddle_code
+            # Solve the problem of function overloading caused by traversing the model
+            importlib.reload(x2paddle_code)
+            model = getattr(x2paddle_code, "Net")()
+            model.set_dict(restore)
+            model.eval()
+            result = model(*paddle_tensor_feed)
+            shutil.rmtree(paddle_path)
         else:
             paddle_path = os.path.join(
                 self.pwd, self.name,

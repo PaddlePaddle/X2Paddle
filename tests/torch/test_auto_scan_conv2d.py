@@ -68,7 +68,7 @@ class TestConv2dConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=1, max_value=7), min_size=4, max_size=4))
 
-        groups = draw(st.integers(min_value=1, max_value=4))
+        groups = draw(st.integers(min_value=1, max_value=2))
         muti1 = draw(st.integers(min_value=1, max_value=4))
         kernel_size[0] = groups * muti1
         input_shape[1] = kernel_size[1] * groups
@@ -89,16 +89,27 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             if strides[1] > kernel_size[3]:
                 strides[1] = kernel_size[3]
 
+        # calculate torch version
+        version = torch.__version__
+        v0, v1, v2 = version.split('.')
+        # Avoid the situation where the version is equal to 1.7.0+cu101
+        if '+' in v2:
+            v2 = v2.split('+')[0]
+        version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
+        # Only torch >= 1.9.0, padding can be string dtype
+        is_padding_str = False
+        if version_sum >= 190:
+            is_padding_str = True
         padding = None
-        if draw(st.booleans()):
+        if draw(st.booleans()) and is_padding_str:
+            padding = draw(st.sampled_from(["valid", "same"]))
+        else:
             padding = draw(
                 st.lists(
                     st.integers(
                         min_value=1, max_value=5),
                     min_size=2,
                     max_size=2))
-        else:
-            padding = draw(st.sampled_from(["valid", "same"]))
 
         dilations = draw(
             st.lists(
