@@ -23,7 +23,6 @@ import unittest
 import random
 
 min_opset_version_map = {
-    "Log": 7,
     "Cosh": 9,
     "Cos": 7,
     "Atan": 7,
@@ -40,7 +39,6 @@ min_opset_version_map = {
     "Sinh": 9,
     "Tanh": 7,
     "Atanh": 9,
-    "Sqrt": 7,
     "Shape": 7,
     "Sign": 9,
 }
