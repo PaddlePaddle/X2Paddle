@@ -15,9 +15,6 @@
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import onnx
-from onnx import helper
-from onnx import TensorProto
 import numpy as np
 import unittest
 import random
@@ -36,8 +33,7 @@ class TestEluConvert(OPConvertAutoScanTest):
                     min_value=20, max_value=30), min_size=3, max_size=5))
 
         input_dtype = draw(st.sampled_from(["float32"]))
-        for i in range(2):
-            alpha = random.random()
+        alpha = random.random()
 
         config = {
             "op_names": ["Elu"],
