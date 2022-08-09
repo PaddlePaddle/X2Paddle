@@ -34,11 +34,9 @@ class TestHardSigmoidCovert(OPConvertAutoScanTest):
 
         input_dtype = draw(st.sampled_from(["float32"]))
 
-        for i in range(2):
-            alpha = random.random()
+        alpha = random.random()
 
-        for i in range(2):
-            beta = random.random()
+        beta = random.random()
 
         config = {
             "op_names": ["HardSigmoid"],
