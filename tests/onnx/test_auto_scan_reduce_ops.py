@@ -55,7 +55,6 @@ class TestReduceOpsConvert(OPConvertAutoScanTest):
             "outputs_name": ["y"],
             "delta": 1e-4,
             "rtol": 1e-4,
-            "enable_onnx_checker": False,
         }
 
         attrs = {
