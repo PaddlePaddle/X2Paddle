@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+import sys
+import importlib
 import numpy as np
 import logging
 import paddle
@@ -60,7 +62,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             result.shape, expect.shape)
         assert result.dtype == expect.dtype, "result.dtype: {} != expect.dtype: {}".format(
             result.dtype, expect.dtype)
-    elif isinstance(result, (list, tuple)) and len(result) > 1:
+    elif isinstance(result, (list, tuple)):
         for i in range(len(result)):
             if isinstance(result[i], (np.generic, np.ndarray)):
                 compare(result[i], expect[i], delta, rtol)
@@ -69,6 +71,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     # deal with scalar tensor
     elif len(expect) == 1:
         compare(result, expect[0], delta, rtol)
+    else:
+        raise Exception("Compare diff wrong!!!!!!")
 
 
 def randtool(dtype, low, high, shape):
@@ -101,7 +105,8 @@ class ONNXConverter(object):
                  delta=1e-5,
                  rtol=1e-5,
                  attrs=[],
-                 enable_onnx_checker=True):
+                 enable_onnx_checker=True,
+                 run_dynamic=False):
         self.op_type = op_type
         assert isinstance(self.op_type,
                           str), "The dtype of op_type must be string!"
@@ -124,6 +129,7 @@ class ONNXConverter(object):
         self.inputs_shape = inputs_shape
         self.attrs = attrs
         self.enable_onnx_checker = enable_onnx_checker
+        self.run_dynamic = run_dynamic
 
     def set_input_data(self, group_name, *args):
         """
@@ -182,17 +188,32 @@ class ONNXConverter(object):
         """
         make paddle res
         """
-        paddle_path = os.path.join(
-            self.pwd, self.name,
-            self.name + '_' + str(ver) + '_paddle/inference_model/model')
-        paddle.disable_static()
-        # run
-        model = paddle.jit.load(paddle_path)
-        paddle_feed = list()
-
+        # input data
+        paddle_tensor_feed = list()
         for i in range(len(self.input_feed)):
-            paddle_feed.append(self.input_feed[self.inputs_name[i]])
-        result = model(*paddle_feed)
+            paddle_tensor_feed.append(
+                paddle.to_tensor(self.input_feed[self.inputs_name[i]]))
+
+        if self.run_dynamic:
+            paddle_path = os.path.join(self.pwd, self.name,
+                                       self.name + '_' + str(ver) + '_paddle/')
+            restore = paddle.load(os.path.join(paddle_path, "model.pdparams"))
+            sys.path.insert(0, paddle_path)
+            import x2paddle_code
+            # Solve the problem of function overloading caused by traversing the model
+            importlib.reload(x2paddle_code)
+            model = getattr(x2paddle_code, "ONNXModel")()
+            model.set_dict(restore)
+            model.eval()
+            result = model(*paddle_tensor_feed)
+        else:
+            paddle_path = os.path.join(
+                self.pwd, self.name,
+                self.name + '_' + str(ver) + '_paddle/inference_model/model')
+            paddle.disable_static()
+            # run
+            model = paddle.jit.load(paddle_path)
+            result = model(*paddle_tensor_feed)
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             result = tuple(out.numpy() for out in result)

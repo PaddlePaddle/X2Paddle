@@ -48,7 +48,7 @@ settings.register_profile(
     derandomize=True,
     report_multiple_bugs=False)
 if float(os.getenv('TEST_NUM_PERCENT_CASES', default='1.0')) < 1 or \
-    os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
+        os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
     settings.load_profile("ci")
 else:
     settings.load_profile("dev")
@@ -155,6 +155,7 @@ class OPConvertAutoScanTest(unittest.TestCase):
         # max_opset_version is a fixed value
         max_opset_version = 15
         enable_onnx_checker = True
+        run_dynamic = False
 
         self.num_ran_tests += 1
         # add ignore testcases
@@ -189,12 +190,14 @@ class OPConvertAutoScanTest(unittest.TestCase):
             max_opset_version = config["max_opset_version"]
         if "enable_onnx_checker" in config.keys():
             enable_onnx_checker = config["enable_onnx_checker"]
+        if "run_dynamic" in config.keys():
+            run_dynamic = config["run_dynamic"]
 
         for i in range(len(op_names)):
             obj = ONNXConverter(op_names[i], min_opset_version[i],
                                 max_opset_version, op_names[i], inputs_name,
                                 outputs_name, inputs_shape, delta, rtol, attrs,
-                                enable_onnx_checker)
+                                enable_onnx_checker, run_dynamic)
             for input_type in input_type_list:
                 input_data = list()
                 for j, shape in enumerate(test_data_shapes):
