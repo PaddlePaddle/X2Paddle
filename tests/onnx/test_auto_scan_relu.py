@@ -39,7 +39,7 @@ class TestReluConvert(OPConvertAutoScanTest):
             "test_data_shapes": [input_shape],
             "test_data_types": [[input_dtype]],
             "inputs_shape": [input_shape],
-            "min_opset_version": 14,
+            "min_opset_version": 7,
             "inputs_name": ["x"],
             "outputs_name": ["y"],
             "delta": 1e-4,
