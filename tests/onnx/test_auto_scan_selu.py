@@ -39,6 +39,7 @@ class TestSeluConvert(OPConvertAutoScanTest):
             alpha = random.random()
 
         gamma = random.uniform(1.1, 3)
+
         config = {
             "op_names": ["Selu"],
             "test_data_shapes": [input_shape],
