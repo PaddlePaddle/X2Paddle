@@ -40,6 +40,7 @@ min_opset_version_map = {
     "Softplus": 7,
     "Sigmoid": 7,
     "Neg": 7,
+    "Softsign": 7,
 }
 
 
@@ -61,7 +62,7 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
             "op_names": [
                 "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh", "Exp",
                 "Floor", "Tan", "Erf", "Sin", "Sinh", "Tanh", "Atanh", "Sign",
-                "Softplus", "Sigmoid", "Neg"
+                "Softplus", "Sigmoid", "Neg", "Softsign"
             ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
