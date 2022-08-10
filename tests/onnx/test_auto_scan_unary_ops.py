@@ -15,9 +15,6 @@
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
 import hypothesis.strategies as st
-import onnx
-from onnx import helper
-from onnx import TensorProto
 import numpy as np
 import unittest
 import random
@@ -40,6 +37,7 @@ min_opset_version_map = {
     "Tanh": 7,
     "Atanh": 9,
     "Sign": 9,
+    "Softplus": 7,
 }
 
 
@@ -59,22 +57,9 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
 
         config = {
             "op_names": [
-                "Cos",
-                "Atan",
-                "Asinh",
-                "Asin",
-                "Acosh",
-                "Acos",
-                "Cosh",
-                "Exp",
-                "Floor",
-                "Tan",
-                "Erf",
-                "Sin",
-                "Sinh",
-                "Tanh",
-                "Atanh",
-                "Sign",
+                "Cos", "Atan", "Asinh", "Asin", "Acosh", "Acos", "Cosh", "Exp",
+                "Floor", "Tan", "Erf", "Sin", "Sinh", "Tanh", "Atanh", "Sign",
+                "Softplus"
             ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
