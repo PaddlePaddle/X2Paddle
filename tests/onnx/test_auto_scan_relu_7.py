@@ -23,7 +23,7 @@ import unittest
 class TestReluConvert(OPConvertAutoScanTest):
     """
     ONNX op: Relu
-    OPset version: 7~15
+    OPset version: 7~13
     """
 
     def sample_convert_config(self, draw):
@@ -32,7 +32,7 @@ class TestReluConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=2, max_value=6), min_size=2, max_size=5))
 
-        input_dtype = draw(st.sampled_from(["int32", "float32"]))
+        input_dtype = draw(st.sampled_from(["float32"]))
 
         config = {
             "op_names": ["Relu"],
@@ -40,6 +40,7 @@ class TestReluConvert(OPConvertAutoScanTest):
             "test_data_types": [[input_dtype]],
             "inputs_shape": [input_shape],
             "min_opset_version": 7,
+            "max_opset_version": 13,
             "inputs_name": ["x"],
             "outputs_name": ["y"],
             "delta": 1e-4,
