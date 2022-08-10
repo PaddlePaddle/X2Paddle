@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .opset11 import OpSet11
+from x2paddle.core.util import *
 
 
 def print_mapping_info(func):
