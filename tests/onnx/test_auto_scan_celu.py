@@ -32,7 +32,6 @@ class TestCeluConvert(OPConvertAutoScanTest):
                 st.integers(
                     min_value=20, max_value=30), min_size=3, max_size=5))
         input_dtype = draw(st.sampled_from(["float32"]))
-        
         alpha = random.random()
 
         config = {
