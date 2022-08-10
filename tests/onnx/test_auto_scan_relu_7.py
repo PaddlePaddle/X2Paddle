@@ -14,16 +14,16 @@
 
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
+from onnxbase import randtool
 import hypothesis.strategies as st
 import numpy as np
 import unittest
-import random
 
 
-class TestHardSigmoidCovert(OPConvertAutoScanTest):
+class TestReluConvert(OPConvertAutoScanTest):
     """
-    ONNX op: HardSigmoid
-    OPset version: 7~15
+    ONNX op: Relu
+    OPset version: 7~13
     """
 
     def sample_convert_config(self, draw):
@@ -34,14 +34,8 @@ class TestHardSigmoidCovert(OPConvertAutoScanTest):
 
         input_dtype = draw(st.sampled_from(["float32"]))
 
-        for i in range(2):
-            alpha = random.random()
-
-        for i in range(2):
-            beta = random.random()
-
         config = {
-            "op_names": ["HardSigmoid"],
+            "op_names": ["Relu"],
             "test_data_shapes": [input_shape],
             "test_data_types": [[input_dtype]],
             "inputs_shape": [input_shape],
@@ -52,10 +46,7 @@ class TestHardSigmoidCovert(OPConvertAutoScanTest):
             "rtol": 1e-4
         }
 
-        attrs = {
-            "alpha": alpha,
-            "beta": beta,
-        }
+        attrs = {}
 
         return (config, attrs)
 
