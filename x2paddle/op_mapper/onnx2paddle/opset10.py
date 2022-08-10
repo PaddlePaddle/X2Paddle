@@ -34,3 +34,15 @@ class OpSet10(OpSet9):
         super(OpSet10, self).__init__(decoder, paddle_graph)
         # Support Mod op Since opset version >= 10
         self.elementwise_ops.update({"Mod": "paddle.mod"})
+
+    @print_mapping_info
+    def IsInf(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        if node.get_attr('detect_negative') != None or node.get_attr(
+                'detect_positive') != None:
+            raise Exception(
+                "x2addle does not currently support IsINF with attributes 'detect_negative' and 'detect_positive'."
+            )
+        else:
+            self.paddle_graph.add_layer(
+                'paddle.isinf', inputs={"x": val_x.name}, outputs=[node.name])
