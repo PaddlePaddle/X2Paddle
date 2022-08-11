@@ -31,7 +31,6 @@ class TestHardSigmoidCovert(OPConvertAutoScanTest):
             st.lists(
                 st.integers(
                     min_value=2, max_value=6), min_size=2, max_size=5))
-
         input_dtype = draw(st.sampled_from(["float32"]))
 
         alpha = random.random()
