@@ -23,7 +23,7 @@ import unittest
 class TestAveragePoolConvert(OPConvertAutoScanTest):
     """
     ONNX op: AveragePool
-    OPset version: 7~15
+    OPset version: 7~9
     """
 
     def sample_convert_config(self, draw):
