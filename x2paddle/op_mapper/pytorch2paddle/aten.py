@@ -1410,8 +1410,6 @@ def aten__convolution_mode(mapper, graph, node):
             outputs=layer_outputs,
             scope_name=scope_name,
             **layer_attrs)
-    print("================")
-    print(layer_attrs)
     return current_inputs, current_outputs
 
 
