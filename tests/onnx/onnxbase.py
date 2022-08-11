@@ -19,6 +19,7 @@ import numpy as np
 import logging
 import paddle
 import onnx
+import shutil
 from onnx import helper
 from onnx import TensorProto
 from onnxruntime import InferenceSession
@@ -46,7 +47,7 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             expect = expect[0]
         expect = np.array(expect)
         res = np.allclose(result, expect, atol=delta, rtol=rtol, equal_nan=True)
-        # 出错打印错误数据
+        # print wrong results
         if res is False:
             if result.dtype == np.bool_:
                 diff = abs(result.astype("int32") - expect.astype("int32"))
@@ -214,6 +215,9 @@ class ONNXConverter(object):
             # run
             model = paddle.jit.load(paddle_path)
             result = model(*paddle_tensor_feed)
+        shutil.rmtree(
+            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
+                         '_paddle/'))
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             result = tuple(out.numpy() for out in result)
@@ -293,8 +297,6 @@ class ONNXConverter(object):
                 self._onnx_to_paddle(ver=v)
                 onnx_res[str(v)] = self._mk_onnx_res(ver=v)
                 paddle_res[str(v)] = self._mk_paddle_res(ver=v)
-
-            for v in range(self.min_opset_version, self.max_opset_version + 1):
                 compare(
                     onnx_res[str(v)],
                     paddle_res[str(v)],
