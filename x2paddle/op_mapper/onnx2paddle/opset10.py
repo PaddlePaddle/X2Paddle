@@ -46,8 +46,6 @@ def _get_same_padding(in_size, kernel_size, stride, autopad):
 class OpSet10(OpSet9):
     def __init__(self, decoder, paddle_graph):
         super(OpSet10, self).__init__(decoder, paddle_graph)
-        # Support Mod op Since opset version >= 10
-        self.elementwise_ops.update({"Mod": "paddle.mod"})
 
     @print_mapping_info
     def AveragePool(self, node):
@@ -99,3 +97,18 @@ class OpSet10(OpSet9):
             inputs={'x': val_x if isinstance(val_x, str) else val_x.name},
             outputs=layer_outputs,
             **layer_attrs)
+
+    @print_mapping_info
+    def Mod(self, node):
+        # Support Mod op Since opset version >= 10
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        val_y = self.graph.get_input_node(node, idx=1, copy=True)
+        input_dtype = str(val_x.dtype)
+        assert "int" in input_dtype, 'Now only support int32 or int64 dtype'
+        fmod = node.get_attr('fmod', 0)
+        assert fmod == 0, 'Now only support fmod == 0'
+        self.paddle_graph.add_layer(
+            'paddle.mod',
+            inputs={"x": val_x.name,
+                    "y": val_y.name},
+            outputs=[node.name])
