@@ -185,7 +185,6 @@ class TorchConverter(object):
             model.set_dict(restore)
             model.eval()
             result = model(*paddle_tensor_feed)
-            shutil.rmtree(paddle_path)
         else:
             paddle_path = os.path.join(
                 self.pwd, self.name,
@@ -194,6 +193,7 @@ class TorchConverter(object):
             # run
             model = paddle.jit.load(paddle_path)
             result = model(*paddle_tensor_feed)
+        shutil.rmtree(os.path.join(self.pwd, self.name))
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             result = tuple(out.numpy() for out in result)
@@ -232,7 +232,5 @@ class TorchConverter(object):
             # run torch api and make torch res
             self._torch_to_paddle()
             torch_res = self._mk_torch_res()
-            print(torch_res[0].shape)
             paddle_res = self._mk_paddle_res()
-
             compare(torch_res, paddle_res, delta=self.delta, rtol=self.rtol)
