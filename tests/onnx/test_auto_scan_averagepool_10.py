@@ -97,7 +97,7 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
         return (config, attrs)
 
     def test(self):
-        self.run_and_statis(max_examples=300)
+        self.run_and_statis(max_examples=30)
 
 
 if __name__ == "__main__":
