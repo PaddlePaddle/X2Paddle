@@ -30,8 +30,9 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
-
+                    min_value=20, max_value=30), min_size=4, max_size=4))
+        # BS = 1
+        input_shape[0] = 1
         kernel_size = draw(
             st.lists(
                 st.integers(
@@ -40,7 +41,7 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
         strides = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=5), min_size=2, max_size=2))
+                    min_value=1, max_value=2), min_size=2, max_size=2))
 
         if draw(st.booleans()):
             auto_pad = "NOTSET"
@@ -96,7 +97,7 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
         return (config, attrs)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=300)
 
 
 if __name__ == "__main__":

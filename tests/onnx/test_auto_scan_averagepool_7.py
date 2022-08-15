@@ -40,7 +40,7 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
         strides = draw(
             st.lists(
                 st.integers(
-                    min_value=1, max_value=5), min_size=2, max_size=2))
+                    min_value=1, max_value=2), min_size=2, max_size=2))
 
         if draw(st.booleans()):
             auto_pad = "NOTSET"
