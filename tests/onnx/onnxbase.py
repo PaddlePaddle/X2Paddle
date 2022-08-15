@@ -214,6 +214,7 @@ class ONNXConverter(object):
             paddle.disable_static()
             # run
             model = paddle.jit.load(paddle_path)
+            model.eval()
             result = model(*paddle_tensor_feed)
         shutil.rmtree(
             os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
