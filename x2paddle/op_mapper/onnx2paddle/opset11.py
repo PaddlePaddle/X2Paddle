@@ -14,7 +14,7 @@
 
 from .opset10 import OpSet10
 
-from x2paddle.decoder.onnx_decoder import ONNXGraph, ONNXGraphNode, ONNXGraphDataNode
+from x2paddle.decoder.onnx_decoder import ONNXGraphDataNode
 from x2paddle.core.util import *
 
 
