@@ -107,7 +107,7 @@ class ONNXConverter(object):
                  rtol=1e-5,
                  attrs=[],
                  enable_onnx_checker=True,
-                 run_dynamic=False):
+                 run_dynamic=True):
         self.op_type = op_type
         assert isinstance(self.op_type,
                           str), "The dtype of op_type must be string!"
