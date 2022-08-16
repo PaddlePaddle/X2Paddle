@@ -32,3 +32,22 @@ def print_mapping_info(func):
 class OpSet12(OpSet11):
     def __init__(self, decoder, paddle_graph):
         super(OpSet12, self).__init__(decoder, paddle_graph)
+
+    @print_mapping_info
+    def ArgMin(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axis = node.get_attr('axis')
+        keepdims = False if node.get_attr('keepdims') == 0 else True
+        select_last_index = node.get_attr('select_last_index')
+        if select_last_index != 0:
+            raise Exception("lou")
+        layer_attrs = {
+            'axis': axis,
+            'keepdim': keepdims,
+        }
+        if select_last_index == 0:
+            self.paddle_graph.add_layer(
+                'paddle.argmin',
+                inputs={"x": val_x.name},
+                outputs=[node.name],
+                **layer_attrs)
