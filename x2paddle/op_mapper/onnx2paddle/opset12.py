@@ -41,7 +41,7 @@ class OpSet12(OpSet11):
         select_last_index = node.get_attr('select_last_index')
         if select_last_index != 0:
             raise Exception(
-                "Argmin operator conversion when select_last_index is equal to 1 is currently not supported."
+                "ArgMin operator conversion when select_last_index is equal to 1 is currently not supported."
             )
         layer_attrs = {
             'axis': axis,
