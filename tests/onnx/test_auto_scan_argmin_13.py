@@ -39,7 +39,7 @@ class TestLogArgMinConvert(OPConvertAutoScanTest):
 
         keep_dims = draw(st.integers(min_value=0, max_value=1))
 
-        select_last_index = draw(st.integers(min_value=1, max_value=1))
+        select_last_index = draw(st.integers(min_value=0, max_value=0))
         config = {
             "op_names": ["ArgMin"],
             "test_data_shapes": [input_shape],
