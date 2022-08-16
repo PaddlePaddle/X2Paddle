@@ -40,7 +40,9 @@ class OpSet12(OpSet11):
         keepdims = False if node.get_attr('keepdims') == 0 else True
         select_last_index = node.get_attr('select_last_index')
         if select_last_index != 0:
-            raise Exception("lou")
+            raise Exception(
+                "Argmin operator conversion when select_last_index is equal to 1 is currently not supported."
+            )
         layer_attrs = {
             'axis': axis,
             'keepdim': keepdims,
