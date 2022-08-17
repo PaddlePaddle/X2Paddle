@@ -107,7 +107,7 @@ class ONNXConverter(object):
                  rtol=1e-5,
                  attrs=[],
                  enable_onnx_checker=True,
-                 run_dynamic=True):
+                 run_dynamic=False):
         self.op_type = op_type
         assert isinstance(self.op_type,
                           str), "The dtype of op_type must be string!"
@@ -216,9 +216,7 @@ class ONNXConverter(object):
             model = paddle.jit.load(paddle_path)
             model.eval()
             result = model(*paddle_tensor_feed)
-        shutil.rmtree(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
-                         '_paddle/'))
+        shutil.rmtree(os.path.join(self.pwd, self.name))
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             result = tuple(out.numpy() for out in result)
