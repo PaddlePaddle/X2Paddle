@@ -198,6 +198,10 @@ class ONNXConverter(object):
             paddle_tensor_feed.append(
                 paddle.to_tensor(self.input_feed[self.inputs_name[i]]))
 
+        ## PaddleInference not support float64
+        if "float64" in self.inputs_dtype:
+            self.run_dynamic = True
+
         if self.run_dynamic:
             paddle_path = os.path.join(self.pwd, self.name,
                                        self.name + '_' + str(ver) + '_paddle/')
