@@ -33,6 +33,7 @@ class TestSumConvert(OPConvertAutoScanTest):
                     min_value=10, max_value=20), min_size=2, max_size=4))
 
         input_dtype = draw(st.sampled_from(["float32"]))
+
         config = {
             "op_names": ["Sum"],
             "test_data_shapes": [input1_shape, input1_shape],
