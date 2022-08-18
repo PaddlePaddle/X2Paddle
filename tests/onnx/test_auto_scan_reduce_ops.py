@@ -43,7 +43,6 @@ class TestReduceOpsConvert(OPConvertAutoScanTest):
                 max_size=1))
 
         keep_dim = draw(st.integers(min_value=0, max_value=1))
-
         config = {
             "op_names": ["ReduceL1", "ReduceL2"],
             "test_data_shapes": [input_shape],
