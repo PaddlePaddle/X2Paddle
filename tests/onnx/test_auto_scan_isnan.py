@@ -46,7 +46,6 @@ class TestIsNaNConcert(OPConvertAutoScanTest):
             "run_dynamic": True,
         }
         attrs = {}
-
         return (config, attrs)
 
     def test(self):
