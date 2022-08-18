@@ -34,7 +34,6 @@ class TestLogClipConvert(OPConvertAutoScanTest):
         input_dtype = draw(st.sampled_from(["float"]))
 
         min = random.uniform(-10, 10)
-
         max = random.uniform(11, 20)
 
         config = {
