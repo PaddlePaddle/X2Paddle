@@ -80,7 +80,6 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
         config["min_opset_version"] = min_opset_versions
 
         attrs = {}
-
         return (config, attrs)
 
     def test(self):
