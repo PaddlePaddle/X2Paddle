@@ -35,7 +35,6 @@ class TestLogClipConvert(OPConvertAutoScanTest):
 
         min = random.uniform(-10, 10)
         max = random.uniform(11, 20)
-
         config = {
             "op_names": ["Clip"],
             "test_data_shapes": [input_shape],
