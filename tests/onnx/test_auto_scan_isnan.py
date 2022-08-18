@@ -45,7 +45,6 @@ class TestIsNaNConcert(OPConvertAutoScanTest):
             "rtol": 1e-4,
             "run_dynamic": True,
         }
-
         attrs = {}
 
         return (config, attrs)
