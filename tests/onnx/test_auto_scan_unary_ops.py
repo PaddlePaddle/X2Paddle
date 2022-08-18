@@ -73,7 +73,6 @@ class TestUnaryopsConcert(OPConvertAutoScanTest):
             "delta": 1e-4,
             "rtol": 1e-4
         }
-
         min_opset_versions = list()
         for op_name in config["op_names"]:
             min_opset_versions.append(min_opset_version_map[op_name])
