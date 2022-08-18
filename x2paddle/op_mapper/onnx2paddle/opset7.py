@@ -139,7 +139,6 @@ class OpSet7(OpSet):
         alphas = node.get_attr('alpha', 1.67326)
         scales = node.get_attr('gamma', 1.0507)
         layer_attrs = dict()
-
         self.paddle_graph.add_layer(
             "paddle.nn.SELU",
             inputs={"x": val_x.name},
