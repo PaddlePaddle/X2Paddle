@@ -47,7 +47,6 @@ class TestReluConvert(OPConvertAutoScanTest):
         }
 
         attrs = {}
-
         return (config, attrs)
 
     def test(self):
