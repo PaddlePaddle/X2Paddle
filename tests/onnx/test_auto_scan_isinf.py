@@ -47,7 +47,6 @@ class TestIsInfConvert(OPConvertAutoScanTest):
         }
 
         attrs = {}
-
         return (config, attrs)
 
     def test(self):
