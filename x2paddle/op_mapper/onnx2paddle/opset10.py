@@ -112,3 +112,17 @@ class OpSet10(OpSet9):
             inputs={"x": val_x.name,
                     "y": val_y.name},
             outputs=[node.name])
+
+    @print_mapping_info
+    def IsInf(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        if node.get_attr('detect_negative') != None or node.get_attr(
+                'detect_positive') != None:
+            if node.get_attr('detect_negative') != 1 or node.get_attr(
+                    'detect_positive') != 1:
+                raise Exception(
+                    "x2addle does not currently support IsINF with attributes 'detect_negative' and 'detect_positive'."
+                )
+        else:
+            self.paddle_graph.add_layer(
+                'paddle.isinf', inputs={"x": val_x.name}, outputs=[node.name])
