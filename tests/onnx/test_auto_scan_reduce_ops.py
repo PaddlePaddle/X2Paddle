@@ -19,6 +19,11 @@ import numpy as np
 import unittest
 import random
 
+min_opset_version_map = {
+    "ReduceL1": 7,
+    "ReduceL2": 7,
+}
+
 
 class TestReduceOpsConvert(OPConvertAutoScanTest):
     """
@@ -30,7 +35,7 @@ class TestReduceOpsConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=20, max_value=30), min_size=3, max_size=5))
+                    min_value=10, max_value=20), min_size=3, max_size=5))
 
         input_dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
 
@@ -55,6 +60,10 @@ class TestReduceOpsConvert(OPConvertAutoScanTest):
             "delta": 1e-4,
             "rtol": 1e-4,
         }
+        min_opset_versions = list()
+        for op_name in config["op_names"]:
+            min_opset_versions.append(min_opset_version_map[op_name])
+        config["min_opset_version"] = min_opset_versions
 
         attrs = {
             "axes": axes,
