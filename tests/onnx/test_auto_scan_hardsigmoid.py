@@ -14,49 +14,45 @@
 
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
-from onnxbase import randtool
 import hypothesis.strategies as st
 import numpy as np
 import unittest
+import random
 
 
-class TestModConvert(OPConvertAutoScanTest):
+class TestHardSigmoidCovert(OPConvertAutoScanTest):
     """
-    ONNX op: Mod
-    OPset version: 10~15
+    ONNX op: HardSigmoid
+    OPset version: 7~15
     """
 
     def sample_convert_config(self, draw):
-        input1_shape = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
+                    min_value=2, max_value=6), min_size=2, max_size=5))
+        input_dtype = draw(st.sampled_from(["float32"]))
 
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[-1]]
-        else:
-            input2_shape = input1_shape
+        alpha = random.random()
 
-        def generator_data():
-            input_data = randtool("float", -5.0, 5.0, input2_shape)
-            input_data[abs(input_data) < 1.0] = 1.0
-            return input_data
-
-        input_dtype = draw(st.sampled_from(["int32", "int64"]))
+        beta = random.random()
 
         config = {
-            "op_names": ["Mod"],
-            "test_data_shapes": [input1_shape, generator_data],
-            "test_data_types": [[input_dtype], [input_dtype]],
-            "inputs_shape": [],
-            "min_opset_version": 10,
-            "inputs_name": ["x", "y"],
-            "outputs_name": ["z"],
+            "op_names": ["HardSigmoid"],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [[input_dtype]],
+            "inputs_shape": [input_shape],
+            "min_opset_version": 7,
+            "inputs_name": ["x"],
+            "outputs_name": ["y"],
             "delta": 1e-4,
             "rtol": 1e-4
         }
 
-        attrs = {"fmod": 0 if "int" in input_dtype else 1, }
+        attrs = {
+            "alpha": alpha,
+            "beta": beta,
+        }
 
         return (config, attrs)
 

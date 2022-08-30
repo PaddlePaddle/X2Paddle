@@ -14,54 +14,42 @@
 
 from auto_scan_test import OPConvertAutoScanTest
 from hypothesis import reproduce_failure
-from onnxbase import randtool
 import hypothesis.strategies as st
 import numpy as np
 import unittest
+import random
 
 
-class TestModConvert(OPConvertAutoScanTest):
+class TestIsNaNConcert(OPConvertAutoScanTest):
     """
-    ONNX op: Mod
-    OPset version: 10~15
+    ONNX op: IsNaN
+    OPset version: 9~15
     """
 
     def sample_convert_config(self, draw):
-        input1_shape = draw(
+        input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=2, max_size=4))
-
-        if draw(st.booleans()):
-            input2_shape = [input1_shape[-1]]
-        else:
-            input2_shape = input1_shape
-
-        def generator_data():
-            input_data = randtool("float", -5.0, 5.0, input2_shape)
-            input_data[abs(input_data) < 1.0] = 1.0
-            return input_data
-
-        input_dtype = draw(st.sampled_from(["int32", "int64"]))
+                    min_value=20, max_value=30), min_size=3, max_size=5))
+        input_dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            "op_names": ["Mod"],
-            "test_data_shapes": [input1_shape, generator_data],
-            "test_data_types": [[input_dtype], [input_dtype]],
-            "inputs_shape": [],
-            "min_opset_version": 10,
-            "inputs_name": ["x", "y"],
-            "outputs_name": ["z"],
+            "op_names": ["IsNaN", ],
+            "test_data_shapes": [input_shape],
+            "test_data_types": [input_dtype],
+            "inputs_shape": [input_shape],
+            "min_opset_version": 9,
+            "inputs_name": ["x"],
+            "outputs_name": ["y"],
             "delta": 1e-4,
-            "rtol": 1e-4
+            "rtol": 1e-4,
+            "run_dynamic": True,
         }
-
-        attrs = {"fmod": 0 if "int" in input_dtype else 1, }
-
+        attrs = {}
         return (config, attrs)
 
     def test(self):
-        self.run_and_statis(max_examples=30)
+        self.run_and_statis(max_examples=50)
 
 
 if __name__ == "__main__":
