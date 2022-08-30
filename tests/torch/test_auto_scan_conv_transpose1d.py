@@ -78,7 +78,7 @@ class TestConvtranspose1dConvert(OPConvertAutoScanTest):
         input_shape = draw(
             st.lists(
                 st.integers(
-                    min_value=10, max_value=20), min_size=3, max_size=3))
+                    min_value=20, max_value=30), min_size=3, max_size=3))
         # BS = 1
         input_shape[0] = 1
         kernel_size = draw(
@@ -123,12 +123,12 @@ class TestConvtranspose1dConvert(OPConvertAutoScanTest):
         output_padding_type = draw(st.sampled_from(["int", "tuple"]))
         output_padding = None
         if output_padding_type == "int":
-            output_padding = draw(st.integers(min_value=0, max_value=1))
+            output_padding = draw(st.integers(min_value=0, max_value=0))
         else:
             output_padding = draw(
                 st.lists(
                     st.integers(
-                        min_value=0, max_value=1),
+                        min_value=0, max_value=0),
                     min_size=1,
                     max_size=1))
 
