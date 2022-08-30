@@ -21,6 +21,9 @@ import logging
 import paddle
 import torch
 
+from paddle.inference import create_predictor, PrecisionType
+from paddle.inference import Config
+
 
 def compare(result, expect, delta=1e-10, rtol=1e-10):
     """
@@ -170,8 +173,13 @@ class TorchConverter(object):
         """
         # input data
         paddle_tensor_feed = list()
+        result = list()
         for i in range(len(self.input_feed)):
             paddle_tensor_feed.append(paddle.to_tensor(self.input_feed[str(i)]))
+
+        ## PaddleInference not support float64
+        if "float64" in self.inputs_dtype:
+            self.run_dynamic = True
 
         if self.run_dynamic:
             paddle_path = os.path.join(self.pwd, self.name,
@@ -186,20 +194,47 @@ class TorchConverter(object):
             model.eval()
             result = model(*paddle_tensor_feed)
         else:
-            paddle_path = os.path.join(
+            paddle_model_path = os.path.join(
                 self.pwd, self.name,
-                self.name + '_paddle/inference_model/model')
-            paddle.disable_static()
-            # run
-            model = paddle.jit.load(paddle_path)
-            model.eval()
-            result = model(*paddle_tensor_feed)
+                self.name + '_paddle/inference_model/model.pdmodel')
+            paddle_param_path = os.path.join(
+                self.pwd, self.name,
+                self.name + '_paddle/inference_model/model.pdiparams')
+            config = Config()
+            config.set_prog_file(paddle_model_path)
+            if os.path.exists(paddle_param_path):
+                config.set_params_file(paddle_param_path)
+            # initial GPU memory(M), device ID
+            config.enable_use_gpu(200, 0)
+            # optimize graph and fuse op
+            config.switch_ir_optim(False)
+            config.enable_memory_optim()
+            # disable feed, fetch OP, needed by zero_copy_run
+            config.switch_use_feed_fetch_ops(False)
+            config.disable_glog_info()
+            pass_builder = config.pass_builder()
+            predictor = create_predictor(config)
+            input_names = predictor.get_input_names()
+            output_names = predictor.get_output_names()
+            for i in range(len(input_names)):
+                input_tensor = predictor.get_input_handle(input_names[i])
+                input_tensor.copy_from_cpu(self.input_feed[str(i)])
+            predictor.run()
+            for output_name in output_names:
+                output_tensor = predictor.get_output_handle(output_name)
+                result.append(output_tensor.copy_to_cpu())
         shutil.rmtree(os.path.join(self.pwd, self.name))
         # get paddle outputs
         if isinstance(result, (tuple, list)):
-            result = tuple(out.numpy() for out in result)
+            if isinstance(result[0], np.ndarray):
+                result = tuple(out for out in result)
+            else:
+                result = tuple(out.numpy() for out in result)
         else:
-            result = (result.numpy(), )
+            if isinstance(result, np.ndarray):
+                result = (result, )
+            else:
+                result = (result.numpy(), )
         return result
 
     def _mk_torch_res(self, ):
