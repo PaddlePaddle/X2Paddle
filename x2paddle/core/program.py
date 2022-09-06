@@ -260,7 +260,7 @@ class PaddleGraph(object):
 
         return update(self.layers)
 
-    def gen_model(self, save_dir, jit_type=None, enable_code_optim=True):
+    def gen_model(self, save_dir, jit_type=None, enable_code_optim=False):
         if not osp.exists(save_dir):
             os.makedirs(save_dir)
         if jit_type == "trace":

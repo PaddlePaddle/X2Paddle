@@ -40,7 +40,7 @@ pytorch2paddle(module=torch_module,
 import torch
 import numpy as np
 from torchvision.models import AlexNet
-from torchvision.models.utils import load_state_dict_from_url
+from torch.hub import load_state_dict_from_url
 # 构建输入
 input_data = np.random.rand(1, 3, 224, 224).astype("float32")
 # 获取PyTorch Module

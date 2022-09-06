@@ -93,7 +93,7 @@ def arg_parser():
     parser.add_argument(
         "--enable_code_optim",
         "-co",
-        default=True,
+        default=False,
         help="Turn on code optimization")
     parser.add_argument(
         "--enable_onnx_checker",
@@ -329,7 +329,7 @@ def pytorch2paddle(module,
                    save_dir,
                    jit_type="trace",
                    input_examples=None,
-                   enable_code_optim=True,
+                   enable_code_optim=False,
                    convert_to_lite=False,
                    lite_valid_places="arm",
                    lite_model_type="naive_buffer",
