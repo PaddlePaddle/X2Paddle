@@ -63,7 +63,7 @@ x2paddle.convert.onnx2paddle(model_path, save_dir, convert_to_lite=False, lite_v
 ## <h2 id="4">x2paddle.convert.pytorch2paddle</h2>
 
 ```python
-x2paddle.convert.pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None, enable_code_optim=True, convert_to_lite=False, lite_valid_places="arm", lite_model_type="naive_buffer")
+x2paddle.convert.pytorch2paddle(module, save_dir, jit_type="trace", input_examples=None, enable_code_optim=False, convert_to_lite=False, lite_valid_places="arm", lite_model_type="naive_buffer")
 ```
 
 > 转换Pytorch模型。
@@ -74,7 +74,7 @@ x2paddle.convert.pytorch2paddle(module, save_dir, jit_type="trace", input_exampl
 > > - **save_dir** (str): 转换后模型保存路径
 > > - **jit_type** (str): 转换方式。目前有两种:trace和script, 默认为trace
 > > - **input_examples** (list[torch.tensor]): torch.nn. Module的输入示例，list的长度必须与输入的长度一致。默认为None
-> > - **enable_code_optim** (bool): 转换后的代码是否进行优化, 默认为True
+> > - **enable_code_optim** (bool): 转换后的代码是否进行优化, 默认为False
 > > - **convert_to_lite** (bool): 是否使用opt工具转成Paddle-Lite支持格式，默认为False
 > > - **lite_valid_places** (str): 指定转换类型，可以同时指定多个backend(以逗号分隔)，opt将会自动选择最佳方式，默认为arm
 > > - **lite_model_type** (str): 指定模型转化类型，目前支持两种类型：protobuf和naive_buffer，默认为naive_buffer
