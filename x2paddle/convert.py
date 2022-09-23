@@ -74,6 +74,13 @@ def arg_parser():
         default=False,
         help="define input shape for tf model")
     parser.add_argument(
+       "--input_shape_dict",
+       "-isd",
+       type=_text_type,
+       default=None,
+       help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
+       "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
+    parser.add_argument(
         "--convert_torch_project",
         "-tp",
         action='store_true',
@@ -265,6 +272,7 @@ def caffe2paddle(proto_file,
 
 def onnx2paddle(model_path,
                 save_dir,
+                input_shape_dict=None,
                 convert_to_lite=False,
                 lite_valid_places="arm",
                 lite_model_type="naive_buffer",
@@ -292,7 +300,7 @@ def onnx2paddle(model_path,
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
-    model = ONNXDecoder(model_path, enable_onnx_checker)
+    model = ONNXDecoder(model_path, input_shape_dict, enable_onnx_checker)
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     logging.info("Model optimizing ...")
@@ -481,6 +489,7 @@ def main():
             onnx2paddle(
                 args.model,
                 args.save_dir,
+                input_shape_dict=args.input_shape_dict,
                 convert_to_lite=args.to_lite,
                 lite_valid_places=args.lite_valid_places,
                 lite_model_type=args.lite_model_type,
