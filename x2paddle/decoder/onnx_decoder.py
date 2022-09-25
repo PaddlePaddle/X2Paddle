@@ -173,9 +173,12 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, onnx_model):
+    def __init__(self, onnx_model, input_shape_dict):
         super(ONNXGraph, self).__init__(onnx_model)
         self.fixed_input_shape = {}
+        if input_shape_dict is not None:
+            for k, v in eval(input_shape_dict).items():
+                self.fixed_input_shape["x2paddle_" + k] = v
         self.initializer = {}
         self.place_holder_nodes = list()
         self.value_infos = {}
@@ -216,37 +219,6 @@ class ONNXGraph(Graph):
                 shape.append(dim.dim_value)
         return shape
 
-    def check_input_shape(self, vi):
-        if vi.type.HasField('tensor_type'):
-            for dim in vi.type.tensor_type.shape.dim:
-                if dim.HasField(
-                        'dim_param') and vi.name not in self.fixed_input_shape:
-                    shape = self.get_symbolic_shape(
-                        vi.type.tensor_type.shape.dim)
-                    print(
-                        "Unknown shape for input tensor[tensor name: '{}'] -> shape: {}, Please define shape of input here,\nNote:you can use visualization tools like Netron to check input shape."
-                        .format(vi.name, shape))
-                    right_shape_been_input = False
-                    while not right_shape_been_input:
-                        try:
-                            shape = raw_input(
-                                "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
-                            )
-                        except NameError:
-                            shape = input(
-                                "Shape of Input(e.g. -1,3,224,224), enter 'N' to skip: "
-                            )
-                        if shape.count("-1") > 1:
-                            print("Only 1 dimension can be -1, type again:)")
-                        else:
-                            right_shape_been_input = True
-                    if shape == 'N':
-                        break
-                    shape = [int(dim) for dim in shape.strip().split(',')]
-                    assert shape.count(-1) <= 1, "Only one dimension can be -1"
-                    self.fixed_input_shape[vi.name] = shape
-                    break
-
     def get_place_holder_nodes(self):
         """
         generate place_holder node of ONNX model
@@ -254,7 +226,6 @@ class ONNXGraph(Graph):
         inner_nodes = self.get_inner_nodes()
         for ipt_vi in self.graph.input:
             if ipt_vi.name not in inner_nodes:
-                self.check_input_shape(ipt_vi)
                 self.place_holder_nodes.append(ipt_vi.name)
 
     def get_output_nodes(self):
@@ -416,7 +387,7 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model, enable_onnx_checker):
+    def __init__(self, onnx_model, input_shape_dict, enable_onnx_checker):
         onnx_model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             onnx_model.ir_version, onnx_model.opset_import[0].version))
@@ -427,7 +398,7 @@ class ONNXDecoder(object):
 
         onnx_model = self.optimize_model_skip_op(onnx_model)
         onnx_model = self.optimize_node_name(onnx_model)
-        self.graph = ONNXGraph(onnx_model)
+        self.graph = ONNXGraph(onnx_model, input_shape_dict)
 
     def build_value_refs(self, nodes):
         """

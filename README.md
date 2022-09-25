@@ -115,6 +115,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 | --weight             | 当framework为caffe时，该参数指定caffe模型的参数文件路径      |
 | --save_dir           | 指定转换后的模型保存目录路径                                 |
 | --model              | 当framework为tensorflow/onnx时，该参数指定tensorflow的pb模型文件或onnx模型路径 |
+| --input_shape_dict   | **[可选]** For ONNX, 定义ONNX模型输入大小 |
 | --caffe_proto        | **[可选]** 由caffe.proto编译成caffe_pb2.py文件的存放路径，当存在自定义Layer时使用，默认为None |
 | --define_input_shape | **[可选]** For TensorFlow, 当指定该参数时，强制用户输入每个Placeholder的shape，见[文档Q2](./docs/inference_model_convertor/FAQ.md) |
 | --enable_code_optim  | **[可选]** For PyTorch, 是否对生成代码进行优化，默认为False |
