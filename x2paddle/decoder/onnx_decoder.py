@@ -184,14 +184,15 @@ class ONNXGraph(Graph):
         self.value_infos = {}
         self.graph = onnx_model.graph
         self.get_place_holder_nodes()
-        print("shape inferencing ...")
-        self.graph = SymbolicShapeInference.infer_shapes(
-            onnx_model, fixed_input_shape=self.fixed_input_shape)
-        if self.graph is None:
+        print("Shape inferencing ...")
+        try:
+            self.graph = SymbolicShapeInference.infer_shapes(
+                onnx_model, fixed_input_shape=self.fixed_input_shape)
+        except:
             print('[WARNING] Shape inference by ONNX offical interface.')
             onnx_model = shape_inference.infer_shapes(onnx_model)
             self.graph = onnx_model.graph
-        print("shape inferenced.")
+        print("Shape inferenced.")
         self.build()
         self.collect_value_infos()
         self.allocate_shapes()

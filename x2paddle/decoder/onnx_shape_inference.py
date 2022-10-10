@@ -265,7 +265,7 @@ class SymbolicShapeInference:
         if pending_nodes and self.verbose_ > 0:
             print('SymbolicShapeInference: orphaned nodes discarded: ')
             print(
-                *[n.op_type + ': ' + n.output[0] for n in pending_nodes],
+                * [n.op_type + ': ' + n.output[0] for n in pending_nodes],
                 sep='\n')
 
         if input_shapes is not None:
@@ -1588,7 +1588,9 @@ class SymbolicShapeInference:
         assert version.parse(onnx.__version__) >= version.parse("1.5.0")
         onnx_opset = get_opset(in_mp)
         if not onnx_opset or onnx_opset < 7:
-            print('[WARNING] Symbolic shape inference only support models of onnx opset 7 and above.')
+            print(
+                '[WARNING] Symbolic shape inference only support models of onnx opset 7 and above.'
+            )
             return
         symbolic_shape_inference = SymbolicShapeInference(
             int_max, auto_merge, guess_output_rank, verbose)
