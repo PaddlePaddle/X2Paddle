@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from x2paddle.core.graph import GraphNode, Graph
+from x2paddle.decoder.onnx_shape_inference import SymbolicShapeInference
 from onnx.checker import ValidationError
 from onnx.checker import check_model
 from onnx import helper, shape_inference
@@ -184,8 +185,13 @@ class ONNXGraph(Graph):
         self.graph = onnx_model.graph
         self.get_place_holder_nodes()
         print("Shape inferencing ...")
-        onnx_model = shape_inference.infer_shapes(onnx_model)
-        self.graph = onnx_model.graph
+        try:
+            self.graph = SymbolicShapeInference.infer_shapes(
+                onnx_model, fixed_input_shape=self.fixed_input_shape)
+        except:
+            print('[WARNING] Shape inference by ONNX offical interface.')
+            onnx_model = shape_inference.infer_shapes(onnx_model)
+            self.graph = onnx_model.graph
         print("Shape inferenced.")
         self.build()
         self.collect_value_infos()
