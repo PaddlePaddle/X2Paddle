@@ -4501,10 +4501,10 @@ def aten_rand(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
+    # outputs list
     current_outputs = [output_name]
     current_inputs = []
-    # 处理输入0，即%23，代表end
+    # deal with shape
     if inputs_name[0] in mapper.attrs:
         layer_attrs["shape"] = mapper.attrs[inputs_name[0]]
     else:
@@ -4512,7 +4512,7 @@ def aten_rand(mapper, graph, node):
                             current_outputs, scope_name)
         layer_inputs["shape"] = inputs_name[0]
         current_inputs.append(inputs_name[0])
-    # 处理输入1，即%8，代表dtype
+    # deal with dtype
     layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
 
     graph.add_layer(
@@ -4542,10 +4542,10 @@ def aten_randn(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
+    # outputs list
     current_outputs = [output_name]
     current_inputs = []
-    # 处理输入0，即%23，代表end
+    # deal with shape
     if inputs_name[0] in mapper.attrs:
         layer_attrs["shape"] = mapper.attrs[inputs_name[0]]
     else:
@@ -4553,7 +4553,7 @@ def aten_randn(mapper, graph, node):
                             current_outputs, scope_name)
         layer_inputs["shape"] = inputs_name[0]
         current_inputs.append(inputs_name[0])
-    # 处理输入1，即%8，代表dtype
+    # deal with dtype
     layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
 
     graph.add_layer(
