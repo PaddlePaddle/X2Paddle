@@ -6,6 +6,16 @@
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 ![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
+## 🆕 新开源项目FastDeploy
+
+若您的最终目的是用于模型部署，当前飞桨提供[FastDeploy](https://github.com/PaddlePaddle/FastDeploy)，提供📦**开箱即用**的**云边端**部署体验, 支持超过 🔥150+ **Text**, **Vision**, **Speech**和**跨模态**模型，并实现🔚**端到端**的推理性能优化。
+
+- 欢迎Star🌟 [https://github.com/PaddlePaddle/FastDeploy](https://github.com/PaddlePaddle/FastDeploy)
+- [YOLOv5 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov5)
+- [YOLOv6 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov6)
+- [YOLOv7 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov7)
+- [RetinaFace C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/facedet/retinaface)
+
 **【问卷调查】** 为了更好的推进飞桨框架以及X2Paddle的迭代开发，诚邀您参加我们的问卷，期待您的宝贵意见:https://iwenjuan.baidu.com/?code=npyd51
 
 ## 简介
