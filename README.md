@@ -15,6 +15,7 @@
 - [YOLOv6 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov6)
 - [YOLOv7 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov7)
 - [RetinaFace C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/facedet/retinaface)
+- [YOLOv5Face 安卓部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/java/android#yolov5face-java-api-%E8%AF%B4%E6%98%8E)
 
 **【问卷调查】** 为了更好的推进飞桨框架以及X2Paddle的迭代开发，诚邀您参加我们的问卷，期待您的宝贵意见:https://iwenjuan.baidu.com/?code=npyd51
 
