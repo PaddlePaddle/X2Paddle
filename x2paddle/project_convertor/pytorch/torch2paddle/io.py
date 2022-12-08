@@ -169,7 +169,7 @@ class DataLoader(paddle.io.DataLoader):
             timeout=timeout,
             worker_init_fn=worker_init_fn)
         if sampler is not None:
-            seld.batch_sampler.sampler = sampler
+            self.batch_sampler.sampler = sampler
 
 
 class DistributedSampler(paddle.io.DistributedBatchSampler):
