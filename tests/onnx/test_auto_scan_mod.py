@@ -42,7 +42,7 @@ class TestModConvert(OPConvertAutoScanTest):
             input_data[abs(input_data) < 1.0] = 1.0
             return input_data
 
-        input_dtype = draw(st.sampled_from(["int32", "int64"]))
+        input_dtype = draw(st.sampled_from(["float32", "int32", "int64"]))
 
         config = {
             "op_names": ["Mod"],
