@@ -1946,9 +1946,12 @@ class OpSet():
             "paddle.nonzero",
             inputs={"x": val_x.name},
             outputs=[val_x.name],
-            as_tuple=True)
+            as_tuple=False)
         self.paddle_graph.add_layer(
-            "paddle.concat", inputs={"x": val_x.name}, outputs=[node.name])
+            'paddle.transpose',
+            inputs={"x": val_x.name},
+            outputs=[node.name],
+            perm=[1, 0])
 
     @print_mapping_info
     def Identity(self, node):
