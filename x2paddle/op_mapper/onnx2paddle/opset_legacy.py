@@ -2309,8 +2309,16 @@ class OpSet():
                 rename_mapper=self.rename_mapper)
         else:
             layer_attrs["bias_attr"] = False
-        if reduce(lambda x, y: x * y,
-                  input_shape) in [1, -1] and 1 not in input_shape:
+        # deal with dynamic shape
+        if len(input_shape) == 0:
+            self.paddle_graph.add_layer(
+                "paddle.reshape",
+                inputs=layer_inputs,
+                outputs=[layer_inputs["x"]],
+                shape=[0, num_in_channels * num_groups, 0, -1])
+        if len(input_shape) != 0 and reduce(
+                lambda x, y: x * y,
+                input_shape) in [1, -1] and 1 not in input_shape:
             input_shape[1] = num_in_channels * num_groups
             input_shape[0] = 0
             input_shape[2] = 0

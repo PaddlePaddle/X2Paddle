@@ -38,7 +38,8 @@ class OpSet13(OpSet12):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = self.graph.get_input_node(node, idx=1, copy=True)
         # deal with scalar(0D) tensor
-        if len(val_x.out_shapes[0]) == 0 and len(axes.out_shapes[0]) == 1:
+        if len(val_x.out_shapes[0]) == 0 and len(axes.out_shapes[
+                0]) == 1 and len(node.out_shapes[0]) == 1:
             self.paddle_graph.add_layer(
                 'paddle.reshape',
                 inputs={"x": val_x.name},
