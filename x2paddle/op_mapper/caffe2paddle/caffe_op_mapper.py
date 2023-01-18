@@ -146,7 +146,7 @@ class CaffeOpMapper():
             elif op in self.directly_map_ops:
                 self.directly_map(node)
         print("\nNodes converted.")
-        self.paddle_graph.set_name(self.graph.graph_name)
+        self.paddle_graph.set_name(normalize_str(self.graph.graph_name))
         self.paddle_graph.set_parameters(self.params)
         self.paddle_graph.set_inputs_info(self.inputs_info)
 
@@ -690,7 +690,7 @@ class CaffeOpMapper():
             inputs_dict['x'] = input0_name
             inputs_dict['y'] = input1_name
             self.paddle_graph.add_layer(
-                "paddle.max", inputs=inputs_dict, outputs=[node.layer_name])
+                "paddle.maximum", inputs=inputs_dict, outputs=[node.layer_name])
 
     def BatchNorm(self, node):
         batchnorm_name = name_generator("batchnorm", self.nn_name2id)
@@ -881,9 +881,9 @@ class CaffeOpMapper():
                 k=top_k)
 
     def Axpy(self, node):
-        assert len(node.inputs) == 1 and len(
+        assert len(node.inputs) == 3 and len(
             node.outputs
-        ) == 1, "The count of Axpy node\'s input and output is not 1."
+        ) == 1, "The count of Axpy node\'s input is not 3 or output is not 1."
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.axpy_param
         input0 = self.graph.get_input_node(node, idx=0, copy=True)
@@ -898,15 +898,14 @@ class CaffeOpMapper():
         self.paddle_graph.add_layer(
             "paddle.multiply",
             inputs=inputs_dict,
-            outputs=[node.layer_name + "_mul"],
-            axis=0)
+            outputs=[node.layer_name + "_mul"])
         inputs_dict = {}
         inputs_dict['x'] = node.layer_name + "_mul"
         inputs_dict['y'] = input2_name
         self.paddle_graph.add_layer(
             "paddle.add",
             inputs=inputs_dict,
-            outputs=[node.layer_name + "_mul"])
+            outputs=[node.layer_name])
 
     def Crop(self, node):
         assert len(
@@ -1209,10 +1208,10 @@ class CaffeOpMapper():
         input = self.graph.get_input_node(node, idx=0, copy=True)
         params = node.layer.shuffle_channel_param
         self.paddle_graph.add_layer(
-            "paddle.nn.functional.channel_shuffle",
+            "paddle.fluid.layers.shuffle_channel",
             inputs={"x": input.name},
             outputs=[node.layer_name],
-            groups=params.group)
+            group=params.group)
 
     def Upsample(self, node):
         assert len(

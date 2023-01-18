@@ -16,7 +16,17 @@ import numpy
 import math
 import os
 import inspect
+import re
 
+def normalize_str(title):
+    """ 用于格式化网络的名称，原先生成x2paddle_code.py存在错误
+    :param title: must be str
+    :return:
+    """
+    assert isinstance(title, str)
+    rstr = r"[^a-zA-Z0-9]"
+    new_title = re.sub(rstr, "_", title)  # 替换为下划线
+    return new_title
 
 def string(param):
     """ 生成字符串。
