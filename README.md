@@ -159,31 +159,6 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 3. [PyTorch预测模型转换教程](./docs/inference_model_convertor/demo/pytorch2paddle.ipynb)
 4. [PyTorch训练项目转换教程](./docs/pytorch_project_convertor/demo/README.md)
 
-## 更新历史
-
-**2021.07.09**  
-
-1. 新增MMDetection模型库支持，包括YOLO-V3、FCOS、RetinaNet、SSD、Faster R-CNN以及FSAF，有相关AP精度对比，具体参考[MMDetection模型转换指南](./docs/inference_model_convertor/toolkits/MMDetection2paddle.md)。
-2. 新增PyTorch训练代码转换对[CRAFT](https://github.com/clovaai/CRAFT-pytorch)的支持，新增PyTorch预测模型转换对Seg-Swin-Transformer的支持。
-3. 优化模型预测速度，去除forward函数开头to_tensor操作。
-4. 新增Tensorflow op映射（1个）：Sign。
-5. 新增ONNX op映射（4个）：NMS、ReduceL1、ReduceL2、3D Interpolate。
-
-**2021.05.13**  
-
-- 新增PyTorch训练项目功能：
-  支持转换的项目有[StarGAN](https://github.com/yunjey/stargan)、[Ultra-Light-Fast-Generic-Face-Detector-1MB](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB)。
-
-**2021.04.30**
-
-1. 新增支持转换的模型：[SwinTransformer](https://github.com/microsoft/Swin-Transformer/)、[BASNet](https://github.com/xuebinqin/BASNet)、[DBFace](https://github.com/dlunion/DBFace)、[EasyOCR](https://github.com/JaidedAI/EasyOCR)、[CifarNet](https://github.com/tensorflow/models/blob/master/research/slim/nets/cifarnet.py)等。
-2. 支持Windows上使用本工具。
-3. 新增TensorFlow op映射（4个）：SplitV、ReverseV2、BatchToSpaceND、SpaceToBatchND。
-4. 新增PyTorch op映射（11个）：aten::index、aten::roll、aten::adaptive_avg_pool1d、aten::reflection_pad2d、aten::reflection_pad1d、aten::instance_norm、aten::gru、aten::norm、aten::clamp_min、aten::prelu、aten:split_with_sizes。
-5. 新增ONNX op映射（1个）：DepthToSpace。
-6. 新增Caffe op映射（1个）：MemoryData。
-
-**更多版本更新记录可查阅[X2Paddle发版历史](https://github.com/PaddlePaddle/X2Paddle/releases)**
 
 ## :hugs:贡献代码:hugs:
 
