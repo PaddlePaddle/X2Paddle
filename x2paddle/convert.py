@@ -300,7 +300,7 @@ def onnx2paddle(model_path,
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
     from x2paddle.op_mapper.onnx2paddle.onnx_op_mapper import ONNXOpMapper
-    model = ONNXDecoder(model_path, input_shape_dict, enable_onnx_checker)
+    model = ONNXDecoder(model_path, enable_onnx_checker, input_shape_dict)
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
     logging.info("Model optimizing ...")
