@@ -173,7 +173,7 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
-    def __init__(self, onnx_model, input_shape_dict):
+    def __init__(self, onnx_model, input_shape_dict=None):
         super(ONNXGraph, self).__init__(onnx_model)
         self.fixed_input_shape = {}
         if input_shape_dict is not None:
@@ -395,7 +395,7 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
-    def __init__(self, onnx_model, input_shape_dict, enable_onnx_checker):
+    def __init__(self, onnx_model, enable_onnx_checker, input_shape_dict=None):
         onnx_model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(
             onnx_model.ir_version, onnx_model.opset_import[0].version))
