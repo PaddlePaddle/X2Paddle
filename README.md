@@ -151,6 +151,12 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 详见[PyTorch训练项目转换文档](./docs/pytorch_project_convertor/README.md)。
 
+### 使用VisualDL进行模型转换
+
+飞桨可视化工具VisualDL已经将模型转换工具部署在官网提供服务，可以点击[服务链接](https://www.paddlepaddle.org.cn/paddle/visualdl/modelconverter/)进行在线的ONNX2Paddle模型转换。
+
+![ONNX2Paddle](https://user-images.githubusercontent.com/22424850/226797893-ef697887-a056-445f-933e-f1bbc7c7df76.gif)
+
 
 ## 使用教程
 
