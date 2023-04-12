@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import paddle
-from paddle.fluid.core import VarBase
+from paddle.framework import core
 from x2paddle.utils import paddle_dtypes
 
 
@@ -94,9 +94,9 @@ def __getitem__(self, idx):
         else:
             return out
 
+VarBase = core.eager.Tensor
 
 VarBase.__getitem__ = __getitem__
-
 VarBase.setitem_tmp = VarBase.__setitem__
 
 
