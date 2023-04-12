@@ -53,6 +53,8 @@ def is_condition_two(idx):
     return False
 
 
+VarBase = core.eager.Tensor
+
 VarBase.tmp = VarBase.__getitem__
 
 
@@ -95,9 +97,8 @@ def __getitem__(self, idx):
             return out
 
 
-VarBase = core.eager.Tensor
-
 VarBase.__getitem__ = __getitem__
+
 VarBase.setitem_tmp = VarBase.__setitem__
 
 
