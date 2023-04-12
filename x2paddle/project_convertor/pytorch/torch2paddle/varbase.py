@@ -24,7 +24,7 @@ def is_condition_one(idx):
     a[mask, :]
     a[mask, ...]
     """
-    if not (isinstance(idx[0], paddle.Tensor) and \
+    if not (isinstance(idx[0], paddle.Tensor) and
             idx[0].dtype == paddle_dtypes.t_bool):
         return False
     if len(idx) == 1:
@@ -93,6 +93,7 @@ def __getitem__(self, idx):
             return out.numpy()[0]
         else:
             return out
+
 
 VarBase = core.eager.Tensor
 
