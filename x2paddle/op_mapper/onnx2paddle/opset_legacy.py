@@ -213,6 +213,11 @@ class OpSet():
             attrs_name_map_dict = op_info[1]
             for onnx_attr_name, pd_attr_name in attrs_name_map_dict.items():
                 if onnx_attr_name in onnx_attrs:
+                    # convert for dynamic code, mv 0 to False, 1 to True
+                    if pd_attr_name == "keepdim":
+                        keepdims = False if onnx_attrs[
+                            onnx_attr_name] == 0 else True
+                        onnx_attrs[onnx_attr_name] = keepdims
                     layer_attrs[pd_attr_name] = onnx_attrs[onnx_attr_name]
                 else:
                     layer_attrs[pd_attr_name] = op_info[2][onnx_attr_name]
@@ -340,7 +345,7 @@ class OpSet():
             elif len(node.layer.input) == 3:
                 # opset 11
                 try:
-                    #to avoid the error causeed by NULL value of resize inputs.
+                    # to avoid the error causeed by NULL value of resize inputs.
                     val_scales = self.graph.get_input_node(
                         node, idx=2, copy=True)
                 except:
@@ -912,7 +917,7 @@ class OpSet():
         axis = node.get_attr('axis', 0)
         if len(indices_shape) == 1 or \
             (indices_values is not None and isinstance(indices_values, int)) or \
-            (indices_values is not None and len(indices_values) == 1):
+                (indices_values is not None and len(indices_values) == 1):
             self.paddle_graph.add_layer(
                 'paddle.gather',
                 inputs={'x': val_x.name,
@@ -920,7 +925,7 @@ class OpSet():
                 outputs=[node.name],
                 axis=axis)
             # deal with indice is scalar(0D) Tensor
-            if isinstance(indices_values, int) and len(val_x_shape) > 1:
+            if isinstance(indices_values, int) and len(val_x_shape) != 1:
                 self.paddle_graph.add_layer(
                     'paddle.squeeze',
                     inputs={'x': node.name},
@@ -1150,7 +1155,18 @@ class OpSet():
                         ends_value[idx] = val_x.out_shapes[0][axes[idx]]
                     elif ends_value[idx] > 2**31 - 1:
                         ends_value[idx] = 2**31 - 1
-
+                    elif ends_value[idx] < -2**31:
+                        ends_value[idx] = -2**31
+                # If stride is -1 and starts and ends meet the conditions, just reverse it directly
+                if steps == [-1] and len(starts_value) == 1 and len(
+                        ends_value) == 1 and starts_value[
+                            0] == -1 and ends_value[0] == -2**31:
+                    self.paddle_graph.add_layer(
+                        "paddle.flip",
+                        inputs={"x": val_x.name},
+                        outputs=[node.name],
+                        axis=axes)
+                    return
                 layer_attrs = {
                     "axes": axes,
                     "starts": starts_value,
@@ -1186,6 +1202,8 @@ class OpSet():
             for idx in range(len(ends)):
                 if ends[idx] > 2**31 - 1:
                     ends[idx] = 2**31 - 1
+                elif ends[idx] < -2**31:
+                    ends[idx] = 0
             layer_attrs = {"axes": axes, "starts": starts, "ends": ends}
 
         if steps is not None:
@@ -1396,13 +1414,12 @@ class OpSet():
     @print_mapping_info
     def Split(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        paddle_op = 'split'
         split = node.get_attr('split')
         axis = node.get_attr('axis', 0)
         if split is None:
             split_num = len(node.layer.output)
             try:
-                #split is an input of this node
+                # split is an input of this node
                 split_node = self.graph.get_input_node(node, idx=1, copy=True)
                 split_value = _const_weight_or_none(split_node)
                 layer_attrs = {
@@ -1419,7 +1436,7 @@ class OpSet():
                 if hasattr(node, 'index'):
                     outputs_list.append("{}_p{}".format(node.layer_name, i))
                 else:
-                    outputs_list.append("{}".format(node.layer_name))
+                    outputs_list.append("{}".format(node.layer.output[i]))
             if split_num > 1:
                 self.paddle_graph.add_layer(
                     'paddle.split',
@@ -2233,7 +2250,6 @@ class OpSet():
 
         kernel_shape = node.get_attr('kernel_shape')
         convnd = len(kernel_shape)
-        assert 2 <= convnd <= 3, 'only Conv2D and Conv3D is supported'
         num_out_channels = val_w.out_shapes[0][0]
         num_in_channels = val_w.out_shapes[0][1]
         paddle_op = 'paddle.nn.Conv{}D'.format(convnd)
@@ -2379,7 +2395,8 @@ class OpSet():
                                   output_size[1])
             if auto_pad == "SAME_UPPER":
                 for i in range(len(total_paddings)):
-                    paddings[2 * i] = total_paddings[0] - total_paddings[0] // 2
+                    paddings[2 * i] = total_paddings[0] - \
+                        total_paddings[0] // 2
                     paddings[2 * i + 1] = total_paddings[0] // 2
             else:
                 for i in range(len(total_paddings)):
@@ -2540,20 +2557,26 @@ class OpSet():
         if input_nums > 5 and node.layer.input[5] != '':
             init_h = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": init_h.name},
-                outputs=[init_h.name],
-                shape=init_h.out_shapes[0])
+            init_h_shape = init_h.out_shapes[0]
+            if len(init_h_shape) != 0 and reduce(lambda x, y: x * y,
+                                                 init_h_shape) not in [1, -1]:
+                self.paddle_graph.add_layer(
+                    'paddle.reshape',
+                    inputs={"x": init_h.name},
+                    outputs=[init_h.name],
+                    shape=init_h.out_shapes[0])
             exist_input_nums += 1
         if input_nums > 6 and node.layer.input[6] != '':
             init_c = self.graph.get_input_node(
                 node, idx=exist_input_nums, copy=True)
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": init_c.name},
-                outputs=[init_c.name],
-                shape=init_c.out_shapes[0])
+            init_c_shape = init_c.out_shapes[0]
+            if len(init_c_shape) != 0 and reduce(lambda x, y: x * y,
+                                                 init_c_shape) not in [1, -1]:
+                self.paddle_graph.add_layer(
+                    'paddle.reshape',
+                    inputs={"x": init_c.name},
+                    outputs=[init_c.name],
+                    shape=init_c.out_shapes[0])
 
         input_weight_np = _const_weight_or_none(input_weight)
         _rename_or_remove_weight(self.weights, input_weight.name)
@@ -2592,8 +2615,10 @@ class OpSet():
         def generate_paddle_param_names(op_name, suffix=''):
             param_names = []
             param_names.extend(['{}.weight_ih_l0{}', '{}.weight_hh_l0{}'])
-            if have_bias != False: param_names.append('{}.bias_ih_l0{}')
-            if have_bias != False: param_names.append('{}.bias_hh_l0{}')
+            if have_bias != False:
+                param_names.append('{}.bias_ih_l0{}')
+            if have_bias != False:
+                param_names.append('{}.bias_hh_l0{}')
             param_names = [x.format(op_name, suffix) for x in param_names]
             return param_names
 
@@ -2639,6 +2664,14 @@ class OpSet():
     def TopK(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_k = self.graph.get_input_node(node, idx=1, copy=True)
+        # If the topk result is the entire graph output, modify the graph result
+        graph_output_new = list()
+        if node.layer_name in self.graph.output_nodes:
+            graph_output_new = [
+                "{}_p{}".format(node.layer_name, 0)
+                if x == node.layer_name else x for x in self.graph.output_nodes
+            ]
+            self.paddle_graph.outputs = graph_output_new
         layer_attrs = dict()
         layer_attrs["axis"] = node.get_attr('axis', -1)
         layer_attrs["largest"] = True if node.get_attr('largest',
