@@ -297,7 +297,7 @@ class PaddleGraph(object):
                 self.dygraph2static(save_dir, input_shapes, input_types)
             except Exception as e:
                 print(
-                    "Fail to generate inference model! Problem happend while export inference model from python code '{}';\n".
+                    "Fail to generate inference model! Problem happened while export inference model from python code '{}';\n".
                     format(code_path))
                 print("===================Error Information===============")
                 raise e
