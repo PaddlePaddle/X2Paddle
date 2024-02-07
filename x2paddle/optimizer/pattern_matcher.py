@@ -347,7 +347,11 @@ class FuseBase(object):
             self.matches = list()
             for pattern in self.patterns:
                 pattern_matcher = PatternMatcher(pattern)
-                self.matches.extend(pattern_matcher.operate(graph, match_kind))
+                match = pattern_matcher.operate(graph, match_kind)
+                # Return if one of the patterns matches
+                if len(match) > 0:
+                    self.matches.extend(match)
+                    return
         else:
             pattern_matcher = PatternMatcher(self.pattern)
             self.matches = pattern_matcher.operate(graph, match_kind)
