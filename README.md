@@ -126,7 +126,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 目前X2Paddle提供API方式转换模型，可参考[X2PaddleAPI](docs/inference_model_convertor/x2paddle_api.md)
 
 #### 一键转换Paddle-Lite支持格式
-可参考[使用X2paddle导出Padde-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
+可参考[使用X2paddle导出Paddle-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
 
 ### 功能二：PyTorch模型训练迁移
 
