@@ -1,0 +1,10 @@
+*.whl
+*.npy
+*.log
+*.err
+*.pkl
+*.caffemodel
+*.caffeproto
+**/__pycache__/
+**/pd_model_dygraph/
+test_benchmark/Caffe/*/*.txt
