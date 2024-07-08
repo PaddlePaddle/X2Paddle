@@ -1,4 +1,8 @@
 echo "[X2Paddle]    Running Caffe model converting test..."
+if [ ! -d "dataset/" ]; then	
+  wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/Caffe/dataset.tar.gz
+  tar xzvf dataset.tar.gz
+fi
 find . -name "result.txt" | xargs rm -rf
 find . -name "pd_model_static" | xargs rm -rf
 find . -name "pd_model_dygraph" | xargs rm -rf
