@@ -11,9 +11,9 @@ f = open("result.txt", "w")
 f.write("======ShuffleNet: \n")
 
 try:
-    with open('caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/ShuffleNet/caffe_input.pkl', 'rb') as inp:
         input_data = pickle.load(inp)["data0"]
-    with open('caffe_output.pkl', 'rb') as oup:
+    with open('../dataset/ShuffleNet/caffe_output.pkl', 'rb') as oup:
         caffe_result = pickle.load(oup)["fc"]
     
     paddle.enable_static()
