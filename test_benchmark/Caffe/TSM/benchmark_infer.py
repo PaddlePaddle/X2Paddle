@@ -24,8 +24,8 @@ def parse_args():
     return parser.parse_args()
 
 def main(args):
-    data = np.load("input.npy")
-    caffe_result = np.load("output.npy")
+    data = np.load("../dataset/TSM/input.npy")
+    caffe_result = np.load("../dataset/TSM/output.npy")
     benchmark_pipeline = BenchmarkPipeline(model_dir="pd_model_dygraph/inference_model/",
                                            model_name='TSM',
                                            use_gpu=args.use_gpu,

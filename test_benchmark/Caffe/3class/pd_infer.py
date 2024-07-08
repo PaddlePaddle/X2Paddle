@@ -10,7 +10,7 @@ f = open("result.txt", "w")
 f.write("======3class: \n")
 
 try:
-    with open('../AlexNet/caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/AlexNet/caffe_input.pkl', 'rb') as inp:
         input_data = np.random.rand(8,3,224,224).astype("float32")
 
     paddle.enable_static()

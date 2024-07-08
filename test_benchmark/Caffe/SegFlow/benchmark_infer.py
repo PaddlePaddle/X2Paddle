@@ -24,9 +24,9 @@ def parse_args():
     return parser.parse_args()
 
 def main(args):
-    with open("inputs_segflow_0314.pkl", "rb") as fr:
+    with open("../dataset/SegFlow/inputs_segflow_0314.pkl", "rb") as fr:
         data = pickle.load(fr)
-    with open("output_segflow_0314.pkl", "rb") as fr:
+    with open("../dataset/SegFlow/output_segflow_0314.pkl", "rb") as fr:
         caffe_result = pickle.load(fr)
     benchmark_pipeline = BenchmarkPipeline(model_dir="pd_model_dygraph/inference_model/",
                                            model_name='SegFlow',
