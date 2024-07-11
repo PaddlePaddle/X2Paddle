@@ -8,3 +8,10 @@
 **/__pycache__/
 **/pd_model_dygraph/
 test_benchmark/Caffe/*/*.txt
+test_benchmark/Caffe/*.txt
+
+**/pd_model/
+**/pd_model_trace/
+**/pd_model_script/
+test_benchmark/PyTorch/*/*.txt
+test_benchmark/PyTorch/*.txt

@@ -1,0 +1,142 @@
+run_title: resume
+training_model:
+  kind: default
+  visualize_each_iters: 1000
+  concat_mask: true
+  store_discr_outputs_for_vis: true
+losses:
+  l1:
+    weight_missing: 0
+    weight_known: 10
+  perceptual:
+    weight: 0
+  adversarial:
+    kind: r1
+    weight: 10
+    gp_coef: 0.001
+    mask_as_fake_target: true
+    allow_scale_mask: true
+  feature_matching:
+    weight: 100
+  resnet_pl:
+    weight: 30
+    weights_path: ${env:TORCH_HOME}
+optimizers:
+  generator:
+    kind: adam
+    lr: 0.001
+  discriminator:
+    kind: adam
+    lr: 0.0001
+visualizer:
+  key_order:
+  - image
+  - predicted_image
+  - discr_output_fake
+  - discr_output_real
+  - inpainted
+  rescale_keys:
+  - discr_output_fake
+  - discr_output_real
+  kind: directory
+  outdir: dummy_lol
+  
+location:
+  data_root_dir: /group-volume/User-Driven-Content-Generation/datasets/inpainting_data_root_final
+  out_root_dir: /group-volume/User-Driven-Content-Generation/${env:USER}/inpainting/experiments
+  tb_dir: /group-volume/User-Driven-Content-Generation/${env:USER}/inpainting/tb_logs
+data:
+  batch_size: 10
+  val_batch_size: 2
+  num_workers: 3
+  train:
+    indir: ${location.data_root_dir}/train
+    out_size: 256
+    mask_gen_kwargs:
+      irregular_proba: 1
+      irregular_kwargs:
+        max_angle: 4
+        max_len: 200
+        max_width: 100
+        max_times: 5
+        min_times: 1
+      box_proba: 1
+      box_kwargs:
+        margin: 10
+        bbox_min_size: 30
+        bbox_max_size: 150
+        max_times: 4
+        min_times: 1
+      segm_proba: 0
+    transform_variant: distortions
+    dataloader_kwargs:
+      batch_size: ${data.batch_size}
+      shuffle: true
+      num_workers: ${data.num_workers}
+  val:
+    indir: ${location.data_root_dir}/val
+    img_suffix: .png
+    dataloader_kwargs:
+      batch_size: ${data.val_batch_size}
+      shuffle: false
+      num_workers: ${data.num_workers}
+  visual_test:
+    indir: ${location.data_root_dir}/korean_test
+    img_suffix: _input.png
+    pad_out_to_modulo: 32
+    dataloader_kwargs:
+      batch_size: 1
+      shuffle: false
+      num_workers: ${data.num_workers}
+generator:
+  kind: ffc_resnet
+  input_nc: 4
+  output_nc: 3
+  ngf: 64
+  n_downsampling: 3
+  n_blocks: 9
+  add_out_act: sigmoid
+  init_conv_kwargs:
+    ratio_gin: 0
+    ratio_gout: 0
+    enable_lfu: false
+  downsample_conv_kwargs:
+    ratio_gin: ${generator.init_conv_kwargs.ratio_gout}
+    ratio_gout: ${generator.downsample_conv_kwargs.ratio_gin}
+    enable_lfu: false
+  resnet_conv_kwargs:
+    ratio_gin: 0.75
+    ratio_gout: ${generator.resnet_conv_kwargs.ratio_gin}
+    enable_lfu: false
+discriminator:
+  kind: pix2pixhd_nlayer
+  input_nc: 3
+  ndf: 64
+  n_layers: 4
+evaluator:
+  kind: default
+  inpainted_key: inpainted
+  integral_kind: ssim_fid100_f1
+trainer:
+  kwargs:
+    gpus: -1
+    distributed_backend: ddp
+    max_epochs: 40
+    gradient_clip_val: 1
+    log_gpu_memory: None
+    limit_train_batches: 25000
+    val_check_interval: ${trainer.kwargs.limit_train_batches}
+    log_save_interval: 250
+    precision: 32
+    terminate_on_nan: false
+    check_val_every_n_epoch: 1
+    num_sanity_val_steps: 8
+    replace_sampler_ddp: false
+    resume_from_checkpoint: /group-volume/User-Driven-Content-Generation/r.suvorov/inpainting/experiments/r.suvorov_2021-03-04_13-48-33_train_ablv2_work_ffc075_/models/last.ckpt
+  checkpoint_kwargs:
+    verbose: true
+    save_top_k: 5
+    save_last: true
+    period: 1
+    monitor: val_ssim_fid100_f1_total_mean
+    mode: max
