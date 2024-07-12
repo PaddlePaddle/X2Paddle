@@ -10,11 +10,10 @@ python setup.py install;
 fi;
 
 cd test_benchmark/Caffe;
-bash convert.sh;
-
-#cd ../PyTorch;
-#mv YOLOX ..; #暂时取消
 #bash convert.sh;
+
+cd ../PyTorch;
+bash convert.sh;
 #
 #cd ../ONNX;
 #bash convert.sh;
