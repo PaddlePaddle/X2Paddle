@@ -3,6 +3,13 @@ if [ ! -d "dataset/" ]; then
   wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/PyTorch/dataset.tar.gz
   tar xzvf dataset.tar.gz
 fi
+# 后续打包进 dataset.tar.gz
+if [ ! -d "dataset/SwinTransformer" ]; then	
+  cd dataset
+  wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/PyTorch/SwinTransformer.tar.gz
+  tar xzvf SwinTransformer.tar.gz
+  cd ..
+fi
 find . -name "result.txt" | xargs rm -rf
 find . -name "pd_model" | xargs rm -rf 
 find . -name "pd_model_trace" | xargs rm -rf 
@@ -20,7 +27,7 @@ then
 fi
 
 counter=1
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
 do
     echo "[X2Paddle-PyTorch] ${counter}/${num_of_models} $model ..."
     cd $model
@@ -37,7 +44,7 @@ done
 wait
 rm -rf result.txt
 touch result.txt
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
 do
     cat ${model}/result.txt >> ./result.txt
 done
