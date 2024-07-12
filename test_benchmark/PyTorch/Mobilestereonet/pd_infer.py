@@ -19,7 +19,7 @@ try:
     dummy_input_right = np.load("../dataset/Mobilestereonet/input_right.npy")
     result = exe.run(prog, feed={inputs[0]:dummy_input_left, inputs[1]:dummy_input_right}, fetch_list=outputs)
 
-    pytorch_result = np.load("result.npy")
+    pytorch_result = np.load("../dataset/Mobilestereonet/result.npy")
     is_successd = True
     for i in range(1):
         diff = result[i] - pytorch_result
