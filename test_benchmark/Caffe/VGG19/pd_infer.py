@@ -11,7 +11,7 @@ f = open("result.txt", "w")
 f.write("======VGG19: \n")
 
 try:
-    with open('caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/VGG19/caffe_input.pkl', 'rb') as inp:
         input_data = pickle.load(inp)["data0"]
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())

@@ -11,9 +11,9 @@ f = open("result.txt", "w")
 f.write("======SSD: \n")
 
 try:
-    with open('caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/SSD/caffe_input.pkl', 'rb') as inp:
         input_data = pickle.load(inp)["data0"]
-    with open('caffe_output.pkl', 'rb') as oup:
+    with open('../dataset/SSD/caffe_output.pkl', 'rb') as oup:
         caffe_output = pickle.load(oup)
     
     paddle.enable_static()

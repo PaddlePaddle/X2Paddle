@@ -24,8 +24,8 @@ def parse_args():
     return parser.parse_args()
 
 def main(args):
-    data = np.load("input.npy")
-    caffe_result = np.load("output.npy")
+    data = np.load("../dataset/3class/input.npy")
+    caffe_result = np.load("../dataset/3class/output.npy")
     benchmark_pipeline = BenchmarkPipeline(model_dir="pd_model_dygraph/inference_model/",
                                            model_name='3class',
                                            use_gpu=args.use_gpu,

@@ -24,9 +24,9 @@ def parse_args():
     return parser.parse_args()
 
 def main(args):
-    with open('caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/VGG19/caffe_input.pkl', 'rb') as inp:
         data = pickle.load(inp)["data0"]
-    caffe_result = np.load("output.npy")
+    caffe_result = np.load("../dataset/VGG19/output.npy")
     benchmark_pipeline = BenchmarkPipeline(model_dir="pd_model_dygraph/inference_model/",
                                            model_name='VGG19',
                                            use_gpu=args.use_gpu,
