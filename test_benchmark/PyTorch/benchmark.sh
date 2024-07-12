@@ -16,7 +16,7 @@ then
 fi
 
 counter=1
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
 do
     echo "[X2Paddle-PyTorch] ${counter}/${num_of_models} $model ..."
     cd $model
@@ -33,7 +33,7 @@ done
 wait
 rm -rf result.txt
 touch result.txt
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
 do
     cat ${model}/result.txt >> ./result.txt
 done
