@@ -1,4 +1,8 @@
 echo "[X2Paddle]    Running PyTorch model converting test..."
+if [ ! -d "dataset/" ]; then	
+  wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/PyTorch/dataset.tar.gz
+  tar xzvf dataset.tar.gz
+fi
 find . -name "result.txt" | xargs rm -rf
 find . -name "pd_model" | xargs rm -rf 
 find . -name "pd_model_trace" | xargs rm -rf 
@@ -6,7 +10,7 @@ find . -name "pd_model_script" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | wc -l)
+num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | wc -l)
 num_of_pb_files=`expr $(find . -name "convert.py" | wc -l) + $(find . -name "convert_trace.py" | wc -l)`
 
 if [ $num_of_pb_files -ne $num_of_models ]

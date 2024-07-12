@@ -6,7 +6,7 @@ find . -name "pd_model_script" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | wc -l)
+num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | wc -l)
 num_of_pb_files=`expr $(find . -name "convert.py" | wc -l) + $(find . -name "convert_trace.py" | wc -l)`
 
 if [ $num_of_pb_files -ne $num_of_models ]
