@@ -17,8 +17,9 @@ find . -name "pd_model_script" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | wc -l)
-num_of_pb_files=`expr $(find . -name "convert.py" | wc -l) + $(find . -name "convert_trace.py" | wc -l)`
+models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'MockingBird')
+num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'MockingBird' | wc -l)
+num_of_pb_files=`expr $(find . -name "convert.py" | wc -l) + $(find . -name "convert_trace.py" | grep -v 'MockingBird' | wc -l)`
 
 if [ $num_of_pb_files -ne $num_of_models ]
 then
@@ -27,7 +28,7 @@ then
 fi
 
 counter=1
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
+for model in $models
 do
     echo "[X2Paddle-PyTorch] ${counter}/${num_of_models} $model ..."
     cd $model
@@ -44,7 +45,7 @@ done
 wait
 rm -rf result.txt
 touch result.txt
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset')
+for model in $models
 do
     cat ${model}/result.txt >> ./result.txt
 done
