@@ -6,7 +6,7 @@ import pickle
 
 
 f = open('result.txt', 'w')
-f.write("======BasicTemporalModel: \n")
+f.write("======ACG_UnitTest: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())

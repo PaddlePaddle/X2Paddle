@@ -16,7 +16,7 @@ def main():
 
     model.eval()
     
-    data = np.load("input.npy")
+    data = np.load("../dataset/ACG_UnitTest/input.npy")
     data = torch.Tensor(data)
     result = model(data)
 

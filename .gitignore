@@ -3,6 +3,9 @@
 *.log
 *.err
 *.pkl
+*.tar.gz
+**/dataset/
+
 *.caffemodel
 *.caffeproto
 **/__pycache__/
@@ -15,3 +18,6 @@ test_benchmark/Caffe/*.txt
 **/pd_model_script/
 test_benchmark/PyTorch/*/*.txt
 test_benchmark/PyTorch/*.txt
+
+test_benchmark/ONNX/*/*.txt
+test_benchmark/ONNX/*/*.pbtxt
