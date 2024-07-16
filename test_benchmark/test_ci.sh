@@ -12,11 +12,11 @@ fi;
 cd test_benchmark/Caffe;
 #bash convert.sh;
 
-cd ../PyTorch;
-bash convert.sh;
-#
-#cd ../ONNX;
+#cd ../PyTorch;
 #bash convert.sh;
+
+cd ../ONNX;
+bash convert.sh;
 #
 #cd ../TensorFlow;
 #mv KerasBert ..; #暂时取消，会hang
