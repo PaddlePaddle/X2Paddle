@@ -4,6 +4,7 @@
 *.err
 *.pkl
 *.tar.gz
+*.onnx
 **/dataset/
 
 *.caffemodel
