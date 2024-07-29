@@ -2,24 +2,15 @@
 set -x
 
 torch_version=${1}
-cd ..
-home_path=`pwd`
-echo ${home_path}
-test_path=${home_path}/X2Paddle/tests/torch
-if [ ! -d "${test_path}" ];then
-   echo "the torch_autoscan file not exist"
-   exit 0
-fi
+cd torch
 
-cd ${test_path}
-
+find . -name "result.txt" | xargs rm -rf
 if [! -f ${result.txt}];then
    touch result.txt
 fi
 echo "===================torch-${torch_version}===================" >> result.txt
-#echo "The torch version is ${torch_version}" >> result.txt
 
-logs_path=${test_path}/logs/${torch_version}
+logs_path=logs/${torch_version}
 mkdir -p ${logs_path}
  
 
@@ -58,3 +49,4 @@ do
 done
 
 tar zcvf logs.tar.gz logs
+cd ..
