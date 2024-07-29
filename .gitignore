@@ -23,3 +23,5 @@ test_benchmark/ONNX/*/*.txt
 test_benchmark/ONNX/*/*.pbtxt
 test_benchmark/TensorFlow/*/*.txt
 test_benchmark/TensorFlow/*/*.pbtxt
+
+test_autoscan/*/*.txt

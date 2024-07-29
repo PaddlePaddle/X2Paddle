@@ -47,3 +47,4 @@ do
 done
 
 tar zcvf logs.tar.gz logs
+cd ..
