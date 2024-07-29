@@ -11,9 +11,9 @@ f = open("result.txt", "w")
 f.write("======VGG16: \n")
 
 try:
-    with open('caffe_input.pkl', 'rb') as inp:
+    with open('../dataset/VGG16/caffe_input.pkl', 'rb') as inp:
         input_data = pickle.load(inp)["data0"]
-    with open('caffe_output.pkl', 'rb') as oup:
+    with open('../dataset/VGG16/caffe_output.pkl', 'rb') as oup:
         caffe_result = pickle.load(oup)["prob"]
     
     paddle.enable_static()

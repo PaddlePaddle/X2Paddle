@@ -1,4 +1,8 @@
 echo "[X2Paddle]    Running Caffe model converting test..."
+if [ ! -d "dataset/" ]; then	
+  wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/Caffe/dataset.tar.gz
+  tar xzvf dataset.tar.gz
+fi
 find . -name "result.txt" | xargs rm -rf
 find . -name "pd_model_static" | xargs rm -rf
 find . -name "pd_model_dygraph" | xargs rm -rf
@@ -17,17 +21,14 @@ counter=1
 for model in $(ls -d */ | grep "[A-Z0-9]")
 do
     echo "[X2Paddle-Caffe] ${counter}/${num_of_models} $model ..."
-    if [ $model != "FaceDetction/" -a $model != "SSD/" ]
-    then 
-        cd $model
-        sh run_convert.sh $model 1>run.log 2>run.err &
-        cd ..
-        counter=$(($counter+1))
-        step=$(( $counter % 3 ))
-        if [ $step = 0 ]
-        then
-            wait
-        fi
+    cd $model
+    sh run_convert.sh $model 1>run.log 2>run.err &
+    cd ..
+    counter=$(($counter+1))
+    step=$(( $counter % 3 ))
+    if [ $step = 0 ]
+    then
+        wait
     fi
 done
 
@@ -37,10 +38,7 @@ rm -rf result.txt
 touch result.txt
 for model in $(ls -d */ | grep "[A-Z0-9]")
 do
-    if [ $model != "FaceDetction/" -a $model != "SSD/" ]
-    then
-        cat ${model}/result.txt >> ./result.txt
-    fi
+    cat ${model}/result.txt >> ./result.txt
 done
 
 cd tools
