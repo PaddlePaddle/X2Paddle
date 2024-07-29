@@ -9,6 +9,7 @@ python setup.py install;
     exit -1;
 fi;
 
+# convert.sh 会自动下载数据集
 cd test_benchmark/Caffe;
 #bash convert.sh;
 
