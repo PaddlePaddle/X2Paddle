@@ -21,5 +21,5 @@ paddle.matmul(x, y, transpose_x=False, transpose_y=False, name=None)
 ### 功能差异
 
 #### 计算方式
-***PyTorch***：只支持$n × m$的矩阵与$m × p$的矩阵相乘。  
+***PyTorch***：只支持$n × m$的矩阵与$m × p$的矩阵相乘。
 ***PaddlePaddle***：支持的输入与`torch.matmul`相同。

@@ -4,7 +4,6 @@ import numpy as np
 import pickle
 import sys
 
-
 f = open('result.txt', 'w')
 f.write("======detection_registration_p1: \n")
 try:
@@ -12,15 +11,25 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="./pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    with open("../dataset/IDG_detection_registration_p1/detection_registration_p1_inputs.pkl", "rb") as fr:
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="./pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    with open(
+            "../dataset/IDG_detection_registration_p1/detection_registration_p1_inputs.pkl",
+            "rb") as fr:
         inputs_list = pickle.load(fr)
-    result = exe.run(prog, feed={inputs[0]:inputs_list[0], inputs[1]:inputs_list[1]}, fetch_list=outputs)
+    result = exe.run(prog,
+                     feed={
+                         inputs[0]: inputs_list[0],
+                         inputs[1]: inputs_list[1]
+                     },
+                     fetch_list=outputs)
 
-    with open("../dataset/IDG_detection_registration_p1/detection_registration_p1_outputs.pkl", "rb") as fr:
+    with open(
+            "../dataset/IDG_detection_registration_p1/detection_registration_p1_outputs.pkl",
+            "rb") as fr:
         onnx_result = pickle.load(fr)
     is_successd = True
     for i in range(2):

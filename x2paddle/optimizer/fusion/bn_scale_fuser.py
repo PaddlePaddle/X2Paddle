@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class BNScaleFuser(FuseBase):
+
     def __init__(self):
         super(BNScaleFuser, self).__init__()
         patterns = list()
@@ -45,48 +46,55 @@ class BNScaleFuser(FuseBase):
             return "x" + str(id)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "paddle.nn.BatchNorm2D",
-            inputs={"input": "bn-input-0"},
-            outputs=[gen_name(0)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(1)])
+        pattern.add_layer("paddle.nn.BatchNorm2D",
+                          inputs={"input": "bn-input-0"},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(1)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(0)
         inputs_dict['y'] = gen_name(1)
-        pattern.add_layer(
-            "paddle.multiply", inputs=inputs_dict, outputs=[gen_name(2)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(3)])
+        pattern.add_layer("paddle.multiply",
+                          inputs=inputs_dict,
+                          outputs=[gen_name(2)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(3)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(2)
         inputs_dict['y'] = gen_name(3)
-        pattern.add_layer(
-            "paddle.add", inputs=inputs_dict, outputs=[gen_name(4)])
+        pattern.add_layer("paddle.add",
+                          inputs=inputs_dict,
+                          outputs=[gen_name(4)])
         pattern.build(inputs={"input-0": "bn-input-0"})
         self.patterns.append(pattern)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "paddle.nn.BatchNorm2D",
-            inputs={"input": "bn-input-0"},
-            outputs=[gen_name(0)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(1)])
+        pattern.add_layer("paddle.nn.BatchNorm2D",
+                          inputs={"input": "bn-input-0"},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(1)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(0)
         inputs_dict['y'] = gen_name(1)
-        pattern.add_layer(
-            "paddle.multiply", inputs=inputs_dict, outputs=[gen_name(2)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(3)])
-        pattern.add_layer(
-            "paddle.reshape", inputs={"x": gen_name(3)}, outputs=[gen_name(3)])
+        pattern.add_layer("paddle.multiply",
+                          inputs=inputs_dict,
+                          outputs=[gen_name(2)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(3)])
+        pattern.add_layer("paddle.reshape",
+                          inputs={"x": gen_name(3)},
+                          outputs=[gen_name(3)])
         inputs_dict = {}
         inputs_dict['x'] = gen_name(2)
         inputs_dict['y'] = gen_name(3)
-        pattern.add_layer(
-            "paddle.add", inputs=inputs_dict, outputs=[gen_name(4)])
+        pattern.add_layer("paddle.add",
+                          inputs=inputs_dict,
+                          outputs=[gen_name(4)])
         pattern.build(inputs={"input-0": "bn-input-0"})
         self.patterns.append(pattern)
 
@@ -114,10 +122,9 @@ class BNScaleFuser(FuseBase):
         data1_name = layer.outputs[0]
         data1_numpy = parameters.pop(data1_name)
         parameters["{}.bias".format(layer_outputs[0])] = data1_numpy
-        new_layer = PaddleLayer(
-            layers_id[0],
-            "paddle.nn.BatchNorm2D",
-            inputs=layer_inputs,
-            outputs=layer_outputs,
-            **layer_attrs)
+        new_layer = PaddleLayer(layers_id[0],
+                                "paddle.nn.BatchNorm2D",
+                                inputs=layer_inputs,
+                                outputs=layer_outputs,
+                                **layer_attrs)
         return new_layer

@@ -23,5 +23,5 @@ paddle.nn.AvgPool1D(kernel_size,
 ### 功能差异
 
 #### 池化方式
-***PyTorch***: 使用`count_include_pad`表示是否使用额外padding的值计算平均池化结果，默认为True。  
+***PyTorch***: 使用`count_include_pad`表示是否使用额外padding的值计算平均池化结果，默认为True。
 ***PaddlePaddle***：使用`exclusive`表示是否不使用额外padding的值计算平均池化结果，默认为True。

@@ -49,7 +49,9 @@ try:
     from tqdm import tqdm
 except ImportError:
     # If not tqdm is not available, provide a mock version of it
-    def tqdm(x): return x
+    def tqdm(x):
+        return x
+
 
 try:
     from .inception import InceptionV3
@@ -57,24 +59,38 @@ except ModuleNotFoundError:
     from inception import InceptionV3
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('path', type=str, nargs=2,
+parser.add_argument('path',
+                    type=str,
+                    nargs=2,
                     help=('Path to the generated images or '
                           'to .npz statistic files'))
-parser.add_argument('--batch-size', type=int, default=50,
+parser.add_argument('--batch-size',
+                    type=int,
+                    default=50,
                     help='Batch size to use')
-parser.add_argument('--dims', type=int, default=2048,
+parser.add_argument('--dims',
+                    type=int,
+                    default=2048,
                     choices=list(InceptionV3.BLOCK_INDEX_BY_DIM),
                     help=('Dimensionality of Inception features to use. '
                           'By default, uses pool3 features'))
-parser.add_argument('-c', '--gpu', default='', type=str,
+parser.add_argument('-c',
+                    '--gpu',
+                    default='',
+                    type=str,
                     help='GPU to use (leave blank for CPU only)')
 parser.add_argument('--resize', default=256)
 
 transform = Compose([Resize(256), CenterCrop(256), ToTensor()])
 
 
-def get_activations(files, model, batch_size=50, dims=2048,
-                    cuda=False, verbose=False, keep_size=False):
+def get_activations(files,
+                    model,
+                    batch_size=50,
+                    dims=2048,
+                    cuda=False,
+                    verbose=False,
+                    keep_size=False):
     """Calculates the activations of the pool_3 layer for all images.
 
     Params:
@@ -112,7 +128,8 @@ def get_activations(files, model, batch_size=50, dims=2048,
     for i in tqdm(range(n_batches)):
         if verbose:
             print('\rPropagating batch %d/%d' % (i + 1, n_batches),
-                  end='', flush=True)
+                  end='',
+                  flush=True)
         start = i * batch_size
         end = start + batch_size
 
@@ -211,12 +228,17 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
 
     tr_covmean = np.trace(covmean)
 
-    return (diff.dot(diff) + np.trace(sigma1) +
-            np.trace(sigma2) - 2 * tr_covmean)
+    return (diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) -
+            2 * tr_covmean)
 
 
-def calculate_activation_statistics(files, model, batch_size=50,
-                                    dims=2048, cuda=False, verbose=False, keep_size=False):
+def calculate_activation_statistics(files,
+                                    model,
+                                    batch_size=50,
+                                    dims=2048,
+                                    cuda=False,
+                                    verbose=False,
+                                    keep_size=False):
     """Calculation of the statistics used by the FID.
     Params:
     -- files       : List of image files paths
@@ -234,7 +256,13 @@ def calculate_activation_statistics(files, model, batch_size=50,
     -- sigma : The covariance matrix of the activations of the pool_3 layer of
                the inception model.
     """
-    act = get_activations(files, model, batch_size, dims, cuda, verbose, keep_size=keep_size)
+    act = get_activations(files,
+                          model,
+                          batch_size,
+                          dims,
+                          cuda,
+                          verbose,
+                          keep_size=keep_size)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
@@ -248,16 +276,25 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
     else:
         path = pathlib.Path(path)
         files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
-        m, s = calculate_activation_statistics(files, model, batch_size,
-                                               dims, cuda)
+        m, s = calculate_activation_statistics(files, model, batch_size, dims,
+                                               cuda)
 
     return m, s
 
 
-def _compute_statistics_of_images(images, model, batch_size, dims, cuda, keep_size=False):
+def _compute_statistics_of_images(images,
+                                  model,
+                                  batch_size,
+                                  dims,
+                                  cuda,
+                                  keep_size=False):
     if isinstance(images, list):  # exact paths to files are provided
-        m, s = calculate_activation_statistics(images, model, batch_size,
-                                               dims, cuda, keep_size=keep_size)
+        m, s = calculate_activation_statistics(images,
+                                               model,
+                                               batch_size,
+                                               dims,
+                                               cuda,
+                                               keep_size=keep_size)
 
         return m, s
 
@@ -277,21 +314,27 @@ def calculate_fid_given_paths(paths, batch_size, cuda, dims):
     if cuda:
         model.cuda()
 
-    m1, s1 = _compute_statistics_of_path(paths[0], model, batch_size,
-                                         dims, cuda)
-    m2, s2 = _compute_statistics_of_path(paths[1], model, batch_size,
-                                         dims, cuda)
+    m1, s1 = _compute_statistics_of_path(paths[0], model, batch_size, dims,
+                                         cuda)
+    m2, s2 = _compute_statistics_of_path(paths[1], model, batch_size, dims,
+                                         cuda)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
     return fid_value
 
 
-def calculate_fid_given_images(images, batch_size, cuda, dims, use_globals=False, keep_size=False):
+def calculate_fid_given_images(images,
+                               batch_size,
+                               cuda,
+                               dims,
+                               use_globals=False,
+                               keep_size=False):
     if use_globals:
         global FID_MODEL  # for multiprocessing
 
     for imgs in images:
-        if isinstance(imgs, list) and isinstance(imgs[0], (Image.Image, JpegImagePlugin.JpegImageFile)):
+        if isinstance(imgs, list) and isinstance(
+                imgs[0], (Image.Image, JpegImagePlugin.JpegImageFile)):
             pass
         else:
             raise RuntimeError('Invalid images')
@@ -309,10 +352,18 @@ def calculate_fid_given_images(images, batch_size, cuda, dims, use_globals=False
     else:
         model = FID_MODEL
 
-    m1, s1 = _compute_statistics_of_images(images[0], model, batch_size,
-                                        dims, cuda, keep_size=False)
-    m2, s2 = _compute_statistics_of_images(images[1], model, batch_size,
-                                        dims, cuda, keep_size=False)
+    m1, s1 = _compute_statistics_of_images(images[0],
+                                           model,
+                                           batch_size,
+                                           dims,
+                                           cuda,
+                                           keep_size=False)
+    m2, s2 = _compute_statistics_of_images(images[1],
+                                           model,
+                                           batch_size,
+                                           dims,
+                                           cuda,
+                                           keep_size=False)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
     return fid_value
 
@@ -321,8 +372,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-    fid_value = calculate_fid_given_paths(args.path,
-                                          args.batch_size,
-                                          args.gpu != '',
-                                          args.dims)
+    fid_value = calculate_fid_given_paths(args.path, args.batch_size,
+                                          args.gpu != '', args.dims)
     print('FID: ', fid_value)

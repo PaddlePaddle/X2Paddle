@@ -25,5 +25,5 @@ paddle.to_tensor(data,
 ### 功能差异
 
 #### 使用方式
-***PyTorch***：只能传入一个numpy.ndarray。  
+***PyTorch***：只能传入一个numpy.ndarray。
 ***PaddlePaddle***：可以传入scalar、list、tuple、numpy.ndarray、paddle.Tensor。

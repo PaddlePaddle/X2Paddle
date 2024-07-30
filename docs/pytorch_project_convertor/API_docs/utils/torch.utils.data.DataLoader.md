@@ -50,7 +50,7 @@ paddle.io.DataLoader(dataset,
 
 ### 功能差异
 #### 自定义数据采集器
-***PyTorch***：可通过设置`sampler`自定义数据采集器。  
+***PyTorch***：可通过设置`sampler`自定义数据采集器。
 ***PaddlePaddle***：PaddlePaddle无此功能，可使用如下代码自定义一个DataLoader实现该功能。
 ```python
 class DataLoader(paddle.io.DataLoader):

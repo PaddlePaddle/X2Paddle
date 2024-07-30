@@ -92,6 +92,7 @@ class ConverterCheck(threading.Thread):
 
 
 class PaddleDtypes():
+
     def __init__(self, is_new_version=True):
         if is_new_version:
             self.t_float16 = paddle.float16

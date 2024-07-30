@@ -33,22 +33,20 @@ paddle.set_device("cpu")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-settings.register_profile(
-    "ci",
-    max_examples=100,
-    suppress_health_check=hypothesis.HealthCheck.all(),
-    deadline=None,
-    print_blob=True,
-    derandomize=True,
-    report_multiple_bugs=False)
-settings.register_profile(
-    "dev",
-    max_examples=1000,
-    suppress_health_check=hypothesis.HealthCheck.all(),
-    deadline=None,
-    print_blob=True,
-    derandomize=True,
-    report_multiple_bugs=False)
+settings.register_profile("ci",
+                          max_examples=100,
+                          suppress_health_check=hypothesis.HealthCheck.all(),
+                          deadline=None,
+                          print_blob=True,
+                          derandomize=True,
+                          report_multiple_bugs=False)
+settings.register_profile("dev",
+                          max_examples=1000,
+                          suppress_health_check=hypothesis.HealthCheck.all(),
+                          deadline=None,
+                          print_blob=True,
+                          derandomize=True,
+                          report_multiple_bugs=False)
 if float(os.getenv('TEST_NUM_PERCENT_CASES', default='1.0')) < 1 or \
     os.getenv('HYPOTHESIS_TEST_PROFILE', 'dev') == 'ci':
     settings.load_profile("ci")
@@ -70,6 +68,7 @@ class BaseNet(nn.Module):
 
 
 class OPConvertAutoScanTest(unittest.TestCase):
+
     def __init__(self, *args, **kwargs):
         super(OPConvertAutoScanTest, self).__init__(*args, **kwargs)
         np.random.seed(1024)
@@ -99,7 +98,8 @@ class OPConvertAutoScanTest(unittest.TestCase):
             deadline=None,
             print_blob=True,
             derandomize=True,
-            report_multiple_bugs=False, )
+            report_multiple_bugs=False,
+        )
         settings.load_profile("ci")
 
         def sample_convert_generator(draw):
@@ -128,15 +128,15 @@ class OPConvertAutoScanTest(unittest.TestCase):
         if successful_ran_programs < min_success_num:
             logging.warning("satisfied_programs = ran_programs")
             logging.error(
-                "At least {} programs need to ran successfully, but now only about {} programs satisfied.".
-                format(min_success_num, successful_ran_programs))
+                "At least {} programs need to ran successfully, but now only about {} programs satisfied."
+                .format(min_success_num, successful_ran_programs))
             assert False
         used_time = time.time() - start_time
         logging.info("Used time: {} s".format(round(used_time, 2)))
         if max_duration > 0 and used_time > max_duration:
             logging.error(
-                "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`.".
-                format(max_duration))
+                "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`."
+                .format(max_duration))
             assert False
 
     def run_test(self, configs):
@@ -207,16 +207,16 @@ class OPConvertAutoScanTest(unittest.TestCase):
                         continue
                     if input_type[j].count('int') > 0:
                         input_data.append(
-                            randtool("int", -20, 20, shape).astype(input_type[
-                                j]))
+                            randtool("int", -20, 20,
+                                     shape).astype(input_type[j]))
                     elif input_type[j].count('bool') > 0:
                         input_data.append(
-                            randtool("bool", -2, 2, shape).astype(input_type[
-                                j]))
+                            randtool("bool", -2, 2,
+                                     shape).astype(input_type[j]))
                     else:
                         input_data.append(
-                            randtool("float", -2, 2, shape).astype(input_type[
-                                j]))
+                            randtool("float", -2, 2,
+                                     shape).astype(input_type[j]))
                 obj.set_input_data("input_data", tuple(input_data))
                 logging.info("Now Run >>> dtype: {}, op_name: {}".format(
                     input_type, op_names[i]))

@@ -36,6 +36,7 @@ _logger = _logging.getLogger(__name__)
 
 
 class ONNXGraphNode(GraphNode):
+
     def __init__(self, layer, layer_name=None):
         if layer_name is None:
             super(ONNXGraphNode, self).__init__(layer, layer.name)
@@ -88,8 +89,9 @@ class ONNXGraphNode(GraphNode):
         if attr.type == onnx.AttributeProto.TENSOR:
             dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
             data = attr.t.raw_data
-            value = np.frombuffer(
-                data, dtype=dtype, count=(len(data) // dtype.itemsize))
+            value = np.frombuffer(data,
+                                  dtype=dtype,
+                                  count=(len(data) // dtype.itemsize))
         elif attr.type == onnx.AttributeProto.STRING:
             value = attr.s
             value = value.decode() if isinstance(value, bytes) else value
@@ -114,6 +116,7 @@ class ONNXGraphNode(GraphNode):
 
 
 class ONNXGraphDataNode(GraphNode):
+
     def __init__(self, layer, layer_name=None, is_global_input=False):
         if layer_name is None:
             super(ONNXGraphDataNode, self).__init__(layer, layer.name)
@@ -173,6 +176,7 @@ class ONNXGraphDataNode(GraphNode):
 
 
 class ONNXGraph(Graph):
+
     def __init__(self, onnx_model, input_shape_dict=None):
         super(ONNXGraph, self).__init__(onnx_model)
         self.fixed_input_shape = {}
@@ -268,8 +272,9 @@ class ONNXGraph(Graph):
                     self.node_map[name].weight = weight
                     self.node_map[name].embeded_as = []
             else:
-                self.node_map[name] = ONNXGraphDataNode(
-                    initializer, layer_name=name, is_global_input=False)
+                self.node_map[name] = ONNXGraphDataNode(initializer,
+                                                        layer_name=name,
+                                                        is_global_input=False)
                 self.node_map[name].weight = weight
                 self.node_map[name].embeded_as = []
 
@@ -301,8 +306,8 @@ class ONNXGraph(Graph):
                                     if first_i == n_i:
                                         continue
                                     if n_ipt == nd.name:
-                                        new_nd_name = "{}/{}".format(nd.name,
-                                                                     n_i)
+                                        new_nd_name = "{}/{}".format(
+                                            nd.name, n_i)
                                         if new_nd_name not in node.which_child:
                                             node.which_child[new_nd_name] = idx
                                             break
@@ -311,8 +316,8 @@ class ONNXGraph(Graph):
                                 # deal with Multiple outputs correspond to one node
                                 if self.node_map[nd.name].outputs.count(
                                         layer_name) > 1:
-                                    new_child_name = "{}/{}".format(nd.name,
-                                                                    idx)
+                                    new_child_name = "{}/{}".format(
+                                        nd.name, idx)
                                     node.which_child[new_child_name] = idx
                                 else:
                                     node.which_child[nd.name] = idx
@@ -395,6 +400,7 @@ class ONNXGraph(Graph):
 
 
 class ONNXDecoder(object):
+
     def __init__(self, onnx_model, enable_onnx_checker, input_shape_dict=None):
         onnx_model = onnx.load(onnx_model)
         print('model ir_version: {}, op version: {}'.format(

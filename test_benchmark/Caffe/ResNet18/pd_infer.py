@@ -6,7 +6,6 @@ import os
 import numpy as np
 import pickle
 
-
 f = open("result.txt", "w")
 f.write("======ResNet18: \n")
 
@@ -18,15 +17,16 @@ try:
 
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-            
+
     # test dygraph
-    [prog, 
-     feed_target_names, 
-     fetch_targets] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                    executor=exe, 
-                                                    model_filename="model.pdmodel",
-                                                    params_filename="model.pdiparams")
-    result = exe.run(prog, feed={feed_target_names[0]:input_data}, fetch_list=fetch_targets)
+    [prog, feed_target_names, fetch_targets] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    result = exe.run(prog,
+                     feed={feed_target_names[0]: input_data},
+                     fetch_list=fetch_targets)
     diff = caffe_result - np.asarray(result)
     max_abs_diff = np.fabs(diff).max()
     if max_abs_diff < 1e-05:
@@ -40,4 +40,3 @@ try:
 except:
     f.write("!!!!!Failed\n")
 f.close()
-

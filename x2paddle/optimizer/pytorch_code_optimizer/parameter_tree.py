@@ -15,6 +15,7 @@
 
 
 class PamareterNode(object):
+
     def __init__(self, old_name=None, new_name=None):
         self.old_name = old_name
         self.new_name = new_name
@@ -22,24 +23,26 @@ class PamareterNode(object):
 
     def add_child(self, child):
         self.childs.append(child)
-        
+
     def has_child(self):
         if len(self.childs) == 0:
             return False
         else:
             return True
-       
-        
+
+
 class PamareterTree(object):
+
     def __init__(self):
         self.nodes = list()
         self.old2new = dict()
-        
+
     def add_node(self, node):
         self.nodes.append(node)
-    
+
     def traverse(self):
         tmp = list()
+
         def recurs(node, prefix_name):
             for child in node.childs:
                 child_prefix_name = prefix_name + "." + child.new_name
@@ -47,9 +50,9 @@ class PamareterTree(object):
                     recurs(child, child_prefix_name)
                 else:
                     self.old2new[child.old_name] = child_prefix_name[1:]
+
         recurs(self.nodes[-1], "")
 
-        
     def get_node(self, old_name):
         for node in self.nodes:
             if node.old_name == old_name:

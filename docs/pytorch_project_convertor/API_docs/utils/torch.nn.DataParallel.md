@@ -22,7 +22,7 @@ paddle.DataParallel(layers, strategy=None, comm_buffer_size=25, last_comm_buffer
 
 ### 功能差异
 #### 使用差异
-***PyTorch***：在API中即可通过设置参数使用的GPU id。  
-***PaddlePaddle***：只能在启动代码时设置GPU id，设置方式如下：  
-> python -m paddle.distributed.launch –selected_gpus=0,1 demo.py  
+***PyTorch***：在API中即可通过设置参数使用的GPU id。
+***PaddlePaddle***：只能在启动代码时设置GPU id，设置方式如下：
+> python -m paddle.distributed.launch –selected_gpus=0,1 demo.py
 > 其中 demo.py 脚本的代码可以是下面的示例代码。

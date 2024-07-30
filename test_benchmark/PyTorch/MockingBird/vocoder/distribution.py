@@ -13,11 +13,14 @@ def log_sum_exp(x):
 
 
 # It is adapted from https://github.com/r9y9/wavenet_vocoder/blob/master/wavenet_vocoder/mixture.py
-def discretized_mix_logistic_loss(y_hat, y, num_classes=65536,
-                                  log_scale_min=None, reduce=True):
+def discretized_mix_logistic_loss(y_hat,
+                                  y,
+                                  num_classes=65536,
+                                  log_scale_min=None,
+                                  reduce=True):
     if log_scale_min is None:
         log_scale_min = float(np.log(1e-14))
-    y_hat = y_hat.permute(0,2,1)
+    y_hat = y_hat.permute(0, 2, 1)
     assert y_hat.dim() == 3
     assert y_hat.size(1) % 3 == 0
     nr_mix = y_hat.size(1) // 3
@@ -28,7 +31,8 @@ def discretized_mix_logistic_loss(y_hat, y, num_classes=65536,
     # unpack parameters. (B, T, num_mixtures) x 3
     logit_probs = y_hat[:, :, :nr_mix]
     means = y_hat[:, :, nr_mix:2 * nr_mix]
-    log_scales = torch.clamp(y_hat[:, :, 2 * nr_mix:3 * nr_mix], min=log_scale_min)
+    log_scales = torch.clamp(y_hat[:, :, 2 * nr_mix:3 * nr_mix],
+                             min=log_scale_min)
 
     # B x T x 1 -> B x T x num_mixtures
     y = y.expand_as(means)
@@ -72,7 +76,8 @@ def discretized_mix_logistic_loss(y_hat, y, num_classes=65536,
         torch.log(torch.clamp(cdf_delta, min=1e-12)) + \
         (1. - inner_inner_cond) * (log_pdf_mid - np.log((num_classes - 1) / 2))
     inner_cond = (y > 0.999).float()
-    inner_out = inner_cond * log_one_minus_cdf_min + (1. - inner_cond) * inner_inner_out
+    inner_out = inner_cond * log_one_minus_cdf_min + (
+        1. - inner_cond) * inner_inner_out
     cond = (y < -0.999).float()
     log_probs = cond * log_cdf_plus + (1. - cond) * inner_out
 
@@ -104,15 +109,16 @@ def sample_from_discretized_mix_logistic(y, log_scale_min=None):
 
     # sample mixture indicator from softmax
     temp = logit_probs.data.new(logit_probs.size()).uniform_(1e-5, 1.0 - 1e-5)
-    temp = logit_probs.data - torch.log(- torch.log(temp))
+    temp = logit_probs.data - torch.log(-torch.log(temp))
     _, argmax = temp.max(dim=-1)
 
     # (B, T) -> (B, T, nr_mix)
     one_hot = to_one_hot(argmax, nr_mix)
     # select logistic parameters
     means = torch.sum(y[:, :, nr_mix:2 * nr_mix] * one_hot, dim=-1)
-    log_scales = torch.clamp(torch.sum(
-        y[:, :, 2 * nr_mix:3 * nr_mix] * one_hot, dim=-1), min=log_scale_min)
+    log_scales = torch.clamp(torch.sum(y[:, :, 2 * nr_mix:3 * nr_mix] * one_hot,
+                                       dim=-1),
+                             min=log_scale_min)
     # sample from logistic & clip to interval
     # we don't actually round to the nearest 8bit value when sampling
     u = means.data.new(means.size()).uniform_(1e-5, 1.0 - 1e-5)
@@ -125,7 +131,7 @@ def sample_from_discretized_mix_logistic(y, log_scale_min=None):
 
 def to_one_hot(tensor, n, fill_with=1.):
     # we perform one hot encore with respect to the last axis
-    one_hot = torch.FloatTensor(tensor.size() + (n,)).zero_()
+    one_hot = torch.FloatTensor(tensor.size() + (n, )).zero_()
     if tensor.is_cuda:
         one_hot = one_hot.cuda()
     one_hot.scatter_(len(tensor.size()), tensor.unsqueeze(-1), fill_with)

@@ -25,8 +25,7 @@ def normal_(self, mean=0.0, std=1.0):
     replaced_param = paddle.create_parameter(
         shape=self.shape,
         dtype=self.dtype,
-        default_initializer=paddle.nn.initializer.Normal(
-            mean=mean, std=std))
+        default_initializer=paddle.nn.initializer.Normal(mean=mean, std=std))
     paddle.assign(self, replaced_param)
 
 

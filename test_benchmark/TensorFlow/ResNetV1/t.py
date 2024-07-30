@@ -1,10 +1,12 @@
 import paddle
 import numpy as np
+
 np.random.seed(6)
 a = np.random.rand(1, 224, 224, 3).astype("float32")
 paddle.disable_static()
 from pd_model_dygraph_new.x2paddle_code import main
-out1=main(a)
+
+out1 = main(a)
 print(out1.numpy())
 np.save("out1.npy", out1.numpy())
 
@@ -13,7 +15,6 @@ np.save("out1.npy", out1.numpy())
 # out2=main(a)
 # out1 = np.load("out1.npy")
 # print(np.max(np.abs(out1-out2.numpy())))
-
 
 # import paddle
 # import numpy as np

@@ -13,4 +13,9 @@ jit_type = "script"
 
 import numpy as np
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(torch_model, save_dir, jit_type, [torch.tensor(input_data)], enable_code_optim=False, disable_feedback=True)
+
+pytorch2paddle(torch_model,
+               save_dir,
+               jit_type, [torch.tensor(input_data)],
+               enable_code_optim=False,
+               disable_feedback=True)

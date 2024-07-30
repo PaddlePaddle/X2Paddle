@@ -295,8 +295,8 @@ layer {
 }
 
 
-  
-  
+
+
 layer {
   name: "pool_d3c-4a"
   type: "Pooling"
@@ -373,7 +373,7 @@ layer {
   top: "d4c"
 }
 
-  
+
 layer {
   name: "upconv_d4c_u3a"
   type: "Deconvolution"

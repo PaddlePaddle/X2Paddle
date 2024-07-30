@@ -3,7 +3,6 @@ import paddle
 import numpy as np
 import sys
 
-
 f = open('result.txt', 'w')
 f.write("======VGG11: \n")
 try:
@@ -11,18 +10,19 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/vgg11/input_0.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
     paddle.disable_static()
     from pd_model_dygraph.x2paddle_code import main
     data = np.load('../dataset/vgg11/input_0.npy')
     data = paddle.to_tensor(data)
     result = main(data).numpy()
-    
+
     onnx_result = np.load('../dataset/vgg11/result.npy')
     diff = result[0] - onnx_result
     max_abs_diff = np.fabs(diff).max()

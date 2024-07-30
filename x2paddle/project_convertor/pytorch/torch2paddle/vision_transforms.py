@@ -22,6 +22,7 @@ from paddle.vision.transforms import functional as F
 
 
 class ToPILImage(BaseTransform):
+
     def __init__(self, mode=None, keys=None):
         super(ToPILImage, self).__init__(keys)
         self.data_format = data_format
@@ -58,8 +59,8 @@ class ToPILImage(BaseTransform):
                 pic = np.expand_dims(pic, 2)
 
         npimg = pic
-        if isinstance(pic, paddle.Tensor) and "float" in str(pic.numpy(
-        ).dtype) and mode != 'F':
+        if isinstance(pic, paddle.Tensor) and "float" in str(
+                pic.numpy().dtype) and mode != 'F':
             pic = pic.mul(255).byte()
         if isinstance(pic, paddle.Tensor):
             npimg = np.transpose(pic.numpy(), (1, 2, 0))
@@ -89,8 +90,9 @@ class ToPILImage(BaseTransform):
         elif npimg.shape[2] == 2:
             permitted_2_channel_modes = ['LA']
             if mode is not None and mode not in permitted_2_channel_modes:
-                raise ValueError("Only modes {} are supported for 2D inputs".
-                                 format(permitted_2_channel_modes))
+                raise ValueError(
+                    "Only modes {} are supported for 2D inputs".format(
+                        permitted_2_channel_modes))
 
             if mode is None and npimg.dtype == np.uint8:
                 mode = 'LA'
@@ -98,16 +100,18 @@ class ToPILImage(BaseTransform):
         elif npimg.shape[2] == 4:
             permitted_4_channel_modes = ['RGBA', 'CMYK', 'RGBX']
             if mode is not None and mode not in permitted_4_channel_modes:
-                raise ValueError("Only modes {} are supported for 4D inputs".
-                                 format(permitted_4_channel_modes))
+                raise ValueError(
+                    "Only modes {} are supported for 4D inputs".format(
+                        permitted_4_channel_modes))
 
             if mode is None and npimg.dtype == np.uint8:
                 mode = 'RGBA'
         else:
             permitted_3_channel_modes = ['RGB', 'YCbCr', 'HSV']
             if mode is not None and mode not in permitted_3_channel_modes:
-                raise ValueError("Only modes {} are supported for 3D inputs".
-                                 format(permitted_3_channel_modes))
+                raise ValueError(
+                    "Only modes {} are supported for 3D inputs".format(
+                        permitted_3_channel_modes))
             if mode is None and npimg.dtype == np.uint8:
                 mode = 'RGB'
 

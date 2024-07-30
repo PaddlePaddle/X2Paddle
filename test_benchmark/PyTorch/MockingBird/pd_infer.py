@@ -12,15 +12,17 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test Dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_encoder_model_trace/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_encoder_model_trace/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
 
     data = np.load("../dataset/MockingBird/input.npy")
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
-    with open("../dataset/MockingBird/result_SpeakerEncoder_pytorch.pkl", "rb") as fr:
+    with open("../dataset/MockingBird/result_SpeakerEncoder_pytorch.pkl",
+              "rb") as fr:
         pytorch_result = pickle.load(fr)
 
     is_successd = True

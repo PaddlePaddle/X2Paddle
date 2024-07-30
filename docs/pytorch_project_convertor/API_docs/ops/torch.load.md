@@ -24,11 +24,11 @@ paddle.load(path, **configs)
 ### 功能差异
 
 #### 加载类型
-***PyTorch***：可从文件或者内存中的读缓冲区(例如`io.BytesIO`、`io.StringIO`)中加载。  
+***PyTorch***：可从文件或者内存中的读缓冲区(例如`io.BytesIO`、`io.StringIO`)中加载。
 ***PaddlePaddle***：只能从文件中加载。
 
 #### 加载内容
-***PyTorch***：可以加载`torch.Tensor`、`torch.nn.Module`、优化器等多个类型的数据。  
+***PyTorch***：可以加载`torch.Tensor`、`torch.nn.Module`、优化器等多个类型的数据。
 ***PaddlePaddle***：只能加载`paddle.nn.Layer`、优化器这两个类型的数据。
 
 

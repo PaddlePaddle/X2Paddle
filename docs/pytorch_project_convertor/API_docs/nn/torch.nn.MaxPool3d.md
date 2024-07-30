@@ -30,5 +30,5 @@ paddle.nn.MaxPool3D(kernel_size,
 ### 功能差异
 
 #### 池化方式
-***PyTorch***：可以使用空洞池化。  
+***PyTorch***：可以使用空洞池化。
 ***PaddlePaddle***：无此池化方式。

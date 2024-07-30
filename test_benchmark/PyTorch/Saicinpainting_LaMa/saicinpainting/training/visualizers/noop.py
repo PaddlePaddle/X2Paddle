@@ -2,6 +2,7 @@ from saicinpainting.training.visualizers.base import BaseVisualizer
 
 
 class NoopVisualizer(BaseVisualizer):
+
     def __init__(self, *args, **kwargs):
         pass
 

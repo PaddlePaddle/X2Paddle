@@ -33,8 +33,9 @@ def prior_box(input,
               name=None):
     helper = LayerHelper("prior_box", **locals())
     dtype = helper.input_dtype()
-    check_variable_and_dtype(
-        input, 'input', ['uint8', 'int8', 'float32', 'float64'], 'prior_box')
+    check_variable_and_dtype(input, 'input',
+                             ['uint8', 'int8', 'float32', 'float64'],
+                             'prior_box')
 
     def _is_list_or_tuple_(data):
         return (isinstance(data, list) or isinstance(data, tuple))
@@ -86,17 +87,23 @@ def prior_box(input,
         var = helper.create_variable_for_type_inference(dtype)
         helper.append_op(
             type="prior_box",
-            inputs={"Input": input,
-                    "Image": image},
-            outputs={"Boxes": box,
-                     "Variances": var},
-            attrs=attrs, )
+            inputs={
+                "Input": input,
+                "Image": image
+            },
+            outputs={
+                "Boxes": box,
+                "Variances": var
+            },
+            attrs=attrs,
+        )
         box.stop_gradient = True
         var.stop_gradient = True
         return box, var
 
 
 class PriorBox(object):
+
     def __init__(self, min_sizes, max_sizes, aspect_ratios, variance, flip,
                  clip, steps, offset, min_max_aspect_ratios_order):
         self.priorbox_layer_attrs = {

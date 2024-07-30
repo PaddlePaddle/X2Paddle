@@ -50,7 +50,10 @@ def spectral_norm(module,
             dim = 0
     t = str(input.dtype).lower().strip().split(".")[-1]
     t = TYPE_MAPPER[t]
-    spectral_norm = paddle.nn.SpectralNorm(
-        input.shape, dim=dim, power_iters=n_power_iterations, eps=eps, dtype=t)
+    spectral_norm = paddle.nn.SpectralNorm(input.shape,
+                                           dim=dim,
+                                           power_iters=n_power_iterations,
+                                           eps=eps,
+                                           dtype=t)
     out = spectral_norm(input)
     return out

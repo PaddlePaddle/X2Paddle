@@ -32,20 +32,20 @@ paddle.nn.Conv2D(in_channels,
 ### 功能差异
 
 #### 输入格式
-***PyTorch***：只支持`NCHW`的输入。  
+***PyTorch***：只支持`NCHW`的输入。
 ***PaddlePaddle***：支持`NCHW`和`NHWC`两种格式的输入（通过`data_format`设置）。
 
 #### 更新参数设置
-***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。  
-***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
+***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。
+***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。
 
 #### padding的设置
-***PyTorch***：`padding`只能支持list或tuple类型。它可以有3种格式：  
-(1)包含4个二元组：\[\[0,0\], \[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，其中每个元组都可使用整数值替换，代表元组中的2个值相等；  
-(2)包含2个二元组：\[\[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，其中每个元组都可使用整数值替换，代表元组中的2个值相等；  
-(3)包含一个整数值，padding_height = padding_width = padding。  
-***PaddlePaddle***：`padding`支持list或tuple类型或str类型。如果它是一个list或tuple，它可以有4种格式：  
-(1)包含4个二元组：当 data_format 为"NCHW"时为 \[\[0,0\], \[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，当 data_format 为"NHWC"时为\[\[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\], \[0,0\]\]；  
-(2)包含4个整数值：\[padding_height_top, padding_height_bottom, padding_width_left, padding_width_right\]；  
-(3)包含2个整数值：\[padding_height, padding_width\]，此时padding_height_top = padding_height_bottom = padding_height， padding_width_left = padding_width_right = padding_width；  
+***PyTorch***：`padding`只能支持list或tuple类型。它可以有3种格式：
+(1)包含4个二元组：\[\[0,0\], \[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，其中每个元组都可使用整数值替换，代表元组中的2个值相等；
+(2)包含2个二元组：\[\[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，其中每个元组都可使用整数值替换，代表元组中的2个值相等；
+(3)包含一个整数值，padding_height = padding_width = padding。
+***PaddlePaddle***：`padding`支持list或tuple类型或str类型。如果它是一个list或tuple，它可以有4种格式：
+(1)包含4个二元组：当 data_format 为"NCHW"时为 \[\[0,0\], \[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\]\]，当 data_format 为"NHWC"时为\[\[0,0\], \[padding_height_top, padding_height_bottom\], \[padding_width_left, padding_width_right\], \[0,0\]\]；
+(2)包含4个整数值：\[padding_height_top, padding_height_bottom, padding_width_left, padding_width_right\]；
+(3)包含2个整数值：\[padding_height, padding_width\]，此时padding_height_top = padding_height_bottom = padding_height， padding_width_left = padding_width_right = padding_width；
 (4)包含一个整数值，padding_height = padding_width = padding。如果它为一个字符串时，可以是"VALID"或者"SAME"，表示填充算法。

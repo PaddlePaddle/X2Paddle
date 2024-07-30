@@ -21,6 +21,7 @@ from x2paddle.core.util import *
 
 
 class TransposeElimination(FuseBase):
+
     def __init__(self):
         super(TransposeElimination, self).__init__()
         self.direct_layers = [
@@ -67,8 +68,8 @@ class TransposeElimination(FuseBase):
                     continue
                 scanned_layers.add(layer_id)
                 percent = round(len(scanned_layers) / total_layer_num * 100, 2)
-                sys.stderr.write("\rOptimize Transpose Layers...{}%".format(
-                    percent))
+                sys.stderr.write(
+                    "\rOptimize Transpose Layers...{}%".format(percent))
 
                 if layer.kernel != "paddle.transpose":
                     continue
@@ -152,8 +153,8 @@ class TransposeElimination(FuseBase):
                                     output_index] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if not _graph.layers[out].attrs.get('keepdim',
-                                                                False):
+                            if not _graph.layers[out].attrs.get(
+                                    'keepdim', False):
                                 can_be_optimized = False
                                 break
                             if out not in visited_layers:
@@ -226,8 +227,8 @@ class TransposeElimination(FuseBase):
                                     output_index] in _graph.outputs:
                                 can_be_optimized = False
                                 break
-                            if not _graph.layers[ipt].attrs.get('keepdim',
-                                                                False):
+                            if not _graph.layers[ipt].attrs.get(
+                                    'keepdim', False):
                                 can_be_optimized = False
                                 break
                             if ipt not in visited_layers:
@@ -290,5 +291,5 @@ class TransposeElimination(FuseBase):
 
         current_transpose_num = self.get_transpose_num(graph)
         print(
-            "\nTranspose layers optimized, before: transpose_num={}, after: transpose_num={}".
-            format(before_transpose_num, current_transpose_num))
+            "\nTranspose layers optimized, before: transpose_num={}, after: transpose_num={}"
+            .format(before_transpose_num, current_transpose_num))

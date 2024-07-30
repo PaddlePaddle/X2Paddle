@@ -32,13 +32,13 @@ paddle.nn.Conv1D(in_channels,
 ### 功能差异
 
 #### 输入格式
-***PyTorch***：只支持`NCL`的输入。  
+***PyTorch***：只支持`NCL`的输入。
 ***PaddlePaddle***：支持`NCL`和`NLC`两种格式的输入（通过`data_format`设置）。
 
 #### 更新参数设置
-***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。  
-***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。  
+***PyTorch***：`bias`默认为True，表示使用可更新的偏置参数。
+***PaddlePaddle***：`weight_attr`/`bias_attr`默认使用默认的权重/偏置参数属性，否则为指定的权重/偏置参数属性，具体用法参见[ParamAttr](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/ParamAttr_cn.html#paramattr)；当`bias_attr`设置为bool类型与PyTorch的作用一致。
 
 #### padding的设置
-***PyTorch***：`padding`只能支持list或tuple类型。  
+***PyTorch***：`padding`只能支持list或tuple类型。
 ***PaddlePaddle***：`padding`支持list或tuple类型或str类型。

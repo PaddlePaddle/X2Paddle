@@ -29,13 +29,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.nn.functional.conv2d(
-            inputs,
-            weight,
-            stride=self.config["stride"],
-            padding=self.config["padding"],
-            dilation=self.config["dilation"],
-            groups=self.config["groups"])
+        x = torch.nn.functional.conv2d(inputs,
+                                       weight,
+                                       stride=self.config["stride"],
+                                       padding=self.config["padding"],
+                                       dilation=self.config["dilation"],
+                                       groups=self.config["groups"])
         return x
 
 
@@ -49,8 +48,8 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         result = False
         # Warning: "same" padding mode doesn’t support any stride values other than 1
         if isinstance(config["stride"], list):
-            if config["padding"] == "same" and (config["stride"][0] > 1 or
-                                                config["stride"][1] > 1):
+            if config["padding"] == "same" and (config["stride"][0] > 1
+                                                or config["stride"][1] > 1):
                 result = True
         else:
             if config["padding"] == "same" and config["stride"] > 1:
@@ -59,14 +58,14 @@ class TestConv2dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=20, max_value=30), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=20, max_value=30),
+                     min_size=4,
+                     max_size=4))
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=7), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=1, max_value=7),
+                     min_size=4,
+                     max_size=4))
 
         groups = draw(st.integers(min_value=1, max_value=2))
         muti1 = draw(st.integers(min_value=1, max_value=4))
@@ -74,9 +73,9 @@ class TestConv2dConvert(OPConvertAutoScanTest):
         input_shape[1] = kernel_size[1] * groups
 
         strides = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=5),
+                     min_size=1,
+                     max_size=2))
         if len(strides) == 1:
             strides = strides[0]
             if strides > kernel_size[2]:
@@ -105,16 +104,14 @@ class TestConv2dConvert(OPConvertAutoScanTest):
             padding = draw(st.sampled_from(["valid", "same"]))
         else:
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=2,
-                    max_size=2))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=2,
+                         max_size=2))
 
         dilations = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=3), min_size=1, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=3),
+                     min_size=1,
+                     max_size=2))
         if len(dilations) == 1:
             dilations = dilations[0]
         if padding == "same":

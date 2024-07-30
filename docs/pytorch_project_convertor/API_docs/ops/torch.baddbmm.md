@@ -4,8 +4,8 @@
 torch.baddbmm(input, batch1, batch2, beta=1, alpha=1, out=None)
 ```
 ###  功能介绍
-用于实现Tensor（大小为$b×n×m$）与用于实现Tensor（大小为$b×m×p$）相乘，再加上输入（`input`），公式为：  
-$out_i = β *  input_i + α * (batch1_i @ batch2_i)$  
+用于实现Tensor（大小为$b×n×m$）与用于实现Tensor（大小为$b×m×p$）相乘，再加上输入（`input`），公式为：
+$out_i = β *  input_i + α * (batch1_i @ batch2_i)$
 PaddlePaddle目前无对应API，可使用如下代码组合实现该API。
 
 ```python

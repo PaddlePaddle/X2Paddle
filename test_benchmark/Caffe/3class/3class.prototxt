@@ -3227,7 +3227,7 @@ layer {
         kernel_w: 1
         stride: 1
         dilation: 1
-        bias_term: false   
+        bias_term: false
         engine: CAFFE
     }
 }
@@ -4344,7 +4344,7 @@ layer {
    }
 }
 
-# correct 
+# correct
 layer {
   name: "view34"
   type: "Reshape"
@@ -4399,4 +4399,3 @@ layer {
     }
   }
 }
-

@@ -11,15 +11,16 @@ f.write("======3class: \n")
 
 try:
     with open('../dataset/AlexNet/caffe_input.pkl', 'rb') as inp:
-        input_data = np.random.rand(8,3,224,224).astype("float32")
+        input_data = np.random.rand(8, 3, 224, 224).astype("float32")
 
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     # test dygraph
     paddle.disable_static()
     from pd_model_dygraph.x2paddle_code import main
@@ -29,6 +30,5 @@ try:
 
 except:
     f.write("!!!!!Failed\n")
-    
-f.close()
 
+f.close()

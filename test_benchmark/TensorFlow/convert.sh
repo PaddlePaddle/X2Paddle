@@ -1,5 +1,5 @@
 echo "[X2Paddle]    Running TensorFlow model converting test..."
-if [ ! -d "dataset/" ]; then	
+if [ ! -d "dataset/" ]; then
   wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/TensorFlow/dataset.tar.gz
   tar xzvf dataset.tar.gz
 fi

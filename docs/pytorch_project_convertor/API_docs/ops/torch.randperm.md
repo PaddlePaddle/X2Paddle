@@ -24,7 +24,7 @@ paddle.randperm(n, dtype='int64', name=None)
 | layout        | -            | 表示布局方式，PaddlePaddle无此参数。                   |
 | device        | -            | 表示Tensor存放位置，PaddlePaddle无此参数。                   |
 | requires_grad | -            | 表示是否不阻断梯度传导，PaddlePaddle无此参数。 |
-| pin_memeory   | -            | 表示是否使用锁页内存，PaddlePaddle无此参数。           |  
+| pin_memeory   | -            | 表示是否使用锁页内存，PaddlePaddle无此参数。           |
 
 
 ***【注意】*** 这类生成器的用法如下：

@@ -8,29 +8,58 @@ from models.submodule import feature_extraction, MobileV2_Residual, convbn, inte
 
 
 class hourglass2D(nn.Module):
+
     def __init__(self, in_channels):
         super(hourglass2D, self).__init__()
 
         self.expanse_ratio = 2
 
-        self.conv1 = MobileV2_Residual(in_channels, in_channels * 2, stride=2, expanse_ratio=self.expanse_ratio)
+        self.conv1 = MobileV2_Residual(in_channels,
+                                       in_channels * 2,
+                                       stride=2,
+                                       expanse_ratio=self.expanse_ratio)
 
-        self.conv2 = MobileV2_Residual(in_channels * 2, in_channels * 2, stride=1, expanse_ratio=self.expanse_ratio)
+        self.conv2 = MobileV2_Residual(in_channels * 2,
+                                       in_channels * 2,
+                                       stride=1,
+                                       expanse_ratio=self.expanse_ratio)
 
-        self.conv3 = MobileV2_Residual(in_channels * 2, in_channels * 4, stride=2, expanse_ratio=self.expanse_ratio)
+        self.conv3 = MobileV2_Residual(in_channels * 2,
+                                       in_channels * 4,
+                                       stride=2,
+                                       expanse_ratio=self.expanse_ratio)
 
-        self.conv4 = MobileV2_Residual(in_channels * 4, in_channels * 4, stride=1, expanse_ratio=self.expanse_ratio)
+        self.conv4 = MobileV2_Residual(in_channels * 4,
+                                       in_channels * 4,
+                                       stride=1,
+                                       expanse_ratio=self.expanse_ratio)
 
         self.conv5 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels * 4, in_channels * 2, 3, padding=1, output_padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(in_channels * 2))
+            nn.ConvTranspose2d(in_channels * 4,
+                               in_channels * 2,
+                               3,
+                               padding=1,
+                               output_padding=1,
+                               stride=2,
+                               bias=False), nn.BatchNorm2d(in_channels * 2))
 
         self.conv6 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels * 2, in_channels, 3, padding=1, output_padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(in_channels))
+            nn.ConvTranspose2d(in_channels * 2,
+                               in_channels,
+                               3,
+                               padding=1,
+                               output_padding=1,
+                               stride=2,
+                               bias=False), nn.BatchNorm2d(in_channels))
 
-        self.redir1 = MobileV2_Residual(in_channels, in_channels, stride=1, expanse_ratio=self.expanse_ratio)
-        self.redir2 = MobileV2_Residual(in_channels * 2, in_channels * 2, stride=1, expanse_ratio=self.expanse_ratio)
+        self.redir1 = MobileV2_Residual(in_channels,
+                                        in_channels,
+                                        stride=1,
+                                        expanse_ratio=self.expanse_ratio)
+        self.redir2 = MobileV2_Residual(in_channels * 2,
+                                        in_channels * 2,
+                                        stride=1,
+                                        expanse_ratio=self.expanse_ratio)
 
     def forward(self, x):
         conv1 = self.conv1(x)
@@ -46,6 +75,7 @@ class hourglass2D(nn.Module):
 
 
 class MSNet2D(nn.Module):
+
     def __init__(self, maxdisp):
 
         super(MSNet2D, self).__init__()
@@ -70,27 +100,37 @@ class MSNet2D(nn.Module):
                                        nn.ReLU(inplace=True),
                                        nn.Conv2d(64, 32, 1, 1, 0, 1))
 
-        self.conv3d = nn.Sequential(nn.Conv3d(1, 16, kernel_size=(8, 3, 3), stride=[8, 1, 1], padding=[0, 1, 1]),
-                                    nn.BatchNorm3d(16),
-                                    nn.ReLU(),
-                                    nn.Conv3d(16, 32, kernel_size=(4, 3, 3), stride=[4, 1, 1], padding=[0, 1, 1]),
-                                    nn.BatchNorm3d(32),
-                                    nn.ReLU(),
-                                    nn.Conv3d(32, 16, kernel_size=(2, 3, 3), stride=[2, 1, 1], padding=[0, 1, 1]),
-                                    nn.BatchNorm3d(16),
-                                    nn.ReLU())
+        self.conv3d = nn.Sequential(
+            nn.Conv3d(1,
+                      16,
+                      kernel_size=(8, 3, 3),
+                      stride=[8, 1, 1],
+                      padding=[0, 1, 1]), nn.BatchNorm3d(16), nn.ReLU(),
+            nn.Conv3d(16,
+                      32,
+                      kernel_size=(4, 3, 3),
+                      stride=[4, 1, 1],
+                      padding=[0, 1, 1]), nn.BatchNorm3d(32), nn.ReLU(),
+            nn.Conv3d(32,
+                      16,
+                      kernel_size=(2, 3, 3),
+                      stride=[2, 1, 1],
+                      padding=[0, 1, 1]), nn.BatchNorm3d(16), nn.ReLU())
 
         self.volume11 = nn.Sequential(convbn(16, 1, 1, 1, 0, 1),
                                       nn.ReLU(inplace=True))
 
-        self.dres0 = nn.Sequential(MobileV2_Residual(self.volume_size, self.hg_size, 1, self.dres_expanse_ratio),
-                                   nn.ReLU(inplace=True),
-                                   MobileV2_Residual(self.hg_size, self.hg_size, 1, self.dres_expanse_ratio),
-                                   nn.ReLU(inplace=True))
+        self.dres0 = nn.Sequential(
+            MobileV2_Residual(self.volume_size, self.hg_size, 1,
+                              self.dres_expanse_ratio), nn.ReLU(inplace=True),
+            MobileV2_Residual(self.hg_size, self.hg_size, 1,
+                              self.dres_expanse_ratio), nn.ReLU(inplace=True))
 
-        self.dres1 = nn.Sequential(MobileV2_Residual(self.hg_size, self.hg_size, 1, self.dres_expanse_ratio),
-                                   nn.ReLU(inplace=True),
-                                   MobileV2_Residual(self.hg_size, self.hg_size, 1, self.dres_expanse_ratio))
+        self.dres1 = nn.Sequential(
+            MobileV2_Residual(self.hg_size, self.hg_size, 1,
+                              self.dres_expanse_ratio), nn.ReLU(inplace=True),
+            MobileV2_Residual(self.hg_size, self.hg_size, 1,
+                              self.dres_expanse_ratio))
 
         self.encoder_decoder1 = hourglass2D(self.hg_size)
 
@@ -98,29 +138,54 @@ class MSNet2D(nn.Module):
 
         self.encoder_decoder3 = hourglass2D(self.hg_size)
 
-        self.classif0 = nn.Sequential(convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
-                                      nn.ReLU(inplace=True),
-                                      nn.Conv2d(self.hg_size, self.hg_size, kernel_size=3, padding=1, stride=1,
-                                                bias=False, dilation=1))
-        self.classif1 = nn.Sequential(convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
-                                      nn.ReLU(inplace=True),
-                                      nn.Conv2d(self.hg_size, self.hg_size, kernel_size=3, padding=1, stride=1,
-                                                bias=False, dilation=1))
-        self.classif2 = nn.Sequential(convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
-                                      nn.ReLU(inplace=True),
-                                      nn.Conv2d(self.hg_size, self.hg_size, kernel_size=3, padding=1, stride=1,
-                                                bias=False, dilation=1))
-        self.classif3 = nn.Sequential(convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
-                                      nn.ReLU(inplace=True),
-                                      nn.Conv2d(self.hg_size, self.hg_size, kernel_size=3, padding=1, stride=1,
-                                                bias=False, dilation=1))
+        self.classif0 = nn.Sequential(
+            convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.hg_size,
+                      self.hg_size,
+                      kernel_size=3,
+                      padding=1,
+                      stride=1,
+                      bias=False,
+                      dilation=1))
+        self.classif1 = nn.Sequential(
+            convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.hg_size,
+                      self.hg_size,
+                      kernel_size=3,
+                      padding=1,
+                      stride=1,
+                      bias=False,
+                      dilation=1))
+        self.classif2 = nn.Sequential(
+            convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.hg_size,
+                      self.hg_size,
+                      kernel_size=3,
+                      padding=1,
+                      stride=1,
+                      bias=False,
+                      dilation=1))
+        self.classif3 = nn.Sequential(
+            convbn(self.hg_size, self.hg_size, 3, 1, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.hg_size,
+                      self.hg_size,
+                      kernel_size=3,
+                      padding=1,
+                      stride=1,
+                      bias=False,
+                      dilation=1))
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
             elif isinstance(m, nn.Conv3d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.kernel_size[2] * m.out_channels
+                n = m.kernel_size[0] * m.kernel_size[1] * m.kernel_size[
+                    2] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
@@ -194,25 +259,37 @@ class MSNet2D(nn.Module):
             cost3 = self.classif3(out3)
 
             cost0 = torch.unsqueeze(cost0, 1)
-            cost0 = F.interpolate(cost0, [self.maxdisp, L.size()[2], L.size()[3]], mode='trilinear')
+            cost0 = F.interpolate(
+                cost0, [self.maxdisp, L.size()[2],
+                        L.size()[3]],
+                mode='trilinear')
             cost0 = torch.squeeze(cost0, 1)
             pred0 = F.softmax(cost0, dim=1)
             pred0 = disparity_regression(pred0, self.maxdisp)
 
             cost1 = torch.unsqueeze(cost1, 1)
-            cost1 = F.interpolate(cost1, [self.maxdisp, L.size()[2], L.size()[3]], mode='trilinear')
+            cost1 = F.interpolate(
+                cost1, [self.maxdisp, L.size()[2],
+                        L.size()[3]],
+                mode='trilinear')
             cost1 = torch.squeeze(cost1, 1)
             pred1 = F.softmax(cost1, dim=1)
             pred1 = disparity_regression(pred1, self.maxdisp)
 
             cost2 = torch.unsqueeze(cost2, 1)
-            cost2 = F.interpolate(cost2, [self.maxdisp, L.size()[2], L.size()[3]], mode='trilinear')
+            cost2 = F.interpolate(
+                cost2, [self.maxdisp, L.size()[2],
+                        L.size()[3]],
+                mode='trilinear')
             cost2 = torch.squeeze(cost2, 1)
             pred2 = F.softmax(cost2, dim=1)
             pred2 = disparity_regression(pred2, self.maxdisp)
 
             cost3 = torch.unsqueeze(cost3, 1)
-            cost3 = F.interpolate(cost3, [self.maxdisp, L.size()[2], L.size()[3]], mode='trilinear')
+            cost3 = F.interpolate(
+                cost3, [self.maxdisp, L.size()[2],
+                        L.size()[3]],
+                mode='trilinear')
             cost3 = torch.squeeze(cost3, 1)
             pred3 = F.softmax(cost3, dim=1)
             pred3 = disparity_regression(pred3, self.maxdisp)
@@ -222,7 +299,10 @@ class MSNet2D(nn.Module):
         else:
             cost3 = self.classif3(out3)
             cost3 = torch.unsqueeze(cost3, 1)
-            cost3 = F.interpolate(cost3, [self.maxdisp, L.size()[2], L.size()[3]], mode='trilinear')
+            cost3 = F.interpolate(
+                cost3, [self.maxdisp, L.size()[2],
+                        L.size()[3]],
+                mode='trilinear')
             cost3 = torch.squeeze(cost3, 1)
             pred3 = F.softmax(cost3, dim=1)
             pred3 = disparity_regression(pred3, self.maxdisp)

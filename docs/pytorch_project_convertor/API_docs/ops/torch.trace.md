@@ -1,7 +1,7 @@
 ## torch.trace
 ### [torch.trace](https://pytorch.org/docs/stable/generated/torch.trace.html?highlight=trace#torch.trace)
 ```python
-torch.trace(input) 
+torch.trace(input)
 ```
 ### [paddle.trace](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/trace_cn.html)
 ```python
