@@ -11,13 +11,19 @@ try:
     exe = paddle.static.Executor(paddle.CUDAPlace(0))
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     with open("../dataset/SegFlow/inputs_segflow_0314.pkl", "rb") as fr:
         input_list = pickle.load(fr)
-    result = exe.run(prog, feed={inputs[0]:input_list[0], inputs[1]:input_list[1]}, fetch_list=outputs)
+    result = exe.run(prog,
+                     feed={
+                         inputs[0]: input_list[0],
+                         inputs[1]: input_list[1]
+                     },
+                     fetch_list=outputs)
 
     with open("../dataset/SegFlow/output_segflow_0314.pkl", "rb") as fr:
         caffe_result = pickle.load(fr)

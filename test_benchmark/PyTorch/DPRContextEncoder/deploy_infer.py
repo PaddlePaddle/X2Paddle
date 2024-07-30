@@ -8,6 +8,7 @@ import paddle.fluid as fluid
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
+
 def get_current_memory_mb():
     """
     It is used to Obtain the memory usage of the CPU and GPU during the running of the program.
@@ -31,7 +32,9 @@ def get_current_memory_mb():
         handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
-    return round(cpu_mem, 4), round(gpu_mem, 4), round(gpus[gpu_id].memoryUtil * 100, 4)
+    return round(cpu_mem, 4), round(gpu_mem,
+                                    4), round(gpus[gpu_id].memoryUtil * 100, 4)
+
 
 class Predictor(object):
     """
@@ -59,7 +62,8 @@ class Predictor(object):
     def predict(self, warmup=0, repeats=1):
         results = None
         input_names = self.predictor.get_input_names()
-        with open('../dataset/DPRContextEncoder/pytorch_input.pkl', 'rb') as inp:
+        with open('../dataset/DPRContextEncoder/pytorch_input.pkl',
+                  'rb') as inp:
             input_data = pickle.load(inp)
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
@@ -80,6 +84,7 @@ class Predictor(object):
         self.inference_time = (end_time - start_time) / repeats
         return results
 
+
 def load_predictor(model_dir,
                    batch_size=1,
                    use_gpu=False,
@@ -92,9 +97,8 @@ def load_predictor(model_dir,
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     """
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
+    config = Config(os.path.join(model_dir, 'model.pdmodel'),
+                    os.path.join(model_dir, 'model.pdiparams'))
     if use_gpu:
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
@@ -123,19 +127,20 @@ def load_predictor(model_dir,
     predictor = create_predictor(config)
     return predictor, config
 
+
 def main():
     # for trace
-    predictor = Predictor("pd_model/inference_model/", 
-                        use_gpu=True, 
-                        cpu_threads=1, 
-                        enable_mkldnn=False)
+    predictor = Predictor("pd_model/inference_model/",
+                          use_gpu=True,
+                          cpu_threads=1,
+                          enable_mkldnn=False)
     predictor.predict(warmup=10, repeats=10)
     cm, gm, gu = get_current_memory_mb()
     cost_time = predictor.inference_time
-    
+
     #record change
     if os.path.exists('result_mem_trace.txt'):
-        with open('result_mem_trace.txt','r') as f1:
+        with open('result_mem_trace.txt', 'r') as f1:
             lines = f1.readlines()
             inference_time_pre = lines[0].strip().split(',')[0].split(':')[1]
             cpu_mem_pre = lines[1].strip().split(',')[0].split(':')[1]
@@ -148,21 +153,25 @@ def main():
         gpu_percent_change = gu - float(gpu_percent_pre)
         if cpu_mem_change >= 1000 or gpu_mem_change >= 1000:
             assert 'change is so big! please check the model!'
-        with open('result_mem_trace.txt','w') as f2:
-            f2.write("inference_time:"+ str(cost_time)+ ",change:"+ str(inference_time_change)+ "\n")
-            f2.write("cpu_mem:"+ str(cm)+ ",change:"+ str(cpu_mem_change)+ "\n")
-            f2.write("gpu_mem:"+ str(gm)+ ",change:"+ str(gpu_mem_change)+ "\n")
-            f2.write("gpu_percent:"+ str(gu)+ ",change:"+ str(gpu_percent_change)+ "\n")
+        with open('result_mem_trace.txt', 'w') as f2:
+            f2.write("inference_time:" + str(cost_time) + ",change:" +
+                     str(inference_time_change) + "\n")
+            f2.write("cpu_mem:" + str(cm) + ",change:" + str(cpu_mem_change) +
+                     "\n")
+            f2.write("gpu_mem:" + str(gm) + ",change:" + str(gpu_mem_change) +
+                     "\n")
+            f2.write("gpu_percent:" + str(gu) + ",change:" +
+                     str(gpu_percent_change) + "\n")
         f1.close()
         f2.close()
-    else:        
-        with open('result_mem_trace.txt','w') as f1:
-            f1.write("inference_time:"+ str(cost_time)+ ",change:0"+ "\n")
-            f1.write("cpu_mem:"+ str(cm)+ ",change:0"+ "\n")
-            f1.write("gpu_mem:"+ str(gm)+ ",change:0"+ '\n')
-            f1.write("gpu_percent:"+ str(gu)+ ",change:0"+ '\n')
+    else:
+        with open('result_mem_trace.txt', 'w') as f1:
+            f1.write("inference_time:" + str(cost_time) + ",change:0" + "\n")
+            f1.write("cpu_mem:" + str(cm) + ",change:0" + "\n")
+            f1.write("gpu_mem:" + str(gm) + ",change:0" + '\n')
+            f1.write("gpu_percent:" + str(gu) + ",change:0" + '\n')
         f1.close()
-        
+
     print_info = {
         'inference_time_trace': cost_time,
         'cpu_mem_trace': cm,
@@ -170,10 +179,9 @@ def main():
         'gpu_percent_trace': gu
     }
     return print_info
-    
+
 
 if __name__ == '__main__':
     paddle.enable_static()
 
     print_info = main()
-    

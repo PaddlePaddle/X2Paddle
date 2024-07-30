@@ -19,6 +19,7 @@ import math
 
 
 def print_mapping_info(func):
+
     def run_mapping(*args, **kwargs):
         node = args[1]
         try:
@@ -44,6 +45,7 @@ def _get_same_padding(in_size, kernel_size, stride, autopad):
 
 
 class OpSet7(OpSet):
+
     def __init__(self, decoder, paddle_graph):
         super(OpSet7, self).__init__(decoder, paddle_graph)
 
@@ -99,21 +101,23 @@ class OpSet7(OpSet):
     def Or(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.logical_or",
-            inputs={"x": val_x.name,
-                    "y": val_y.name},
-            outputs=[node.name])
+        self.paddle_graph.add_layer("paddle.logical_or",
+                                    inputs={
+                                        "x": val_x.name,
+                                        "y": val_y.name
+                                    },
+                                    outputs=[node.name])
 
     @print_mapping_info
     def Xor(self, node):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         val_y = self.graph.get_input_node(node, idx=1, copy=True)
-        self.paddle_graph.add_layer(
-            "paddle.logical_xor",
-            inputs={"x": val_x.name,
-                    "y": val_y.name},
-            outputs=[node.name])
+        self.paddle_graph.add_layer("paddle.logical_xor",
+                                    inputs={
+                                        "x": val_x.name,
+                                        "y": val_y.name
+                                    },
+                                    outputs=[node.name])
 
     @print_mapping_info
     def Unsqueeze(self, node):
@@ -121,17 +125,15 @@ class OpSet7(OpSet):
         axes = node.get_attr('axes')
         # deal with scalar(0D) tensor
         if len(val_x.out_shapes[0]) == 0 and len(axes) == 1 and axes[0] == 0:
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": val_x.name},
-                outputs=[node.name],
-                shape=[1])
+            self.paddle_graph.add_layer('paddle.reshape',
+                                        inputs={"x": val_x.name},
+                                        outputs=[node.name],
+                                        shape=[1])
         else:
-            self.paddle_graph.add_layer(
-                'paddle.unsqueeze',
-                inputs={"x": val_x.name},
-                axis=axes,
-                outputs=[node.name])
+            self.paddle_graph.add_layer('paddle.unsqueeze',
+                                        inputs={"x": val_x.name},
+                                        axis=axes,
+                                        outputs=[node.name])
 
     @print_mapping_info
     def ReduceL1(self, node):
@@ -144,27 +146,23 @@ class OpSet7(OpSet):
         if val_x.dtype != 'float32' and val_x.dtype != 'float64':
             indices_cast = val_x.name + '_cast'
             mid_norm = val_x.name + '_norm'
-            self.paddle_graph.add_layer(
-                'paddle.cast',
-                inputs={"x": val_x.name},
-                outputs=[indices_cast],
-                dtype=string('float32'))
-            self.paddle_graph.add_layer(
-                "paddle.norm",
-                inputs={"x": indices_cast},
-                outputs=[mid_norm],
-                **layer_attrs)
-            self.paddle_graph.add_layer(
-                'paddle.cast',
-                inputs={"x": mid_norm},
-                outputs=[node.name],
-                dtype=string(val_x.dtype))
+            self.paddle_graph.add_layer('paddle.cast',
+                                        inputs={"x": val_x.name},
+                                        outputs=[indices_cast],
+                                        dtype=string('float32'))
+            self.paddle_graph.add_layer("paddle.norm",
+                                        inputs={"x": indices_cast},
+                                        outputs=[mid_norm],
+                                        **layer_attrs)
+            self.paddle_graph.add_layer('paddle.cast',
+                                        inputs={"x": mid_norm},
+                                        outputs=[node.name],
+                                        dtype=string(val_x.dtype))
         else:
-            self.paddle_graph.add_layer(
-                "paddle.norm",
-                inputs={"x": val_x.name},
-                outputs=layer_outputs,
-                **layer_attrs)
+            self.paddle_graph.add_layer("paddle.norm",
+                                        inputs={"x": val_x.name},
+                                        outputs=layer_outputs,
+                                        **layer_attrs)
 
     @print_mapping_info
     def ReduceL2(self, node):
@@ -177,24 +175,20 @@ class OpSet7(OpSet):
         if val_x.dtype != 'float32' and val_x.dtype != 'float64':
             indices_cast = val_x.name + '_cast'
             mid_norm = val_x.name + '_norm'
-            self.paddle_graph.add_layer(
-                'paddle.cast',
-                inputs={"x": val_x.name},
-                outputs=[indices_cast],
-                dtype=string('float32'))
-            self.paddle_graph.add_layer(
-                "paddle.norm",
-                inputs={"x": indices_cast},
-                outputs=[mid_norm],
-                **layer_attrs)
-            self.paddle_graph.add_layer(
-                'paddle.cast',
-                inputs={"x": mid_norm},
-                outputs=[node.name],
-                dtype=string(val_x.dtype))
+            self.paddle_graph.add_layer('paddle.cast',
+                                        inputs={"x": val_x.name},
+                                        outputs=[indices_cast],
+                                        dtype=string('float32'))
+            self.paddle_graph.add_layer("paddle.norm",
+                                        inputs={"x": indices_cast},
+                                        outputs=[mid_norm],
+                                        **layer_attrs)
+            self.paddle_graph.add_layer('paddle.cast',
+                                        inputs={"x": mid_norm},
+                                        outputs=[node.name],
+                                        dtype=string(val_x.dtype))
         else:
-            self.paddle_graph.add_layer(
-                "paddle.norm",
-                inputs={"x": val_x.name},
-                outputs=layer_outputs,
-                **layer_attrs)
+            self.paddle_graph.add_layer("paddle.norm",
+                                        inputs={"x": val_x.name},
+                                        outputs=layer_outputs,
+                                        **layer_attrs)

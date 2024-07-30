@@ -50,13 +50,12 @@ def avg_pool1d(input,
                padding=0,
                ceil_mode=False,
                count_include_pad=True):
-    return paddle.nn.functional.avg_pool1d(
-        input,
-        kernel_size,
-        stride=stride,
-        padding=padding,
-        ceil_mode=ceil_mode,
-        exclusive=not count_include_pad)
+    return paddle.nn.functional.avg_pool1d(input,
+                                           kernel_size,
+                                           stride=stride,
+                                           padding=padding,
+                                           ceil_mode=ceil_mode,
+                                           exclusive=not count_include_pad)
 
 
 def avg_pool2d(input,
@@ -66,14 +65,13 @@ def avg_pool2d(input,
                ceil_mode=False,
                count_include_pad=True,
                divisor_override=None):
-    return paddle.nn.functional.avg_pool2d(
-        input,
-        kernel_size,
-        stride=stride,
-        padding=padding,
-        ceil_mode=ceil_mode,
-        exclusive=not count_include_pad,
-        divisor_override=divisor_override)
+    return paddle.nn.functional.avg_pool2d(input,
+                                           kernel_size,
+                                           stride=stride,
+                                           padding=padding,
+                                           ceil_mode=ceil_mode,
+                                           exclusive=not count_include_pad,
+                                           divisor_override=divisor_override)
 
 
 def avg_pool3d(input,
@@ -83,14 +81,13 @@ def avg_pool3d(input,
                ceil_mode=False,
                count_include_pad=True,
                divisor_override=None):
-    return paddle.nn.functional.avg_pool3d(
-        input,
-        kernel_size,
-        stride=stride,
-        padding=padding,
-        ceil_mode=ceil_mode,
-        exclusive=not count_include_pad,
-        divisor_override=divisor_override)
+    return paddle.nn.functional.avg_pool3d(input,
+                                           kernel_size,
+                                           stride=stride,
+                                           padding=padding,
+                                           ceil_mode=ceil_mode,
+                                           exclusive=not count_include_pad,
+                                           divisor_override=divisor_override)
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
@@ -103,12 +100,11 @@ def interpolate(input,
                 mode='nearest',
                 align_corners=None,
                 recompute_scale_factor=None):
-    return paddle.nn.functional.interpolate(
-        input,
-        size=size,
-        scale_factor=scale_factor,
-        mode=mode,
-        align_corners=align_corners)
+    return paddle.nn.functional.interpolate(input,
+                                            size=size,
+                                            scale_factor=scale_factor,
+                                            mode=mode,
+                                            align_corners=align_corners)
 
 
 def leaky_relu(input, negative_slope=0.01, inplace=False):
@@ -133,8 +129,10 @@ def smooth_l1_loss(input,
                    reduce=None,
                    reduction='mean',
                    beta=1.0):
-    paddle.nn.functional.smooth_l1_loss(
-        input, target, reduction=reduction, delta=beta)
+    paddle.nn.functional.smooth_l1_loss(input,
+                                        target,
+                                        reduction=reduction,
+                                        delta=beta)
 
 
 def softmax(input, dim=None, _stacklevel=3, dtype=None):

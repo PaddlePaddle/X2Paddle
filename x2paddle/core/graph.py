@@ -19,6 +19,7 @@ import copy as cp
 
 
 class GraphNode(object):
+
     def __init__(self, layer, layer_name=None):
         self.inputs = list()
         self.outputs = list()
@@ -37,6 +38,7 @@ class GraphNode(object):
 
 
 class Graph(object):
+
     def __init__(self, model):
         self.node_map = collections.OrderedDict()
         self.input_nodes = list()

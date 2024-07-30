@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class ConstantFuser(FuseBase):
+
     def __init__(self):
         super(ConstantFuser, self).__init__()
 
@@ -29,12 +30,15 @@ class ConstantFuser(FuseBase):
             for _x70 in range(x3):
                 ...
         """
-        self.pattern.add_layer(
-            "prim.constant", inputs={}, outputs=["x1"], value=2)
+        self.pattern.add_layer("prim.constant",
+                               inputs={},
+                               outputs=["x1"],
+                               value=2)
         self.pattern.build()
         self.pattern.outputs = ["x1"]
 
     def insert_new_layer(self, graph, parameters, matches):
+
         def replace_value(layer_connect, match_name, match_value):
             for k, v in layer_connect.inputs.items():
                 if v == match_name:

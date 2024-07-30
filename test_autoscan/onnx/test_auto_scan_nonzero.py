@@ -28,13 +28,15 @@ class TestNonZeroConcert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=1, max_size=3))
+            st.lists(st.integers(min_value=10, max_value=20),
+                     min_size=1,
+                     max_size=3))
         input_dtype = draw(st.sampled_from(["float32", "int32"]))
 
         config = {
-            "op_names": ["NonZero", ],
+            "op_names": [
+                "NonZero",
+            ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
             "inputs_shape": [input_shape],

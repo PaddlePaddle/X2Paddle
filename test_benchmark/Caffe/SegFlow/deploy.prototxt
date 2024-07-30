@@ -6,15 +6,15 @@ layer {
     type: "Input"
     top:  "data"
     input_param {
-            shape{ 
+            shape{
                    dim: 1
                    dim: 3
                    dim: 480
                    dim: 854
-                   
+
                   }
             }
-        
+
 }
 
 layer {
@@ -22,15 +22,15 @@ layer {
     type: "Input"
     top:  "data2"
     input_param {
-            shape{ 
+            shape{
                    dim: 1
                    dim: 3
                    dim: 512
                    dim: 896
-                        
-                  }    
+
+                  }
             }
-      
+
 }
 
 
@@ -5373,7 +5373,7 @@ layer {
     num_output: 2
     bias_term: false
     kernel_size: 4
-    stride: 2 
+    stride: 2
   }
 }
 
@@ -5523,7 +5523,7 @@ layer {
   name: "concat2c"
   type: "Crop"
   bottom: "pool_concat2"
-  bottom: "scale_res3" 
+  bottom: "scale_res3"
   top: "concat2c"
   crop_param {
     axis: 2
@@ -5644,7 +5644,7 @@ layer {
     num_output: 2
     bias_term: false
     kernel_size: 4
-    stride: 2 
+    stride: 2
   }
 }
 

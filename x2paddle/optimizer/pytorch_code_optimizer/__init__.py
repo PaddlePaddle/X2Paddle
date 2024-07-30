@@ -12,6 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from x2paddle.optimizer.pytorch_code_optimizer.hierachical_tree import HierarchicalTree
 from x2paddle.optimizer.pytorch_code_optimizer.module_graph import ModuleGraph

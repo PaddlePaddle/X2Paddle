@@ -16,6 +16,7 @@ import paddle
 
 
 class Normalize(object):
+
     def __init__(self, axis):
         self.axis = axis
 

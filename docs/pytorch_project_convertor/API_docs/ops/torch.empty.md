@@ -34,7 +34,7 @@ paddle.empty(shape,
 ### 功能差异
 
 #### 使用方式
-***PyTorch***：生成Tensor的形状大小以可变参数的方式传入。  
+***PyTorch***：生成Tensor的形状大小以可变参数的方式传入。
 ***PaddlePaddle***：生成Tensor的形状大小以list的方式传入。
 
 

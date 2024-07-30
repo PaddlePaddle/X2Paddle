@@ -6,8 +6,11 @@ import os
 import numpy
 import pickle
 
+
 def rel_err(x, y):
-    return numpy.max(numpy.abs(x-y)/(numpy.maximum(numpy.abs(x), numpy.abs(y)) + 1e-08))
+    return numpy.max(
+        numpy.abs(x - y) / (numpy.maximum(numpy.abs(x), numpy.abs(y)) + 1e-08))
+
 
 with open('../dataset/FCN_ResNet50/pytorch_input.pkl', 'rb') as inp:
     input_data = pickle.load(inp)["data0"]
@@ -19,12 +22,13 @@ try:
     # trace
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_trace/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_trace/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
 
-    result = exe.run(prog, feed={inputs[0]:input_data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: input_data}, fetch_list=outputs)
     df0 = pytorch_output["aux"] - result[0]
     df1 = pytorch_output["out"] - result[1]
     if numpy.max(numpy.fabs(df0)) > 1e-04:
@@ -37,12 +41,13 @@ try:
     # script
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_script/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_script/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
 
-    result = exe.run(prog, feed={inputs[0]:input_data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: input_data}, fetch_list=outputs)
     df0 = pytorch_output["aux"] - result[0]
     df1 = pytorch_output["out"] - result[1]
     if numpy.max(numpy.fabs(df0)) > 1e-04:

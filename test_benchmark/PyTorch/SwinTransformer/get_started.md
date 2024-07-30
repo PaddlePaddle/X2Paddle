@@ -97,7 +97,7 @@ load data:
       │   ├── img6.jpeg
       │   └── ...
       └── ...
- 
+
   ```
 - To boost the slow speed when reading images from massive small files, we also support zipped ImageNet, which includes
   four files:
@@ -113,14 +113,14 @@ load data:
       ├── train.zip
       ├── val_map.txt
       └── val.zip
-  
+
   $ head -n 5 data/ImageNet-Zip/val_map.txt
   ILSVRC2012_val_00000001.JPEG	65
   ILSVRC2012_val_00000002.JPEG	970
   ILSVRC2012_val_00000003.JPEG	230
   ILSVRC2012_val_00000004.JPEG	809
   ILSVRC2012_val_00000005.JPEG	516
-  
+
   $ head -n 5 data/ImageNet-Zip/train_map.txt
   n01440764/n01440764_10026.JPEG	0
   n01440764/n01440764_10027.JPEG	0
@@ -135,7 +135,7 @@ To evaluate a pre-trained `Swin Transformer` on ImageNet val, run:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12345 main.py --eval \
---cfg <config-file> --resume <checkpoint> --data-path <imagenet-path> 
+--cfg <config-file> --resume <checkpoint> --data-path <imagenet-path>
 ```
 
 For example, to evaluate the `Swin-B` with a single GPU:
@@ -150,7 +150,7 @@ python -m torch.distributed.launch --nproc_per_node 1 --master_port 12345 main.p
 To train a `Swin Transformer` on ImageNet from scratch, run:
 
 ```bash
-python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12345  main.py \ 
+python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12345  main.py \
 --cfg <config-file> --data-path <imagenet-path> [--batch-size <batch-size-per-gpu> --output <output-directory> --tag <job-tag>]
 ```
 
@@ -175,14 +175,14 @@ For example, to train `Swin Transformer` with 8 GPU on a single node for 300 epo
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_tiny_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
+--cfg configs/swin_tiny_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128
 ```
 
 `Swin-S`:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 12345  main.py \
---cfg configs/swin_small_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128 
+--cfg configs/swin_small_patch4_window7_224.yaml --data-path <imagenet-path> --batch-size 128
 ```
 
 `Swin-B`:

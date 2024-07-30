@@ -3,6 +3,7 @@ from x2paddle.utils import *
 
 
 class SaveMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -24,6 +25,7 @@ class SaveMapper(Mapper):
 
 
 class LoadMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -46,6 +48,7 @@ class LoadMapper(Mapper):
 
 
 class HubLoadMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -77,6 +80,7 @@ class HubLoadMapper(Mapper):
 
 
 class SetDeviceMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -104,6 +108,7 @@ class SetDeviceMapper(Mapper):
 
 
 class DataParallelModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -126,6 +131,7 @@ class DataParallelModuleMapper(Mapper):
 
 
 class UnSqueezeMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -148,6 +154,7 @@ class UnSqueezeMapper(Mapper):
 
 
 class OneMathMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -187,6 +194,7 @@ class OneMathMapper(Mapper):
 
 
 class ArangeMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -221,6 +229,7 @@ class ArangeMapper(Mapper):
 
 
 class TwoMathMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -253,6 +262,7 @@ class TwoMathMapper(Mapper):
 
 
 class CreateParamModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -293,6 +303,7 @@ class CreateParamModuleMapper(Mapper):
 
 
 class NoGradMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -307,6 +318,7 @@ class NoGradMapper(Mapper):
 
 
 class LogicalMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -340,6 +352,7 @@ class LogicalMapper(Mapper):
 
 
 class StackMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -364,6 +377,7 @@ class StackMapper(Mapper):
 
 
 class RandpermMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -388,6 +402,7 @@ class RandpermMapper(Mapper):
 
 
 class TensorBuilderMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -442,6 +457,7 @@ class TensorBuilderMapper(Mapper):
 
 
 class TensorLikeMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -484,6 +500,7 @@ class TensorLikeMapper(Mapper):
 
 
 class SplitMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -507,6 +524,7 @@ class SplitMapper(Mapper):
 
 
 class LinspaceMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -543,6 +561,7 @@ class LinspaceMapper(Mapper):
 
 
 class ToTensorMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,

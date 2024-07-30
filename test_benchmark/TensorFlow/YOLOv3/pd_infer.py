@@ -10,15 +10,16 @@ f.write("======YOLOv3: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    
+
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = [np.load('../dataset/YOLOv3/input.npy')]
-    result = exe.run(prog, feed={inputs[0]:data[0]}, fetch_list=outputs)
-   
+    result = exe.run(prog, feed={inputs[0]: data[0]}, fetch_list=outputs)
+
     with open('../dataset/YOLOv3/result.pkl', 'rb') as f1:
         tf_results = pickle.load(f1)
 
@@ -43,7 +44,7 @@ try:
         f.write("Dygraph Successed\n")
     else:
         f.write("!!!!!Dygraph Failed\n")
-        
+
 except Exception as e:
     print(e)
     f.write("!!!!!Failed\n")

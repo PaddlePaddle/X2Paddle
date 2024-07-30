@@ -30,10 +30,11 @@ def roi_align(input,
               name=None):
     if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        align_out = _C_ops.roi_align(
-            input, rois, rois_num, "pooled_height", pooled_height,
-            "pooled_width", pooled_width, "spatial_scale", spatial_scale,
-            "sampling_ratio", sampling_ratio, "aligned", aligned)
+        align_out = _C_ops.roi_align(input, rois, rois_num, "pooled_height",
+                                     pooled_height, "pooled_width",
+                                     pooled_width, "spatial_scale",
+                                     spatial_scale, "sampling_ratio",
+                                     sampling_ratio, "aligned", aligned)
         return align_out
 
     else:
@@ -50,21 +51,21 @@ def roi_align(input,
         }
         if rois_num is not None:
             inputs['RoisNum'] = rois_num
-        helper.append_op(
-            type="roi_align",
-            inputs=inputs,
-            outputs={"Out": align_out},
-            attrs={
-                "pooled_height": pooled_height,
-                "pooled_width": pooled_width,
-                "spatial_scale": spatial_scale,
-                "sampling_ratio": sampling_ratio,
-                "aligned": aligned,
-            })
+        helper.append_op(type="roi_align",
+                         inputs=inputs,
+                         outputs={"Out": align_out},
+                         attrs={
+                             "pooled_height": pooled_height,
+                             "pooled_width": pooled_width,
+                             "spatial_scale": spatial_scale,
+                             "sampling_ratio": sampling_ratio,
+                             "aligned": aligned,
+                         })
         return align_out
 
 
 class ROIAlign(object):
+
     def __init__(self, pooled_height, pooled_width, spatial_scale,
                  sampling_ratio):
         self.roialign_layer_attrs = {
@@ -75,6 +76,8 @@ class ROIAlign(object):
         }
 
     def __call__(self, x0, x1, x2):
-        out = roi_align(
-            input=x0, rois=x1, rois_num=x2, **self.roialign_layer_attrs)
+        out = roi_align(input=x0,
+                        rois=x1,
+                        rois_num=x2,
+                        **self.roialign_layer_attrs)
         return out

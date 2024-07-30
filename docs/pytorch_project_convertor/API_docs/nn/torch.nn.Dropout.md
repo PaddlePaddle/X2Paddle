@@ -20,5 +20,5 @@ paddle.nn.Dropout(p=0.5, axis=None, mode="upscale_in_train”, name=None)
 ### 功能差异
 
 #### 丢弃方式
-***PyTorch***：只支持`upscale_in_train`的丢弃方式。  
+***PyTorch***：只支持`upscale_in_train`的丢弃方式。
 ***PaddlePaddle***：支持`upscale_in_train`和`downscale_in_infer`两种丢弃方式（通过`mode`设置），计算方法可参考[文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/nn/layer/common/Dropout_cn.html#dropout)。

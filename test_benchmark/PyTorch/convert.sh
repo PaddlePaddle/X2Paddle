@@ -1,19 +1,19 @@
 echo "[X2Paddle]    Running PyTorch model converting test..."
-if [ ! -d "dataset/" ]; then	
+if [ ! -d "dataset/" ]; then
   wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/PyTorch/dataset.tar.gz
   tar xzvf dataset.tar.gz
 fi
 # 后续打包进 dataset.tar.gz
-if [ ! -d "dataset/SwinTransformer" ]; then	
+if [ ! -d "dataset/SwinTransformer" ]; then
   cd dataset
   wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/PyTorch/SwinTransformer.tar.gz
   tar xzvf SwinTransformer.tar.gz
   cd ..
 fi
 find . -name "result.txt" | xargs rm -rf
-find . -name "pd_model" | xargs rm -rf 
-find . -name "pd_model_trace" | xargs rm -rf 
-find . -name "pd_model_script" | xargs rm -rf 
+find . -name "pd_model" | xargs rm -rf
+find . -name "pd_model_trace" | xargs rm -rf
+find . -name "pd_model_script" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 

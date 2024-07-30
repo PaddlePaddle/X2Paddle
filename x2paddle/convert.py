@@ -23,36 +23,33 @@ import time
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model",
-        "-m",
-        type=_text_type,
-        default=None,
-        help="define model file path for tensorflow or onnx")
-    parser.add_argument(
-        "--prototxt",
-        "-p",
-        type=_text_type,
-        default=None,
-        help="prototxt file of caffe model")
-    parser.add_argument(
-        "--weight",
-        "-w",
-        type=_text_type,
-        default=None,
-        help="weight file of caffe model")
-    parser.add_argument(
-        "--save_dir",
-        "-s",
-        type=_text_type,
-        default=None,
-        help="path to save translated model")
+    parser.add_argument("--model",
+                        "-m",
+                        type=_text_type,
+                        default=None,
+                        help="define model file path for tensorflow or onnx")
+    parser.add_argument("--prototxt",
+                        "-p",
+                        type=_text_type,
+                        default=None,
+                        help="prototxt file of caffe model")
+    parser.add_argument("--weight",
+                        "-w",
+                        type=_text_type,
+                        default=None,
+                        help="weight file of caffe model")
+    parser.add_argument("--save_dir",
+                        "-s",
+                        type=_text_type,
+                        default=None,
+                        help="path to save translated model")
     parser.add_argument(
         "--framework",
         "-f",
         type=_text_type,
         default=None,
-        help="define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
+        help=
+        "define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
     )
     parser.add_argument(
         "--caffe_proto",
@@ -61,18 +58,16 @@ def arg_parser():
         default=None,
         help="optional: the .py file compiled by caffe proto file of caffe model"
     )
-    parser.add_argument(
-        "--version",
-        "-v",
-        action="store_true",
-        default=False,
-        help="get version of x2paddle")
-    parser.add_argument(
-        "--define_input_shape",
-        "-d",
-        action="store_true",
-        default=False,
-        help="define input shape for tf model")
+    parser.add_argument("--version",
+                        "-v",
+                        action="store_true",
+                        default=False,
+                        help="get version of x2paddle")
+    parser.add_argument("--define_input_shape",
+                        "-d",
+                        action="store_true",
+                        default=False,
+                        help="define input shape for tf model")
     parser.add_argument(
        "--input_shape_dict",
        "-isd",
@@ -80,54 +75,50 @@ def arg_parser():
        default=None,
        help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
        "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
-    parser.add_argument(
-        "--convert_torch_project",
-        "-tp",
-        action='store_true',
-        help="Convert the PyTorch Project.")
-    parser.add_argument(
-        "--project_dir",
-        "-pd",
-        type=_text_type,
-        default=None,
-        help="define project folder path for pytorch")
-    parser.add_argument(
-        "--pretrain_model",
-        "-pm",
-        type=_text_type,
-        default=None,
-        help="pretrain model file of pytorch model")
-    parser.add_argument(
-        "--enable_optim", "-eo", default=False, help="Turn on ONNX Simplifier")
-    parser.add_argument(
-        "--enable_code_optim",
-        "-co",
-        default=False,
-        help="Turn on code optimization")
-    parser.add_argument(
-        "--enable_onnx_checker",
-        "-oc",
-        default=True,
-        help="Turn on onnx model checker")
-    parser.add_argument(
-        "--disable_feedback",
-        "-df",
-        default=False,
-        help="Tune off feedback of model conversion.")
-    parser.add_argument(
-        "--to_lite", "-tl", default=False, help="convert to Paddle-Lite format")
-    parser.add_argument(
-        "--lite_valid_places",
-        "-vp",
-        type=_text_type,
-        default="arm",
-        help="Specify the executable backend of the model")
-    parser.add_argument(
-        "--lite_model_type",
-        "-mt",
-        type=_text_type,
-        default="naive_buffer",
-        help="The type of lite model")
+    parser.add_argument("--convert_torch_project",
+                        "-tp",
+                        action='store_true',
+                        help="Convert the PyTorch Project.")
+    parser.add_argument("--project_dir",
+                        "-pd",
+                        type=_text_type,
+                        default=None,
+                        help="define project folder path for pytorch")
+    parser.add_argument("--pretrain_model",
+                        "-pm",
+                        type=_text_type,
+                        default=None,
+                        help="pretrain model file of pytorch model")
+    parser.add_argument("--enable_optim",
+                        "-eo",
+                        default=False,
+                        help="Turn on ONNX Simplifier")
+    parser.add_argument("--enable_code_optim",
+                        "-co",
+                        default=False,
+                        help="Turn on code optimization")
+    parser.add_argument("--enable_onnx_checker",
+                        "-oc",
+                        default=True,
+                        help="Turn on onnx model checker")
+    parser.add_argument("--disable_feedback",
+                        "-df",
+                        default=False,
+                        help="Tune off feedback of model conversion.")
+    parser.add_argument("--to_lite",
+                        "-tl",
+                        default=False,
+                        help="convert to Paddle-Lite format")
+    parser.add_argument("--lite_valid_places",
+                        "-vp",
+                        type=_text_type,
+                        default="arm",
+                        help="Specify the executable backend of the model")
+    parser.add_argument("--lite_model_type",
+                        "-mt",
+                        type=_text_type,
+                        default="naive_buffer",
+                        help="The type of lite model")
 
     return parser
 
@@ -156,9 +147,9 @@ def tf2paddle(model_path,
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(
-            task="TensorFlow", time_info=time_info,
-            convert_state="Start").start()
+        ConverterCheck(task="TensorFlow",
+                       time_info=time_info,
+                       convert_state="Start").start()
     # check tensorflow installation and version
     try:
         import os
@@ -191,21 +182,21 @@ def tf2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(
-            task="TensorFlow", time_info=time_info,
-            convert_state="Success").start()
+        ConverterCheck(task="TensorFlow",
+                       time_info=time_info,
+                       convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(
-                task="TensorFlow", time_info=time_info,
-                lite_state="Start").start()
+            ConverterCheck(task="TensorFlow",
+                           time_info=time_info,
+                           lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(
-                task="TensorFlow", time_info=time_info,
-                lite_state="Success").start()
+            ConverterCheck(task="TensorFlow",
+                           time_info=time_info,
+                           lite_state="Success").start()
     # for convert survey
     logging.info("================================================")
     logging.info("")
@@ -227,8 +218,8 @@ def caffe2paddle(proto_file,
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(
-            task="Caffe", time_info=time_info, convert_state="Start").start()
+        ConverterCheck(task="Caffe", time_info=time_info,
+                       convert_state="Start").start()
     from x2paddle.decoder.caffe_decoder import CaffeDecoder
     from x2paddle.op_mapper.caffe2paddle.caffe_op_mapper import CaffeOpMapper
     import google.protobuf as gpb
@@ -250,18 +241,21 @@ def caffe2paddle(proto_file,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(
-            task="Caffe", time_info=time_info, convert_state="Success").start()
+        ConverterCheck(task="Caffe",
+                       time_info=time_info,
+                       convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(
-                task="Caffe", time_info=time_info, lite_state="Start").start()
+            ConverterCheck(task="Caffe",
+                           time_info=time_info,
+                           lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(
-                task="Caffe", time_info=time_info, lite_state="Success").start()
+            ConverterCheck(task="Caffe",
+                           time_info=time_info,
+                           lite_state="Success").start()
     # for convert survey
     logging.info("================================================")
     logging.info("")
@@ -284,8 +278,8 @@ def onnx2paddle(model_path,
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(
-            task="ONNX", time_info=time_info, convert_state="Start").start()
+        ConverterCheck(task="ONNX", time_info=time_info,
+                       convert_state="Start").start()
     # check onnx installation and version
     try:
         import onnx
@@ -329,18 +323,20 @@ def onnx2paddle(model_path,
     mapper.paddle_graph.gen_model(save_dir)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(
-            task="ONNX", time_info=time_info, convert_state="Success").start()
+        ConverterCheck(task="ONNX",
+                       time_info=time_info,
+                       convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(
-                task="ONNX", time_info=time_info, lite_state="Start").start()
+            ConverterCheck(task="ONNX", time_info=time_info,
+                           lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(
-                task="ONNX", time_info=time_info, lite_state="Success").start()
+            ConverterCheck(task="ONNX",
+                           time_info=time_info,
+                           lite_state="Success").start()
     # for convert survey
     logging.info("================================================")
     logging.info("")
@@ -363,8 +359,9 @@ def pytorch2paddle(module,
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
-        ConverterCheck(
-            task="PyTorch", time_info=time_info, convert_state="Start").start()
+        ConverterCheck(task="PyTorch",
+                       time_info=time_info,
+                       convert_state="Start").start()
     # check pytorch installation and version
     try:
         import torch
@@ -398,24 +395,26 @@ def pytorch2paddle(module,
     graph_opt = GraphOptimizer(source_frame="pytorch", jit_type=jit_type)
     graph_opt.optimize(mapper.paddle_graph)
     logging.info("Model optimized!")
-    mapper.paddle_graph.gen_model(
-        save_dir, jit_type=jit_type, enable_code_optim=enable_code_optim)
+    mapper.paddle_graph.gen_model(save_dir,
+                                  jit_type=jit_type,
+                                  enable_code_optim=enable_code_optim)
     logging.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
-        ConverterCheck(
-            task="PyTorch", time_info=time_info,
-            convert_state="Success").start()
+        ConverterCheck(task="PyTorch",
+                       time_info=time_info,
+                       convert_state="Success").start()
     if convert_to_lite:
         logging.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
-            ConverterCheck(
-                task="PyTorch", time_info=time_info, lite_state="Start").start()
+            ConverterCheck(task="PyTorch",
+                           time_info=time_info,
+                           lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
         logging.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
-            ConverterCheck(
-                task="PyTorch", time_info=time_info,
-                lite_state="Success").start()
+            ConverterCheck(task="PyTorch",
+                           time_info=time_info,
+                           lite_state="Success").start()
     # for convert survey
     logging.info("================================================")
     logging.info("")
@@ -440,8 +439,9 @@ def main():
 
     if args.version:
         import x2paddle
-        logging.info("x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".
-                     format(x2paddle.__version__))
+        logging.info(
+            "x2paddle-{} with python>=3.5, paddlepaddle>=1.6.0\n".format(
+                x2paddle.__version__))
         return
 
     if not args.convert_torch_project:
@@ -478,38 +478,35 @@ def main():
             define_input_shape = False
             if args.define_input_shape:
                 define_input_shape = True
-            tf2paddle(
-                args.model,
-                args.save_dir,
-                define_input_shape,
-                convert_to_lite=args.to_lite,
-                lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type,
-                disable_feedback=args.disable_feedback)
+            tf2paddle(args.model,
+                      args.save_dir,
+                      define_input_shape,
+                      convert_to_lite=args.to_lite,
+                      lite_valid_places=args.lite_valid_places,
+                      lite_model_type=args.lite_model_type,
+                      disable_feedback=args.disable_feedback)
 
         elif args.framework == "caffe":
             assert args.prototxt is not None and args.weight is not None, "--prototxt and --weight should be defined while translating caffe model"
-            caffe2paddle(
-                args.prototxt,
-                args.weight,
-                args.save_dir,
-                args.caffe_proto,
-                convert_to_lite=args.to_lite,
-                lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type,
-                disable_feedback=args.disable_feedback)
+            caffe2paddle(args.prototxt,
+                         args.weight,
+                         args.save_dir,
+                         args.caffe_proto,
+                         convert_to_lite=args.to_lite,
+                         lite_valid_places=args.lite_valid_places,
+                         lite_model_type=args.lite_model_type,
+                         disable_feedback=args.disable_feedback)
         elif args.framework == "onnx":
             assert args.model is not None, "--model should be defined while translating onnx model"
-            onnx2paddle(
-                args.model,
-                args.save_dir,
-                input_shape_dict=args.input_shape_dict,
-                enable_optim=args.enable_optim,
-                convert_to_lite=args.to_lite,
-                lite_valid_places=args.lite_valid_places,
-                lite_model_type=args.lite_model_type,
-                disable_feedback=args.disable_feedback,
-                enable_onnx_checker=args.enable_onnx_checker)
+            onnx2paddle(args.model,
+                        args.save_dir,
+                        input_shape_dict=args.input_shape_dict,
+                        enable_optim=args.enable_optim,
+                        convert_to_lite=args.to_lite,
+                        lite_valid_places=args.lite_valid_places,
+                        lite_model_type=args.lite_model_type,
+                        disable_feedback=args.disable_feedback,
+                        enable_onnx_checker=args.enable_onnx_checker)
         elif args.framework == "paddle2onnx":
             logging.info(
                 "Paddle to ONNX tool has been migrated to the new github: https://github.com/PaddlePaddle/paddle2onnx"

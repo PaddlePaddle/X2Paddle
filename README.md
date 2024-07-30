@@ -4,7 +4,7 @@
 [![PyPI Status](https://pepy.tech/badge/x2paddle/month)](https://pepy.tech/project/x2paddle)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
-![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
+![python version](https://img.shields.io/badge/python-3.5+-orange.svg)
 
 ## 简介
 
@@ -47,7 +47,7 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 ## 安装
 
 ### 环境依赖
-- python >= 3.5  
+- python >= 3.5
 - paddlepaddle >= 2.2.2
 - tensorflow == 1.14 (如需转换TensorFlow模型)
 - onnx >= 1.6.0 (如需转换ONNX模型)

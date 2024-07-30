@@ -1,6 +1,7 @@
 import onnxruntime as rt
 import os
 import numpy as np
+
 inputs_dict = {}
 onnx_file = None
 input_file = None

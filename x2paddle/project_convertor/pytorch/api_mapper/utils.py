@@ -88,6 +88,7 @@ def generate_api_code(func_name, args, kwargs):
 
 
 class Mapper(object):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,

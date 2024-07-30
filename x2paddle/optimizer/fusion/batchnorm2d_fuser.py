@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class BatchNorm2dFuser(FuseBase):
+
     def __init__(self):
         super(BatchNorm2dFuser, self).__init__()
 
@@ -50,79 +51,89 @@ class BatchNorm2dFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "prim.shape", inputs={'input': "bn-input-0"},
-            outputs=[gen_name(0)])
-        self.pattern.add_layer(
-            "prim.len", inputs={'input': gen_name(0)}, outputs=[gen_name(0)])
-        self.pattern.add_layer(
-            "prim.ne", inputs={"x": gen_name(0)}, outputs=[gen_name(1)], y=4)
+        self.pattern.add_layer("prim.shape",
+                               inputs={'input': "bn-input-0"},
+                               outputs=[gen_name(0)])
+        self.pattern.add_layer("prim.len",
+                               inputs={'input': gen_name(0)},
+                               outputs=[gen_name(0)])
+        self.pattern.add_layer("prim.ne",
+                               inputs={"x": gen_name(0)},
+                               outputs=[gen_name(1)],
+                               y=4)
         self.pattern.add_layer("prim.if", {'input': gen_name(1)}, [gen_name(2)])
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(parent_layer=if_layer1)
-        pattern_block0.add_layer(
-            "prim.exception",
-            inputs={},
-            outputs=[gen_name(3)],
-            input="Exception")
+        pattern_block0.add_layer("prim.exception",
+                                 inputs={},
+                                 outputs=[gen_name(3)],
+                                 input="Exception")
         if_layer1.add_block(pattern_block0)
         pattern_block1 = PaddleGraph(parent_layer=if_layer1)
         if_layer1.add_block(pattern_block1)
         self.pattern.add_layer("prim.if", {}, [gen_name(4)], input=False)
         if_layer2 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(parent_layer=if_layer2)
-        pattern_block0.add_layer(
-            "prim.shape", inputs={'input': "bn-input-0"},
-            outputs=[gen_name(5)])
-        pattern_block0.add_layer(
-            "prim.getitem",
-            inputs={"list": gen_name(5)},
-            outputs=[gen_name(6)],
-            index=0)
-        pattern_block0.add_layer(
-            "prim.len", inputs={"input": gen_name(5)}, outputs=[gen_name(7)])
-        pattern_block0.add_layer(
-            "prim.sub", inputs={"x": gen_name(7)}, outputs=[gen_name(8)], y=2)
-        pattern_block0.add_layer(
-            "prim.equal", inputs={"input": gen_name(6)}, outputs=[gen_name(9)])
-        pattern_block0.add_layer(
-            "prim.loop",
-            inputs={"input": gen_name(8)},
-            outputs=[gen_name(8.1), gen_name(10)])
-        loop_layer = pattern_block0.layers[list(pattern_block0.layers.keys())[
-            -1]]
+        pattern_block0.add_layer("prim.shape",
+                                 inputs={'input': "bn-input-0"},
+                                 outputs=[gen_name(5)])
+        pattern_block0.add_layer("prim.getitem",
+                                 inputs={"list": gen_name(5)},
+                                 outputs=[gen_name(6)],
+                                 index=0)
+        pattern_block0.add_layer("prim.len",
+                                 inputs={"input": gen_name(5)},
+                                 outputs=[gen_name(7)])
+        pattern_block0.add_layer("prim.sub",
+                                 inputs={"x": gen_name(7)},
+                                 outputs=[gen_name(8)],
+                                 y=2)
+        pattern_block0.add_layer("prim.equal",
+                                 inputs={"input": gen_name(6)},
+                                 outputs=[gen_name(9)])
+        pattern_block0.add_layer("prim.loop",
+                                 inputs={"input": gen_name(8)},
+                                 outputs=[gen_name(8.1),
+                                          gen_name(10)])
+        loop_layer = pattern_block0.layers[list(
+            pattern_block0.layers.keys())[-1]]
         pattern_block0_block0 = PaddleGraph(parent_layer=loop_layer)
-        pattern_block0_block0.add_layer(
-            "prim.add", inputs={"x": gen_name(10)}, outputs=[gen_name(11)], y=2)
-        pattern_block0_block0.add_layer(
-            "prim.getitem",
-            inputs={"list": gen_name(5),
-                    "index": gen_name(11)},
-            outputs=[gen_name(12)])
-        pattern_block0_block0.add_layer(
-            "prim.mul",
-            inputs={"x": gen_name(9),
-                    "y": gen_name(12)},
-            outputs=[gen_name(13)])
-        pattern_block0_block0.add_layer(
-            "prim.equal",
-            inputs={"input": gen_name(13)},
-            outputs=[gen_name(8.1)])
+        pattern_block0_block0.add_layer("prim.add",
+                                        inputs={"x": gen_name(10)},
+                                        outputs=[gen_name(11)],
+                                        y=2)
+        pattern_block0_block0.add_layer("prim.getitem",
+                                        inputs={
+                                            "list": gen_name(5),
+                                            "index": gen_name(11)
+                                        },
+                                        outputs=[gen_name(12)])
+        pattern_block0_block0.add_layer("prim.mul",
+                                        inputs={
+                                            "x": gen_name(9),
+                                            "y": gen_name(12)
+                                        },
+                                        outputs=[gen_name(13)])
+        pattern_block0_block0.add_layer("prim.equal",
+                                        inputs={"input": gen_name(13)},
+                                        outputs=[gen_name(8.1)])
         loop_layer.inputs["input-1"] = gen_name(5)
         loop_layer.inputs["input-2"] = gen_name(9)
         loop_layer.add_block(pattern_block0_block0)
-        pattern_block0.add_layer(
-            "prim.eq", inputs={"x": gen_name(8.1)}, outputs=[gen_name(14)], y=1)
-        pattern_block0.add_layer(
-            "prim.if", inputs={"input": gen_name(14)}, outputs=[gen_name(15)])
-        if_layer21 = pattern_block0.layers[list(pattern_block0.layers.keys())[
-            -1]]
+        pattern_block0.add_layer("prim.eq",
+                                 inputs={"x": gen_name(8.1)},
+                                 outputs=[gen_name(14)],
+                                 y=1)
+        pattern_block0.add_layer("prim.if",
+                                 inputs={"input": gen_name(14)},
+                                 outputs=[gen_name(15)])
+        if_layer21 = pattern_block0.layers[list(
+            pattern_block0.layers.keys())[-1]]
         pattern_block0_block0 = PaddleGraph(parent_layer=if_layer21)
-        pattern_block0_block0.add_layer(
-            "prim.exception",
-            inputs={},
-            outputs=[gen_name(15)],
-            input="Exception")
+        pattern_block0_block0.add_layer("prim.exception",
+                                        inputs={},
+                                        outputs=[gen_name(15)],
+                                        input="Exception")
         if_layer21.add_block(pattern_block0_block0)
         pattern_block0_block1 = PaddleGraph(parent_layer=if_layer21)
         if_layer21.add_block(pattern_block0_block1)
@@ -130,11 +141,11 @@ class BatchNorm2dFuser(FuseBase):
         pattern_block1 = PaddleGraph(parent_layer=if_layer2)
         if_layer2.add_block(pattern_block1)
         if_layer2.inputs["input-0"] = "bn-input-0"
-        self.pattern.add_layer(
-            "paddle.nn.BatchNorm",
-            inputs={"input": "bn-input-0"},
-            outputs=[gen_name(16), gen_name(17)],
-            is_test=True)
+        self.pattern.add_layer("paddle.nn.BatchNorm",
+                               inputs={"input": "bn-input-0"},
+                               outputs=[gen_name(16),
+                                        gen_name(17)],
+                               is_test=True)
         self.pattern.build(inputs={"input-0": "bn-input-0"})
 
     def insert_new_layer(self, graph, parameters, matches):

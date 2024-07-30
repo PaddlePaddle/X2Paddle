@@ -21,18 +21,18 @@ paddle.gather(x, index, axis=None, name=None)
 
 ### 功能差异
 #### 使用方式
-***PyTorch***：索引(index)的维度数和输入(input)的维度数一致，索引(index)的形状大小要小于等于输入(input)的形状大小。  
-***PaddlePaddle***：索引(index)的秩有且只能等于1。  
+***PyTorch***：索引(index)的维度数和输入(input)的维度数一致，索引(index)的形状大小要小于等于输入(input)的形状大小。
+***PaddlePaddle***：索引(index)的秩有且只能等于1。
 
 #### 计算方式
-***PyTorch***：沿指定的轴(dim)收集值。以2-D Tensor输入为例，其输出结果如下:  
+***PyTorch***：沿指定的轴(dim)收集值。以2-D Tensor输入为例，其输出结果如下:
 ```
 if dim == 0:
     out[i][j] = input[index[i][j]][j]
 if dim == 1:
     out[i][j] = input[i][index[i][j]]
 ```
-***PaddlePaddle***：根据索引(index)获取输入(x)的指定维度(axis)的条目，并将它们拼接在一起。以2-D Tensor输入为例，其输出结果如下:  
+***PaddlePaddle***：根据索引(index)获取输入(x)的指定维度(axis)的条目，并将它们拼接在一起。以2-D Tensor输入为例，其输出结果如下:
 ```
 if axis == 0:
     tensor_list = list()

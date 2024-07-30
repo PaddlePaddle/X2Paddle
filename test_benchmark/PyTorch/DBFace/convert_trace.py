@@ -12,7 +12,7 @@ dbface = DBFace()
 dbface.eval()
 if HAS_CUDA:
     dbface.cuda()
-dbface.load("../dataset/DBFace/model/dbface.pth")    
+dbface.load("../dataset/DBFace/model/dbface.pth")
 file = "../dataset/DBFace/datas/selfie.jpg"
 image = common.imread(file)
 mean = [0.408, 0.447, 0.47]
@@ -31,10 +31,11 @@ if HAS_CUDA:
 # res_dict["landmark"] = res[2].detach().numpy()
 # fileObject = open("outputs.pkl", 'wb')
 # pickle.dump(res_dict, fileObject)
-# fileObject.close()    
+# fileObject.close()
 
 save_dir = "pd_model_trace"
 jit_type = "trace"
 
 from x2paddle.convert import pytorch2paddle
+
 pytorch2paddle(dbface, save_dir, jit_type, [torch_image], disable_feedback=True)

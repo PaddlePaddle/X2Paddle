@@ -3,13 +3,13 @@
 Python COUNTLESS Downsampling
 =============================
 
-To install:  
+To install:
 
-`pip install -r requirements.txt`  
+`pip install -r requirements.txt`
 
 To test:
 
-`python test.py`  
+`python test.py`
 
 To benchmark countless2d:
 

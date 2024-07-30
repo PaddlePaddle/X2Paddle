@@ -17,21 +17,22 @@ from PIL import Image
 import os
 import os.path
 from typing import Any, Callable, cast, Dict, List, Optional, Tuple
+
 IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif',
                   '.tiff', '.webp')
 
 
-def has_file_allowed_extension(filename: str,
-                               extensions: Tuple[str, ...]) -> bool:
+def has_file_allowed_extension(filename: str, extensions: Tuple[str,
+                                                                ...]) -> bool:
     return filename.lower().endswith(extensions)
 
 
 def make_dataset(
-        directory: str,
-        class_to_idx: Dict[str, int],
-        extensions: Optional[Tuple[str, ...]]=None,
-        is_valid_file: Optional[Callable[[str], bool]]=None, ) -> List[Tuple[
-            str, int]]:
+    directory: str,
+    class_to_idx: Dict[str, int],
+    extensions: Optional[Tuple[str, ...]] = None,
+    is_valid_file: Optional[Callable[[str], bool]] = None,
+) -> List[Tuple[str, int]]:
     instances = []
     directory = os.path.expanduser(directory)
     both_none = extensions is None and is_valid_file is None
@@ -62,22 +63,22 @@ def make_dataset(
 
 
 class ImageFolder(paddle.vision.datasets.ImageFolder):
+
     def __init__(self,
                  root,
                  transform=None,
                  target_transform=None,
                  loader=None,
                  is_valid_file=None):
-        super().__init__(
-            root,
-            loader=loader,
-            transform=transform,
-            is_valid_file=is_valid_file)
+        super().__init__(root,
+                         loader=loader,
+                         transform=transform,
+                         is_valid_file=is_valid_file)
         self.target_transform = target_transform
         classes, class_to_idx = self._find_classes(root)
-        self.samples = self.make_dataset(self.root, class_to_idx, IMG_EXTENSIONS
-                                         if is_valid_file is None else None,
-                                         is_valid_file)
+        self.samples = self.make_dataset(
+            self.root, class_to_idx,
+            IMG_EXTENSIONS if is_valid_file is None else None, is_valid_file)
 
     def _find_classes(self, dir: str) -> Tuple[List[str], Dict[str, int]]:
         classes = [d.name for d in os.scandir(dir) if d.is_dir()]
@@ -87,16 +88,15 @@ class ImageFolder(paddle.vision.datasets.ImageFolder):
 
     @staticmethod
     def make_dataset(
-            directory: str,
-            class_to_idx: Dict[str, int],
-            extensions: Optional[Tuple[str, ...]]=None,
-            is_valid_file: Optional[Callable[[str], bool]]=None, ) -> List[
-                Tuple[str, int]]:
-        return make_dataset(
-            directory,
-            class_to_idx,
-            extensions=extensions,
-            is_valid_file=is_valid_file)
+        directory: str,
+        class_to_idx: Dict[str, int],
+        extensions: Optional[Tuple[str, ...]] = None,
+        is_valid_file: Optional[Callable[[str], bool]] = None,
+    ) -> List[Tuple[str, int]]:
+        return make_dataset(directory,
+                            class_to_idx,
+                            extensions=extensions,
+                            is_valid_file=is_valid_file)
 
     def __getitem__(self, index):
         path, target = self.samples[index]

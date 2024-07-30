@@ -17,6 +17,7 @@ from .utils import *
 
 
 class AvgPool1D(paddle.nn.AvgPool1D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -24,16 +25,16 @@ class AvgPool1D(paddle.nn.AvgPool1D):
                  ceil_mode=False,
                  count_include_pad=True,
                  divisor_override=None):
-        super().__init__(
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=padding,
-            exclusive=count_include_pad,
-            divisor_override=divisor_override)
+        super().__init__(kernel_size=kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=padding,
+                         exclusive=count_include_pad,
+                         divisor_override=divisor_override)
 
 
 class AvgPool2D(paddle.nn.AvgPool2D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -41,16 +42,16 @@ class AvgPool2D(paddle.nn.AvgPool2D):
                  ceil_mode=False,
                  count_include_pad=True,
                  divisor_override=None):
-        super().__init__(
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=padding,
-            exclusive=count_include_pad,
-            divisor_override=divisor_override)
+        super().__init__(kernel_size=kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=padding,
+                         exclusive=count_include_pad,
+                         divisor_override=divisor_override)
 
 
 class AvgPool3D(paddle.nn.AvgPool3D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -58,16 +59,16 @@ class AvgPool3D(paddle.nn.AvgPool3D):
                  ceil_mode=False,
                  count_include_pad=True,
                  divisor_override=None):
-        super().__init__(
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=padding,
-            exclusive=count_include_pad,
-            divisor_override=divisor_override)
+        super().__init__(kernel_size=kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=padding,
+                         exclusive=count_include_pad,
+                         divisor_override=divisor_override)
 
 
 class BatchNorm1D(paddle.nn.BatchNorm1D):
+
     def __init__(self,
                  num_features,
                  eps=1e-05,
@@ -80,16 +81,16 @@ class BatchNorm1D(paddle.nn.BatchNorm1D):
         if not affine:
             weight_attr = paddle.ParamAttr(learning_rate=0.0)
             bias_attr = paddle.ParamAttr(learning_rate=0.0)
-        super().__init__(
-            num_features,
-            momentum=momentum,
-            epsilon=eps,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr,
-            use_global_stats=track_running_stats)
+        super().__init__(num_features,
+                         momentum=momentum,
+                         epsilon=eps,
+                         weight_attr=weight_attr,
+                         bias_attr=bias_attr,
+                         use_global_stats=track_running_stats)
 
 
 class BatchNorm2D(paddle.nn.BatchNorm2D):
+
     def __init__(self,
                  num_features,
                  eps=1e-05,
@@ -102,16 +103,16 @@ class BatchNorm2D(paddle.nn.BatchNorm2D):
         if not affine:
             weight_attr = paddle.ParamAttr(learning_rate=0.0)
             bias_attr = paddle.ParamAttr(learning_rate=0.0)
-        super().__init__(
-            num_features,
-            momentum=momentum,
-            epsilon=eps,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr,
-            use_global_stats=track_running_stats)
+        super().__init__(num_features,
+                         momentum=momentum,
+                         epsilon=eps,
+                         weight_attr=weight_attr,
+                         bias_attr=bias_attr,
+                         use_global_stats=track_running_stats)
 
 
 class BatchNorm3D(paddle.nn.BatchNorm3D):
+
     def __init__(self,
                  num_features,
                  eps=1e-05,
@@ -124,16 +125,16 @@ class BatchNorm3D(paddle.nn.BatchNorm3D):
         if not affine:
             weight_attr = paddle.ParamAttr(learning_rate=0.0)
             bias_attr = paddle.ParamAttr(learning_rate=0.0)
-        super().__init__(
-            num_features,
-            momentum=momentum,
-            epsilon=eps,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr,
-            use_global_stats=track_running_stats)
+        super().__init__(num_features,
+                         momentum=momentum,
+                         epsilon=eps,
+                         weight_attr=weight_attr,
+                         bias_attr=bias_attr,
+                         use_global_stats=track_running_stats)
 
 
 class BCEWithLogitsLoss(paddle.nn.BCEWithLogitsLoss):
+
     def __init__(self,
                  weight=None,
                  size_average=None,
@@ -200,11 +201,13 @@ setattr(paddle.nn.layer.conv._ConvNd, "groups", groups)
 
 
 class ConstantPad2D(paddle.nn.Pad2D):
+
     def __init__(self, padding, value):
         super().__init__(padding, value=value)
 
 
 class Conv1D(paddle.nn.Conv1D):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -215,19 +218,19 @@ class Conv1D(paddle.nn.Conv1D):
                  groups=1,
                  bias=True,
                  padding_mode='zeros'):
-        super().__init__(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            groups=groups,
-            padding_mode=padding_mode,
-            bias_attr=bias if not bias else None)
+        super().__init__(in_channels,
+                         out_channels,
+                         kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         dilation=dilation,
+                         groups=groups,
+                         padding_mode=padding_mode,
+                         bias_attr=bias if not bias else None)
 
 
 class Conv2D(paddle.nn.Conv2D):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -238,19 +241,19 @@ class Conv2D(paddle.nn.Conv2D):
                  groups=1,
                  bias=True,
                  padding_mode='zeros'):
-        super().__init__(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            groups=groups,
-            padding_mode=padding_mode,
-            bias_attr=bias if not bias else None)
+        super().__init__(in_channels,
+                         out_channels,
+                         kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         dilation=dilation,
+                         groups=groups,
+                         padding_mode=padding_mode,
+                         bias_attr=bias if not bias else None)
 
 
 class Conv3D(paddle.nn.Conv3D):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -261,19 +264,19 @@ class Conv3D(paddle.nn.Conv3D):
                  groups=1,
                  bias=True,
                  padding_mode='zeros'):
-        super().__init__(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            groups=groups,
-            padding_mode=padding_mode,
-            bias_attr=bias if not bias else None)
+        super().__init__(in_channels,
+                         out_channels,
+                         kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         dilation=dilation,
+                         groups=groups,
+                         padding_mode=padding_mode,
+                         bias_attr=bias if not bias else None)
 
 
 class Conv2DTranspose(paddle.nn.Conv2DTranspose):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -285,20 +288,20 @@ class Conv2DTranspose(paddle.nn.Conv2DTranspose):
                  bias=True,
                  dilation=1,
                  padding_mode='zeros'):
-        super().__init__(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            output_padding=output_padding,
-            groups=groups,
-            dilation=dilation,
-            bias_attr=bias if not bias else None)
+        super().__init__(in_channels,
+                         out_channels,
+                         kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         output_padding=output_padding,
+                         groups=groups,
+                         dilation=dilation,
+                         bias_attr=bias if not bias else None)
         assert padding_mode == 'zeros', "The padding_mode must be zero in Conv2DTranspose."
 
 
 class CrossEntropyLoss(paddle.nn.CrossEntropyLoss):
+
     def __init__(self,
                  weight=None,
                  size_average=None,
@@ -309,11 +312,13 @@ class CrossEntropyLoss(paddle.nn.CrossEntropyLoss):
 
 
 class Dropout(paddle.nn.Dropout):
+
     def __init__(self, p=0.5, inplace=False):
         super().__init__(p)
 
 
 class Embedding(paddle.nn.Embedding):
+
     def __init__(self,
                  num_embeddings,
                  embedding_dim,
@@ -323,16 +328,16 @@ class Embedding(paddle.nn.Embedding):
                  scale_grad_by_freq=False,
                  sparse=False,
                  _weight=None):
-        super().__init__(
-            num_embeddings,
-            embedding_dim,
-            padding_idx=padding_idx,
-            sparse=sparse)
+        super().__init__(num_embeddings,
+                         embedding_dim,
+                         padding_idx=padding_idx,
+                         sparse=sparse)
         assert max_norm is None, "The max_norm must be None in Embedding!"
         assert not scale_grad_by_freq, "The scale_grad_by_freq must False None in Embedding!"
 
 
 class Identity(paddle.nn.Layer):
+
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -341,6 +346,7 @@ class Identity(paddle.nn.Layer):
 
 
 class GroupNorm(paddle.nn.GroupNorm):
+
     def __init__(num_groups, num_channels, eps=1e-05, affine=True):
         if not affine:
             weight_attr = False
@@ -352,6 +358,7 @@ class GroupNorm(paddle.nn.GroupNorm):
 
 
 class InstanceNorm2D(paddle.nn.InstanceNorm2D):
+
     def __init__(self,
                  num_features,
                  eps=1e-05,
@@ -364,15 +371,15 @@ class InstanceNorm2D(paddle.nn.InstanceNorm2D):
         if not affine:
             weight_attr = paddle.ParamAttr(learning_rate=0.0)
             bias_attr = paddle.ParamAttr(learning_rate=0.0)
-        super().__init__(
-            num_features,
-            momentum=momentum,
-            epsilon=eps,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr)
+        super().__init__(num_features,
+                         momentum=momentum,
+                         epsilon=eps,
+                         weight_attr=weight_attr,
+                         bias_attr=bias_attr)
 
 
 class KLDivLoss(paddle.nn.Layer):
+
     def __init__(self,
                  size_average=None,
                  reduce=None,
@@ -402,6 +409,7 @@ class KLDivLoss(paddle.nn.Layer):
 
 
 class LayerNorm(paddle.nn.LayerNorm):
+
     def __init__(self, normalized_shape, eps=1e-05, elementwise_affine=True):
         if not elementwise_affine:
             weight_attr = False
@@ -413,17 +421,21 @@ class LayerNorm(paddle.nn.LayerNorm):
 
 
 class Linear(paddle.nn.Linear):
+
     def __init__(self, in_features, out_features, bias=True):
-        super().__init__(
-            in_features, out_features, bias_attr=bias if not bias else None)
+        super().__init__(in_features,
+                         out_features,
+                         bias_attr=bias if not bias else None)
 
 
 class L1Loss(paddle.nn.L1Loss):
+
     def __init__(self, size_average=None, reduce=None, reduction='mean'):
         super().__init__(reduction=reduction)
 
 
 class MaxPool1D(paddle.nn.MaxPool1D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -431,16 +443,16 @@ class MaxPool1D(paddle.nn.MaxPool1D):
                  dilation=1,
                  return_indices=False,
                  ceil_mode=False):
-        super().__init__(
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=ceil_mode,
-            return_mask=return_indices)
+        super().__init__(kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=ceil_mode,
+                         return_mask=return_indices)
         assert dilation == 1, "The dilation must be 1 in MaxPool1D."
 
 
 class MaxPool2D(paddle.nn.MaxPool2D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -448,16 +460,16 @@ class MaxPool2D(paddle.nn.MaxPool2D):
                  dilation=1,
                  return_indices=False,
                  ceil_mode=False):
-        super().__init__(
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=ceil_mode,
-            return_mask=return_indices)
+        super().__init__(kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=ceil_mode,
+                         return_mask=return_indices)
         assert dilation == 1, "The dilation must be 1 in MaxPool2D."
 
 
 class MaxPool3D(paddle.nn.MaxPool3D):
+
     def __init__(self,
                  kernel_size,
                  stride=None,
@@ -465,21 +477,22 @@ class MaxPool3D(paddle.nn.MaxPool3D):
                  dilation=1,
                  return_indices=False,
                  ceil_mode=False):
-        super().__init__(
-            kernel_size,
-            stride=stride,
-            padding=padding,
-            ceil_mode=ceil_mode,
-            return_mask=return_indices)
+        super().__init__(kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         ceil_mode=ceil_mode,
+                         return_mask=return_indices)
         assert dilation == 1, "The dilation must be 1 in MaxPool3D."
 
 
 import paddle
 import paddle.nn as nn
+
 TYPE_MAPPER = {"fp16": "float16", "fp32": "float32", "fp64": "float64"}
 
 
 class MaxUnpool2D(paddle.nn.Layer):
+
     def __init__(self, kernel_size, stride=None, padding=0):
         super().__init__()
         if isinstance(stride, int):
@@ -502,11 +515,11 @@ class MaxUnpool2D(paddle.nn.Layer):
         if output_size is None:
             n, c, h, w = input.shape
             out_h = (
-                h - 1
-            ) * self.stride[0] - 2 * self.padding[0] + self.kernel_size[0]
+                h -
+                1) * self.stride[0] - 2 * self.padding[0] + self.kernel_size[0]
             out_w = (
-                w - 1
-            ) * self.stride[1] - 2 * self.padding[1] + self.kernel_size[1]
+                w -
+                1) * self.stride[1] - 2 * self.padding[1] + self.kernel_size[1]
             output_size = (n, c, out_h, out_w)
         else:
             if len(output_size) == len(self.kernel_size) + 2:
@@ -530,6 +543,7 @@ class MaxUnpool2D(paddle.nn.Layer):
 
 
 class ReLU(paddle.nn.ReLU):
+
     def __init__(self, inplace=False):
         super().__init__()
         self.inplace = inplace
@@ -543,21 +557,25 @@ class ReLU(paddle.nn.ReLU):
 
 
 class ReflectionPad2D(paddle.nn.Pad2D):
+
     def __init__(self, padding):
         super().__init__(padding, mode="reflect")
 
 
 class ReplicationPad2D(paddle.nn.Pad2D):
+
     def __init__(self, padding):
         super().__init__(padding, mode="replicate")
 
 
 class Softmax(paddle.nn.Softmax):
+
     def __init__(self, dim=None):
         super().__init__(axis=dim)
 
 
 class SyncBatchNorm(paddle.nn.SyncBatchNorm):
+
     def __init__(self,
                  num_features,
                  eps=1e-05,
@@ -571,15 +589,15 @@ class SyncBatchNorm(paddle.nn.SyncBatchNorm):
         if not affine:
             weight_attr = paddle.ParamAttr(learning_rate=0.0)
             bias_attr = paddle.ParamAttr(learning_rate=0.0)
-        super().__init__(
-            num_features,
-            momentum=momentum,
-            epsilon=eps,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr,
-            use_global_stats=track_running_stats)
+        super().__init__(num_features,
+                         momentum=momentum,
+                         epsilon=eps,
+                         weight_attr=weight_attr,
+                         bias_attr=bias_attr,
+                         use_global_stats=track_running_stats)
 
 
 class ZeroPad2D(paddle.nn.Pad2D):
+
     def __init__(self, padding):
         super().__init__(padding)

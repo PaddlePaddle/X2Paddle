@@ -17,5 +17,5 @@ paddle.nn.Dropout3D(p=0.5, data_format='NCDHW', name=None)
 ### 功能差异
 
 #### 输入格式
-***PyTorch***：只支持`NCDHW`的输入。  
+***PyTorch***：只支持`NCDHW`的输入。
 ***PaddlePaddle***：支持`NCDHW`和`NDHWC`两种格式的输入（通过`data_format`设置）。

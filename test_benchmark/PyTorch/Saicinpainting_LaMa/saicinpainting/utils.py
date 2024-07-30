@@ -17,11 +17,14 @@ import platform
 if platform.system() != 'Linux':
     signal.SIGUSR1 = 1
 
+
 def check_and_warn_input_range(tensor, min_value, max_value, name):
     actual_min = tensor.min()
     actual_max = tensor.max()
     if actual_min < min_value or actual_max > max_value:
-        warnings.warn(f"{name} must be in {min_value}..{max_value} range, but it ranges {actual_min}..{actual_max}")
+        warnings.warn(
+            f"{name} must be in {min_value}..{max_value} range, but it ranges {actual_min}..{actual_max}"
+        )
 
 
 def sum_dict_with_prefix(target, cur_dict, prefix, default=0):
@@ -64,6 +67,7 @@ def flatten_dict(dct):
 
 
 class LinearRamp:
+
     def __init__(self, start_value=0, end_value=1, start_iter=-1, end_iter=0):
         self.start_value = start_value
         self.end_value = end_value
@@ -80,10 +84,12 @@ class LinearRamp:
 
 
 class LadderRamp:
+
     def __init__(self, start_iters, values):
         self.start_iters = start_iters
         self.values = values
-        assert len(values) == len(start_iters) + 1, (len(values), len(start_iters))
+        assert len(values) == len(start_iters) + 1, (len(values),
+                                                     len(start_iters))
 
     def __call__(self, i):
         segment_i = bisect.bisect_right(self.start_iters, i)
@@ -104,7 +110,8 @@ def print_traceback_handler(sig, frame):
     LOGGER.warning(f'Requested stack trace:\n{bt}')
 
 
-def register_debug_signal_handlers(sig=signal.SIGUSR1, handler=print_traceback_handler):
+def register_debug_signal_handlers(sig=signal.SIGUSR1,
+                                   handler=print_traceback_handler):
     LOGGER.warning(f'Setting signal {sig} handler {handler}')
     signal.signal(sig, handler)
 
@@ -141,7 +148,9 @@ def get_has_ddp_rank():
 
 
 def handle_ddp_subprocess():
+
     def main_decorator(main_func):
+
         @functools.wraps(main_func)
         def new_main(*args, **kwargs):
             # Trainer sets MASTER_PORT, NODE_RANK, LOCAL_RANK, WORLD_SIZE
@@ -161,7 +170,9 @@ def handle_ddp_subprocess():
             # TRAINING_PARENT_WORK_DIR is set in handle_ddp_parent_process after hydra initialization
 
             main_func(*args, **kwargs)
+
         return new_main
+
     return main_decorator
 
 

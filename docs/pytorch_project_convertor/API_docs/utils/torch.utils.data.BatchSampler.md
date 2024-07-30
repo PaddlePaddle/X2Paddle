@@ -11,5 +11,5 @@ paddle.io.BatchSampler(dataset=None, sampler=None, shuffle=Fasle, batch_size=1, 
 
 ### 功能差异
 #### 使用方式
-***PyTorch***：只能使用`sampler`来构建BatchSampler。  
+***PyTorch***：只能使用`sampler`来构建BatchSampler。
 ***PaddlePaddle***：能使用`sampler`和`dataset`来构建BatchSampler。

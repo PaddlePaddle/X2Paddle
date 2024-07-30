@@ -27,6 +27,7 @@ from x2paddle.core.program import PaddleGraph
 
 
 class ONNXOpMapper():
+
     def __init__(self, decoder):
         self.support_op_sets = [7, 8, 9, 10, 11, 12, 13, 14, 15]
         self.default_op_set = 9
@@ -93,6 +94,6 @@ class ONNXOpMapper():
                     break
             opset = 'OpSet' + str(run_op_set)
         print('Now, onnx2paddle support convert onnx model opset_verison {}, '
-              'opset_verison of your onnx model is {}.'
-              .format(self.support_op_sets, decoder.op_set))
+              'opset_verison of your onnx model is {}.'.format(
+                  self.support_op_sets, decoder.op_set))
         return eval(opset)(decoder, self.paddle_graph)

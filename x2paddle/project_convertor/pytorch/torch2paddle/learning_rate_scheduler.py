@@ -16,6 +16,7 @@ import paddle
 
 
 class ReduceOnPlateau(paddle.optimizer.lr.ReduceOnPlateau):
+
     def __init__(self,
                  optimizer,
                  mode='min',
@@ -27,21 +28,21 @@ class ReduceOnPlateau(paddle.optimizer.lr.ReduceOnPlateau):
                  min_lr=0,
                  eps=1e-08,
                  verbose=False):
-        super().__init__(
-            learning_rate=0.01,
-            mode=mode,
-            factor=factor,
-            patience=patience,
-            threshold=threshold,
-            threshold_mode=threshold_mode,
-            cooldown=cooldown,
-            min_lr=min_lr,
-            epsilon=eps,
-            verbose=verbose)
+        super().__init__(learning_rate=0.01,
+                         mode=mode,
+                         factor=factor,
+                         patience=patience,
+                         threshold=threshold,
+                         threshold_mode=threshold_mode,
+                         cooldown=cooldown,
+                         min_lr=min_lr,
+                         epsilon=eps,
+                         verbose=verbose)
         optimizer._learning_rate = self
 
 
 class CosineAnnealingDecay(paddle.optimizer.lr.CosineAnnealingDecay):
+
     def __init__(self,
                  optimizer,
                  T_max,
@@ -53,6 +54,7 @@ class CosineAnnealingDecay(paddle.optimizer.lr.CosineAnnealingDecay):
 
 
 class MultiStepDecay(paddle.optimizer.lr.MultiStepDecay):
+
     def __init__(self,
                  optimizer,
                  milestones,
