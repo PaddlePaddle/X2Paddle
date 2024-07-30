@@ -1,10 +1,11 @@
+repos:
 -   repo: https://github.com/pre-commit/mirrors-yapf.git
     rev: v0.32.0
     hooks:
     -   id: yapf
         files: \.py$
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v4.4.0
     hooks:
     -   id: check-merge-conflict
     -   id: check-symlinks
