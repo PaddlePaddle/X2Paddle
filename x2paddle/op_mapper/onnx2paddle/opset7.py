@@ -216,5 +216,15 @@ class OpSet7(OpSet):
             inputs={"x": val_x.name},
             alpha=alphas,
             scale=scales,
+
+    @print_mapping_info
+    def ArgMin(self, node):
+        val_x = self.graph.get_input_node(node, idx=0, copy=True)
+        axis = node.get_attr('axis')
+        keepdims = False if node.get_attr('keepdims') == 0 else True
+        layer_attrs = {'axis': axis, 'keepdim': keepdims}
+        self.paddle_graph.add_layer(
+            'paddle.argmin',
+            inputs={"x": val_x.name},
             outputs=[node.name],
             **layer_attrs)
