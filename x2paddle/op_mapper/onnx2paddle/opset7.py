@@ -46,12 +46,6 @@ def _get_same_padding(in_size, kernel_size, stride, autopad):
 class OpSet7(OpSet):
     def __init__(self, decoder, paddle_graph):
         super(OpSet7, self).__init__(decoder, paddle_graph)
-        self.directly_map_ops.update({
-            'Atan': ['paddle.atan'],
-            'Acos': ['paddle.acos'],
-            'Asin': ['paddle.asin'],
-            'Tan': ['paddle.tan'],
-        })
 
     @print_mapping_info
     def AveragePool(self, node):
