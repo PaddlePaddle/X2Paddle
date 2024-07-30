@@ -198,17 +198,3 @@ class OpSet7(OpSet):
                 inputs={"x": val_x.name},
                 outputs=layer_outputs,
                 **layer_attrs)
-
-    @print_mapping_info
-    def Selu(self, node):
-        val_x = self.graph.get_input_node(node, idx=0, copy=True)
-        alphas = node.get_attr('alpha', 1.67326)
-        scales = node.get_attr('gamma', 1.0507)
-        layer_attrs = dict()
-        self.paddle_graph.add_layer(
-            "paddle.nn.SELU",
-            inputs={"x": val_x.name},
-            alpha=alphas,
-            scale=scales,
-            outputs=[node.name],
-            **layer_attrs)
