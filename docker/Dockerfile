@@ -16,3 +16,5 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install pynvml psutil GPUtil sympy treelib tensorflow==1.14.0 onnx==1.10.0 onnxruntime==1.10.0 easyocr==1.2.1 && \
     python -m pip install torchmetrics==0.10.2 pytorch_lightning==1.5.3 kornia==0.5.11 hypothesis pre-commit==2.17.0 && \
     python -m pip install --upgrade virtualenv
+
+RUN pre-commit install
