@@ -16,6 +16,7 @@ import paddle
 
 
 class Select(object):
+
     def __init__(self, input_shape, point, axis):
         self.point = point
         self.input_shape = input_shape

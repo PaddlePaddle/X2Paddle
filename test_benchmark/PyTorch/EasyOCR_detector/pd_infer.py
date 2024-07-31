@@ -15,11 +15,12 @@ try:
     # trace
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_trace/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    result = exe.run(prog, feed={inputs[0]:img}, fetch_list=outputs)
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_trace/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    result = exe.run(prog, feed={inputs[0]: img}, fetch_list=outputs)
     df0 = pytorch_output["output0"] - result[0]
     df1 = pytorch_output["output1"] - result[1]
     if np.max(np.fabs(df0)) > 1e-04 or np.max(np.fabs(df1)) > 1e-04:
@@ -30,4 +31,3 @@ try:
 except:
     print("!!!!!Failed", file=f)
 f.close()
-

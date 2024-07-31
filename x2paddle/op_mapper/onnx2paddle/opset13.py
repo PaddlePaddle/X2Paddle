@@ -16,6 +16,7 @@ from .opset12 import OpSet12
 
 
 def print_mapping_info(func):
+
     def run_mapping(*args, **kwargs):
         node = args[1]
         try:
@@ -30,6 +31,7 @@ def print_mapping_info(func):
 
 
 class OpSet13(OpSet12):
+
     def __init__(self, decoder, paddle_graph):
         super(OpSet13, self).__init__(decoder, paddle_graph)
 
@@ -38,16 +40,16 @@ class OpSet13(OpSet12):
         val_x = self.graph.get_input_node(node, idx=0, copy=True)
         axes = self.graph.get_input_node(node, idx=1, copy=True)
         # deal with scalar(0D) tensor
-        if len(val_x.out_shapes[0]) == 0 and len(axes.out_shapes[
-                0]) == 1 and len(node.out_shapes[0]) == 1:
-            self.paddle_graph.add_layer(
-                'paddle.reshape',
-                inputs={"x": val_x.name},
-                outputs=[node.name],
-                shape=[1])
+        if len(val_x.out_shapes[0]) == 0 and len(
+                axes.out_shapes[0]) == 1 and len(node.out_shapes[0]) == 1:
+            self.paddle_graph.add_layer('paddle.reshape',
+                                        inputs={"x": val_x.name},
+                                        outputs=[node.name],
+                                        shape=[1])
         else:
-            self.paddle_graph.add_layer(
-                'paddle.unsqueeze',
-                inputs={"x": val_x.name,
-                        "axis": axes.name},
-                outputs=[node.name])
+            self.paddle_graph.add_layer('paddle.unsqueeze',
+                                        inputs={
+                                            "x": val_x.name,
+                                            "axis": axes.name
+                                        },
+                                        outputs=[node.name])

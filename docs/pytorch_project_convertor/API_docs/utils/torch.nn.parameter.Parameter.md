@@ -19,11 +19,11 @@ paddle.create_parameter(shape,
 ### 功能差异
 
 #### 使用方式
-***PyTorch***：通过设置`data`将Tensor赋给Parameter。  
+***PyTorch***：通过设置`data`将Tensor赋给Parameter。
 ***PaddlePaddle***：有2种方式创建Parameter。方式一：通过设置`attr`将ParamAttr赋给Parameter；方式二：通过设置`shape`（大小）、`dtype`（类型）、`default_initializer`（初始化方式）设置Parameter。
 
 #### 梯度设置
-***PyTorch***：通过设置`requires_grad`确定是否进行梯度反传。  
+***PyTorch***：通过设置`requires_grad`确定是否进行梯度反传。
 ***PaddlePaddle***：PaddlePaddle无此功能。
 
 

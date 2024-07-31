@@ -17,6 +17,7 @@ import paddle.fluid as fluid
 
 
 class DetectionOutput(object):
+
     def __init__(self, nms_threshold, nms_top_k, keep_top_k, nms_eta,
                  score_threshold, background_label):
         self.detection_output_layer_attrs = {
@@ -37,10 +38,9 @@ class DetectionOutput(object):
         pb_dim = paddle.shape(pb)[0]
         loc = paddle.reshape(x0, shape=[-1, pb_dim, 4])
         conf_flatten = paddle.reshape(x1, shape=[0, pb_dim, -1])
-        out = fluid.layers.detection_output(
-            loc=loc,
-            scores=conf_flatten,
-            prior_box=pb,
-            prior_box_var=pbv,
-            **self.detection_output_layer_attrs)
+        out = fluid.layers.detection_output(loc=loc,
+                                            scores=conf_flatten,
+                                            prior_box=pb,
+                                            prior_box_var=pbv,
+                                            **self.detection_output_layer_attrs)
         return out

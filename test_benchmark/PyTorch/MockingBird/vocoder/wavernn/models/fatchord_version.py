@@ -7,6 +7,7 @@ from vocoder.wavernn.audio import *
 
 
 class ResBlock(nn.Module):
+
     def __init__(self, dims):
         super().__init__()
         self.conv1 = nn.Conv1d(dims, dims, kernel_size=1, bias=False)
@@ -25,10 +26,14 @@ class ResBlock(nn.Module):
 
 
 class MelResNet(nn.Module):
+
     def __init__(self, res_blocks, in_dims, compute_dims, res_out_dims, pad):
         super().__init__()
         k_size = pad * 2 + 1
-        self.conv_in = nn.Conv1d(in_dims, compute_dims, kernel_size=k_size, bias=False)
+        self.conv_in = nn.Conv1d(in_dims,
+                                 compute_dims,
+                                 kernel_size=k_size,
+                                 bias=False)
         self.batch_norm = nn.BatchNorm1d(compute_dims)
         self.layers = nn.ModuleList()
         for i in range(res_blocks):
@@ -39,12 +44,14 @@ class MelResNet(nn.Module):
         x = self.conv_in(x)
         x = self.batch_norm(x)
         x = F.relu(x)
-        for f in self.layers: x = f(x)
+        for f in self.layers:
+            x = f(x)
         x = self.conv_out(x)
         return x
 
 
 class Stretch2d(nn.Module):
+
     def __init__(self, x_scale, y_scale):
         super().__init__()
         self.x_scale = x_scale
@@ -58,19 +65,25 @@ class Stretch2d(nn.Module):
 
 
 class UpsampleNetwork(nn.Module):
-    def __init__(self, feat_dims, upsample_scales, compute_dims,
-                 res_blocks, res_out_dims, pad):
+
+    def __init__(self, feat_dims, upsample_scales, compute_dims, res_blocks,
+                 res_out_dims, pad):
         super().__init__()
         total_scale = np.cumproduct(upsample_scales)[-1]
         self.indent = pad * total_scale
-        self.resnet = MelResNet(res_blocks, feat_dims, compute_dims, res_out_dims, pad)
+        self.resnet = MelResNet(res_blocks, feat_dims, compute_dims,
+                                res_out_dims, pad)
         self.resnet_stretch = Stretch2d(total_scale, 1)
         self.up_layers = nn.ModuleList()
         for scale in upsample_scales:
             k_size = (1, scale * 2 + 1)
             padding = (0, scale)
             stretch = Stretch2d(scale, 1)
-            conv = nn.Conv2d(1, 1, kernel_size=k_size, padding=padding, bias=False)
+            conv = nn.Conv2d(1,
+                             1,
+                             kernel_size=k_size,
+                             padding=padding,
+                             bias=False)
             conv.weight.data.fill_(1. / k_size[1])
             self.up_layers.append(stretch)
             self.up_layers.append(conv)
@@ -80,23 +93,35 @@ class UpsampleNetwork(nn.Module):
         aux = self.resnet_stretch(aux)
         aux = aux.squeeze(1)
         m = m.unsqueeze(1)
-        for f in self.up_layers: m = f(m)
+        for f in self.up_layers:
+            m = f(m)
         m = m.squeeze(1)[:, :, self.indent:-self.indent]
         return m.transpose(1, 2), aux.transpose(1, 2)
 
 
 class WaveRNN(nn.Module):
-    def __init__(self, rnn_dims, fc_dims, bits, pad, upsample_factors,
-                 feat_dims, compute_dims, res_out_dims, res_blocks,
-                 hop_length, sample_rate, mode='RAW'):
+
+    def __init__(self,
+                 rnn_dims,
+                 fc_dims,
+                 bits,
+                 pad,
+                 upsample_factors,
+                 feat_dims,
+                 compute_dims,
+                 res_out_dims,
+                 res_blocks,
+                 hop_length,
+                 sample_rate,
+                 mode='RAW'):
         super().__init__()
         self.mode = mode
         self.pad = pad
-        if self.mode == 'RAW' :
-            self.n_classes = 2 ** bits
-        elif self.mode == 'MOL' :
+        if self.mode == 'RAW':
+            self.n_classes = 2**bits
+        elif self.mode == 'MOL':
             self.n_classes = 30
-        else :
+        else:
             RuntimeError("Unknown model mode value - ", self.mode)
 
         self.rnn_dims = rnn_dims
@@ -104,7 +129,9 @@ class WaveRNN(nn.Module):
         self.hop_length = hop_length
         self.sample_rate = sample_rate
 
-        self.upsample = UpsampleNetwork(feat_dims, upsample_factors, compute_dims, res_blocks, res_out_dims, pad)
+        self.upsample = UpsampleNetwork(feat_dims, upsample_factors,
+                                        compute_dims, res_blocks, res_out_dims,
+                                        pad)
         self.I = nn.Linear(feat_dims + self.aux_dims + 1, rnn_dims)
         self.rnn1 = nn.GRU(rnn_dims, rnn_dims, batch_first=True)
         self.rnn2 = nn.GRU(rnn_dims + self.aux_dims, rnn_dims, batch_first=True)
@@ -150,7 +177,13 @@ class WaveRNN(nn.Module):
         x = F.relu(self.fc2(x))
         return self.fc3(x)
 
-    def generate(self, mels, batched, target, overlap, mu_law, progress_callback=None):
+    def generate(self,
+                 mels,
+                 batched,
+                 target,
+                 overlap,
+                 mu_law,
+                 progress_callback=None):
         mu_law = mu_law if self.mode == 'RAW' else False
         progress_callback = progress_callback or self.gen_display
 
@@ -166,7 +199,9 @@ class WaveRNN(nn.Module):
             else:
                 mels = mels.cpu()
             wave_len = (mels.size(-1) - 1) * self.hop_length
-            mels = self.pad_tensor(mels.transpose(1, 2), pad=self.pad, side='both')
+            mels = self.pad_tensor(mels.transpose(1, 2),
+                                   pad=self.pad,
+                                   side='both')
             mels, aux = self.upsample(mels.transpose(1, 2))
 
             if batched:
@@ -211,7 +246,8 @@ class WaveRNN(nn.Module):
                 logits = self.fc3(x)
 
                 if self.mode == 'MOL':
-                    sample = sample_from_discretized_mix_logistic(logits.unsqueeze(0).transpose(1, 2))
+                    sample = sample_from_discretized_mix_logistic(
+                        logits.unsqueeze(0).transpose(1, 2))
                     output.append(sample.view(-1))
                     if torch.cuda.is_available():
                         # x = torch.FloatTensor([[sample]]).cuda()
@@ -219,11 +255,12 @@ class WaveRNN(nn.Module):
                     else:
                         x = sample.transpose(0, 1)
 
-                elif self.mode == 'RAW' :
+                elif self.mode == 'RAW':
                     posterior = F.softmax(logits, dim=1)
                     distrib = torch.distributions.Categorical(posterior)
 
-                    sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
+                    sample = 2 * distrib.sample().float() / (self.n_classes -
+                                                             1.) - 1.
                     output.append(sample)
                     x = sample.unsqueeze(-1)
                 else:
@@ -236,7 +273,7 @@ class WaveRNN(nn.Module):
         output = torch.stack(output).transpose(0, 1)
         output = output.cpu().numpy()
         output = output.astype(np.float64)
-        
+
         if batched:
             output = self.xfade_and_unfold(output, target, overlap)
         else:
@@ -251,11 +288,10 @@ class WaveRNN(nn.Module):
         fade_out = np.linspace(1, 0, 20 * self.hop_length)
         output = output[:wave_len]
         output[-20 * self.hop_length:] *= fade_out
-        
+
         self.train()
 
         return output
-
 
     def gen_display(self, i, seq_len, b_size, gen_rate):
         pbar = progbar(i, seq_len)
@@ -286,7 +322,6 @@ class WaveRNN(nn.Module):
         return padded
 
     def fold_with_overlap(self, x, target, overlap):
-
         ''' Fold the tensor with overlap for quick batched inference.
             Overlap will be used for crossfading in xfade_and_unfold()
 
@@ -325,9 +360,11 @@ class WaveRNN(nn.Module):
             x = self.pad_tensor(x, padding, side='after')
 
         if torch.cuda.is_available():
-            folded = torch.zeros(num_folds, target + 2 * overlap, features).cuda()
+            folded = torch.zeros(num_folds, target + 2 * overlap,
+                                 features).cuda()
         else:
-            folded = torch.zeros(num_folds, target + 2 * overlap, features).cpu()
+            folded = torch.zeros(num_folds, target + 2 * overlap,
+                                 features).cpu()
 
         # Get the values for the folded tensor
         for i in range(num_folds):
@@ -338,7 +375,6 @@ class WaveRNN(nn.Module):
         return folded
 
     def xfade_and_unfold(self, y, target, overlap):
-
         ''' Applies a crossfade and unfolds into a 1d array.
 
         Args:
@@ -401,18 +437,19 @@ class WaveRNN(nn.Module):
 
         return unfolded
 
-    def get_step(self) :
+    def get_step(self):
         return self.step.data.item()
 
-    def checkpoint(self, model_dir, optimizer) :
+    def checkpoint(self, model_dir, optimizer):
         k_steps = self.get_step() // 1000
-        self.save(model_dir.joinpath("checkpoint_%dk_steps.pt" % k_steps), optimizer)
+        self.save(model_dir.joinpath("checkpoint_%dk_steps.pt" % k_steps),
+                  optimizer)
 
-    def log(self, path, msg) :
+    def log(self, path, msg):
         with open(path, 'a') as f:
             print(msg, file=f)
 
-    def load(self, path, optimizer) :
+    def load(self, path, optimizer):
         checkpoint = torch.load(path)
         if "optimizer_state" in checkpoint:
             self.load_state_dict(checkpoint["model_state"])
@@ -421,14 +458,15 @@ class WaveRNN(nn.Module):
             # Backwards compatibility
             self.load_state_dict(checkpoint)
 
-    def save(self, path, optimizer) :
-        torch.save({
-            "model_state": self.state_dict(),
-            "optimizer_state": optimizer.state_dict(),
-        }, path)
+    def save(self, path, optimizer):
+        torch.save(
+            {
+                "model_state": self.state_dict(),
+                "optimizer_state": optimizer.state_dict(),
+            }, path)
 
     def num_params(self, print_out=True):
         parameters = filter(lambda p: p.requires_grad, self.parameters())
         parameters = sum([np.prod(p.size()) for p in parameters]) / 1_000_000
-        if print_out :
+        if print_out:
             print('Trainable Parameters: %.3fM' % parameters)

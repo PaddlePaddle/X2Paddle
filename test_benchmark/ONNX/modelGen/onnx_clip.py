@@ -5,7 +5,6 @@ import numpy as np
 import sys
 import pickle
 
-
 model = onnx.load('../dataset/modelGen/modelGen_0256.onnx')
 for i in range(4):
     for output in model.graph.output:
@@ -14,7 +13,8 @@ for i in range(4):
 
 # check_name = 'model/leaky_re_lu_70/LeakyRelu:0'
 check_name = "ConvTranspose__264:0"
-temp = onnx.helper.make_tensor_value_info(check_name, onnx.TensorProto.FLOAT, [-1])
+temp = onnx.helper.make_tensor_value_info(check_name, onnx.TensorProto.FLOAT,
+                                          [-1])
 model.graph.output.insert(0, temp)
 print(model.graph.output)
 
@@ -29,10 +29,10 @@ inputs_dict = {}
 input_data = np.random.randn(1, 768, 512, 51).astype("float32")
 inputs_dict[sess.get_inputs()[0].name] = input_data
 
- 
 import time
+
 start = time.time()
-repeats =  1
+repeats = 1
 for i in range(repeats):
     result = sess.run(None, input_feed=inputs_dict)
     with open("onnx_temp.pkl", "wb") as fw:

@@ -22,6 +22,7 @@ from x2paddle.op_mapper.pytorch2paddle import aten
 
 
 class PyTorchOpMapper():
+
     def __init__(self, decoder):
         self.script = decoder.script
         self.input_examples = decoder.input_examples
@@ -43,6 +44,7 @@ class PyTorchOpMapper():
         self.paddle_graph.set_inputs_info(self.inputs_info)
 
     def op_checker(self, script_graph):
+
         def _update_op_list(graph):
             for node in graph.nodes():
                 op_list.append(node.kind())
@@ -101,8 +103,8 @@ class PyTorchOpMapper():
                 if str(ivalue.type()) not in ["Tensor", "Dict[str, Tensor]"]:
                     graph.set_name(str(ivalue.type()).split(".")[-1])
                     continue
-                inputs, outputs = self.data(graph, node,
-                                            ivalue.unique(), input_ct)
+                inputs, outputs = self.data(graph, node, ivalue.unique(),
+                                            input_ct)
                 input_ct += 1
         # 转换中间节点
         for node in script_graph.nodes():
@@ -128,12 +130,11 @@ class PyTorchOpMapper():
                     continue
                 node = ivalue.node()
                 script_unique_id = ivalue.unique()
-                inputs, outputs = self.equal(
-                    graph,
-                    node,
-                    uid=script_unique_id,
-                    parent_layer=parent_layer,
-                    index=i)
+                inputs, outputs = self.equal(graph,
+                                             node,
+                                             uid=script_unique_id,
+                                             parent_layer=parent_layer,
+                                             index=i)
                 _update_graph_inputs("equal", inputs, outputs)
 
         # 设置graph的参数和输出节点
@@ -147,8 +148,8 @@ class PyTorchOpMapper():
         for layer in graph.layers.values():
             if layer.kernel == "paddle.split" and "num_or_sections" in layer.attrs \
             and not isinstance(layer.attrs["num_or_sections"], int) and len(set(layer.attrs["num_or_sections"])) == 1:
-                layer.attrs["num_or_sections"] = self.split_len[layer.outputs[
-                    0]]
+                layer.attrs["num_or_sections"] = self.split_len[
+                    layer.outputs[0]]
         return graph, graph_inputs
 
     def _get_outputs_name(self, node, attr_name=None):
@@ -184,8 +185,8 @@ class PyTorchOpMapper():
                     scope_name=scope_name,
                     dtype=string(str(param.dtype)),
                     shape=param.shape,
-                    default_initializer="paddle.nn.initializer.Constant(value=0.0)"
-                )
+                    default_initializer=
+                    "paddle.nn.initializer.Constant(value=0.0)")
                 self.output2id[output_name] = layer_id
             else:
                 if isinstance(param, dict) and "Tensor" in param and \
@@ -201,8 +202,7 @@ class PyTorchOpMapper():
                                 if id1_part[i] == id2_part[i]:
                                     continue
                                 else:
-                                    if id1_part[i] == "0" and id2_part[
-                                            i] == "1":
+                                    if id1_part[i] == "0" and id2_part[i] == "1":
                                         self.paddle_params[output_name] = param
                                         layer_id = graph.add_layer(
                                             "self.create_parameter",
@@ -211,26 +211,25 @@ class PyTorchOpMapper():
                                             scope_name=scope_name,
                                             dtype=string(str(param.dtype)),
                                             shape=param.shape,
-                                            default_initializer="paddle.nn.initializer.Constant(value=0.0)"
+                                            default_initializer=
+                                            "paddle.nn.initializer.Constant(value=0.0)"
                                         )
                                         node_outputs.append(output_name)
                                         self.output2id[output_name] = layer_id
                                         return
                     # 若if-else外，则可直接引用if-else中的赋值结果
-                    graph.add_layer(
-                        "prim.constant",
-                        inputs={},
-                        outputs=[output_name],
-                        scope_name=scope_name,
-                        value=param["Tensor"])
+                    graph.add_layer("prim.constant",
+                                    inputs={},
+                                    outputs=[output_name],
+                                    scope_name=scope_name,
+                                    value=param["Tensor"])
                 else:
-                    graph.add_layer(
-                        "prim.constant",
-                        inputs={},
-                        outputs=[output_name],
-                        scope_name=scope_name,
-                        value=string(param)
-                        if isinstance(param, str) else param)
+                    graph.add_layer("prim.constant",
+                                    inputs={},
+                                    outputs=[output_name],
+                                    scope_name=scope_name,
+                                    value=string(param) if isinstance(
+                                        param, str) else param)
             node_outputs.append(output_name)
         elif node.kind(
         ) == "prim::Constant" and output_name in self.pytorch_params:
@@ -267,16 +266,16 @@ class PyTorchOpMapper():
             self.outputs_info[script_unique_id] = node_name
             self.output_index += 1
         output_name = self.outputs_info[uid]
-        graph.add_layer(
-            "paddle.to_tensor",
-            inputs={},
-            outputs=[node_name],
-            scope_name=scope_name,
-            data=output_name)
+        graph.add_layer("paddle.to_tensor",
+                        inputs={},
+                        outputs=[node_name],
+                        scope_name=scope_name,
+                        data=output_name)
         if self.input_examples is not None:
             input_np = self.input_examples[input_ct].cpu().detach().numpy()
-            self.inputs_info[
-                output_name] = [list(input_np.shape), str(input_np.dtype)]
+            self.inputs_info[output_name] = [
+                list(input_np.shape), str(input_np.dtype)
+            ]
         return [], [output_name]
 
     def equal(self, graph, node, uid=None, parent_layer=None, index=None):
@@ -291,11 +290,10 @@ class PyTorchOpMapper():
             current_outputs = [output_node_name]
             self._check_input(graph, node, input_node_name, current_outputs,
                               scope_name)
-            graph.add_layer(
-                "prim.equal",
-                inputs={'input': input_node_name},
-                outputs=[output_node_name],
-                scope_name=scope_name)
+            graph.add_layer("prim.equal",
+                            inputs={'input': input_node_name},
+                            outputs=[output_node_name],
+                            scope_name=scope_name)
             return [input_node_name], current_outputs
 
     def normalize_scope_name(self, node):

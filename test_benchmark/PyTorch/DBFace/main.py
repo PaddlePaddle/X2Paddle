@@ -1,4 +1,3 @@
-
 import common
 import numpy as np
 import torch
@@ -46,7 +45,8 @@ def detect(model, image, threshold=0.4, nms_iou=0.5):
 
     hm, box, landmark = model(torch_image)
     hm_pool = F.max_pool2d(hm, 3, 1, 1)
-    scores, indices = ((hm == hm_pool).float() * hm).view(1, -1).cpu().topk(1000)
+    scores, indices = ((hm == hm_pool).float() * hm).view(1,
+                                                          -1).cpu().topk(1000)
     hm_height, hm_width = hm.shape[2:]
 
     scores = scores.squeeze()
@@ -66,9 +66,10 @@ def detect(model, image, threshold=0.4, nms_iou=0.5):
         x, y, r, b = box[:, cy, cx]
         xyrb = (np.array([cx, cy, cx, cy]) + [-x, -y, r, b]) * stride
         x5y5 = landmark[:, cy, cx]
-        x5y5 = (common.exp(x5y5 * 4) + ([cx]*5 + [cy]*5)) * stride
+        x5y5 = (common.exp(x5y5 * 4) + ([cx] * 5 + [cy] * 5)) * stride
         box_landmark = list(zip(x5y5[:5], x5y5[5:]))
-        objs.append(common.BBox(0, xyrb=xyrb, score=score, landmark=box_landmark))
+        objs.append(
+            common.BBox(0, xyrb=xyrb, score=score, landmark=box_landmark))
     return nms(objs, iou=nms_iou)
 
 
@@ -80,7 +81,9 @@ def detect_image(model, file):
     for obj in objs:
         common.drawbbox(image, obj)
 
-    common.imwrite("detect_result/" + common.file_name_no_suffix(file) + ".draw.jpg", image)
+    common.imwrite(
+        "detect_result/" + common.file_name_no_suffix(file) + ".draw.jpg",
+        image)
 
 
 def image_demo():
@@ -122,14 +125,11 @@ def camera_demo():
             break
 
         ok, frame = cap.read()
-    
+
     cap.release()
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     image_demo()
 #     camera_demo()
-    
-
-
-    

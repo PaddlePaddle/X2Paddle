@@ -58,8 +58,7 @@ NN_MAPPER = {
     "torch.nn.Conv1d": ["paddle.nn.Conv1D", ConvModuleMapper],
     "torch.nn.Conv2d": ["paddle.nn.Conv2D", ConvModuleMapper],
     "torch.nn.Conv3d": ["paddle.nn.Conv3D", ConvModuleMapper],
-    "torch.nn.ConvTranspose2d":
-    ["x2paddle.torch2paddle.Conv2DTranspose", None],
+    "torch.nn.ConvTranspose2d": ["x2paddle.torch2paddle.Conv2DTranspose", None],
     "torch.nn.Dropout": ["paddle.nn.Dropout", DropoutModuleMapper],
     "torch.nn.Dropout2d": ["paddle.nn.Dropout", DropoutModuleMapper],
     "torch.nn.Embedding": ["paddle.nn.Embedding", EmbeddingModuleMapper],
@@ -106,43 +105,55 @@ NN_MAPPER = {
     ["paddle.nn.functional.dropout", DropoutFuncMapper],
     "torch.nn.functional.interpolate":
     ["paddle.nn.functional.interpolate", InterpolateFuncMapper],
-    "torch.nn.functional.leaky_relu":
-    ["paddle.nn.functional.leaky_relu", LeaklyReluFuncMapper],
-    "torch.nn.functional.log_softmax":
-    ["paddle.nn.functional.log_softmax", LogSoftmaxFuncMapper],
+    "torch.nn.functional.leaky_relu": [
+        "paddle.nn.functional.leaky_relu", LeaklyReluFuncMapper
+    ],
+    "torch.nn.functional.log_softmax": [
+        "paddle.nn.functional.log_softmax", LogSoftmaxFuncMapper
+    ],
     "torch.nn.functional.pad": ["paddle.nn.functional.pad", PadFuncMapper],
     "torch.nn.functional.relu": ["paddle.nn.functional.relu", ReluFuncMapper],
     "torch.sigmoid": ["paddle.nn.functional.sigmoid", SigmoidFuncMapper],
-    "torch.nn.functional.sigmoid":
-    ["paddle.nn.functional.sigmoid", SigmoidFuncMapper],
-    "torch.nn.functional.softmax":
-    ["paddle.nn.functional.softmax", SoftmaxFuncMapper],
+    "torch.nn.functional.sigmoid": [
+        "paddle.nn.functional.sigmoid", SigmoidFuncMapper
+    ],
+    "torch.nn.functional.softmax": [
+        "paddle.nn.functional.softmax", SoftmaxFuncMapper
+    ],
     "torch.nn.functional.tanh": ["paddle.tanh", None],
     # init
     "torch.nn.init": ["x2paddle.torch2paddle", None],
-    "torch.nn.init.kaiming_normal_":
-    ["x2paddle.torch2paddle.kaiming_normal_", None],
-    "torch.nn.init.kaiming_normal":
-    ["x2paddle.torch2paddle.kaiming_normal_", None],
-    "torch.nn.init.xavier_uniform_":
-    ["x2paddle.torch2paddle.xavier_normal_", None],
-    "torch.nn.init.xavier_normal_":
-    ["x2paddle.torch2paddle.xavier_uniform_", None],
+    "torch.nn.init.kaiming_normal_": [
+        "x2paddle.torch2paddle.kaiming_normal_", None
+    ],
+    "torch.nn.init.kaiming_normal": [
+        "x2paddle.torch2paddle.kaiming_normal_", None
+    ],
+    "torch.nn.init.xavier_uniform_": [
+        "x2paddle.torch2paddle.xavier_normal_", None
+    ],
+    "torch.nn.init.xavier_normal_": [
+        "x2paddle.torch2paddle.xavier_uniform_", None
+    ],
     "torch.nn.init.constant_": ["x2paddle.torch2paddle.constant_init_", None],
     "torch.nn.init.normal_": ["x2paddle.torch2paddle.normal_init_", None],
     "torch.nn.init.ones_": ["x2paddle.torch2paddle.ones_init_", None],
     "torch.nn.init.zeros_": ["x2paddle.torch2paddle.zeros_init_", None],
-    "torch.nn.init.orthogonal_":
-    ["x2paddle.torch2paddle.normal_init_", None],  # syf(TODO)
+    "torch.nn.init.orthogonal_": ["x2paddle.torch2paddle.normal_init_",
+                                  None],  # syf(TODO)
     # functional_loss
-    "torch.nn.functional.binary_cross_entropy_with_logits":
-    ["x2paddle.torch2paddle.binary_cross_entropy_with_logits", None],
-    "torch.nn.functional.cross_entropy":
-    ["paddle.nn.functional.cross_entropy", CrossEntropyFuncMapper],
-    "torch.nn.functional.mse_loss":
-    ["paddle.nn.functional.mse_loss", LossFuncMapper],
-    "torch.nn.functional.smooth_l1_loss":
-    ["paddle.nn.functional.smooth_l1_loss", LossFuncMapper],
+    "torch.nn.functional.binary_cross_entropy_with_logits": [
+        "x2paddle.torch2paddle.binary_cross_entropy_with_logits", None
+    ],
+    "torch.nn.functional.cross_entropy": [
+        "paddle.nn.functional.cross_entropy", CrossEntropyFuncMapper
+    ],
+    "torch.nn.functional.mse_loss": [
+        "paddle.nn.functional.mse_loss", LossFuncMapper
+    ],
+    "torch.nn.functional.smooth_l1_loss": [
+        "paddle.nn.functional.smooth_l1_loss", LossFuncMapper
+    ],
 }
 
 UTILS_MAPPER = {
@@ -214,8 +225,7 @@ TORCHVISION_MAPPER = {
     "torchvision.transforms.ToPILImage":
     ["x2paddle.torch2paddle.ToPILImage", None],
     "torchvision.transforms.Resize": ["paddle.vision.transforms.Resize", None],
-    "torchvision.transforms.ToTensor":
-    ["x2paddle.torch2paddle.ToTensor", None],
+    "torchvision.transforms.ToTensor": ["x2paddle.torch2paddle.ToTensor", None],
     "torchvision.transforms.RandomHorizontalFlip":
     ["paddle.vision.transforms.RandomHorizontalFlip", None],
     "torchvision.transforms.CenterCrop":
@@ -234,8 +244,7 @@ TORCHVISION_MAPPER = {
     ["x2paddle.torch2paddle.ImageFolder", None],
     # models
     "torchvision.models": ["x2paddle.models", None],
-    "torchvision.models.vgg.model_urls":
-    ["x2paddle.models.vgg_pth_urls", None],
+    "torchvision.models.vgg.model_urls": ["x2paddle.models.vgg_pth_urls", None],
     "torchvision.models.vgg11": ["x2paddle.models.vgg11_pth", None],
     "torchvision.models.vgg13": ["x2paddle.models.vgg13_pth", None],
     "torchvision.models.vgg16": ["x2paddle.models.vgg16_pth", None],

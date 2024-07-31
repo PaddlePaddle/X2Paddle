@@ -28,48 +28,46 @@ class TestAveragePoolConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=4, max_size=4))
+            st.lists(st.integers(min_value=10, max_value=20),
+                     min_size=4,
+                     max_size=4))
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=7, max_value=10), min_size=2, max_size=2))
+            st.lists(st.integers(min_value=7, max_value=10),
+                     min_size=2,
+                     max_size=2))
 
         strides = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=2), min_size=2, max_size=2))
+            st.lists(st.integers(min_value=1, max_value=2),
+                     min_size=2,
+                     max_size=2))
 
         if draw(st.booleans()):
             auto_pad = "NOTSET"
             padding = None
             if draw(st.booleans()):
                 padding = draw(
-                    st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=2,
-                        max_size=2))
+                    st.lists(st.integers(min_value=1, max_value=5),
+                             min_size=2,
+                             max_size=2))
                 padding = [0, 0] + padding
             else:
                 padding = draw(
-                    st.lists(
-                        st.integers(
-                            min_value=1, max_value=5),
-                        min_size=4,
-                        max_size=4))
+                    st.lists(st.integers(min_value=1, max_value=5),
+                             min_size=4,
+                             max_size=4))
         else:
             auto_pad = draw(
-                st.sampled_from(
-                    ["SAME_LOWER", "SAME_UPPER", "VALID", "NOTSET"]))
+                st.sampled_from(["SAME_LOWER", "SAME_UPPER", "VALID",
+                                 "NOTSET"]))
             padding = None
 
         config = {
             "op_names": ["AveragePool"],
             "test_data_shapes": [input_shape],
-            "test_data_types": [["float32"], ],
+            "test_data_types": [
+                ["float32"],
+            ],
             "inputs_shape": [],
             "min_opset_version": 7,
             "max_opset_version": 9,

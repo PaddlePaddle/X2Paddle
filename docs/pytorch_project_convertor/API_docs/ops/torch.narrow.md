@@ -14,7 +14,7 @@ paddle.slice(input, axes, starts, ends)
 | start        | starts            | 表示起始位置。                   |
 ### 功能差异
 #### 使用方式
-***PyTorch***：只能在一个维度上进行切割，`dim`、`start`、`length`传入的值均只能为int型；使用该维度输出长度(`length`)来定位结束位置。  
+***PyTorch***：只能在一个维度上进行切割，`dim`、`start`、`length`传入的值均只能为int型；使用该维度输出长度(`length`)来定位结束位置。
 ***PaddlePaddle***：可以在多个维度进行切割，`axes`、`starts`、`ends`传入的值为list/tuple（`starts`、`ends`传入的值可以为tensor）；直接使用结束位置(`end`)来定位结束位置。
 
 ### 代码示例

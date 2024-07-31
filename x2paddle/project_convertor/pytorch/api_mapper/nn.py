@@ -17,6 +17,7 @@ from x2paddle.utils import *
 
 
 class AvgPoolModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -30,8 +31,8 @@ class AvgPoolModuleMapper(Mapper):
             if isinstance(self.kwargs["count_include_pad"], bool):
                 self.kwargs["exclusive"] = not self.kwargs["count_include_pad"]
             else:
-                self.kwargs["exclusive"] = "not {}".format(self.kwargs[
-                    "count_include_pad"])
+                self.kwargs["exclusive"] = "not {}".format(
+                    self.kwargs["count_include_pad"])
         if len(self.args) > 4:
             if isinstance(self.args[4], bool):
                 self.args[4] = not self.args[4]
@@ -59,6 +60,7 @@ class AvgPoolModuleMapper(Mapper):
 
 
 class BatchNormModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -75,8 +77,8 @@ class BatchNormModuleMapper(Mapper):
             if isinstance(self.kwargs["momentum"], float):
                 self.kwargs["momentum"] = 1 - self.kwargs["momentum"]
             else:
-                self.kwargs["momentum"] = "1 - {}".format(self.kwargs[
-                    "momentum"])
+                self.kwargs["momentum"] = "1 - {}".format(
+                    self.kwargs["momentum"])
         if "affine" in self.kwargs and not self.kwargs["affine"]:
             for key in ["weight_attr", "bias_attr"]:
                 self.kwargs[key] = "paddle.ParamAttr(learning_rate=0.0)"
@@ -129,6 +131,7 @@ class BatchNormModuleMapper(Mapper):
 
 
 class ConvModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -159,6 +162,7 @@ class ConvModuleMapper(Mapper):
 
 
 class DropoutModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -172,6 +176,7 @@ class DropoutModuleMapper(Mapper):
 
 
 class EmbeddingModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -201,6 +206,7 @@ class EmbeddingModuleMapper(Mapper):
 
 
 class GroupNormModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -228,6 +234,7 @@ class GroupNormModuleMapper(Mapper):
 
 
 class LayerNormModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -256,6 +263,7 @@ class LayerNormModuleMapper(Mapper):
 
 
 class LinearModuleMapper(ConvModuleMapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -274,6 +282,7 @@ class LinearModuleMapper(ConvModuleMapper):
 
 
 class LossModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -304,6 +313,7 @@ class LossModuleMapper(Mapper):
 
 
 class MaxPoolModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -337,6 +347,7 @@ class MaxPoolModuleMapper(Mapper):
 
 
 class PadModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -378,6 +389,7 @@ class PadModuleMapper(Mapper):
 
 
 class ReLUModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -393,6 +405,7 @@ class ReLUModuleMapper(Mapper):
 
 
 class SoftmaxModuleMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -407,6 +420,7 @@ class SoftmaxModuleMapper(Mapper):
 
 
 class AvgPoolFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -421,8 +435,8 @@ class AvgPoolFuncMapper(Mapper):
             if isinstance(self.kwargs["count_include_pad"], bool):
                 self.kwargs["exclusive"] = not self.kwargs["count_include_pad"]
             else:
-                self.kwargs["exclusive"] = "not {}".format(self.kwargs[
-                    "count_include_pad"])
+                self.kwargs["exclusive"] = "not {}".format(
+                    self.kwargs["count_include_pad"])
 
     def delete_attrs(self):
         delete_key(self.kwargs, "count_include_pad")
@@ -446,6 +460,7 @@ class AvgPoolFuncMapper(Mapper):
 
 
 class CrossEntropyFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -459,6 +474,7 @@ class CrossEntropyFuncMapper(Mapper):
 
 
 class DropoutFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -483,6 +499,7 @@ class DropoutFuncMapper(Mapper):
 
 
 class InterpolateFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -509,6 +526,7 @@ class InterpolateFuncMapper(Mapper):
 
 
 class LeaklyReluFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -532,6 +550,7 @@ class LeaklyReluFuncMapper(Mapper):
 
 
 class LogSoftmaxFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -554,6 +573,7 @@ class LogSoftmaxFuncMapper(Mapper):
 
 
 class PadFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -567,6 +587,7 @@ class PadFuncMapper(Mapper):
 
 
 class ReluFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -591,6 +612,7 @@ class ReluFuncMapper(Mapper):
 
 
 class SigmoidFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -604,6 +626,7 @@ class SigmoidFuncMapper(Mapper):
 
 
 class LossFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,
@@ -635,6 +658,7 @@ class LossFuncMapper(Mapper):
 
 
 class SoftmaxFuncMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,

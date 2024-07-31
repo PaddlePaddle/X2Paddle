@@ -23,12 +23,12 @@ from typing import Union, Optional, List, Tuple, Text, BinaryIO
 
 @paddle.no_grad()
 def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
-              nrow: int=8,
-              padding: int=2,
-              normalize: bool=False,
-              value_range: Optional[Tuple[int, int]]=None,
-              scale_each: bool=False,
-              pad_value: int=0,
+              nrow: int = 8,
+              padding: int = 2,
+              normalize: bool = False,
+              value_range: Optional[Tuple[int, int]] = None,
+              scale_each: bool = False,
+              pad_value: int = 0,
               **kwargs) -> paddle.Tensor:
     """Make a grid of images.
 
@@ -52,8 +52,8 @@ def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
 
     """
     if not (isinstance(tensor, paddle.Tensor) or
-            (isinstance(tensor, list) and all(
-                isinstance(t, paddle.Tensor) for t in tensor))):
+            (isinstance(tensor, list)
+             and all(isinstance(t, paddle.Tensor) for t in tensor))):
         raise TypeError(
             f'tensor or list of tensors expected, got {type(tensor)}')
 
@@ -108,15 +108,16 @@ def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
     height, width = int(tensor.shape[2] + padding), int(tensor.shape[3] +
                                                         padding)
     num_channels = tensor.shape[1]
-    grid = paddle.full((num_channels, height * ymaps + padding,
-                        width * xmaps + padding), pad_value)
+    grid = paddle.full(
+        (num_channels, height * ymaps + padding, width * xmaps + padding),
+        pad_value)
     k = 0
     for y in range(ymaps):
         for x in range(xmaps):
             if k >= nmaps:
                 break
-            grid[:, y * height + padding:(y + 1) * height, x * width + padding:(
-                x + 1) * width] = tensor[k]
+            grid[:, y * height + padding:(y + 1) * height,
+                 x * width + padding:(x + 1) * width] = tensor[k]
             k = k + 1
     return grid
 
@@ -124,7 +125,7 @@ def make_grid(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
 @paddle.no_grad()
 def save_image(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
                fp: Union[Text, pathlib.Path, BinaryIO],
-               format: Optional[str]=None,
+               format: Optional[str] = None,
                **kwargs) -> None:
     """Save a given Tensor into an image file.
 
@@ -139,7 +140,7 @@ def save_image(tensor: Union[paddle.Tensor, List[paddle.Tensor]],
 
     grid = make_grid(tensor, **kwargs)
     # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
-    ndarr = paddle.clip(grid * 255 + 0.5, 0, 255).transpose(
-        [1, 2, 0]).cast("uint8").numpy()
+    ndarr = paddle.clip(grid * 255 + 0.5, 0,
+                        255).transpose([1, 2, 0]).cast("uint8").numpy()
     im = Image.fromarray(ndarr)
     im.save(fp, format=format)

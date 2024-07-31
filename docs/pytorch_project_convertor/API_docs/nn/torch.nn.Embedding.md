@@ -21,9 +21,9 @@ paddle.nn.Embedding(num_embeddings,
 
 ### 功能差异
 #### 归一化设置
-***PyTorch***：当max_norm不为`None`时，如果Embeddding向量的范数（范数的计算方式由norm_type决定）超过了max_norm这个界限，就要再进行归一化。  
+***PyTorch***：当max_norm不为`None`时，如果Embeddding向量的范数（范数的计算方式由norm_type决定）超过了max_norm这个界限，就要再进行归一化。
 ***PaddlePaddle***：PaddlePaddle无此要求，因此不需要归一化。
 
 #### 梯度缩放设置
-***PyTorch***：若scale_grad_by_freq设置为`True`，会根据单词在mini-batch中出现的频率，对梯度进行放缩。  
+***PyTorch***：若scale_grad_by_freq设置为`True`，会根据单词在mini-batch中出现的频率，对梯度进行放缩。
 ***PaddlePaddle***：PaddlePaddle无此功能。

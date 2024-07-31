@@ -20,6 +20,7 @@ from x2paddle.core.util import *
 
 
 class Conv2DAddFuser(FuseBase):
+
     def __init__(self):
         super(Conv2DAddFuser, self).__init__()
         self.patterns = list()
@@ -43,43 +44,47 @@ class Conv2DAddFuser(FuseBase):
             return "x" + str(id)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": "conv-input-0"},
-            outputs=[gen_name(1)],
-            perm=[0, 3, 1, 2])
-        pattern.add_layer(
-            kernel="paddle.nn.Conv2D",
-            inputs={"input": gen_name(1)},
-            outputs=[gen_name(2)])
-        pattern.add_layer(
-            kernel="paddle.transpose",
-            inputs={"x": gen_name(2)},
-            outputs=[gen_name(2)],
-            perm=[0, 2, 3, 1])
-        pattern.add_layer(
-            kernel="paddle.add",
-            inputs={"x": gen_name(2),
-                    "y": gen_name(0)},
-            outputs=[gen_name(3)])
-        pattern.build(inputs={"input-0": "conv-input-0", })
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer(kernel="paddle.transpose",
+                          inputs={"x": "conv-input-0"},
+                          outputs=[gen_name(1)],
+                          perm=[0, 3, 1, 2])
+        pattern.add_layer(kernel="paddle.nn.Conv2D",
+                          inputs={"input": gen_name(1)},
+                          outputs=[gen_name(2)])
+        pattern.add_layer(kernel="paddle.transpose",
+                          inputs={"x": gen_name(2)},
+                          outputs=[gen_name(2)],
+                          perm=[0, 2, 3, 1])
+        pattern.add_layer(kernel="paddle.add",
+                          inputs={
+                              "x": gen_name(2),
+                              "y": gen_name(0)
+                          },
+                          outputs=[gen_name(3)])
+        pattern.build(inputs={
+            "input-0": "conv-input-0",
+        })
         self.patterns.append(pattern)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            kernel="paddle.nn.Conv2D",
-            inputs={"input": "conv-input-0"},
-            outputs=[gen_name(1)])
-        pattern.add_layer(
-            kernel="paddle.add",
-            inputs={"x": gen_name(1),
-                    "y": gen_name(0)},
-            outputs=[gen_name(2)])
-        pattern.build(inputs={"input-0": "conv-input-0", })
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer(kernel="paddle.nn.Conv2D",
+                          inputs={"input": "conv-input-0"},
+                          outputs=[gen_name(1)])
+        pattern.add_layer(kernel="paddle.add",
+                          inputs={
+                              "x": gen_name(1),
+                              "y": gen_name(0)
+                          },
+                          outputs=[gen_name(2)])
+        pattern.build(inputs={
+            "input-0": "conv-input-0",
+        })
         self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):

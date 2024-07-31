@@ -29,13 +29,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.nn.functional.conv3d(
-            inputs,
-            weight,
-            stride=self.config["stride"],
-            padding=self.config["padding"],
-            dilation=self.config["dilation"],
-            groups=self.config["groups"])
+        x = torch.nn.functional.conv3d(inputs,
+                                       weight,
+                                       stride=self.config["stride"],
+                                       padding=self.config["padding"],
+                                       dilation=self.config["dilation"],
+                                       groups=self.config["groups"])
         return x
 
 
@@ -49,9 +48,9 @@ class TestConv3dConvert(OPConvertAutoScanTest):
         result = False
         # Warning: "same" padding mode doesn’t support any stride values other than 1
         if isinstance(config["stride"], list):
-            if config["padding"] == "same" and (config["stride"][0] > 1 or
-                                                config["stride"][1] > 1 or
-                                                config["stride"][2] > 1):
+            if config["padding"] == "same" and (config["stride"][0] > 1
+                                                or config["stride"][1] > 1
+                                                or config["stride"][2] > 1):
                 result = True
         else:
             if config["padding"] == "same" and config["stride"] > 1:
@@ -60,14 +59,14 @@ class TestConv3dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=15, max_value=25), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=15, max_value=25),
+                     min_size=5,
+                     max_size=5))
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=5),
+                     min_size=5,
+                     max_size=5))
 
         groups = draw(st.integers(min_value=1, max_value=4))
         muti1 = draw(st.integers(min_value=1, max_value=4))
@@ -87,11 +86,9 @@ class TestConv3dConvert(OPConvertAutoScanTest):
                 strides = kernel_size[4]
         else:
             strides = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=3,
+                         max_size=3))
             if strides[0] > kernel_size[2]:
                 strides[0] = kernel_size[2]
             if strides[1] > kernel_size[3]:
@@ -115,11 +112,9 @@ class TestConv3dConvert(OPConvertAutoScanTest):
             padding = draw(st.sampled_from(["valid", "same"]))
         else:
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=3,
+                         max_size=3))
 
         dilations_type = draw(st.sampled_from(["int", "tuple"]))
         dilations = None
@@ -127,11 +122,9 @@ class TestConv3dConvert(OPConvertAutoScanTest):
             dilations = draw(st.integers(min_value=1, max_value=3))
         else:
             dilations = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=3),
+                         min_size=3,
+                         max_size=3))
         if padding == "same":
             dilations = 1
 

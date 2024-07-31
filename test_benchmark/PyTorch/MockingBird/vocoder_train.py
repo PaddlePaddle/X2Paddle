@@ -6,14 +6,13 @@ from pathlib import Path
 import argparse
 import json
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Trains the vocoder from the synthesizer audios and the GTA synthesized mels, "
-                    "or ground truth mels.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    
+        description=
+        "Trains the vocoder from the synthesizer audios and the GTA synthesized mels, "
+        "or ground truth mels.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
     parser.add_argument("run_id", type=str, help= \
         "Name for this model instance. If a model state from the same run ID was previously "
         "saved, the training will restart from there. Pass -f to overwrite saved states and "
@@ -43,7 +42,9 @@ if __name__ == "__main__":
         "model.")
     parser.add_argument("-f", "--force_restart", action="store_true", help= \
         "Do not load any saved model and restart from scratch.")
-    parser.add_argument("--config", type=str, default="vocoder/hifigan/config_16k_.json")
+    parser.add_argument("--config",
+                        type=str,
+                        default="vocoder/hifigan/config_16k_.json")
     args = parser.parse_args()
 
     if not hasattr(args, "syn_dir"):
@@ -67,5 +68,3 @@ if __name__ == "__main__":
             json_config = json.load(f)
         h = AttrDict(json_config)
         train_hifigan(0, args, h)
-
-        

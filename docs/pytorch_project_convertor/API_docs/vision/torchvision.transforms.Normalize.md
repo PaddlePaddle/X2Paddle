@@ -18,5 +18,5 @@ paddle.vision.transforms.Normalize(mean=0.0, std=1.0, data_format='CHW', to_rgb=
 
 ### 功能差异
 #### 使用方式
-***PyTorch***：只支持`CHW`的输入数据，同时不支持转换为`rgb`。  
+***PyTorch***：只支持`CHW`的输入数据，同时不支持转换为`rgb`。
 ***PaddlePaddle***：支持`CHW`和`HWC`的输入数据，同时支持转换为`rgb`。

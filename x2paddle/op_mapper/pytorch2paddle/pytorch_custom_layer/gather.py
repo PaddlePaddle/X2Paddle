@@ -17,6 +17,7 @@ from x2paddle.core.util import *
 
 
 class Gather(object):
+
     def __init__(self, dim):
         self.dim = dim
 

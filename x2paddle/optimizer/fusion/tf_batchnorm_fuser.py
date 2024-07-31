@@ -21,6 +21,7 @@ from x2paddle.core.util import *
 
 
 class TFBatchNormFuser(FuseBase):
+
     def __init__(self):
         self.bn_index = 0
         super(TFBatchNormFuser, self).__init__()
@@ -36,95 +37,125 @@ class TFBatchNormFuser(FuseBase):
             return "x" + str(id)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            "paddle.full", inputs={}, outputs=[gen_name(1)], shape=[1])
-        pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(0),
-                    "y": gen_name(1)},
-            outputs=[gen_name(2)])
-        pattern.add_layer(
-            "paddle.rsqrt", inputs={"x": gen_name(2)}, outputs=[gen_name(3)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(4)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(3),
-                    "y": gen_name(4)},
-            outputs=[gen_name(5)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(6)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(6),
-                    "y": gen_name(5)},
-            outputs=[gen_name(7)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(8)])
-        pattern.add_layer(
-            "paddle.subtract",
-            inputs={"x": gen_name(8),
-                    "y": gen_name(7)},
-            outputs=[gen_name(9)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": "bn-input-0",
-                    "y": gen_name(5)},
-            outputs=[gen_name(10)])
-        pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(10),
-                    "y": gen_name(9)},
-            outputs=[gen_name(11)])
-        pattern.build(inputs={"input-0": "bn-input-0", })
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("paddle.full",
+                          inputs={},
+                          outputs=[gen_name(1)],
+                          shape=[1])
+        pattern.add_layer("paddle.add",
+                          inputs={
+                              "x": gen_name(0),
+                              "y": gen_name(1)
+                          },
+                          outputs=[gen_name(2)])
+        pattern.add_layer("paddle.rsqrt",
+                          inputs={"x": gen_name(2)},
+                          outputs=[gen_name(3)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(4)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": gen_name(3),
+                              "y": gen_name(4)
+                          },
+                          outputs=[gen_name(5)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(6)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": gen_name(6),
+                              "y": gen_name(5)
+                          },
+                          outputs=[gen_name(7)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(8)])
+        pattern.add_layer("paddle.subtract",
+                          inputs={
+                              "x": gen_name(8),
+                              "y": gen_name(7)
+                          },
+                          outputs=[gen_name(9)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": "bn-input-0",
+                              "y": gen_name(5)
+                          },
+                          outputs=[gen_name(10)])
+        pattern.add_layer("paddle.add",
+                          inputs={
+                              "x": gen_name(10),
+                              "y": gen_name(9)
+                          },
+                          outputs=[gen_name(11)])
+        pattern.build(inputs={
+            "input-0": "bn-input-0",
+        })
         self.patterns.append(pattern)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            "paddle.full", inputs={}, outputs=[gen_name(1)], shape=[1])
-        pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(0),
-                    "y": gen_name(1)},
-            outputs=[gen_name(2)])
-        pattern.add_layer(
-            "paddle.rsqrt", inputs={"x": gen_name(2)}, outputs=[gen_name(3)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(4)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(3),
-                    "y": gen_name(4)},
-            outputs=[gen_name(5)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": "bn-input-0",
-                    "y": gen_name(5)},
-            outputs=[gen_name(10)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(6)])
-        pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(6),
-                    "y": gen_name(5)},
-            outputs=[gen_name(7)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(8)])
-        pattern.add_layer(
-            "paddle.subtract",
-            inputs={"x": gen_name(8),
-                    "y": gen_name(7)},
-            outputs=[gen_name(9)])
-        pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(10),
-                    "y": gen_name(9)},
-            outputs=[gen_name(11)])
-        pattern.build(inputs={"input-0": "bn-input-0", })
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("paddle.full",
+                          inputs={},
+                          outputs=[gen_name(1)],
+                          shape=[1])
+        pattern.add_layer("paddle.add",
+                          inputs={
+                              "x": gen_name(0),
+                              "y": gen_name(1)
+                          },
+                          outputs=[gen_name(2)])
+        pattern.add_layer("paddle.rsqrt",
+                          inputs={"x": gen_name(2)},
+                          outputs=[gen_name(3)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(4)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": gen_name(3),
+                              "y": gen_name(4)
+                          },
+                          outputs=[gen_name(5)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": "bn-input-0",
+                              "y": gen_name(5)
+                          },
+                          outputs=[gen_name(10)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(6)])
+        pattern.add_layer("paddle.multiply",
+                          inputs={
+                              "x": gen_name(6),
+                              "y": gen_name(5)
+                          },
+                          outputs=[gen_name(7)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(8)])
+        pattern.add_layer("paddle.subtract",
+                          inputs={
+                              "x": gen_name(8),
+                              "y": gen_name(7)
+                          },
+                          outputs=[gen_name(9)])
+        pattern.add_layer("paddle.add",
+                          inputs={
+                              "x": gen_name(10),
+                              "y": gen_name(9)
+                          },
+                          outputs=[gen_name(11)])
+        pattern.build(inputs={
+            "input-0": "bn-input-0",
+        })
         self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):
@@ -204,10 +235,9 @@ class TFBatchNormFuser(FuseBase):
             moving_mean_name=string(mean_layer.outputs[0]),
             moving_variance_name=string(var_layer.outputs[0]),
             is_test=True)
-        transpose1 = PaddleLayer(
-            id=layer_id_list[-1] + "_3",
-            kernel="paddle.transpose",
-            inputs={"x": "{}_bn".format(input_name)},
-            outputs=add_layer.outputs,
-            perm=[0, 2, 3, 1])
+        transpose1 = PaddleLayer(id=layer_id_list[-1] + "_3",
+                                 kernel="paddle.transpose",
+                                 inputs={"x": "{}_bn".format(input_name)},
+                                 outputs=add_layer.outputs,
+                                 perm=[0, 2, 3, 1])
         return [transpose0, bn, transpose1], layer_id_list[-1]

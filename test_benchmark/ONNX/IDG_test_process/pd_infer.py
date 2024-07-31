@@ -4,7 +4,6 @@ import numpy as np
 import pickle
 import sys
 
-
 f = open('result.txt', 'w')
 f.write("======test_process: \n")
 try:
@@ -12,11 +11,13 @@ try:
     exe = paddle.static.Executor(paddle.CUDAPlace(0))
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="./pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    with open("../dataset/IDG_test_process/test_process_inputs.pkl", "rb") as fr:
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="./pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    with open("../dataset/IDG_test_process/test_process_inputs.pkl",
+              "rb") as fr:
         inputs_list = pickle.load(fr)
 
     feed_dict = dict()
@@ -24,7 +25,8 @@ try:
         feed_dict[inputs[i]] = inputs_list[i]
     result = exe.run(prog, feed=feed_dict, fetch_list=outputs)
 
-    with open("../dataset/IDG_test_process/test_process_outputs.pkl", "rb") as fr:
+    with open("../dataset/IDG_test_process/test_process_outputs.pkl",
+              "rb") as fr:
         onnx_result = pickle.load(fr)
     is_successd = True
     for i in range(5):

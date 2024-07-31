@@ -1,5 +1,5 @@
 ## torchvision.transforms.Lambda
-### [torchvision.transforms.Lambda](https://pytorch.org/vision/stable/transforms.html?highlight=lambda#torchvision.transforms.Lambda)  
+### [torchvision.transforms.Lambda](https://pytorch.org/vision/stable/transforms.html?highlight=lambda#torchvision.transforms.Lambda)
 ```python
 torchvision.transforms.Lambda(lambd)
 ```

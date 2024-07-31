@@ -1,5 +1,5 @@
 echo "[X2Paddle]    Running Caffe model converting test..."
-if [ ! -d "dataset/" ]; then	
+if [ ! -d "dataset/" ]; then
   wget -nc https://x2paddle.bj.bcebos.com/test_benchmark/Caffe/dataset.tar.gz
   tar xzvf dataset.tar.gz
 fi

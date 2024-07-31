@@ -10,19 +10,22 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test Dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/",
-                                                            executor=exe,
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    data = np.load("../dataset/mmdetection_fasterrcnn/real_img_data_fasterrcnn_50.npy")
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    data = np.load(
+        "../dataset/mmdetection_fasterrcnn/real_img_data_fasterrcnn_50.npy")
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
-    with open("../dataset/mmdetection_fasterrcnn/result_fasterrcnn_onnx.pkl", "rb") as fr:
+    with open("../dataset/mmdetection_fasterrcnn/result_fasterrcnn_onnx.pkl",
+              "rb") as fr:
         onnx_result = pickle.load(fr)
 
     is_successd = True
     for i in range(2):
-        diff = result[i][:,:15] - onnx_result[i][:,:15]
+        diff = result[i][:, :15] - onnx_result[i][:, :15]
         max_abs_diff = np.fabs(diff).max()
         if max_abs_diff >= 1e-05:
             relative_diff = max_abs_diff / np.fabs(onnx_result[i]).max()

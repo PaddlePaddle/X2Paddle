@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class FcFuser(FuseBase):
+
     def __init__(self):
         self.linear_index = 0
         super(FcFuser, self).__init__()
@@ -47,67 +48,73 @@ class FcFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "prim.shape", inputs={'input': "fc-input-0"},
-            outputs=[gen_name(2)])
-        self.pattern.add_layer(
-            "prim.len", inputs={'input': gen_name(2)}, outputs=[gen_name(2)])
-        self.pattern.add_layer(
-            "prim.eq",
-            inputs={"eq0": gen_name(2)},
-            outputs=[gen_name(3)],
-            eq1=2)
+        self.pattern.add_layer("prim.shape",
+                               inputs={'input': "fc-input-0"},
+                               outputs=[gen_name(2)])
+        self.pattern.add_layer("prim.len",
+                               inputs={'input': gen_name(2)},
+                               outputs=[gen_name(2)])
+        self.pattern.add_layer("prim.eq",
+                               inputs={"eq0": gen_name(2)},
+                               outputs=[gen_name(3)],
+                               eq1=2)
         self.pattern.add_layer("prim.if", {'input': gen_name(3)}, [gen_name(4)])
         self.pattern.outputs.append(gen_name(4))
         if_layer1 = self.pattern.layers[list(self.pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(parent_layer=if_layer1)
-        pattern_block0.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(5)])
-        pattern_block0.add_layer(
-            "paddle.transpose",
-            inputs={"x": gen_name(5)},
-            outputs=[gen_name(6)],
-            perm=[1, 0])
-        pattern_block0.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(7)])
-        pattern_block0.add_layer(
-            "paddle.addmm",
-            inputs={"input": gen_name(7),
-                    "x": "fc-input-0",
-                    "y": gen_name(6)},
-            outputs=[gen_name(8)],
-            beta=1,
-            alpha=1)
+        pattern_block0.add_layer("self.create_parameter",
+                                 inputs={},
+                                 outputs=[gen_name(5)])
+        pattern_block0.add_layer("paddle.transpose",
+                                 inputs={"x": gen_name(5)},
+                                 outputs=[gen_name(6)],
+                                 perm=[1, 0])
+        pattern_block0.add_layer("self.create_parameter",
+                                 inputs={},
+                                 outputs=[gen_name(7)])
+        pattern_block0.add_layer("paddle.addmm",
+                                 inputs={
+                                     "input": gen_name(7),
+                                     "x": "fc-input-0",
+                                     "y": gen_name(6)
+                                 },
+                                 outputs=[gen_name(8)],
+                                 beta=1,
+                                 alpha=1)
         if_layer1.inputs["input-0"] = "fc-input-0"
         self.pattern.inputs.append("fc-input-0")
-        pattern_block0.add_layer(
-            "prim.equal", inputs={'input': gen_name(8)}, outputs=[gen_name(4)])
+        pattern_block0.add_layer("prim.equal",
+                                 inputs={'input': gen_name(8)},
+                                 outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block0)
         pattern_block1 = PaddleGraph(parent_layer=if_layer1)
-        pattern_block1.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(5)])
-        pattern_block1.add_layer(
-            "paddle.transpose",
-            inputs={"x": gen_name(5)},
-            outputs=[gen_name(6)],
-            perm=[1, 0])
-        pattern_block1.add_layer(
-            "paddle.matmul",
-            inputs={"x": "fc-input-0",
-                    "y": gen_name(6)},
-            outputs=[gen_name(9)])
+        pattern_block1.add_layer("self.create_parameter",
+                                 inputs={},
+                                 outputs=[gen_name(5)])
+        pattern_block1.add_layer("paddle.transpose",
+                                 inputs={"x": gen_name(5)},
+                                 outputs=[gen_name(6)],
+                                 perm=[1, 0])
+        pattern_block1.add_layer("paddle.matmul",
+                                 inputs={
+                                     "x": "fc-input-0",
+                                     "y": gen_name(6)
+                                 },
+                                 outputs=[gen_name(9)])
         if_layer1.inputs["input-1"] = "fc-input-0"
-        pattern_block1.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(12)])
-        pattern_block1.add_layer(
-            "prim.add_",
-            inputs={"x": gen_name(9),
-                    "y": gen_name(12)},
-            outputs=[gen_name(13)],
-            alpha=1)
-        pattern_block1.add_layer(
-            "prim.equal", inputs={'input': gen_name(13)},
-            outputs=[gen_name(4)])
+        pattern_block1.add_layer("self.create_parameter",
+                                 inputs={},
+                                 outputs=[gen_name(12)])
+        pattern_block1.add_layer("prim.add_",
+                                 inputs={
+                                     "x": gen_name(9),
+                                     "y": gen_name(12)
+                                 },
+                                 outputs=[gen_name(13)],
+                                 alpha=1)
+        pattern_block1.add_layer("prim.equal",
+                                 inputs={'input': gen_name(13)},
+                                 outputs=[gen_name(4)])
         if_layer1.add_block(pattern_block1)
         self.pattern.build(inputs={"input-0": "fc-input-0"})
 
@@ -132,14 +139,13 @@ class FcFuser(FuseBase):
         attrs["out_features"] = parameters[weight_name].shape[0]
         linear_name = "linear{}".format(self.linear_index)
         self.linear_index += 1
-        parameters["{}.weight".format(linear_name)] = parameters[
-            weight_name].transpose((1, 0))
-        parameters["{}.bias".format(linear_name)] = np.squeeze(parameters[
-            bias_name])
-        new_layer = PaddleLayer(
-            layers_id[0],
-            "paddle.nn.Linear",
-            inputs={"input": input_name},
-            outputs=[linear_name, output_name],
-            **attrs)
+        parameters["{}.weight".format(
+            linear_name)] = parameters[weight_name].transpose((1, 0))
+        parameters["{}.bias".format(linear_name)] = np.squeeze(
+            parameters[bias_name])
+        new_layer = PaddleLayer(layers_id[0],
+                                "paddle.nn.Linear",
+                                inputs={"input": input_name},
+                                outputs=[linear_name, output_name],
+                                **attrs)
         return new_layer

@@ -5,19 +5,19 @@ import pickle
 import sys
 import os
 
-
 f = open('result.txt', 'w')
 f.write("======ResNet18_2: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test trace
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_trace/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_trace/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/ResNet18_2/input.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
     with open("../dataset/ResNet18_2/output.pkl", "rb") as fr:
         pytorch_result = pickle.load(fr)

@@ -140,10 +140,9 @@ def index_fill_(self, dim, index, val):
 
 @add_tensor_function
 def fill_(self, value):
-    paddle.assign(
-        paddle.full_like(
-            self, value, dtype="float32").cast(self.dtype),
-        output=self)
+    paddle.assign(paddle.full_like(self, value,
+                                   dtype="float32").cast(self.dtype),
+                  output=self)
 
 
 pd_sum = partial(paddle.Tensor.sum)
@@ -159,9 +158,10 @@ pd_sort = partial(paddle.Tensor.sort)
 
 @add_tensor_function
 def sort(self, dim=-1, descending=False, out=None):
-    return pd_sort(
-        self, axis=dim, descending=descending), paddle.argsort(
-            self, axis=dim, descending=descending)
+    return pd_sort(self, axis=dim,
+                   descending=descending), paddle.argsort(self,
+                                                          axis=dim,
+                                                          descending=descending)
 
 
 pd_reshape = partial(paddle.Tensor.reshape)

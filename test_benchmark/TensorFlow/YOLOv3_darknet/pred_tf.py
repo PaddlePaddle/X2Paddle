@@ -5,11 +5,11 @@ with tf.gfile.GFile('frozen_darknet_yolov3_model.pb', "rb") as pb:
     graph_def.ParseFromString(pb.read())
 with tf.Graph().as_default() as graph:
     tf.import_graph_def(
-            graph_def,
-            name="",  # name可以自定义，修改name之后记得在下面的代码中也要改过来
-            )
+        graph_def,
+        name="",  # name可以自定义，修改name之后记得在下面的代码中也要改过来
+    )
 # for op in graph.get_operations():
-#     print(op.name, op.values())  
+#     print(op.name, op.values())
 node_in = graph.get_tensor_by_name('inputs:0')  # 此处填入输入节点名称
 node_out = graph.get_tensor_by_name('output_boxes:0')  # 此处填入输出节点名称
 np.random.seed(6)

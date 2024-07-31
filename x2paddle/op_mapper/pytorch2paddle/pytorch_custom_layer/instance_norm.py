@@ -45,18 +45,19 @@ class InstanceNorm(paddle.nn.Layer):
                 shape=[num_features],
                 default_initializer=Constant(1.0),
                 is_bias=False)
-            self.bias = self.create_parameter(
-                attr=self._bias_attr,
-                shape=[num_features],
-                default_initializer=Constant(0.0),
-                is_bias=True)
+            self.bias = self.create_parameter(attr=self._bias_attr,
+                                              shape=[num_features],
+                                              default_initializer=Constant(0.0),
+                                              is_bias=True)
         else:
             self.scale = None
             self.bias = None
 
     def forward(self, input):
-        return instance_norm(
-            input, weight=self.scale, bias=self.bias, eps=self._epsilon)
+        return instance_norm(input,
+                             weight=self.scale,
+                             bias=self.bias,
+                             eps=self._epsilon)
 
     def extra_repr(self):
         return 'num_features={}, epsilon={}'.format(self.scale.shape[0],

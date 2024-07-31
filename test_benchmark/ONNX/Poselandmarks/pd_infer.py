@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import pickle
 
-
 f = open('result.txt', 'w')
 f.write("======Poselandmarks: \n")
 try:
@@ -12,12 +11,13 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/Poselandmarks/input.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
     with open("../dataset/Poselandmarks/output.pkl", "rb") as fr:
         onnx_result = pickle.load(fr)

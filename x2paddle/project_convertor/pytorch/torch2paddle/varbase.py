@@ -24,8 +24,8 @@ def is_condition_one(idx):
     a[mask, :]
     a[mask, ...]
     """
-    if not (isinstance(idx[0], paddle.Tensor) and
-            idx[0].dtype == paddle_dtypes.t_bool):
+    if not (isinstance(idx[0], paddle.Tensor)
+            and idx[0].dtype == paddle_dtypes.t_bool):
         return False
     if len(idx) == 1:
         return False
@@ -47,8 +47,8 @@ def is_condition_two(idx):
     a = paddle.to_tensor(np.random.rand(1, 2, 3).astype("float32"))
     a[..., :2]
     """
-    if idx[0] is Ellipsis and (isinstance(idx[1], slice) or isinstance(idx[1],
-                                                                       int)):
+    if idx[0] is Ellipsis and (isinstance(idx[1], slice)
+                               or isinstance(idx[1], int)):
         return True
     return False
 

@@ -54,6 +54,7 @@ def update_parameters(parameters, lr, weight_decay):
 
 
 class Momentum(paddle.optimizer.Momentum):
+
     def __init__(self,
                  params,
                  lr=0.001,
@@ -63,21 +64,19 @@ class Momentum(paddle.optimizer.Momentum):
                  nesterov=False):
         assert dampening == 0, "The dampening must be 0 in Momentum!"
         parameters_list = update_parameters(params, lr, weight_decay)
-        super().__init__(
-            learning_rate=lr,
-            momentum=momentum,
-            parameters=parameters_list,
-            use_nesterov=nesterov,
-            weight_decay=weight_decay,
-            grad_clip=None,
-            name=None)
+        super().__init__(learning_rate=lr,
+                         momentum=momentum,
+                         parameters=parameters_list,
+                         use_nesterov=nesterov,
+                         weight_decay=weight_decay,
+                         grad_clip=None,
+                         name=None)
 
-        defaults = dict(
-            lr=lr,
-            momentum=momentum,
-            dampening=dampening,
-            weight_decay=weight_decay,
-            nesterov=nesterov)
+        defaults = dict(lr=lr,
+                        momentum=momentum,
+                        dampening=dampening,
+                        weight_decay=weight_decay,
+                        nesterov=nesterov)
         self.defaults = defaults
 
         self.state = defaultdict(dict)
@@ -142,6 +141,7 @@ class Momentum(paddle.optimizer.Momentum):
 
 
 class Adam(paddle.optimizer.Adam):
+
     def __init__(self,
                  params,
                  lr=0.001,
@@ -152,23 +152,21 @@ class Adam(paddle.optimizer.Adam):
         parameters_list = update_parameters(params, lr, weight_decay)
         if weight_decay == 0:
             weight_decay = None
-        super().__init__(
-            learning_rate=lr,
-            beta1=betas[0],
-            beta2=betas[1],
-            epsilon=eps,
-            parameters=parameters_list,
-            weight_decay=weight_decay,
-            grad_clip=None,
-            name=None,
-            lazy_mode=False)
+        super().__init__(learning_rate=lr,
+                         beta1=betas[0],
+                         beta2=betas[1],
+                         epsilon=eps,
+                         parameters=parameters_list,
+                         weight_decay=weight_decay,
+                         grad_clip=None,
+                         name=None,
+                         lazy_mode=False)
 
-        defaults = dict(
-            lr=lr,
-            betas=betas,
-            eps=eps,
-            weight_decay=weight_decay,
-            amsgrad=amsgrad)
+        defaults = dict(lr=lr,
+                        betas=betas,
+                        eps=eps,
+                        weight_decay=weight_decay,
+                        amsgrad=amsgrad)
         self.defaults = defaults
 
         self.state = defaultdict(dict)

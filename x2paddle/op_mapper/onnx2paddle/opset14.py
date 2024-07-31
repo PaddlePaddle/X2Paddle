@@ -16,6 +16,7 @@ from .opset13 import OpSet13
 
 
 def print_mapping_info(func):
+
     def run_mapping(*args, **kwargs):
         node = args[1]
         try:
@@ -30,5 +31,6 @@ def print_mapping_info(func):
 
 
 class OpSet14(OpSet13):
+
     def __init__(self, decoder, paddle_graph):
         super(OpSet14, self).__init__(decoder, paddle_graph)

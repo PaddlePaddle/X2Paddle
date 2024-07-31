@@ -23,4 +23,4 @@ paddle.ones_like(x, dtype=None, name=None)
 | layout        | -            | 表示布局方式，PaddlePaddle无此参数。                   |
 | device        | -            | 表示Tensor存放位置，PaddlePaddle无此参数。                   |
 | requires_grad | -            | 表示是否不阻断梯度传导，PaddlePaddle无此参数。 |
-| memory_format   | -            | 表示内存格式，PaddlePaddle无此参数。           |  
+| memory_format   | -            | 表示内存格式，PaddlePaddle无此参数。           |

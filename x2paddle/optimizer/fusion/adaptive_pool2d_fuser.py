@@ -20,6 +20,7 @@ from x2paddle.core.util import *
 
 
 class AdaptivePool2dFuser(FuseBase):
+
     def __init__(self):
         super(AdaptivePool2dFuser, self).__init__()
         self.patterns = list()
@@ -59,88 +60,94 @@ class AdaptivePool2dFuser(FuseBase):
 
         # 模式一：
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "prim.shape",
-            inputs={'input': "pool-input-0"},
-            outputs=[gen_name(1)])
-        pattern.add_layer(
-            "prim.len", inputs={"input": gen_name(1)}, outputs=[gen_name(6)])
-        pattern.add_layer(
-            "prim.le", inputs={"x": gen_name(6)}, outputs=[gen_name(8)], y=2)
+        pattern.add_layer("prim.shape",
+                          inputs={'input': "pool-input-0"},
+                          outputs=[gen_name(1)])
+        pattern.add_layer("prim.len",
+                          inputs={"input": gen_name(1)},
+                          outputs=[gen_name(6)])
+        pattern.add_layer("prim.le",
+                          inputs={"x": gen_name(6)},
+                          outputs=[gen_name(8)],
+                          y=2)
         pattern.add_layer("prim.if", {'input': gen_name(8)}, [gen_name(9)])
         if_layer = pattern.layers[list(pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(parent_layer=if_layer)
-        pattern_block0.add_layer(
-            "prim.exception",
-            inputs={},
-            outputs=[gen_name(9)],
-            input="Exception")
+        pattern_block0.add_layer("prim.exception",
+                                 inputs={},
+                                 outputs=[gen_name(9)],
+                                 input="Exception")
         if_layer.add_block(pattern_block0)
         pattern_block1 = PaddleGraph(parent_layer=if_layer)
         if_layer.add_block(pattern_block1)
         pattern.add_layer("prim.list", inputs={}, outputs=[gen_name(10)])
-        pattern.add_layer(
-            "prim.slice",
-            inputs={"input": gen_name(1), },
-            outputs=[gen_name(12)])
-        pattern.add_layer(
-            "prim.len", inputs={"input": gen_name(12)}, outputs=[gen_name(14)])
-        pattern.add_layer(
-            "prim.list",
-            inputs={"input1": gen_name(14)},
-            outputs=[gen_name(15)])
-        pattern.add_layer(
-            "prim.min", inputs={"input": gen_name(15)}, outputs=[gen_name(16)])
+        pattern.add_layer("prim.slice",
+                          inputs={
+                              "input": gen_name(1),
+                          },
+                          outputs=[gen_name(12)])
+        pattern.add_layer("prim.len",
+                          inputs={"input": gen_name(12)},
+                          outputs=[gen_name(14)])
+        pattern.add_layer("prim.list",
+                          inputs={"input1": gen_name(14)},
+                          outputs=[gen_name(15)])
+        pattern.add_layer("prim.min",
+                          inputs={"input": gen_name(15)},
+                          outputs=[gen_name(16)])
         pattern.add_layer("prim.loop", {'input': gen_name(16)},
                           [gen_name(17), gen_name(18)])
         loop_layer = pattern.layers[list(pattern.layers.keys())[-1]]
         pattern_block = PaddleGraph(loop_layer)
-        pattern_block.add_layer(
-            "prim.getitem",
-            inputs={"index": gen_name(18)},
-            outputs=[gen_name(19)])
-        pattern_block.add_layer(
-            "prim.append",
-            inputs={"list": gen_name(10),
-                    "index": gen_name(19)},
-            outputs=[gen_name(20)])
+        pattern_block.add_layer("prim.getitem",
+                                inputs={"index": gen_name(18)},
+                                outputs=[gen_name(19)])
+        pattern_block.add_layer("prim.append",
+                                inputs={
+                                    "list": gen_name(10),
+                                    "index": gen_name(19)
+                                },
+                                outputs=[gen_name(20)])
         loop_layer.inputs["input-0"] = gen_name(10)
         loop_layer.add_block(pattern_block)
         pool_attrs = {'pool_type': string("avg")}
-        pattern.add_layer(
-            "paddle.nn.functional.adaptive_avg_pool2d",
-            inputs={'input': "pool-input-0",
-                    "pool_size": gen_name(10)},
-            outputs=[gen_name(21)],
-            **pool_attrs)
-        pattern.build(inputs={"input-0": "pool-input-0", })
+        pattern.add_layer("paddle.nn.functional.adaptive_avg_pool2d",
+                          inputs={
+                              'input': "pool-input-0",
+                              "pool_size": gen_name(10)
+                          },
+                          outputs=[gen_name(21)],
+                          **pool_attrs)
+        pattern.build(inputs={
+            "input-0": "pool-input-0",
+        })
         self.patterns.append(pattern)
 
         # 模式二：
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "prim.shape",
-            inputs={'input': "pool-input-0"},
-            outputs=[gen_name(0)])
-        pattern.add_layer(
-            "prim.len", inputs={"input": gen_name(0)}, outputs=[gen_name(1)])
-        pattern.add_layer(
-            "prim.gt", inputs={"x": gen_name(1)}, outputs=[gen_name(2)], y=2)
+        pattern.add_layer("prim.shape",
+                          inputs={'input': "pool-input-0"},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("prim.len",
+                          inputs={"input": gen_name(0)},
+                          outputs=[gen_name(1)])
+        pattern.add_layer("prim.gt",
+                          inputs={"x": gen_name(1)},
+                          outputs=[gen_name(2)],
+                          y=2)
         pattern.add_layer("prim.if", {'input': gen_name(2)}, [gen_name(3)])
         if_layer = pattern.layers[list(pattern.layers.keys())[-1]]
         pattern_block0 = PaddleGraph(parent_layer=if_layer)
         if_layer.add_block(pattern_block0)
         pattern_block1 = PaddleGraph(parent_layer=if_layer)
-        pattern_block1.add_layer(
-            "prim.exception",
-            inputs={},
-            outputs=[gen_name(4)],
-            input="Exception")
+        pattern_block1.add_layer("prim.exception",
+                                 inputs={},
+                                 outputs=[gen_name(4)],
+                                 input="Exception")
         if_layer.add_block(pattern_block1)
-        pattern.add_layer(
-            "paddle.nn.AdaptiveAvgPool2D",
-            inputs={"input": "pool-input-0"},
-            outputs=["pool1", gen_name(5)])
+        pattern.add_layer("paddle.nn.AdaptiveAvgPool2D",
+                          inputs={"input": "pool-input-0"},
+                          outputs=["pool1", gen_name(5)])
         pattern.build(inputs={
             "input-0": "pool-input-0",
             "input-1": "pool-input-0",
@@ -166,12 +173,11 @@ class AdaptivePool2dFuser(FuseBase):
             output_name = layer.outputs[0]
             attrs = dict()
             attrs["output_size"] = pool_size
-            new_layer = PaddleLayer(
-                layers_id[0],
-                "paddle.nn.functional.adaptive_avg_pool2d",
-                inputs={"x": input_name},
-                outputs=[output_name],
-                **attrs)
+            new_layer = PaddleLayer(layers_id[0],
+                                    "paddle.nn.functional.adaptive_avg_pool2d",
+                                    inputs={"x": input_name},
+                                    outputs=[output_name],
+                                    **attrs)
         else:
             new_layer = copy.deepcopy(matches[layers_id[-1]])
         return new_layer

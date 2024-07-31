@@ -12,7 +12,7 @@ paddle.multinomial(x, num_samples=1, replacement=False, name=None)
 | ------------- | ------------ | ------------------------------------------------------ |
 | input          | x        | 表示输入Tensor。                                     |
 | generator        | -            | 用于采样的伪随机数生成器，PaddlePaddle无此参数。                   |
-| out           | -            | 表示输出的Tensor，PaddlePaddle无此参数。               |  
+| out           | -            | 表示输出的Tensor，PaddlePaddle无此参数。               |
 
 ***【注意】*** 这类生成器的用法如下：
 ```python

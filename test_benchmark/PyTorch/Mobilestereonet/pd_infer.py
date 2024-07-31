@@ -3,7 +3,6 @@ import numpy as np
 import pickle
 import sys
 
-
 f = open('result.txt', 'w')
 f.write("======mobilestereonet: \n")
 try:
@@ -11,13 +10,19 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = paddle.static.load_inference_model(path_prefix="pd_model/inference_model", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model/inference_model",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     dummy_input_left = np.load("../dataset/Mobilestereonet/input_left.npy")
     dummy_input_right = np.load("../dataset/Mobilestereonet/input_right.npy")
-    result = exe.run(prog, feed={inputs[0]:dummy_input_left, inputs[1]:dummy_input_right}, fetch_list=outputs)
+    result = exe.run(prog,
+                     feed={
+                         inputs[0]: dummy_input_left,
+                         inputs[1]: dummy_input_right
+                     },
+                     fetch_list=outputs)
 
     pytorch_result = np.load("../dataset/Mobilestereonet/result.npy")
     is_successd = True

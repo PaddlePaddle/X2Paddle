@@ -19,6 +19,7 @@ import math
 
 
 def print_mapping_info(func):
+
     def run_mapping(*args, **kwargs):
         node = args[1]
         try:
@@ -44,6 +45,7 @@ def _get_same_padding(in_size, kernel_size, stride, autopad):
 
 
 class OpSet10(OpSet9):
+
     def __init__(self, decoder, paddle_graph):
         super(OpSet10, self).__init__(decoder, paddle_graph)
 
@@ -109,46 +111,48 @@ class OpSet10(OpSet9):
         if "int" in x_dtype and "int" in y_dtype and fmod == 1:
             fmod = 0
         if fmod == 0:
-            self.paddle_graph.add_layer(
-                'paddle.mod',
-                inputs={"x": val_x.name,
-                        "y": val_y.name},
-                outputs=[node.name])
+            self.paddle_graph.add_layer('paddle.mod',
+                                        inputs={
+                                            "x": val_x.name,
+                                            "y": val_y.name
+                                        },
+                                        outputs=[node.name])
         else:
             # Step1:trunc_div(a, b) = sign(a / b) * floor(abs(a / b))
-            self.paddle_graph.add_layer(
-                'paddle.divide',
-                inputs={"x": val_x.name,
-                        "y": val_y.name},
-                outputs=[node.name + "_divide"])
-            self.paddle_graph.add_layer(
-                'paddle.sign',
-                inputs={"x": node.name + "_divide"},
-                outputs=[node.name + "_sign"])
-            self.paddle_graph.add_layer(
-                'paddle.abs',
-                inputs={"x": node.name + "_divide"},
-                outputs=[node.name + "_abs"])
-            self.paddle_graph.add_layer(
-                'paddle.floor',
-                inputs={"x": node.name + "_abs"},
-                outputs=[node.name + "_floor"])
-            self.paddle_graph.add_layer(
-                'paddle.multiply',
-                inputs={"x": node.name + "_sign",
-                        "y": node.name + "_floor"},
-                outputs=[node.name + "_trunc_div"])
+            self.paddle_graph.add_layer('paddle.divide',
+                                        inputs={
+                                            "x": val_x.name,
+                                            "y": val_y.name
+                                        },
+                                        outputs=[node.name + "_divide"])
+            self.paddle_graph.add_layer('paddle.sign',
+                                        inputs={"x": node.name + "_divide"},
+                                        outputs=[node.name + "_sign"])
+            self.paddle_graph.add_layer('paddle.abs',
+                                        inputs={"x": node.name + "_divide"},
+                                        outputs=[node.name + "_abs"])
+            self.paddle_graph.add_layer('paddle.floor',
+                                        inputs={"x": node.name + "_abs"},
+                                        outputs=[node.name + "_floor"])
+            self.paddle_graph.add_layer('paddle.multiply',
+                                        inputs={
+                                            "x": node.name + "_sign",
+                                            "y": node.name + "_floor"
+                                        },
+                                        outputs=[node.name + "_trunc_div"])
             # Step2:result = a - trunc_div(a, b) * b
-            self.paddle_graph.add_layer(
-                'paddle.multiply',
-                inputs={"x": node.name + "_trunc_div",
-                        "y": val_y.name},
-                outputs=[node.name + "_trunc_div"])
-            self.paddle_graph.add_layer(
-                'paddle.subtract',
-                inputs={"x": val_x.name,
-                        "y": node.name + "_trunc_div"},
-                outputs=[node.name])
+            self.paddle_graph.add_layer('paddle.multiply',
+                                        inputs={
+                                            "x": node.name + "_trunc_div",
+                                            "y": val_y.name
+                                        },
+                                        outputs=[node.name + "_trunc_div"])
+            self.paddle_graph.add_layer('paddle.subtract',
+                                        inputs={
+                                            "x": val_x.name,
+                                            "y": node.name + "_trunc_div"
+                                        },
+                                        outputs=[node.name])
 
     @print_mapping_info
     def IsInf(self, node):
@@ -161,5 +165,6 @@ class OpSet10(OpSet9):
                     "x2addle does not currently support IsINF with attributes 'detect_negative' and 'detect_positive'."
                 )
         else:
-            self.paddle_graph.add_layer(
-                'paddle.isinf', inputs={"x": val_x.name}, outputs=[node.name])
+            self.paddle_graph.add_layer('paddle.isinf',
+                                        inputs={"x": val_x.name},
+                                        outputs=[node.name])

@@ -67,8 +67,8 @@ def _calculate_gain(nonlinearity, param=None):
             # True/False are instances of int, hence check above
             negative_slope = param
         else:
-            raise ValueError("negative_slope {} not a valid number".format(
-                param))
+            raise ValueError(
+                "negative_slope {} not a valid number".format(param))
         return math.sqrt(2.0 / (1 + negative_slope**2))
     elif nonlinearity == 'selu':
         return 3.0 / 4  # Value found empirically (https://github.com/pytorch/pytorch/pull/50664)
@@ -77,6 +77,7 @@ def _calculate_gain(nonlinearity, param=None):
 
 
 class KaimingNormal(MSRAInitializer):
+
     def __init__(self, a=0, mode='fan_in', nonlinearity='leaky_relu'):
         super(KaimingNormal, self).__init__(uniform=False, fan_in=None, seed=0)
         self.a = a
@@ -104,13 +105,12 @@ class KaimingNormal(MSRAInitializer):
         # to be compatible of fp16 initalizers
         if var.dtype == paddle_dtypes.t_float16:
             out_dtype = paddle_dtypes.t_float32
-            out_var = block.create_var(
-                name=unique_name.generate(".".join(
-                    ['masra_init', var.name, 'tmp'])),
-                shape=var.shape,
-                dtype=out_dtype,
-                type=VarDesc.VarType.LOD_TENSOR,
-                persistable=False)
+            out_var = block.create_var(name=unique_name.generate(".".join(
+                ['masra_init', var.name, 'tmp'])),
+                                       shape=var.shape,
+                                       dtype=out_dtype,
+                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       persistable=False)
         else:
             out_dtype = var.dtype
             out_var = var
@@ -118,25 +118,25 @@ class KaimingNormal(MSRAInitializer):
         fan = _calculate_correct_fan(var, self.mode)
         gain = _calculate_gain(self.nonlinearity, self.a)
         std = gain / math.sqrt(fan)
-        op = block._prepend_op(
-            type="gaussian_random",
-            outputs={"Out": out_var},
-            attrs={
-                "shape": out_var.shape,
-                "dtype": int(out_dtype),
-                "mean": 0.0,
-                "std": std,
-                "seed": self._seed
-            },
-            stop_gradient=True)
+        op = block._prepend_op(type="gaussian_random",
+                               outputs={"Out": out_var},
+                               attrs={
+                                   "shape": out_var.shape,
+                                   "dtype": int(out_dtype),
+                                   "mean": 0.0,
+                                   "std": std,
+                                   "seed": self._seed
+                               },
+                               stop_gradient=True)
 
         if var.dtype == VarDesc.VarType.FP16:
-            block.append_op(
-                type="cast",
-                inputs={"X": out_var},
-                outputs={"Out": var},
-                attrs={"in_dtype": out_var.dtype,
-                       "out_dtype": var.dtype})
+            block.append_op(type="cast",
+                            inputs={"X": out_var},
+                            outputs={"Out": var},
+                            attrs={
+                                "in_dtype": out_var.dtype,
+                                "out_dtype": var.dtype
+                            })
 
         if not framework.in_dygraph_mode():
             var.op = op
@@ -144,18 +144,22 @@ class KaimingNormal(MSRAInitializer):
 
 
 def kaiming_normal_(param, a=0, mode='fan_in', nonlinearity='leaky_relu'):
-    replaced_param = paddle.create_parameter(
-        shape=param.shape,
-        dtype=param.dtype,
-        default_initializer=KaimingNormal(
-            a=a, mode=mode, nonlinearity=nonlinearity))
+    replaced_param = paddle.create_parameter(shape=param.shape,
+                                             dtype=param.dtype,
+                                             default_initializer=KaimingNormal(
+                                                 a=a,
+                                                 mode=mode,
+                                                 nonlinearity=nonlinearity))
     paddle.assign(replaced_param, param)
 
 
 class XavierNormal(XavierInitializer):
+
     def __init__(self, gain=1.0):
-        super(XavierNormal, self).__init__(
-            uniform=True, fan_in=None, fan_out=None, seed=0)
+        super(XavierNormal, self).__init__(uniform=True,
+                                           fan_in=None,
+                                           fan_out=None,
+                                           seed=0)
         self._gain = gain
 
     def __call__(self, var, block=None):
@@ -172,37 +176,36 @@ class XavierNormal(XavierInitializer):
         # to be compatible of fp16 initalizers
         if var.dtype == paddle_dtypes.t_float16:
             out_dtype = paddle_dtypes.t_float32
-            out_var = block.create_var(
-                name=unique_name.generate(".".join(
-                    ['xavier_init', var.name, 'tmp'])),
-                shape=var.shape,
-                dtype=out_dtype,
-                type=VarDesc.VarType.LOD_TENSOR,
-                persistable=False)
+            out_var = block.create_var(name=unique_name.generate(".".join(
+                ['xavier_init', var.name, 'tmp'])),
+                                       shape=var.shape,
+                                       dtype=out_dtype,
+                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       persistable=False)
         else:
             out_dtype = var.dtype
             out_var = var
 
         std = self._gain * math.sqrt(2.0 / float(fan_in + fan_out))
-        op = block._prepend_op(
-            type="uniform_random",
-            inputs={},
-            outputs={"Out": out_var},
-            attrs={
-                "shape": out_var.shape,
-                "dtype": out_dtype,
-                "min": 0,
-                "max": std,
-                "seed": self._seed
-            },
-            stop_gradient=True)
+        op = block._prepend_op(type="uniform_random",
+                               inputs={},
+                               outputs={"Out": out_var},
+                               attrs={
+                                   "shape": out_var.shape,
+                                   "dtype": out_dtype,
+                                   "min": 0,
+                                   "max": std,
+                                   "seed": self._seed
+                               },
+                               stop_gradient=True)
         if var.dtype == paddle_dtypes.t_float16:
-            block.append_op(
-                type="cast",
-                inputs={"X": out_var},
-                outputs={"Out": var},
-                attrs={"in_dtype": out_var.dtype,
-                       "out_dtype": var.dtype})
+            block.append_op(type="cast",
+                            inputs={"X": out_var},
+                            outputs={"Out": var},
+                            attrs={
+                                "in_dtype": out_var.dtype,
+                                "out_dtype": var.dtype
+                            })
         if not framework.in_dygraph_mode():
             var.op = op
         return op
@@ -217,9 +220,12 @@ def xavier_normal_(param, gain=1.0):
 
 
 class XavierUniform(XavierInitializer):
+
     def __init__(self, gain=1.0):
-        super(XavierUniform, self).__init__(
-            uniform=True, fan_in=None, fan_out=None, seed=0)
+        super(XavierUniform, self).__init__(uniform=True,
+                                            fan_in=None,
+                                            fan_out=None,
+                                            seed=0)
         self._gain = gain
 
     def __call__(self, var, block=None):
@@ -236,38 +242,37 @@ class XavierUniform(XavierInitializer):
         # to be compatible of fp16 initalizers
         if var.dtype == paddle_dtypes.t_float16:
             out_dtype = paddle_dtypes.t_float32
-            out_var = block.create_var(
-                name=unique_name.generate(".".join(
-                    ['xavier_init', var.name, 'tmp'])),
-                shape=var.shape,
-                dtype=out_dtype,
-                type=VarDesc.VarType.LOD_TENSOR,
-                persistable=False)
+            out_var = block.create_var(name=unique_name.generate(".".join(
+                ['xavier_init', var.name, 'tmp'])),
+                                       shape=var.shape,
+                                       dtype=out_dtype,
+                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       persistable=False)
         else:
             out_dtype = var.dtype
             out_var = var
 
         std = self._gain * math.sqrt(2.0 / float(fan_in + fan_out))
         limit = math.sqrt(3.0) * std
-        op = block._prepend_op(
-            type="uniform_random",
-            inputs={},
-            outputs={"Out": out_var},
-            attrs={
-                "shape": out_var.shape,
-                "dtype": out_dtype,
-                "min": -limit,
-                "max": limit,
-                "seed": self._seed
-            },
-            stop_gradient=True)
+        op = block._prepend_op(type="uniform_random",
+                               inputs={},
+                               outputs={"Out": out_var},
+                               attrs={
+                                   "shape": out_var.shape,
+                                   "dtype": out_dtype,
+                                   "min": -limit,
+                                   "max": limit,
+                                   "seed": self._seed
+                               },
+                               stop_gradient=True)
         if var.dtype == paddle_dtypes.t_float16:
-            block.append_op(
-                type="cast",
-                inputs={"X": out_var},
-                outputs={"Out": var},
-                attrs={"in_dtype": out_var.dtype,
-                       "out_dtype": var.dtype})
+            block.append_op(type="cast",
+                            inputs={"X": out_var},
+                            outputs={"Out": var},
+                            attrs={
+                                "in_dtype": out_var.dtype,
+                                "out_dtype": var.dtype
+                            })
         if not framework.in_dygraph_mode():
             var.op = op
         return op
@@ -295,8 +300,7 @@ def normal_init_(param, mean=0.0, std=1.0):
         shape=param.shape,
         dtype=param.dtype,
         default_initializer=paddle.nn.initializer.Assign(
-            paddle.normal(
-                mean=mean, std=std, shape=param.shape)))
+            paddle.normal(mean=mean, std=std, shape=param.shape)))
     paddle.assign(replaced_param, param)
 
 

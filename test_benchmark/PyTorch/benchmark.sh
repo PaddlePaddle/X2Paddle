@@ -1,8 +1,8 @@
 echo "[X2Paddle]    Running PyTorch model converting test..."
 find . -name "result.txt" | xargs rm -rf
-find . -name "pd_model" | xargs rm -rf 
-find . -name "pd_model_trace" | xargs rm -rf 
-find . -name "pd_model_script" | xargs rm -rf 
+find . -name "pd_model" | xargs rm -rf
+find . -name "pd_model_trace" | xargs rm -rf
+find . -name "pd_model_script" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 

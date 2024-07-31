@@ -87,8 +87,8 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
                     if i == 0 and layer.kernel in NN_KERNEL_NAME.keys():
                         new_name = NN_KERNEL_NAME[layer.kernel] + str(
                             nn_count_dict[layer.kernel])
-                        param_node = PamareterNode(
-                            old_name=layer.outputs[0], new_name=new_name)
+                        param_node = PamareterNode(old_name=layer.outputs[0],
+                                                   new_name=new_name)
                         nn_param_nodes.append(param_node)
                         if param_tree is not None:
                             param_tree.add_node(param_node)
@@ -97,8 +97,8 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
                     elif i == 0 and layer.kernel == "module":
                         if is_rename_module:
                             if param_tree is not None:
-                                param_node = param_tree.get_node(layer.outputs[
-                                    0])
+                                param_node = param_tree.get_node(
+                                    layer.outputs[0])
                                 nn_param_nodes.append(param_node)
                                 param_node.new_name = layer.outputs[0]
                         else:
@@ -109,8 +109,8 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
                                 nn_count_dict[old_name] += 1
                             new_name = old_name + str(nn_count_dict[old_name])
                             if param_tree is not None:
-                                param_node = param_tree.get_node(layer.outputs[
-                                    0])
+                                param_node = param_tree.get_node(
+                                    layer.outputs[0])
                                 nn_param_nodes.append(param_node)
                                 param_node.new_name = new_name
                             layer.outputs[0] = new_name
@@ -121,8 +121,8 @@ def rename_layers(layers, param_tree=None, is_rename_module=False):
                         layer.outputs[i] = new_name
                         name_dict[output_v] = new_name
                         if layer.kernel == "self.create_parameter":
-                            param_node = PamareterNode(
-                                old_name=old_name, new_name=new_name)
+                            param_node = PamareterNode(old_name=old_name,
+                                                       new_name=new_name)
                             nn_param_nodes.append(param_node)
                             if param_tree is not None:
                                 param_tree.add_node(param_node)
@@ -190,8 +190,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
 
     def gen_head(inputs, different_attrs):
         # 生成Layer的头部代码
-        head = gen_codes(
-            ["class {}(paddle.nn.Layer):".format(sub_layers_name)], indent=0)
+        head = gen_codes(["class {}(paddle.nn.Layer):".format(sub_layers_name)],
+                         indent=0)
         # 生成init函数的头部代码
         diff_str_list = list()
         if isinstance(different_attrs, dict):
@@ -307,14 +307,13 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                     if v not in cur_outputs and v not in inputs:
                         inputs.append(v)
                 func = getattr(prim2code, func_name)
-                func(
-                    layer,
-                    indent=2,
-                    init_func=init_func,
-                    forward_func=forward_func,
-                    layer_id=layer_id,
-                    different_attrs=list(different_attrs.keys())
-                    if isinstance(different_attrs, dict) else different_attrs)
+                func(layer,
+                     indent=2,
+                     init_func=init_func,
+                     forward_func=forward_func,
+                     layer_id=layer_id,
+                     different_attrs=list(different_attrs.keys()) if isinstance(
+                         different_attrs, dict) else different_attrs)
                 cur_outputs.extend(layer.outputs)
             else:
                 raise Exception(
@@ -374,9 +373,8 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
                 if key_name in different_attrs:
                     line += "{}=self.{}, ".format(k, key_name)
                     init_func.extend(
-                        gen_codes(
-                            ["self.{} = {}".format(key_name, key_name)],
-                            indent=2))
+                        gen_codes(["self.{} = {}".format(key_name, key_name)],
+                                  indent=2))
                 else:
                     line += "{}={}, ".format(k, v)
             line = line.strip(", ")
@@ -384,12 +382,11 @@ def gen_layer_code(graph, sub_layers, sub_layers_name, different_attrs=dict()):
             if layer.kernel == "self.create_parameter":
                 init_func.extend(gen_codes(["self." + line], indent=2))
                 forward_func.extend(
-                    gen_codes(
-                        [
-                            "{} = self.{}".format(layer.outputs[0],
-                                                  layer.outputs[0])
-                        ],
-                        indent=2))
+                    gen_codes([
+                        "{} = self.{}".format(layer.outputs[0],
+                                              layer.outputs[0])
+                    ],
+                              indent=2))
             else:
                 forward_func.extend(gen_codes([line], indent=2))
             cur_outputs.extend(layer.outputs)

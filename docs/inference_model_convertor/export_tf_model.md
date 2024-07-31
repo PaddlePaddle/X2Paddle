@@ -45,10 +45,10 @@ freeze_model(sess, ["vgg_16/fc8/squeezed"], "vgg16.pb")
 ```
 - 纯checkpoint模型
 文件结构：
-> |--- checkpoint  
-> |--- model.ckpt-240000.data-00000-of-00001  
-> |--- model.ckpt-240000.index  
-> |--- model.ckpt-240000.meta  
+> |--- checkpoint
+> |--- model.ckpt-240000.data-00000-of-00001
+> |--- model.ckpt-240000.index
+> |--- model.ckpt-240000.meta
 
 加载和导出模型：
 ```python
@@ -81,10 +81,10 @@ freeze_model(sess, ["vgg_16/fc8/squeezed"], save_pb_file)
 
 - SavedModel模型
 文件结构：
-> |-- variables  
-> |------ variables.data-00000-of-00001  
-> |------ variables.data-00000-of-00001  
-> |-- saved_model.pb  
+> |-- variables
+> |------ variables.data-00000-of-00001
+> |------ variables.data-00000-of-00001
+> |-- saved_model.pb
 
 加载和导出模型：
 ```python

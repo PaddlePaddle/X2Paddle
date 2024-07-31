@@ -47,8 +47,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
         if result.dtype != expect.dtype:
             logging.error(
-                "Different output data types! res type is: {}, and expect type is: {}".
-                format(result.dtype, expect.dtype))
+                "Different output data types! res type is: {}, and expect type is: {}"
+                .format(result.dtype, expect.dtype))
         assert res
         assert result.shape == expect.shape, "result.shape: {} != expect.shape: {}".format(
             result.shape, expect.shape)
@@ -159,13 +159,12 @@ class TorchConverter(object):
         input_examples = list()
         for i in range(len(self.input_feed)):
             input_examples.append(torch.Tensor(self.input_feed[str(i)]))
-        pytorch2paddle(
-            self.model,
-            paddle_path,
-            jit_type="trace",
-            input_examples=input_examples,
-            convert_to_lite=False,
-            disable_feedback=True)
+        pytorch2paddle(self.model,
+                       paddle_path,
+                       jit_type="trace",
+                       input_examples=input_examples,
+                       convert_to_lite=False,
+                       disable_feedback=True)
 
     def _mk_paddle_res(self, ):
         """

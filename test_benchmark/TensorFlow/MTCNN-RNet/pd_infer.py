@@ -10,15 +10,16 @@ f.write("======MTCNN-RNet: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-        
+
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/MTCNN-RNet/input.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
-    
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
+
     with open('../dataset/MTCNN-RNet/result.pkl', 'rb') as f1:
         tf_results = pickle.load(f1)
 

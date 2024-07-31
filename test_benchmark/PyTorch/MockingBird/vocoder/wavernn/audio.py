@@ -6,36 +6,36 @@ from scipy.signal import lfilter
 import soundfile as sf
 
 
-def label_2_float(x, bits) :
+def label_2_float(x, bits):
     return 2 * x / (2**bits - 1.) - 1.
 
 
-def float_2_label(x, bits) :
+def float_2_label(x, bits):
     assert abs(x).max() <= 1.0
     x = (x + 1.) * (2**bits - 1) / 2
     return x.clip(0, 2**bits - 1)
 
 
-def load_wav(path) :
+def load_wav(path):
     return librosa.load(str(path), sr=hp.sample_rate)[0]
 
 
-def save_wav(x, path) :
+def save_wav(x, path):
     sf.write(path, x.astype(np.float32), hp.sample_rate)
 
 
-def split_signal(x) :
+def split_signal(x):
     unsigned = x + 2**15
     coarse = unsigned // 256
     fine = unsigned % 256
     return coarse, fine
 
 
-def combine_signal(coarse, fine) :
+def combine_signal(coarse, fine):
     return coarse * 256 + fine - 2**15
 
 
-def encode_16bits(x) :
+def encode_16bits(x):
     return np.clip(x * 2**15, -2**15, 2**15 - 1).astype(np.int16)
 
 
@@ -50,7 +50,10 @@ def linear_to_mel(spectrogram):
 
 
 def build_mel_basis():
-    return librosa.filters.mel(hp.sample_rate, hp.n_fft, n_mels=hp.num_mels, fmin=hp.fmin)
+    return librosa.filters.mel(hp.sample_rate,
+                               hp.n_fft,
+                               n_mels=hp.num_mels,
+                               fmin=hp.fmin)
 
 
 def normalize(S):
@@ -82,7 +85,10 @@ def melspectrogram(y):
 
 
 def stft(y):
-    return librosa.stft(y=y, n_fft=hp.n_fft, hop_length=hp.hop_length, win_length=hp.win_length)
+    return librosa.stft(y=y,
+                        n_fft=hp.n_fft,
+                        hop_length=hp.hop_length,
+                        win_length=hp.win_length)
 
 
 def pre_emphasis(x):
@@ -93,16 +99,15 @@ def de_emphasis(x):
     return lfilter([1], [1, -hp.preemphasis], x)
 
 
-def encode_mu_law(x, mu) :
+def encode_mu_law(x, mu):
     mu = mu - 1
     fx = np.sign(x) * np.log(1 + mu * np.abs(x)) / np.log(1 + mu)
     return np.floor((fx + 1) / 2 * mu + 0.5)
 
 
-def decode_mu_law(y, mu, from_labels=True) :
-    if from_labels: 
+def decode_mu_law(y, mu, from_labels=True):
+    if from_labels:
         y = label_2_float(y, math.log2(mu))
     mu = mu - 1
-    x = np.sign(y) / mu * ((1 + mu) ** np.abs(y) - 1)
+    x = np.sign(y) / mu * ((1 + mu)**np.abs(y) - 1)
     return x
-

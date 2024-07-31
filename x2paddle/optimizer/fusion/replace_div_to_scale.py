@@ -21,6 +21,7 @@ from x2paddle.core.util import *
 
 
 class Div2Scale(FuseBase):
+
     def __init__(self):
         super(Div2Scale, self).__init__()
 
@@ -37,32 +38,31 @@ class Div2Scale(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(0)],
-            shape=[1],
-            fill_value=8)
-        self.pattern.add_layer(
-            "paddle.transpose",
-            inputs={"x": "div2scale-input-0"},
-            outputs=[gen_name(1)],
-            perm=[0, 2, 1, 3])
-        self.pattern.add_layer(
-            "paddle.transpose",
-            inputs={"x": "div2scale-input-1"},
-            outputs=[gen_name(2)],
-            perm=[0, 2, 1, 3])
-        self.pattern.add_layer(
-            "paddle.matmul",
-            inputs={"x": gen_name(1),
-                    "y": gen_name(2)},
-            outputs=[gen_name(3)])
-        self.pattern.add_layer(
-            "paddle.divide",
-            inputs={"x": gen_name(3),
-                    "y": gen_name(0)},
-            outputs=[gen_name(4)])
+        self.pattern.add_layer("paddle.full",
+                               inputs={},
+                               outputs=[gen_name(0)],
+                               shape=[1],
+                               fill_value=8)
+        self.pattern.add_layer("paddle.transpose",
+                               inputs={"x": "div2scale-input-0"},
+                               outputs=[gen_name(1)],
+                               perm=[0, 2, 1, 3])
+        self.pattern.add_layer("paddle.transpose",
+                               inputs={"x": "div2scale-input-1"},
+                               outputs=[gen_name(2)],
+                               perm=[0, 2, 1, 3])
+        self.pattern.add_layer("paddle.matmul",
+                               inputs={
+                                   "x": gen_name(1),
+                                   "y": gen_name(2)
+                               },
+                               outputs=[gen_name(3)])
+        self.pattern.add_layer("paddle.divide",
+                               inputs={
+                                   "x": gen_name(3),
+                                   "y": gen_name(0)
+                               },
+                               outputs=[gen_name(4)])
         self.pattern.build(inputs={
             "input-0": "div2scale-input-0",
             "input-1": "div2scale-input-1",
@@ -90,10 +90,9 @@ class Div2Scale(FuseBase):
                 layer_inputs.append(layer.inputs["x"])
                 layer_inputs_ids.append(layer_id)
                 output_name = layer.outputs[0]
-        new_layer = PaddleLayer(
-            layer_id_list[0],
-            "paddle.scale",
-            inputs={"x": layer_inputs[0]},
-            outputs=[output_name],
-            scale=1 / fill_value)
+        new_layer = PaddleLayer(layer_id_list[0],
+                                "paddle.scale",
+                                inputs={"x": layer_inputs[0]},
+                                outputs=[output_name],
+                                scale=1 / fill_value)
         return new_layer, layer_inputs_ids[0]

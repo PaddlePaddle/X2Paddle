@@ -28,9 +28,10 @@ def roi_pool(input,
              name=None):
     if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        pool_out, argmaxes = _C_ops.roi_pool(
-            input, rois, rois_num, "pooled_height", pooled_height,
-            "pooled_width", pooled_width, "spatial_scale", spatial_scale)
+        pool_out, argmaxes = _C_ops.roi_pool(input, rois, rois_num,
+                                             "pooled_height", pooled_height,
+                                             "pooled_width", pooled_width,
+                                             "spatial_scale", spatial_scale)
         return pool_out, argmaxes
 
     else:
@@ -47,20 +48,22 @@ def roi_pool(input,
         }
         if rois_num is not None:
             inputs['RoisNum'] = rois_num
-        helper.append_op(
-            type="roi_pool",
-            inputs=inputs,
-            outputs={"Out": pool_out,
-                     "Argmax": argmaxes},
-            attrs={
-                "pooled_height": pooled_height,
-                "pooled_width": pooled_width,
-                "spatial_scale": spatial_scale
-            })
+        helper.append_op(type="roi_pool",
+                         inputs=inputs,
+                         outputs={
+                             "Out": pool_out,
+                             "Argmax": argmaxes
+                         },
+                         attrs={
+                             "pooled_height": pooled_height,
+                             "pooled_width": pooled_width,
+                             "spatial_scale": spatial_scale
+                         })
         return pool_out, argmaxes
 
 
 class ROIPooling(object):
+
     def __init__(self, pooled_height, pooled_width, spatial_scale):
         self.roipooling_layer_attrs = {
             "pooled_height": pooled_height,

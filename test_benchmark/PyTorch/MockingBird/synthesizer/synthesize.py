@@ -20,26 +20,29 @@ def run_synthesis(in_dir, out_dir, model_dir, hparams):
     if torch.cuda.is_available():
         device = torch.device("cuda")
         if hparams.synthesis_batch_size % torch.cuda.device_count() != 0:
-            raise ValueError("`hparams.synthesis_batch_size` must be evenly divisible by n_gpus!")
+            raise ValueError(
+                "`hparams.synthesis_batch_size` must be evenly divisible by n_gpus!"
+            )
     else:
         device = torch.device("cpu")
     print("Synthesizer using device:", device)
 
     # Instantiate Tacotron model
-    model = Tacotron(embed_dims=hparams.tts_embed_dims,
-                     num_chars=len(symbols),
-                     encoder_dims=hparams.tts_encoder_dims,
-                     decoder_dims=hparams.tts_decoder_dims,
-                     n_mels=hparams.num_mels,
-                     fft_bins=hparams.num_mels,
-                     postnet_dims=hparams.tts_postnet_dims,
-                     encoder_K=hparams.tts_encoder_K,
-                     lstm_dims=hparams.tts_lstm_dims,
-                     postnet_K=hparams.tts_postnet_K,
-                     num_highways=hparams.tts_num_highways,
-                     dropout=0., # Use zero dropout for gta mels
-                     stop_threshold=hparams.tts_stop_threshold,
-                     speaker_embedding_size=hparams.speaker_embedding_size).to(device)
+    model = Tacotron(
+        embed_dims=hparams.tts_embed_dims,
+        num_chars=len(symbols),
+        encoder_dims=hparams.tts_encoder_dims,
+        decoder_dims=hparams.tts_decoder_dims,
+        n_mels=hparams.num_mels,
+        fft_bins=hparams.num_mels,
+        postnet_dims=hparams.tts_postnet_dims,
+        encoder_K=hparams.tts_encoder_K,
+        lstm_dims=hparams.tts_lstm_dims,
+        postnet_K=hparams.tts_postnet_K,
+        num_highways=hparams.tts_num_highways,
+        dropout=0.,  # Use zero dropout for gta mels
+        stop_threshold=hparams.tts_stop_threshold,
+        speaker_embedding_size=hparams.speaker_embedding_size).to(device)
 
     # Load the weights
     model_dir = Path(model_dir)
@@ -59,28 +62,31 @@ def run_synthesis(in_dir, out_dir, model_dir, hparams):
     metadata_fpath = in_dir.joinpath("train.txt")
     mel_dir = in_dir.joinpath("mels")
     embed_dir = in_dir.joinpath("embeds")
-    num_workers = 0 if sys.platform.startswith("win") else 2;
+    num_workers = 0 if sys.platform.startswith("win") else 2
     dataset = SynthesizerDataset(metadata_fpath, mel_dir, embed_dir, hparams)
-    data_loader = DataLoader(dataset,
-                             collate_fn=lambda batch: collate_synthesizer(batch),
-                             batch_size=hparams.synthesis_batch_size,
-                             num_workers=num_workers,
-                             shuffle=False,
-                             pin_memory=True)
+    data_loader = DataLoader(
+        dataset,
+        collate_fn=lambda batch: collate_synthesizer(batch),
+        batch_size=hparams.synthesis_batch_size,
+        num_workers=num_workers,
+        shuffle=False,
+        pin_memory=True)
 
     # Generate GTA mels
     meta_out_fpath = Path(out_dir).joinpath("synthesized.txt")
     with open(meta_out_fpath, "w") as file:
-        for i, (texts, mels, embeds, idx) in tqdm(enumerate(data_loader), total=len(data_loader)):
+        for i, (texts, mels, embeds, idx) in tqdm(enumerate(data_loader),
+                                                  total=len(data_loader)):
             texts = texts.to(device)
             mels = mels.to(device)
             embeds = embeds.to(device)
 
             # Parallelize model onto GPUS using workaround due to python bug
             if device.type == "cuda" and torch.cuda.device_count() > 1:
-                _, mels_out, _ , _ = data_parallel_workaround(model, texts, mels, embeds)
+                _, mels_out, _, _ = data_parallel_workaround(
+                    model, texts, mels, embeds)
             else:
-                _, mels_out, _, _  = model(texts, mels, embeds)
+                _, mels_out, _, _ = model(texts, mels, embeds)
 
             for j, k in enumerate(idx):
                 # Note: outputs mel-spectrogram files and target ones have same names, just different folders

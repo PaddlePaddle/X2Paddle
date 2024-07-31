@@ -21,6 +21,7 @@ from x2paddle.decoder import caffe_shape_inference
 
 
 class CaffeResolver(object):
+
     def __init__(self, caffe_proto):
         self.caffe_proto = caffe_proto
         self.import_caffe()
@@ -46,13 +47,16 @@ class CaffeResolver(object):
 
 
 class CaffeGraphNode(GraphNode):
+
     def __init__(self, layer, type_str, layer_name=None):
         if layer_name is None:
             super(CaffeGraphNode, self).__init__(
-                layer, layer.name.replace('/', '_').replace('-', '_').lower())
+                layer,
+                layer.name.replace('/', '_').replace('-', '_').lower())
         else:
             super(CaffeGraphNode, self).__init__(
-                layer, layer_name.replace('/', '_').replace('-', '_').lower())
+                layer,
+                layer_name.replace('/', '_').replace('-', '_').lower())
         self.layer_type = type_str
         self.data = None
 
@@ -83,6 +87,7 @@ class CaffeGraphNode(GraphNode):
 
 
 class CaffeGraph(Graph):
+
     def __init__(self, model, params, caffe_pb):
         self.params = params
         self.caffe_pb = caffe_pb
@@ -256,8 +261,9 @@ class CaffeGraph(Graph):
         assert input_node_name in self.node_map, 'The {} isn\'t a valid node'.format(
             name)
         input_node = self.node_map[input_node_name]
-        if len(input_node.layer.top
-               ) > 1 and input_node.layer_type not in ["Input", "MemoryData"]:
+        if len(input_node.layer.top) > 1 and input_node.layer_type not in [
+                "Input", "MemoryData"
+        ]:
             need_idx = list(input_node.layer.top).index(node.layer.bottom[idx])
             name = input_node_name + ':' + str(need_idx)
         else:
@@ -279,6 +285,7 @@ class CaffeGraph(Graph):
 
 
 class CaffeDecoder(object):
+
     def __init__(self, proto_path, model_path, caffe_proto):
         self.proto_path = proto_path
         self.model_path = model_path
@@ -325,8 +332,8 @@ class CaffeDecoder(object):
                 c_i = blob.channels
                 h = blob.height
                 w = blob.width
-            data = np.asarray(
-                list(blob.data), dtype=np.float32).reshape(c_o, c_i, h, w)
+            data = np.asarray(list(blob.data),
+                              dtype=np.float32).reshape(c_o, c_i, h, w)
 
             transformed.append(data)
         return transformed
