@@ -4,7 +4,7 @@ import x2paddle
 long_description = "X2Paddle is a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.\n\n"
 long_description += "Usage: x2paddle --framework tensorflow --model tf_model.pb --save_dir paddle_model\n"
 long_description += "GitHub: https://github.com/PaddlePaddle/X2Paddle\n"
-long_description += "Email: dltp-sz@baidu.com"
+long_description += "Email: ext_paddle_oss@baidu.com"
 
 with open("requirements.txt") as fin:
     REQUIRED_PACKAGES = fin.read()
@@ -12,8 +12,8 @@ with open("requirements.txt") as fin:
 setuptools.setup(
     name="x2paddle",
     version=x2paddle.__version__,
-    author="dltp-sz",
-    author_email="dltp-sz@baidu.com",
+    author="PaddlePaddle Developer Community",
+    author_email="ext_paddle_oss@baidu.com",
     description=
     "a toolkit for converting trained model to PaddlePaddle from other deep learning frameworks.",
     long_description=long_description,
