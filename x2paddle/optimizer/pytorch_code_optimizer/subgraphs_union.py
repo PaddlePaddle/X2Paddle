@@ -13,21 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import copy
 import pandas as pd
 from x2paddle.optimizer.pytorch_code_optimizer.layer_code_generator import rename_layers
 
 
-def construct_attrs_table(sub_layers_list, node_name2sub_layers=None, module_name=None):
+def construct_attrs_table(sub_layers_list,
+                          node_name2sub_layers=None,
+                          module_name=None):
     """ 构造不同属性的表格。
     """
+
     def get_node_name(sub_layers):
         for k, v in node_name2sub_layers.items():
             if v == sub_layers:
                 node_name = k
                 break
         return node_name
+
     sub_layers = sub_layers_list[0]
     _, _, new_names = rename_layers(sub_layers)
     table = list()
@@ -45,6 +48,7 @@ def construct_attrs_table(sub_layers_list, node_name2sub_layers=None, module_nam
     pd_table = pd.DataFrame(table, index=node_names)
     return pd_table
 
+
 def get_inputs_outputs(pd_graph, layers):
     inputs = list()
     outputs = list()
@@ -58,8 +62,8 @@ def get_inputs_outputs(pd_graph, layers):
                         or layer.kernel == "prim.assert":
                     continue
                 elif layer.kernel == "prim.if" or layer.kernel == "prim.loop":
-                        if index != 0:
-                            outputs.append(output_name)
+                    if index != 0:
+                        outputs.append(output_name)
                 elif output_name not in outputs:
                     outputs.append(output_name)
         else:
@@ -78,12 +82,13 @@ def get_inputs_outputs(pd_graph, layers):
         for k, v in layer.inputs.items():
             if v not in cur_outputs and v not in inputs:
                 inputs.append(v)
-                
+
         if ("paddle.nn" in layer.kernel and "functional" not in layer.kernel):
             cur_outputs.extend(layer.outputs[1:])
         else:
             cur_outputs.extend(layer.outputs)
     return inputs, outputs
+
 
 def get_inputs_count(pd_graph, sub_layers):
     input_ct2sub_layer_id = dict()
@@ -95,29 +100,39 @@ def get_inputs_count(pd_graph, sub_layers):
             input_ct2sub_layer_id[len(inputs)].append(i)
     return input_ct2sub_layer_id
 
-def distinguish_sequential(pd_graph, module_name, sub_layers, sub_identifiers, node_name2sub_layers):
+
+def distinguish_sequential(pd_graph, module_name, sub_layers, sub_identifiers,
+                           node_name2sub_layers):
     """ 获取不同的layers组成的序列
     """
-    def distinguish_sequential_by_inputs(part_layers, part_identifiers, part_module_name):
+
+    def distinguish_sequential_by_inputs(part_layers, part_identifiers,
+                                         part_module_name):
         new_sub_layers = dict()
         new_sub_sequentials = dict()
         sequentials2attrs_table = dict()
         input_ct2sub_layer_id = get_inputs_count(pd_graph, part_layers)
         if len(input_ct2sub_layer_id) == 1:
             new_sub_layers["{}".format(part_module_name)] = part_layers
-            new_sub_sequentials["{}".format(part_module_name)] = part_identifiers
-            sequentials2attrs_table["{}".format(part_module_name)] = construct_attrs_table(part_layers, node_name2sub_layers)
+            new_sub_sequentials["{}".format(
+                part_module_name)] = part_identifiers
+            sequentials2attrs_table["{}".format(
+                part_module_name)] = construct_attrs_table(
+                    part_layers, node_name2sub_layers)
         else:
             for i, (k, indexes) in enumerate(input_ct2sub_layer_id.items()):
                 new_sub_layers["{}__{}".format(part_module_name, i)] = list()
-                new_sub_sequentials["{}__{}".format(part_module_name, i)] = list()
+                new_sub_sequentials["{}__{}".format(part_module_name,
+                                                    i)] = list()
                 for index in indexes:
-                    new_sub_layers["{}__{}".format(part_module_name, i)].append(part_layers[index])
-                    new_sub_sequentials["{}__{}".format(part_module_name, i)].append(part_identifiers[index])
+                    new_sub_layers["{}__{}".format(part_module_name, i)].append(
+                        part_layers[index])
+                    new_sub_sequentials["{}__{}".format(
+                        part_module_name, i)].append(part_identifiers[index])
                 sequentials2attrs_table["{}__{}".format(part_module_name, i)] = \
                         construct_attrs_table(new_sub_layers["{}__{}".format(part_module_name, i)], node_name2sub_layers)
         return new_sub_layers, new_sub_sequentials, sequentials2attrs_table
-        
+
     new_sub_layers = dict()
     new_sub_sequentials = dict()
     sequentials2attrs_table = dict()
@@ -126,7 +141,8 @@ def distinguish_sequential(pd_graph, module_name, sub_layers, sub_identifiers, n
         identifiers_str_list.append(", ".join(list(identifiers.values())))
     identifiers_str_set = list(set(identifiers_str_list))
     if len(identifiers_str_set) == 1:
-        return distinguish_sequential_by_inputs(sub_layers, sub_identifiers, module_name)
+        return distinguish_sequential_by_inputs(sub_layers, sub_identifiers,
+                                                module_name)
     else:
         for i in range(len(identifiers_str_set)):
             new_sub_layers["{}{}".format(module_name, i)] = list()
@@ -137,13 +153,22 @@ def distinguish_sequential(pd_graph, module_name, sub_layers, sub_identifiers, n
         for i in range(len(identifiers_str_set)):
             if identifiers_str_set[i] == identifiers_str:
                 is_diff = False
-                if identifiers_str_set[i].replace(", ", "").isdigit() or module_name == "ModuleList":
-                    new_sub_layers["{}{}".format(module_name, len(identifiers_str_set) + no_same_module_count)] = [sub_layers[j]]
-                    new_sub_sequentials["{}{}".format(module_name, len(identifiers_str_set) + no_same_module_count)] = [identifiers]
+                if identifiers_str_set[i].replace(
+                        ", ", "").isdigit() or module_name == "ModuleList":
+                    new_sub_layers["{}{}".format(
+                        module_name,
+                        len(identifiers_str_set) +
+                        no_same_module_count)] = [sub_layers[j]]
+                    new_sub_sequentials["{}{}".format(
+                        module_name,
+                        len(identifiers_str_set) +
+                        no_same_module_count)] = [identifiers]
                     no_same_module_count += 1
                 else:
-                    new_sub_layers["{}{}".format(module_name, i)].append(sub_layers[j])
-                    new_sub_sequentials["{}{}".format(module_name, i)].append(identifiers)
+                    new_sub_layers["{}{}".format(module_name,
+                                                 i)].append(sub_layers[j])
+                    new_sub_sequentials["{}{}".format(module_name,
+                                                      i)].append(identifiers)
                 break
     new_new_sub_layers = dict()
     new_new_sub_sequentials = dict()

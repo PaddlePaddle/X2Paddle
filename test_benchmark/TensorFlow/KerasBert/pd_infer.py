@@ -16,17 +16,20 @@ f.write("======KerasBert: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    
+
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    result = exe.run(prog, 
-                     feed={inputs[0]: input_data[0]["input_ids"],
-                           inputs[1]: input_data[0]["segment_ids"]}, 
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    result = exe.run(prog,
+                     feed={
+                         inputs[0]: input_data[0]["input_ids"],
+                         inputs[1]: input_data[0]["segment_ids"]
+                     },
                      fetch_list=outputs)
-    
+
     df = tf_output[0] - result
     if numpy.max(numpy.fabs(df)) > 1e-04:
         print("Dygraph Failed", file=f)
@@ -36,16 +39,7 @@ except Exception as e:
     f.write("!!!!!Failed\n")
     sys.stderr.write("{}\n".format(e))
     sys.exit(-1)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
 # import paddle
 # import paddle.fluid as fluid
 # import numpy as np
@@ -64,18 +58,17 @@ except Exception as e:
 # try:
 #     paddle.enable_static()
 #     exe = paddle.static.Executor(paddle.CPUPlace())
-    
+
 #     # test static
-#     [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_static/inference_model", 
+#     [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_static/inference_model",
 #                                                             executor=exe)
 #     for i in range(10):
-#         result = exe.run(prog, 
+#         result = exe.run(prog,
 #                          feed={inputs[0]: input_data[i]["input_ids"],
-#                                inputs[1]: input_data[i]["segment_ids"]}, 
+#                                inputs[1]: input_data[i]["segment_ids"]},
 #                          fetch_list=outputs)
 #         print(result)
 # except Exception as e:
 #     f.write("!!!!!Failed")
 #     sys.stderr.write("{}\n".format(e))
 #     sys.exit(-1)
-

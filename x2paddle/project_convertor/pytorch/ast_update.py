@@ -309,14 +309,14 @@ class AstUpdater(ast.NodeVisitor):
         if pytorch_api in API_MAPPER:
             paddle_api = API_MAPPER[pytorch_api][0]
             if isinstance(father_node, ast.Call) and getattr(
-                    father_node.func, "id", None) in ("getattr", "setattr",
-                                                      "hasattr"):
+                    father_node.func, "id",
+                    None) in ("getattr", "setattr", "hasattr"):
                 paddle_api = self._rename(paddle_api, dep_info, pytorch_api,
                                           paddle_api)
                 for i, arg_node in enumerate(father_node.args):
                     if astor.to_source(arg_node).strip() == getattr(node, "id"):
-                        father_node.args[i] = ast.parse(paddle_api).body[
-                            0].value
+                        father_node.args[i] = ast.parse(
+                            paddle_api).body[0].value
         return getattr(node, "id")
 
     def visit_Attribute(self, node):
@@ -347,16 +347,16 @@ class AstUpdater(ast.NodeVisitor):
                                         paddle_api)
                 for i, default_n in enumerate(father_node.defaults):
                     if default_n == node:
-                        father_node.defaults[i] = ast.parse(attr_str).body[
-                            0].value
+                        father_node.defaults[i] = ast.parse(
+                            attr_str).body[0].value
                 return attr_str
             elif isinstance(father_node, ast.Tuple):
                 paddle_api = self._rename(paddle_api, dep_info, pytorch_api,
                                           paddle_api)
                 for i, elts_node in enumerate(father_node.elts):
                     if astor.to_source(elts_node).strip() == attr_str:
-                        father_node.elts[i] = ast.parse(paddle_api).body[
-                            0].value
+                        father_node.elts[i] = ast.parse(
+                            paddle_api).body[0].value
                 return paddle_api
             elif isinstance(father_node, ast.FunctionDef):
                 paddle_api = self._rename(paddle_api, dep_info, pytorch_api,
@@ -374,8 +374,8 @@ class AstUpdater(ast.NodeVisitor):
                                           paddle_api)
                 for i, arg_node in enumerate(father_node.args):
                     if astor.to_source(arg_node).strip() == attr_str:
-                        father_node.args[i] = ast.parse(paddle_api).body[
-                            0].value
+                        father_node.args[i] = ast.parse(
+                            paddle_api).body[0].value
                 return paddle_api
             elif not isinstance(father_node, ast.Call):
                 # 对torch.float32的处理
@@ -451,8 +451,8 @@ class AstUpdater(ast.NodeVisitor):
         """
         # 获取函数名
         func_node = node.func
-        if isinstance(func_node, ast.Attribute) and isinstance(func_node.value,
-                                                               ast.Call):
+        if isinstance(func_node, ast.Attribute) and isinstance(
+                func_node.value, ast.Call):
             func_name = None
         else:
             func_name = self.visit(func_node)
@@ -502,8 +502,8 @@ class AstUpdater(ast.NodeVisitor):
         scope_node = self._get_scope_node()
         if isinstance(ast.parse(new_code).body[0], ast.Assign):
             node_index = self._get_current_index(scope_node, node)
-            scope_node.body[node_index] = ast.parse(
-                new_code.replace("\n", "")).body[0]
+            scope_node.body[node_index] = ast.parse(new_code.replace(
+                "\n", "")).body[0]
         else:
             new_call_node = ast.parse(new_code).body[0].value
             setattr(node, "func", new_call_node.func)  # 修改了fun_name
@@ -513,7 +513,8 @@ class AstUpdater(ast.NodeVisitor):
             if father_node == n:
                 for code in prefix_insert_codes:
                     scope_node.body.insert(
-                        i, ast.parse(code.replace("\n", "")).body[0])
+                        i,
+                        ast.parse(code.replace("\n", "")).body[0])
                     i += 1
                 break
         for i, n in enumerate(scope_node.body):
@@ -521,7 +522,8 @@ class AstUpdater(ast.NodeVisitor):
                 j = i + 1
                 for code in suffix_insert_codes:
                     scope_node.body.insert(
-                        j, ast.parse(code.replace("\n", "")).body[0])
+                        j,
+                        ast.parse(code.replace("\n", "")).body[0])
                     j += 1
                 break
 
@@ -609,9 +611,11 @@ class AstUpdater(ast.NodeVisitor):
     def visit_Str(self, node):
         """ 修改模型参数的后缀名。
         """
-        setattr(node, "s",
-                node.s.replace(".pth", ".pdiparams").replace(
-                    ".pt", ".pdiparams").replace(".ckpt", ".pdiparams"))
+        setattr(
+            node, "s",
+            node.s.replace(".pth",
+                           ".pdiparams").replace(".pt", ".pdiparams").replace(
+                               ".ckpt", ".pdiparams"))
 
 
 def update(py_file_path, file_dependencies):

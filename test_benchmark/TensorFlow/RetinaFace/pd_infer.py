@@ -12,12 +12,13 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/RetinaFace/input.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
     with open('../dataset/RetinaFace/result.pkl', 'rb') as f1:
         tf_results = pickle.load(f1)
@@ -26,7 +27,7 @@ try:
     if not isinstance(tf_results, list):
         tf_results = [tf_results]
     for i, r in enumerate(result):
-        abs_diff.append(np.fabs(result[i] - tf_results[i+3]))
+        abs_diff.append(np.fabs(result[i] - tf_results[i + 3]))
 
     abs_pass = True
     for i in range(len(abs_diff)):

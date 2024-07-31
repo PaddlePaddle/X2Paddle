@@ -21,18 +21,18 @@ paddle.nn.KLDivLoss(reduction='mean')
 
 ### 功能差异
 #### 计算方式
-***PyTorch***：  
-> 当`log_target`为`True`时：  
-> $ l(input,label)= e^{target}∗(label−input) $  
->  
-> 当`log_target`为`False`时：  
-> 1. $ l(input,label)=target*(log(target)-input) $  
-> 2. $ l(input,label) $中值小于0的取0  
+***PyTorch***：
+> 当`log_target`为`True`时：
+> $ l(input,label)= e^{target}∗(label−input) $
+>
+> 当`log_target`为`False`时：
+> 1. $ l(input,label)=target*(log(target)-input) $
+> 2. $ l(input,label) $中值小于0的取0
 
 ***PaddlePaddle***：
 > $ l(input,label)=label∗(log(label)−input) $
 
-在PaddlePaddle中可使用如下代码组合实现该API。  
+在PaddlePaddle中可使用如下代码组合实现该API。
 ```python
 import paddle
 
@@ -65,7 +65,7 @@ class KLDivLoss(paddle.nn.Layer):
         else:
             return out
 
-# 构造输入  
+# 构造输入
 import numpy as np
 shape = (5, 20)
 x = np.random.uniform(-10, 10, shape).astype('float32')

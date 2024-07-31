@@ -13,4 +13,8 @@ save_dir = "pd_model_trace"
 jit_type = "trace"
 
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(torch_model, save_dir, jit_type, [torch.tensor(input_data)], disable_feedback=True)
+
+pytorch2paddle(torch_model,
+               save_dir,
+               jit_type, [torch.tensor(input_data)],
+               disable_feedback=True)

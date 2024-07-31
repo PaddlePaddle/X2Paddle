@@ -38,8 +38,8 @@ def multiclass_nms(bboxes,
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
-                                                             rois_num, *attrs)
+        output, index, nms_rois_num = _C_ops.multiclass_nms3(
+            bboxes, scores, rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
@@ -59,19 +59,18 @@ def multiclass_nms(bboxes,
                 dtype='int32')
             outputs['NmsRoisNum'] = nms_rois_num
 
-        helper.append_op(
-            type="multiclass_nms3",
-            inputs=inputs,
-            attrs={
-                'background_label': background_label,
-                'score_threshold': score_threshold,
-                'nms_top_k': nms_top_k,
-                'nms_threshold': nms_threshold,
-                'keep_top_k': keep_top_k,
-                'nms_eta': nms_eta,
-                'normalized': normalized
-            },
-            outputs=outputs)
+        helper.append_op(type="multiclass_nms3",
+                         inputs=inputs,
+                         attrs={
+                             'background_label': background_label,
+                             'score_threshold': score_threshold,
+                             'nms_top_k': nms_top_k,
+                             'nms_threshold': nms_threshold,
+                             'keep_top_k': keep_top_k,
+                             'nms_eta': nms_eta,
+                             'normalized': normalized
+                         },
+                         outputs=outputs)
         output.stop_gradient = True
         index.stop_gradient = True
         if not return_index:
@@ -83,6 +82,7 @@ def multiclass_nms(bboxes,
 
 
 class NMS(object):
+
     def __init__(self, score_threshold, keep_top_k, nms_threshold):
         self.score_threshold = score_threshold
         self.keep_top_k = keep_top_k

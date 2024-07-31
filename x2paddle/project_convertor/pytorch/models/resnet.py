@@ -34,25 +34,27 @@ model_urls = {
 
 def conv3x3(in_planes: int,
             out_planes: int,
-            stride: int=1,
-            groups: int=1,
-            dilation: int=1) -> nn.Conv2D:
+            stride: int = 1,
+            groups: int = 1,
+            dilation: int = 1) -> nn.Conv2D:
     """3x3 convolution with padding"""
-    return nn.Conv2D(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=dilation,
-        groups=groups,
-        bias_attr=False,
-        dilation=dilation)
+    return nn.Conv2D(in_planes,
+                     out_planes,
+                     kernel_size=3,
+                     stride=stride,
+                     padding=dilation,
+                     groups=groups,
+                     bias_attr=False,
+                     dilation=dilation)
 
 
-def conv1x1(in_planes: int, out_planes: int, stride: int=1) -> nn.Conv2D:
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2D:
     """1x1 convolution"""
-    return nn.Conv2D(
-        in_planes, out_planes, kernel_size=1, stride=stride, bias_attr=False)
+    return nn.Conv2D(in_planes,
+                     out_planes,
+                     kernel_size=1,
+                     stride=stride,
+                     bias_attr=False)
 
 
 class BasicBlock(nn.Layer):
@@ -61,12 +63,12 @@ class BasicBlock(nn.Layer):
     def __init__(self,
                  inplanes: int,
                  planes: int,
-                 stride: int=1,
-                 downsample: Optional[nn.Layer]=None,
-                 groups: int=1,
-                 base_width: int=64,
-                 dilation: int=1,
-                 norm_layer: Optional[Callable[..., nn.Layer]]=None) -> None:
+                 stride: int = 1,
+                 downsample: Optional[nn.Layer] = None,
+                 groups: int = 1,
+                 base_width: int = 64,
+                 dilation: int = 1,
+                 norm_layer: Optional[Callable[..., nn.Layer]] = None) -> None:
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -116,12 +118,12 @@ class Bottleneck(nn.Layer):
     def __init__(self,
                  inplanes: int,
                  planes: int,
-                 stride: int=1,
-                 downsample: Optional[nn.Layer]=None,
-                 groups: int=1,
-                 base_width: int=64,
-                 dilation: int=1,
-                 norm_layer: Optional[Callable[..., nn.Layer]]=None) -> None:
+                 stride: int = 1,
+                 downsample: Optional[nn.Layer] = None,
+                 groups: int = 1,
+                 base_width: int = 64,
+                 dilation: int = 1,
+                 norm_layer: Optional[Callable[..., nn.Layer]] = None) -> None:
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2D
@@ -161,15 +163,16 @@ class Bottleneck(nn.Layer):
 
 
 class ResNet(nn.Layer):
+
     def __init__(self,
                  block: Type[Union[BasicBlock, Bottleneck]],
                  layers: List[int],
-                 num_classes: int=1000,
-                 zero_init_residual: bool=False,
-                 groups: int=1,
-                 width_per_group: int=64,
-                 replace_stride_with_dilation: Optional[List[bool]]=None,
-                 norm_layer: Optional[Callable[..., nn.Layer]]=None) -> None:
+                 num_classes: int = 1000,
+                 zero_init_residual: bool = False,
+                 groups: int = 1,
+                 width_per_group: int = 64,
+                 replace_stride_with_dilation: Optional[List[bool]] = None,
+                 norm_layer: Optional[Callable[..., nn.Layer]] = None) -> None:
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2D
@@ -187,42 +190,39 @@ class ResNet(nn.Layer):
                                  replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2D(
-            3,
-            self.inplanes,
-            kernel_size=7,
-            stride=2,
-            padding=3,
-            bias_attr=False)
+        self.conv1 = nn.Conv2D(3,
+                               self.inplanes,
+                               kernel_size=7,
+                               stride=2,
+                               padding=3,
+                               bias_attr=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = torch2paddle.ReLU(True)
         self.maxpool = nn.MaxPool2D(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(
-            block,
-            128,
-            layers[1],
-            stride=2,
-            dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(
-            block,
-            256,
-            layers[2],
-            stride=2,
-            dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(
-            block,
-            512,
-            layers[3],
-            stride=2,
-            dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(block,
+                                       128,
+                                       layers[1],
+                                       stride=2,
+                                       dilate=replace_stride_with_dilation[0])
+        self.layer3 = self._make_layer(block,
+                                       256,
+                                       layers[2],
+                                       stride=2,
+                                       dilate=replace_stride_with_dilation[1])
+        self.layer4 = self._make_layer(block,
+                                       512,
+                                       layers[3],
+                                       stride=2,
+                                       dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2D((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.sublayers():
             if isinstance(m, nn.Conv2D):
-                torch2paddle.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
+                torch2paddle.kaiming_normal_(m.weight,
+                                             mode='fan_out',
+                                             nonlinearity='relu')
             elif isinstance(m, (nn.BatchNorm2D, nn.GroupNorm)):
                 torch2paddle.constant_init_(m.weight, 1)
                 torch2paddle.constant_init_(m.bias, 0)
@@ -243,8 +243,8 @@ class ResNet(nn.Layer):
                     block: Type[Union[BasicBlock, Bottleneck]],
                     planes: int,
                     blocks: int,
-                    stride: int=1,
-                    dilate: bool=False) -> nn.Sequential:
+                    stride: int = 1,
+                    dilate: bool = False) -> nn.Sequential:
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
@@ -254,7 +254,8 @@ class ResNet(nn.Layer):
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer(planes * block.expansion), )
+                norm_layer(planes * block.expansion),
+            )
 
         layers = []
         layers.append(
@@ -263,13 +264,12 @@ class ResNet(nn.Layer):
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    groups=self.groups,
-                    base_width=self.base_width,
-                    dilation=self.dilation,
-                    norm_layer=norm_layer))
+                block(self.inplanes,
+                      planes,
+                      groups=self.groups,
+                      base_width=self.base_width,
+                      dilation=self.dilation,
+                      norm_layer=norm_layer))
 
         return nn.Sequential(*layers)
 
@@ -295,11 +295,8 @@ class ResNet(nn.Layer):
         return self._forward_impl(x)
 
 
-def _resnet(arch: str,
-            block: Type[Union[BasicBlock, Bottleneck]],
-            layers: List[int],
-            pretrained: bool,
-            **kwargs: Any) -> ResNet:
+def _resnet(arch: str, block: Type[Union[BasicBlock, Bottleneck]],
+            layers: List[int], pretrained: bool, **kwargs: Any) -> ResNet:
     model = ResNet(block, layers, **kwargs)
     if pretrained:
         state_dict = paddle.load(get_weights_path_from_url(model_urls[arch]))
@@ -307,7 +304,8 @@ def _resnet(arch: str,
     return model
 
 
-def resnet18(pretrained: bool=False, progress: bool=True,
+def resnet18(pretrained: bool = False,
+             progress: bool = True,
              **kwargs: Any) -> ResNet:
     r"""ResNet-18 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -319,7 +317,8 @@ def resnet18(pretrained: bool=False, progress: bool=True,
     return _resnet('resnet18', BasicBlock, [2, 2, 2, 2], pretrained, **kwargs)
 
 
-def resnet34(pretrained: bool=False, progress: bool=True,
+def resnet34(pretrained: bool = False,
+             progress: bool = True,
              **kwargs: Any) -> ResNet:
     r"""ResNet-34 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -331,7 +330,8 @@ def resnet34(pretrained: bool=False, progress: bool=True,
     return _resnet('resnet34', BasicBlock, [3, 4, 6, 3], pretrained, **kwargs)
 
 
-def resnet50(pretrained: bool=False, progress: bool=True,
+def resnet50(pretrained: bool = False,
+             progress: bool = True,
              **kwargs: Any) -> ResNet:
     r"""ResNet-50 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -343,7 +343,8 @@ def resnet50(pretrained: bool=False, progress: bool=True,
     return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, **kwargs)
 
 
-def resnet101(pretrained: bool=False, progress: bool=True,
+def resnet101(pretrained: bool = False,
+              progress: bool = True,
               **kwargs: Any) -> ResNet:
     r"""ResNet-101 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -355,7 +356,8 @@ def resnet101(pretrained: bool=False, progress: bool=True,
     return _resnet('resnet101', Bottleneck, [3, 4, 23, 3], pretrained, **kwargs)
 
 
-def resnet152(pretrained: bool=False, progress: bool=True,
+def resnet152(pretrained: bool = False,
+              progress: bool = True,
               **kwargs: Any) -> ResNet:
     r"""ResNet-152 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -367,7 +369,8 @@ def resnet152(pretrained: bool=False, progress: bool=True,
     return _resnet('resnet152', Bottleneck, [3, 8, 36, 3], pretrained, **kwargs)
 
 
-def resnext50_32x4d(pretrained: bool=False, progress: bool=True,
+def resnext50_32x4d(pretrained: bool = False,
+                    progress: bool = True,
                     **kwargs: Any) -> ResNet:
     r"""ResNeXt-50 32x4d model from
     `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
@@ -382,7 +385,8 @@ def resnext50_32x4d(pretrained: bool=False, progress: bool=True,
                    **kwargs)
 
 
-def resnext101_32x8d(pretrained: bool=False, progress: bool=True,
+def resnext101_32x8d(pretrained: bool = False,
+                     progress: bool = True,
                      **kwargs: Any) -> ResNet:
     r"""ResNeXt-101 32x8d model from
     `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
@@ -397,7 +401,8 @@ def resnext101_32x8d(pretrained: bool=False, progress: bool=True,
                    **kwargs)
 
 
-def wide_resnet50_2(pretrained: bool=False, progress: bool=True,
+def wide_resnet50_2(pretrained: bool = False,
+                    progress: bool = True,
                     **kwargs: Any) -> ResNet:
     r"""Wide ResNet-50-2 model from
     `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
@@ -416,7 +421,8 @@ def wide_resnet50_2(pretrained: bool=False, progress: bool=True,
                    **kwargs)
 
 
-def wide_resnet101_2(pretrained: bool=False, progress: bool=True,
+def wide_resnet101_2(pretrained: bool = False,
+                     progress: bool = True,
                      **kwargs: Any) -> ResNet:
     r"""Wide ResNet-101-2 model from
     `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.

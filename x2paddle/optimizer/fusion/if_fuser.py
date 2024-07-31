@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class IfFuser(FuseBase):
+
     def __init__(self):
         super(IfFuser, self).__init__()
 
@@ -29,8 +30,9 @@ class IfFuser(FuseBase):
             if x81 :
                 ...
         """
-        self.pattern.add_layer(
-            "prim.if", inputs={"input": "if-input-0"}, outputs=["x0"])
+        self.pattern.add_layer("prim.if",
+                               inputs={"input": "if-input-0"},
+                               outputs=["x0"])
         self.pattern.build(inputs={"input-0": "if-input-0"})
 
     def insert_new_layer(self, graph, parameters, matches):

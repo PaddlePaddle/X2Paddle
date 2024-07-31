@@ -27,10 +27,11 @@ from x2paddle.core.util import *
 
 
 class PaddleLayer(object):
+
     def __init__(self, id, kernel, inputs, outputs, scope_name="", **kwargs):
-        assert isinstance(inputs, (
-            dict, list
-        )), "parameter 'inputs' for PaddleLayer should be type of dict or list"
+        assert isinstance(
+            inputs, (dict, list)
+        ), "parameter 'inputs' for PaddleLayer should be type of dict or list"
         assert isinstance(
             outputs,
             list), "parameter 'outputs' for PaddleLayer should be type of list"
@@ -46,9 +47,8 @@ class PaddleLayer(object):
                         v, list
                     ), "value in inputs should be type of string or list of string"
         for v in outputs:
-            assert isinstance(
-                v, six.
-                string_types), "elements in outputs should be type of string"
+            assert isinstance(v, six.string_types
+                              ), "elements in outputs should be type of string"
         self.kernel = kernel
         self.inputs = inputs
         self.outputs = outputs
@@ -62,6 +62,7 @@ class PaddleLayer(object):
 
 
 class PaddleGraph(object):
+
     def __init__(self, source_type=None, parent_layer=None):
         self.layers = collections.OrderedDict()
         self.edges_out = dict()
@@ -108,8 +109,12 @@ class PaddleGraph(object):
             layer_id = "{}.{}.{}".format(self.parent_layer.id,
                                          len(self.parent_layer.blocks),
                                          layer_id)
-        layer = PaddleLayer(
-            layer_id, kernel, inputs, outputs, scope_name=scope_name, **kwargs)
+        layer = PaddleLayer(layer_id,
+                            kernel,
+                            inputs,
+                            outputs,
+                            scope_name=scope_name,
+                            **kwargs)
         self.layers[layer_id] = layer
         if layer.kernel in ["prim.list_unpack", "prim.tuple_unpack"]:
             self.has_unpack = True
@@ -297,12 +302,13 @@ class PaddleGraph(object):
                 self.dygraph2static(save_dir, input_shapes, input_types)
             except Exception as e:
                 print(
-                    "Fail to generate inference model! Problem happened while export inference model from python code '{}';\n".
-                    format(code_path))
+                    "Fail to generate inference model! Problem happened while export inference model from python code '{}';\n"
+                    .format(code_path))
                 print("===================Error Information===============")
                 raise e
 
     def get_inputs(self):
+
         def update(layers):
             for layer_id, layer in layers.items():
                 if self.edges_in.get(layer_id, 0) == 0 and self.edges_out.get(
@@ -334,8 +340,8 @@ class PaddleGraph(object):
             if self.edges_out.get(layer_id, 0) == 0:
 
                 for i, output_name in enumerate(layer.outputs):
-                    if ("paddle.nn" in layer.kernel and
-                            "functional" not in layer.kernel):
+                    if ("paddle.nn" in layer.kernel
+                            and "functional" not in layer.kernel):
                         if i == 0:
                             continue
                     if output_name not in self.outputs:
@@ -373,52 +379,49 @@ class PaddleGraph(object):
                                  "import onnx_custom_layer as x2paddle_nn"
             else:
                 custom_import = ""
-            self.head = gen_codes(
-                [
-                    "import paddle",
-                    "import math",
-                    custom_import,
-                    "",
-                    "class {}(paddle.nn.Layer):".format(self.name),
-                ],
-                indent=0)
+            self.head = gen_codes([
+                "import paddle",
+                "import math",
+                custom_import,
+                "",
+                "class {}(paddle.nn.Layer):".format(self.name),
+            ],
+                                  indent=0)
             input_data_name = ', '.join(self.inputs)
             self.init_func.extend(gen_codes(["def __init__(self):"], indent=1))
             self.init_func.extend(
-                gen_codes(
-                    ["super({}, self).__init__()".format(self.name)], indent=2))
+                gen_codes(["super({}, self).__init__()".format(self.name)],
+                          indent=2))
             self.forward_func.extend(
-                gen_codes(
-                    ["def forward(self, {}):".format(input_data_name)],
-                    indent=1))
+                gen_codes(["def forward(self, {}):".format(input_data_name)],
+                          indent=1))
 
         def gen_main_code(code_dir):
             input_data_name = ', '.join(self.inputs)
-            self.run_func = gen_codes(
-                [
-                    "",
-                    "def main({}):".format(input_data_name),
-                ], indent=0)
+            self.run_func = gen_codes([
+                "",
+                "def main({}):".format(input_data_name),
+            ],
+                                      indent=0)
             comment_list = list()
             comment_list.append("# There are {} inputs.".format(
                 len(self.inputs_info)))
             for k, v in self.inputs_info.items():
-                comment_list.append("# {}: shape-{}, type-{}.".format(k, v[0],
-                                                                      v[1]))
+                comment_list.append("# {}: shape-{}, type-{}.".format(
+                    k, v[0], v[1]))
             self.run_func.extend(gen_codes(comment_list, indent=1))
             use_structured_name = False if self.source_type in ["tf"] else True
             self.run_func.extend(
-                gen_codes(
-                    [
-                        "paddle.disable_static()",
-                        "params = paddle.load(r'{}')".format(
-                            osp.join(osp.abspath(code_dir), "model.pdparams")),
-                        "model = {}()".format(self.name),
-                        "model.set_dict(params, use_structured_name={})".format(
-                            use_structured_name), "model.eval()",
-                        "out = model({})".format(input_data_name), "return out"
-                    ],
-                    indent=1))
+                gen_codes([
+                    "paddle.disable_static()",
+                    "params = paddle.load(r'{}')".format(
+                        osp.join(osp.abspath(code_dir), "model.pdparams")),
+                    "model = {}()".format(self.name),
+                    "model.set_dict(params, use_structured_name={})".format(
+                        use_structured_name), "model.eval()",
+                    "out = model({})".format(input_data_name), "return out"
+                ],
+                          indent=1))
 
         def write_code(code_dir):
             f = open(osp.join(code_dir, 'x2paddle_code.py'), 'w')
@@ -504,11 +507,10 @@ class PaddleGraph(object):
                 from x2paddle.op_mapper.pytorch2paddle import prim2code
                 if hasattr(prim2code, func_name):
                     func = getattr(prim2code, func_name)
-                    func(
-                        layer,
-                        indent=indent,
-                        init_func=self.init_func,
-                        forward_func=self.forward_func)
+                    func(layer,
+                         indent=indent,
+                         init_func=self.init_func,
+                         forward_func=self.forward_func)
                 else:
                     raise Exception(
                         "The kind {} in paddle model is not supported yet.".
@@ -540,12 +542,11 @@ class PaddleGraph(object):
                 if layer.kernel == "self.create_parameter":
                     self.init_func.extend(gen_codes(["self." + line], indent=2))
                     self.forward_func.extend(
-                        gen_codes(
-                            [
-                                "{} = self.{}".format(layer.outputs[0],
-                                                      layer.outputs[0])
-                            ],
-                            indent=indent))
+                        gen_codes([
+                            "{} = self.{}".format(layer.outputs[0],
+                                                  layer.outputs[0])
+                        ],
+                                  indent=indent))
                 else:
                     self.forward_func.extend(gen_codes([line], indent=indent))
         if indent == 2 and code_dir is not None:
@@ -562,8 +563,9 @@ class PaddleGraph(object):
         spec_list = list()
         for i, name in enumerate(self.inputs):
             spec_list.append(
-                paddle.static.InputSpec(
-                    shape=input_shapes[i], name=name, dtype=input_types[i]))
+                paddle.static.InputSpec(shape=input_shapes[i],
+                                        name=name,
+                                        dtype=input_types[i]))
         path = osp.abspath(save_dir)
         sys.path.insert(0, save_dir)
         import x2paddle_code

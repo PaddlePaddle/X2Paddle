@@ -25,44 +25,59 @@ import torch.nn.functional as F
 
 def convbn(in_channels, out_channels, kernel_size, stride, pad, dilation):
     return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride,
-                                   padding=dilation if dilation > 1 else pad, dilation=dilation, bias=False),
-        nn.BatchNorm2d(out_channels)
-    )
+        nn.Conv2d(in_channels,
+                  out_channels,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=dilation if dilation > 1 else pad,
+                  dilation=dilation,
+                  bias=False), nn.BatchNorm2d(out_channels))
 
 
 def convbn_3d(in_channels, out_channels, kernel_size, stride, pad):
     return nn.Sequential(
-        nn.Conv3d(in_channels, out_channels, kernel_size=kernel_size, stride=stride,
-                                   padding=pad, bias=False),
-        nn.BatchNorm3d(out_channels)
-    )
+        nn.Conv3d(in_channels,
+                  out_channels,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=pad,
+                  bias=False), nn.BatchNorm3d(out_channels))
 
 
 def convbn_dws(inp, oup, kernel_size, stride, pad, dilation, second_relu=True):
     if second_relu:
         return nn.Sequential(
             # dw
-            nn.Conv2d(inp, inp, kernel_size=kernel_size, stride=stride, padding=dilation if dilation > 1 else pad,
-                      dilation=dilation, groups=inp, bias=False),
+            nn.Conv2d(inp,
+                      inp,
+                      kernel_size=kernel_size,
+                      stride=stride,
+                      padding=dilation if dilation > 1 else pad,
+                      dilation=dilation,
+                      groups=inp,
+                      bias=False),
             nn.BatchNorm2d(inp),
             nn.ReLU6(inplace=True),
             # pw
             nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
             nn.BatchNorm2d(oup),
-            nn.ReLU6(inplace=False)
-            )
+            nn.ReLU6(inplace=False))
     else:
         return nn.Sequential(
             # dw
-            nn.Conv2d(inp, inp, kernel_size=kernel_size, stride=stride, padding=dilation if dilation > 1 else pad,
-                      dilation=dilation, groups=inp, bias=False),
+            nn.Conv2d(inp,
+                      inp,
+                      kernel_size=kernel_size,
+                      stride=stride,
+                      padding=dilation if dilation > 1 else pad,
+                      dilation=dilation,
+                      groups=inp,
+                      bias=False),
             nn.BatchNorm2d(inp),
             nn.ReLU6(inplace=True),
             # pw
             nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(oup)
-            )
+            nn.BatchNorm2d(oup))
 
 
 class MobileV1_Residual(nn.Module):
@@ -74,7 +89,13 @@ class MobileV1_Residual(nn.Module):
         self.stride = stride
         self.downsample = downsample
         self.conv1 = convbn_dws(inplanes, planes, 3, stride, pad, dilation)
-        self.conv2 = convbn_dws(planes, planes, 3, 1, pad, dilation, second_relu=False)
+        self.conv2 = convbn_dws(planes,
+                                planes,
+                                3,
+                                1,
+                                pad,
+                                dilation,
+                                second_relu=False)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -89,6 +110,7 @@ class MobileV1_Residual(nn.Module):
 
 
 class MobileV2_Residual(nn.Module):
+
     def __init__(self, inp, oup, stride, expanse_ratio, dilation=1):
         super(MobileV2_Residual, self).__init__()
         self.stride = stride
@@ -101,7 +123,14 @@ class MobileV2_Residual(nn.Module):
         if expanse_ratio == 1:
             self.conv = nn.Sequential(
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, pad, dilation=dilation, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim,
+                          hidden_dim,
+                          3,
+                          stride,
+                          pad,
+                          dilation=dilation,
+                          groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
@@ -115,7 +144,14 @@ class MobileV2_Residual(nn.Module):
                 nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, pad, dilation=dilation, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim,
+                          hidden_dim,
+                          3,
+                          stride,
+                          pad,
+                          dilation=dilation,
+                          groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
@@ -131,17 +167,24 @@ class MobileV2_Residual(nn.Module):
 
 
 class MobileV2_Residual_3D(nn.Module):
+
     def __init__(self, inp, oup, stride, expanse_ratio):
         super(MobileV2_Residual_3D, self).__init__()
         self.stride = stride
 
         hidden_dim = round(inp * expanse_ratio)
-        self.use_res_connect = self.stride == (1,1,1) and inp == oup
+        self.use_res_connect = self.stride == (1, 1, 1) and inp == oup
 
         if expanse_ratio == 1:
             self.conv = nn.Sequential(
                 # dw
-                nn.Conv3d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
+                nn.Conv3d(hidden_dim,
+                          hidden_dim,
+                          3,
+                          stride,
+                          1,
+                          groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm3d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
@@ -155,7 +198,13 @@ class MobileV2_Residual_3D(nn.Module):
                 nn.BatchNorm3d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # dw
-                nn.Conv3d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
+                nn.Conv3d(hidden_dim,
+                          hidden_dim,
+                          3,
+                          stride,
+                          1,
+                          groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm3d(hidden_dim),
                 nn.ReLU6(inplace=True),
                 # pw-linear
@@ -169,30 +218,32 @@ class MobileV2_Residual_3D(nn.Module):
         else:
             return self.conv(x)
 
+
 ###############################################################################
 """ Feature Extraction """
 ###############################################################################
 
 
 class feature_extraction(nn.Module):
+
     def __init__(self, add_relus=False):
         super(feature_extraction, self).__init__()
 
         self.expanse_ratio = 3
         self.inplanes = 32
         if add_relus:
-            self.firstconv = nn.Sequential(MobileV2_Residual(3, 32, 2, self.expanse_ratio),
-                                           nn.ReLU(inplace=True),
-                                           MobileV2_Residual(32, 32, 1, self.expanse_ratio),
-                                           nn.ReLU(inplace=True),
-                                           MobileV2_Residual(32, 32, 1, self.expanse_ratio),
-                                           nn.ReLU(inplace=True)
-                                           )
+            self.firstconv = nn.Sequential(
+                MobileV2_Residual(3, 32, 2, self.expanse_ratio),
+                nn.ReLU(inplace=True),
+                MobileV2_Residual(32, 32, 1, self.expanse_ratio),
+                nn.ReLU(inplace=True),
+                MobileV2_Residual(32, 32, 1, self.expanse_ratio),
+                nn.ReLU(inplace=True))
         else:
-            self.firstconv = nn.Sequential(MobileV2_Residual(3, 32, 2, self.expanse_ratio),
-                                           MobileV2_Residual(32, 32, 1, self.expanse_ratio),
-                                           MobileV2_Residual(32, 32, 1, self.expanse_ratio)
-                                           )
+            self.firstconv = nn.Sequential(
+                MobileV2_Residual(3, 32, 2, self.expanse_ratio),
+                MobileV2_Residual(32, 32, 1, self.expanse_ratio),
+                MobileV2_Residual(32, 32, 1, self.expanse_ratio))
 
         self.layer1 = self._make_layer(MobileV1_Residual, 32, 3, 1, 1, 1)
         self.layer2 = self._make_layer(MobileV1_Residual, 64, 16, 2, 1, 1)
@@ -204,12 +255,17 @@ class feature_extraction(nn.Module):
 
         if stride != 1 or self.inplanes != planes:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(self.inplanes,
+                          planes,
+                          kernel_size=1,
+                          stride=stride,
+                          bias=False),
                 nn.BatchNorm2d(planes),
             )
 
-        layers = [block(self.inplanes, planes, stride, downsample, pad, dilation)]
+        layers = [
+            block(self.inplanes, planes, stride, downsample, pad, dilation)
+        ]
         self.inplanes = planes
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, 1, None, pad, dilation))
@@ -226,6 +282,7 @@ class feature_extraction(nn.Module):
         feature_volume = torch.cat((l2, l3, l4), dim=1)
 
         return feature_volume
+
 
 ###############################################################################
 """ Cost Volume Related Functions """
@@ -245,7 +302,8 @@ def interweave_tensors(refimg_fea, targetimg_fea):
 
     # avoid aten::copy
     interwoven_features = torch.cat((refimg_fea, targetimg_fea), 1)
-    interwoven_features = torch.reshape(interwoven_features, (B, 2, C, H, W)).permute(0, 2, 1, 3, 4)
+    interwoven_features = torch.reshape(interwoven_features,
+                                        (B, 2, C, H, W)).permute(0, 2, 1, 3, 4)
     interwoven_features = interwoven_features.reshape([B, -1, H, W])
     return interwoven_features
 
@@ -254,7 +312,8 @@ def groupwise_correlation(fea1, fea2, num_groups):
     B, C, H, W = fea1.shape
     assert C % num_groups == 0
     channels_per_group = C // num_groups
-    cost = (fea1 * fea2).view([B, num_groups, channels_per_group, H, W]).mean(dim=2)
+    cost = (fea1 * fea2).view([B, num_groups, channels_per_group, H,
+                               W]).mean(dim=2)
     assert cost.shape == (B, num_groups, H, W)
     return cost
 
@@ -262,15 +321,21 @@ def groupwise_correlation(fea1, fea2, num_groups):
 def build_gwc_volume(refimg_fea, targetimg_fea, maxdisp, num_groups):
     B, C, H, W = refimg_fea.shape
     # volume = refimg_fea.new_zeros([B, num_groups, maxdisp, H, W])
-    volume = torch.zeros([B, num_groups, maxdisp, H, W])  # , device=refimg_fea.get_device())
+    volume = torch.zeros([B, num_groups, maxdisp, H,
+                          W])  # , device=refimg_fea.get_device())
     for i in range(maxdisp):
         if i > 0:
-            volume[:, :, i, :, i:] = groupwise_correlation(refimg_fea[:, :, :, i:], targetimg_fea[:, :, :, :-i],
-                                                           num_groups)
+            volume[:, :, i, :,
+                   i:] = groupwise_correlation(refimg_fea[:, :, :, i:],
+                                               targetimg_fea[:, :, :, :-i],
+                                               num_groups)
         else:
-            volume[:, :, i, :, :] = groupwise_correlation(refimg_fea, targetimg_fea, num_groups)
+            volume[:, :,
+                   i, :, :] = groupwise_correlation(refimg_fea, targetimg_fea,
+                                                    num_groups)
     # volume = volume.contiguous()
     return volume
+
 
 ###############################################################################
 """ Disparity Regression Function """
@@ -283,6 +348,7 @@ def disparity_regression(x, maxdisp):
     disp_values = disp_values.view(1, maxdisp, 1, 1)
     return torch.sum(x * disp_values, 1, keepdim=False)
 
+
 ###############################################################################
 """ Loss Function """
 ###############################################################################
@@ -292,5 +358,7 @@ def model_loss(disp_ests, disp_gt, mask):
     weights = [0.5, 0.5, 0.7, 1.0]
     all_losses = []
     for disp_est, weight in zip(disp_ests, weights):
-        all_losses.append(weight * F.smooth_l1_loss(disp_est[mask], disp_gt[mask], reduction='mean'))
+        all_losses.append(
+            weight *
+            F.smooth_l1_loss(disp_est[mask], disp_gt[mask], reduction='mean'))
     return sum(all_losses)

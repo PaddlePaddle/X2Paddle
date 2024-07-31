@@ -21,6 +21,7 @@ from x2paddle.core.util import *
 
 
 class GeluFuser(FuseBase):
+
     def __init__(self):
         super(GeluFuser, self).__init__()
 
@@ -40,47 +41,51 @@ class GeluFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(0)],
-            shape=[1],
-            fill_value=1.4142135381698608)
-        self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(1)],
-            shape=[1],
-            fill_value=1.0)
-        self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(2)],
-            shape=[1],
-            fill_value=0.5)
-        self.pattern.add_layer(
-            "paddle.divide",
-            inputs={"x": "gelu-input-0",
-                    "y": gen_name(0)},
-            outputs=[gen_name(3)])
-        self.pattern.add_layer(
-            "paddle.erf", inputs={"x": gen_name(3)}, outputs=[gen_name(4)])
-        self.pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(4),
-                    "y": gen_name(1)},
-            outputs=[gen_name(5)])
-        self.pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": "gelu-input-0",
-                    "y": gen_name(5)},
-            outputs=[gen_name(6)])
-        self.pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(6),
-                    "y": gen_name(2)},
-            outputs=[gen_name(7)])
-        self.pattern.build(inputs={"input-0": "gelu-input-0", })
+        self.pattern.add_layer("paddle.full",
+                               inputs={},
+                               outputs=[gen_name(0)],
+                               shape=[1],
+                               fill_value=1.4142135381698608)
+        self.pattern.add_layer("paddle.full",
+                               inputs={},
+                               outputs=[gen_name(1)],
+                               shape=[1],
+                               fill_value=1.0)
+        self.pattern.add_layer("paddle.full",
+                               inputs={},
+                               outputs=[gen_name(2)],
+                               shape=[1],
+                               fill_value=0.5)
+        self.pattern.add_layer("paddle.divide",
+                               inputs={
+                                   "x": "gelu-input-0",
+                                   "y": gen_name(0)
+                               },
+                               outputs=[gen_name(3)])
+        self.pattern.add_layer("paddle.erf",
+                               inputs={"x": gen_name(3)},
+                               outputs=[gen_name(4)])
+        self.pattern.add_layer("paddle.add",
+                               inputs={
+                                   "x": gen_name(4),
+                                   "y": gen_name(1)
+                               },
+                               outputs=[gen_name(5)])
+        self.pattern.add_layer("paddle.multiply",
+                               inputs={
+                                   "x": "gelu-input-0",
+                                   "y": gen_name(5)
+                               },
+                               outputs=[gen_name(6)])
+        self.pattern.add_layer("paddle.multiply",
+                               inputs={
+                                   "x": gen_name(6),
+                                   "y": gen_name(2)
+                               },
+                               outputs=[gen_name(7)])
+        self.pattern.build(inputs={
+            "input-0": "gelu-input-0",
+        })
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer, new_layer_id = self.gen_new_layer(parameters, matches)
@@ -99,10 +104,9 @@ class GeluFuser(FuseBase):
                 layer_inputs_ids.append(layer_id)
             if layer.kernel == "paddle.multiply":
                 output_name = layer.outputs[0]
-        new_layer = PaddleLayer(
-            layer_id_list[0],
-            "paddle.nn.GELU",
-            inputs={"x": layer_inputs[0]},
-            outputs=[output_name],
-            approximate=False)
+        new_layer = PaddleLayer(layer_id_list[0],
+                                "paddle.nn.GELU",
+                                inputs={"x": layer_inputs[0]},
+                                outputs=[output_name],
+                                approximate=False)
         return new_layer, layer_inputs_ids[0]

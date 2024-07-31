@@ -23,16 +23,18 @@ try:
     # trace
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_trace/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
-    result = exe.run(prog, feed={inputs[0]:image}, fetch_list=outputs)
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_trace/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    result = exe.run(prog, feed={inputs[0]: image}, fetch_list=outputs)
 
     df0 = pytorch_output["hm"] - result[0]
     df1 = pytorch_output["box"] - result[1]
     df2 = pytorch_output["landmark"] - result[2]
-    if np.max(np.fabs(df0)) > 1e-04 or np.max(np.fabs(df1)) > 1e-04 or np.max(np.fabs(df2)) > 1e-04:
+    if np.max(np.fabs(df0)) > 1e-04 or np.max(np.fabs(df1)) > 1e-04 or np.max(
+            np.fabs(df2)) > 1e-04:
         print("Trace Failed", file=f)
     else:
         print("Trace Successed", file=f)

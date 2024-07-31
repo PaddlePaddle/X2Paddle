@@ -18,19 +18,19 @@
 
 添加代码实现自定义层的步骤如下：
 
-***步骤一 下载代码***  
+***步骤一 下载代码***
 此处涉及修改源码，应先卸载x2paddle，并且下载源码，主要有以下两步完成：
 ```
 pip uninstall x2paddle
 pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 ```
 
-***步骤二 编译caffe.proto***  
+***步骤二 编译caffe.proto***
 该步骤依赖protobuf编译器，其安装过程有以下两种方式：
 > 选择一：pip install protobuf  (protobuf >= 3.6.0)
 > 选择二：使用[官方源码](https://github.com/protocolbuffers/protobuf)进行编译
 
-使用脚本./tools/compile.sh将caffe.proto（包含所需的自定义Layer信息）编译成我们所需的目标语言（Python）  
+使用脚本./tools/compile.sh将caffe.proto（包含所需的自定义Layer信息）编译成我们所需的目标语言（Python）
 使用方式：
 ```
 bash ./tools/compile.sh /home/root/caffe/src/caffe/proto
@@ -49,7 +49,7 @@ def Permute(self, node):
         node.inputs) == 1, "The count of Permute node\'s input is not 1."
     input = self.graph.get_input_node(node, idx=0, copy=True)
     params = node.layer.permute_param
-    order = list(params.order)  
+    order = list(params.order)
     self.paddle_graph.add_layer(
         "paddle.transpose",
         inputs={"x": input.name},

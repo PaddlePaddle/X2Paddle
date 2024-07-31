@@ -27,7 +27,7 @@ paddle.split(x,
 ### 功能差异
 
 #### 使用方式
-***PyTorch***：第二个参数split_size_or_sections类型为int或者list(int)。  
+***PyTorch***：第二个参数split_size_or_sections类型为int或者list(int)。
 ***PaddlePaddle***：第二个参数num_or_sections类型为int、list(int)或者tuple(int)。
 
 

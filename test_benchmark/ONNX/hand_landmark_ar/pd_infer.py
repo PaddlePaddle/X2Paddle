@@ -10,14 +10,16 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test Dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/",
-                                                            executor=exe,
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load("../dataset/hand_landmark_ar/input.npy")
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
-    with open("../dataset/hand_landmark_ar/result_landmark_onnx.pkl", "rb") as fr:
+    with open("../dataset/hand_landmark_ar/result_landmark_onnx.pkl",
+              "rb") as fr:
         onnx_result = pickle.load(fr)
 
     is_successd = True

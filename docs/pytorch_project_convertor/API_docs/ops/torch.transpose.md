@@ -13,7 +13,7 @@ paddle.transpose(x, perm, name=None)
 
 ### 功能差异
 #### 使用方式
-***PyTorch***：需要设置2个维度值(`dim0`和`dim1`)表示需要交换的维度。  
+***PyTorch***：需要设置2个维度值(`dim0`和`dim1`)表示需要交换的维度。
 ***PaddlePaddle***：需要设置一个重排顺序(`perm`)，类型为list或者tuple。
 
 ### 代码示例

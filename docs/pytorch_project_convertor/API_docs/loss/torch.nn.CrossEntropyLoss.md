@@ -29,5 +29,5 @@ paddle.nn.CrossEntropyLoss(weight=None,
 
 ### 功能差异
 #### 计算方式
-***PyTorch***：只支持在使用交叉熵之前计算softmax且为硬标签的计算方式。  
+***PyTorch***：只支持在使用交叉熵之前计算softmax且为硬标签的计算方式。
 ***PaddlePaddle***：支持使用交叉熵之前是否计算softmax的设置，且支持软、硬标签两种计算方式，其计算方式可参见[文档](https://www.paddlepaddle.org.cn/documentation/docs/en/api/paddle/nn/layer/loss/CrossEntropyLoss_en.html)。

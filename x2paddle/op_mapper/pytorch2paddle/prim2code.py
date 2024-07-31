@@ -78,9 +78,8 @@ def prim_add_(layer,
                                      get_value(layer, "y", different_attrs))
     else:
         line = "{} = {} + {} * {}".format(
-            layer.outputs[0],
-            get_value(layer, "x", different_attrs), layer.attrs["alpha"],
-            get_value(layer, "y", different_attrs))
+            layer.outputs[0], get_value(layer, "x", different_attrs),
+            layer.attrs["alpha"], get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -133,8 +132,8 @@ def prim_assert(layer,
             line = "assert {}, \'The {} must be {}!\'".format(
                 s, get_value(layer, "key"), get_value(layer, "value"))
         else:
-            s = "{} == {}".format(
-                get_value(layer, "key"), get_value(layer, "value"))
+            s = "{} == {}".format(get_value(layer, "key"),
+                                  get_value(layer, "value"))
             lc = locals()
             exec("assert_result = {}".format(s))
             assert_result = lc['assert_result']
@@ -155,8 +154,8 @@ def prim_check_dim(layer,
     lines = []
     dim = get_value(layer, "dim", different_attrs)
     lines.append("if {} < 0:".format(dim))
-    lines.append("    {} = {} + {}".format(layer.outputs[
-        0], dim, get_value(layer, "len", different_attrs)))
+    lines.append("    {} = {} + {}".format(
+        layer.outputs[0], dim, get_value(layer, "len", different_attrs)))
     lines.append("else:")
     lines.append("    {} = {}".format(layer.outputs[0], dim))
     forward_func.extend(gen_codes(lines, indent=indent))
@@ -318,14 +317,12 @@ def prim_format(layer,
     line = ""
     if len(layer.inputs) == 3:
         line = "{} = {}.format({}, {})".format(
-            layer.outputs[0],
-            get_value(layer, "input0", different_attrs),
+            layer.outputs[0], get_value(layer, "input0", different_attrs),
             get_value(layer, "input1", different_attrs),
             get_value(layer, "input2", different_attrs))
     elif len(layer.inputs) == 2:
         line = "{} = {}.format({})".format(
-            layer.outputs[0],
-            get_value(layer, "input0", different_attrs),
+            layer.outputs[0], get_value(layer, "input0", different_attrs),
             get_value(layer, "input1", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
@@ -440,8 +437,8 @@ def prim_isinstance(layer,
                     different_attrs=None,
                     is_return_line=False):
     line = "{} = isinstance({}, {})".format(
-        layer.outputs[0],
-        get_value(layer, "input", different_attrs), layer.attrs["cls"])
+        layer.outputs[0], get_value(layer, "input", different_attrs),
+        layer.attrs["cls"])
     if is_return_line:
         return line.split(" = ")[1]
     forward_func.extend(gen_codes([line], indent=indent))
@@ -683,8 +680,7 @@ def prim_rsub(layer,
               layer_id=None,
               different_attrs=None):
     line = "{} = {} - {} * {}".format(
-        layer.outputs[0],
-        get_value(layer, "y", different_attrs),
+        layer.outputs[0], get_value(layer, "y", different_attrs),
         get_value(layer, "x", different_attrs),
         get_value(layer, "alpha", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
@@ -721,10 +717,9 @@ def prim_set_item(layer,
                   forward_func=[],
                   layer_id=None,
                   different_attrs=None):
-    line = "{}[{}] = {}".format(
-        get_value(layer, "dict", different_attrs),
-        get_value(layer, "key", different_attrs),
-        get_value(layer, "value", different_attrs))
+    line = "{}[{}] = {}".format(get_value(layer, "dict", different_attrs),
+                                get_value(layer, "key", different_attrs),
+                                get_value(layer, "value", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
 
@@ -746,8 +741,7 @@ def prim_shape_dim(layer,
                    layer_id=None,
                    different_attrs=None):
     line = "{} = {}.shape[{}]".format(
-        layer.outputs[0],
-        get_value(layer, "input", different_attrs),
+        layer.outputs[0], get_value(layer, "input", different_attrs),
         get_value(layer, "dim", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))
 
@@ -759,8 +753,7 @@ def prim_slice(layer,
                layer_id=None,
                different_attrs=None):
     line = "{} = {}[{}: {}: {}]".format(
-        layer.outputs[0],
-        get_value(layer, "input", different_attrs),
+        layer.outputs[0], get_value(layer, "input", different_attrs),
         get_value(layer, "start", different_attrs),
         get_value(layer, "end", different_attrs),
         get_value(layer, "step", different_attrs))
@@ -775,8 +768,7 @@ def prim_startswith(layer,
                     different_attrs=None,
                     is_return_line=False):
     line = "{} = {}.startswith({})".format(
-        layer.outputs[0],
-        get_value(layer, "input", different_attrs),
+        layer.outputs[0], get_value(layer, "input", different_attrs),
         get_value(layer, "start_str", different_attrs))
     if is_return_line:
         return line.split(" = ")[1]
@@ -806,8 +798,7 @@ def prim_sub(layer,
                                      get_value(layer, "y", different_attrs))
     else:
         line = "{} = {} - {} * {}".format(
-            layer.outputs[0],
-            get_value(layer, "x", different_attrs),
+            layer.outputs[0], get_value(layer, "x", different_attrs),
             get_value(layer, "alpha", different_attrs),
             get_value(layer, "y", different_attrs))
     forward_func.extend(gen_codes([line], indent=indent))

@@ -4,9 +4,9 @@ import torch.utils.model_zoo as model_zoo
 import numpy as np
 import torch
 
-
-__all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
-           'resnet152']
+__all__ = [
+    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+]
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -33,8 +33,13 @@ def conv3x3(in_planes, out_planes, stride=1, dilation=1):
     # Conv2d doesn't accept numpy arrays as arguments
     full_padding, kernel_size = tuple(full_padding), tuple(kernel_size)
 
-    return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                     padding=full_padding, dilation=dilation, bias=False)
+    return nn.Conv2d(in_planes,
+                     out_planes,
+                     kernel_size=kernel_size,
+                     stride=stride,
+                     padding=full_padding,
+                     dilation=dilation,
+                     bias=False)
 
 
 class BasicBlock(nn.Module):
@@ -134,7 +139,11 @@ class ResNet(nn.Module):
         self.inplanes = 64
         self.fully_conv = fully_conv
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(3,
+                               64,
+                               kernel_size=7,
+                               stride=2,
+                               padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -183,17 +192,26 @@ class ResNet(nn.Module):
 
             # We don't dilate 1x1 convolution.
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(self.inplanes,
+                          planes * block.expansion,
+                          kernel_size=1,
+                          stride=stride,
+                          bias=False),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
         # self.current_dilation = 1
-        layers.append(block(self.inplanes, planes, stride, downsample, dilation=self.current_dilation))
+        layers.append(
+            block(self.inplanes,
+                  planes,
+                  stride,
+                  downsample,
+                  dilation=self.current_dilation))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, dilation=self.current_dilation))
+            layers.append(
+                block(self.inplanes, planes, dilation=self.current_dilation))
 
         return nn.Sequential(*layers)
 
@@ -202,9 +220,9 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x2s = self.relu(x)
         x = self.maxpool(x2s)
-        
+
         x4s = self.layer1(x)
-        
+
         x8s = self.layer2(x4s)
         x16s = self.layer3(x8s)
         x32s = self.layer4(x16s)

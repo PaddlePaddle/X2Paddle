@@ -9,7 +9,7 @@ X2Paddle致力于帮助其它主流深度学习框架开发者快速迁移至飞
   - 支持PyTorch项目Python代码（包括训练、预测）一键转为基于飞桨框架的项目代码，帮助开发者快速迁移项目，并可享受AIStudio平台对于飞桨框架提供的海量免费计算资源
 - API映射文档
   - 详细的API文档对比分析，帮助开发者快速从PyTorch框架的使用迁移至飞桨框架的使用，大大降低学习成本
- 
+
 详细的项目信息与使用方法参考X2Paddle在Github上的开源项目: https://github.com/PaddlePaddle/X2Paddle
 
 ## API映射表目录

@@ -15,6 +15,7 @@ from paddle.inference import create_predictor, PrecisionType
 from paddle.inference import Config
 from benchmark_utils import PaddleInferBenchmark
 
+
 def load_predictor(model_dir,
                    batch_size=1,
                    use_gpu=False,
@@ -28,9 +29,8 @@ def load_predictor(model_dir,
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     """
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
+    config = Config(os.path.join(model_dir, 'model.pdmodel'),
+                    os.path.join(model_dir, 'model.pdiparams'))
     if use_gpu:
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
@@ -72,8 +72,17 @@ def load_predictor(model_dir,
     predictor = create_predictor(config)
     return predictor, config
 
+
 class BenchmarkPipeline:
-    def __init__(self, model_dir, model_name, batch_size=1, use_gpu=True, enable_trt=True, cpu_threads=1, enable_mkldnn=True):
+
+    def __init__(self,
+                 model_dir,
+                 model_name,
+                 batch_size=1,
+                 use_gpu=True,
+                 enable_trt=True,
+                 cpu_threads=1,
+                 enable_mkldnn=True):
         self.predictor, self.config = load_predictor(
             model_dir,
             batch_size=batch_size,
@@ -98,22 +107,24 @@ class BenchmarkPipeline:
             for i in range(len(input_names)):
                 input_tensor = self.predictor.get_input_handle(input_names[i])
                 input_tensor.copy_from_cpu(data)
-        elif isinstance(data,dict):
+        elif isinstance(data, dict):
             input_data = data
             for i in range(len(input_names)):
                 input_tensor = self.predictor.get_input_handle(input_names[i])
                 data = input_data[list(input_data.keys())[i]]
                 input_tensor.copy_from_cpu(data)
-        elif isinstance(data,list):
+        elif isinstance(data, list):
             input_data = data
             if type(input_data[0]) is np.ndarray:
                 for i in range(len(input_names)):
-                    input_tensor = self.predictor.get_input_handle(input_names[i])
+                    input_tensor = self.predictor.get_input_handle(
+                        input_names[i])
                     data = input_data[i]
                     input_tensor.copy_from_cpu(data)
             else:
                 for i in range(len(input_names)):
-                    input_tensor = self.predictor.get_input_handle(input_names[i])
+                    input_tensor = self.predictor.get_input_handle(
+                        input_names[i])
                     data = input_data[0][list(input_data[0].keys())[i]]
                     input_tensor.copy_from_cpu(data)
         for i in range(warmup):
@@ -136,7 +147,7 @@ class BenchmarkPipeline:
             cm, gm = get_current_memory_mb(gpu_id)
             cpu_mem += cm
             gpu_mem += gm
-        
+
         # compare caffe_result and paddle_inference_result
         self.compare_result = "Compare Successed"
         if isinstance(caffe_result, list) or isinstance(caffe_result, tuple):
@@ -144,8 +155,9 @@ class BenchmarkPipeline:
                 diff = results[i] - caffe_result[i]
                 max_abs_diff = np.fabs(diff).max()
                 if max_abs_diff >= 1e-05:
-#                     relative_diff_all = np.fabs(diff) / np.fabs(results[i])
-                    relative_diff_all = max_abs_diff / np.fabs(caffe_result[i]).max()
+                    #                     relative_diff_all = np.fabs(diff) / np.fabs(results[i])
+                    relative_diff_all = max_abs_diff / np.fabs(
+                        caffe_result[i]).max()
                     relative_diff = relative_diff_all.max()
                     if relative_diff >= 1e-05:
                         self.compare_result = "Compare Failed"
@@ -154,7 +166,7 @@ class BenchmarkPipeline:
                 self.compare_result = "Compare Successed"
             else:
                 if "MTCNN" in self.model_name:
-                    diff = results[-1][0] - caffe_result                
+                    diff = results[-1][0] - caffe_result
                 else:
                     diff = results - caffe_result
                 max_abs_diff = np.fabs(diff).max()
@@ -176,10 +188,11 @@ class BenchmarkPipeline:
         paddle.enable_static()
         exe = paddle.static.Executor(paddle.CPUPlace())
         # test Dygraph
-        [prog, inputs, outputs] = fluid.io.load_inference_model(dirname=model_dir, 
-                                                                executor=exe, 
-                                                                model_filename="model.pdmodel",
-                                                                params_filename="model.pdiparams")
+        [prog, inputs, outputs
+         ] = fluid.io.load_inference_model(dirname=model_dir,
+                                           executor=exe,
+                                           model_filename="model.pdmodel",
+                                           params_filename="model.pdiparams")
         #test op nums
         op_dict = dict()
         op_nums = 0
@@ -210,20 +223,19 @@ class BenchmarkPipeline:
             'gpu_rss_mb': self.avg_gpu_mem,
             'gpu_util': self.avg_gpu_util
         }
-        op_info = {
-            'op_nums': self.op_nums,
-            'op_classes': self.op_classes
-        }
+        op_info = {'op_nums': self.op_nums, 'op_classes': self.op_classes}
         compare_info = {
             'compare_result': self.compare_result,
         }
         x2paddle_log = PaddleInferBenchmark(self.config, model_info, data_info,
-                                       perf_info, resource_info, op_info, compare_info)
+                                            perf_info, resource_info, op_info,
+                                            compare_info)
         x2paddle_log('X2paddle')
 
 
 # create time count class
 class Times(object):
+
     def __init__(self):
         self.time = 0.
         self.st = 0.
@@ -267,11 +279,15 @@ def get_current_gputil(gpu_id):
     gpu_load = GPUs[gpu_id].load
     return gpu_load
 
+
 def main():
-    benchmarkpipeline = BenchmarkPipeline(model_dir="mmdetection_yolov3_paddle_test_0519/inference_model/", model_name="yolov3")
+    benchmarkpipeline = BenchmarkPipeline(
+        model_dir="mmdetection_yolov3_paddle_test_0519/inference_model/",
+        model_name="yolov3")
     data = np.load("real_img_data_yolo_50.npy")
-    benchmarkpipeline.run_benchmark(data=data, warmup=10, repeats=10)    
+    benchmarkpipeline.run_benchmark(data=data, warmup=10, repeats=10)
     benchmarkpipeline.report()
+
 
 if __name__ == '__main__':
     main()

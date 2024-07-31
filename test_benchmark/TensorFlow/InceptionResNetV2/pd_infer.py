@@ -9,19 +9,20 @@ f.write("======InceptionResNetV2: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    
+
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/InceptionResNetV2/input.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
-    
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
+
     tf_result = np.load('../dataset/InceptionResNetV2/result.npy')
     diff = result[0] - tf_result
     max_abs_diff = np.fabs(diff).max()
-    
+
     if max_abs_diff < 1e-05:
         f.write("Dygraph Successed\n")
     else:

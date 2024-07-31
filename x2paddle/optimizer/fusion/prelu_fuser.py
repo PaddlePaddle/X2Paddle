@@ -21,6 +21,7 @@ from x2paddle.core.util import *
 
 
 class PReLUFuser(FuseBase):
+
     def __init__(self):
         self.prelu_index = 0
         super(PReLUFuser, self).__init__()
@@ -41,41 +42,47 @@ class PReLUFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        self.pattern.add_layer(
-            "paddle.full",
-            inputs={},
-            outputs=[gen_name(1)],
-            shape=[1],
-            fill_value=0.5)
-        self.pattern.add_layer(
-            "paddle.nn.ReLU",
-            inputs={"x": "prelu-input-0"},
-            outputs=[gen_name(2)])
-        self.pattern.add_layer(
-            "paddle.abs", inputs={"x": "prelu-input-0"}, outputs=[gen_name(3)])
-        self.pattern.add_layer(
-            "paddle.subtract",
-            inputs={"x": "prelu-input-0",
-                    "y": gen_name(3)},
-            outputs=[gen_name(4)])
-        self.pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(0),
-                    "y": gen_name(4)},
-            outputs=[gen_name(5)])
-        self.pattern.add_layer(
-            "paddle.multiply",
-            inputs={"x": gen_name(5),
-                    "y": gen_name(1)},
-            outputs=[gen_name(6)])
-        self.pattern.add_layer(
-            "paddle.add",
-            inputs={"x": gen_name(2),
-                    "y": gen_name(6)},
-            outputs=[gen_name(7)])
-        self.pattern.build(inputs={"input-0": "prelu-input-0", })
+        self.pattern.add_layer("self.create_parameter",
+                               inputs={},
+                               outputs=[gen_name(0)])
+        self.pattern.add_layer("paddle.full",
+                               inputs={},
+                               outputs=[gen_name(1)],
+                               shape=[1],
+                               fill_value=0.5)
+        self.pattern.add_layer("paddle.nn.ReLU",
+                               inputs={"x": "prelu-input-0"},
+                               outputs=[gen_name(2)])
+        self.pattern.add_layer("paddle.abs",
+                               inputs={"x": "prelu-input-0"},
+                               outputs=[gen_name(3)])
+        self.pattern.add_layer("paddle.subtract",
+                               inputs={
+                                   "x": "prelu-input-0",
+                                   "y": gen_name(3)
+                               },
+                               outputs=[gen_name(4)])
+        self.pattern.add_layer("paddle.multiply",
+                               inputs={
+                                   "x": gen_name(0),
+                                   "y": gen_name(4)
+                               },
+                               outputs=[gen_name(5)])
+        self.pattern.add_layer("paddle.multiply",
+                               inputs={
+                                   "x": gen_name(5),
+                                   "y": gen_name(1)
+                               },
+                               outputs=[gen_name(6)])
+        self.pattern.add_layer("paddle.add",
+                               inputs={
+                                   "x": gen_name(2),
+                                   "y": gen_name(6)
+                               },
+                               outputs=[gen_name(7)])
+        self.pattern.build(inputs={
+            "input-0": "prelu-input-0",
+        })
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layers, last_layer_id = self.gen_new_layer(matches, parameters,
@@ -129,10 +136,9 @@ class PReLUFuser(FuseBase):
             outputs=[prelu_name, "{}_prelu".format(input_name)],
             num_parameters=c,
             weight_attr=string(param_name))
-        transpose1 = PaddleLayer(
-            id=layer_id_list[-1] + "_3",
-            kernel="paddle.transpose",
-            inputs={"x": "{}_prelu".format(input_name)},
-            outputs=[output_name],
-            perm=[0, 2, 3, 1])
+        transpose1 = PaddleLayer(id=layer_id_list[-1] + "_3",
+                                 kernel="paddle.transpose",
+                                 inputs={"x": "{}_prelu".format(input_name)},
+                                 outputs=[output_name],
+                                 perm=[0, 2, 3, 1])
         return [transpose0, prelu, transpose1], layer_id_list[-1]

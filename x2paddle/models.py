@@ -1,4 +1,5 @@
 from x2paddle.project_convertor.pytorch import models
+
 resnet_pth_urls = models.resnet.model_urls
 resnet18_pth = models.resnet18
 resnet34_pth = models.resnet34

@@ -8,7 +8,7 @@ num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | wc -l)
 num_of_onnx_files=$(find . -name "*.onnx" | wc -l)
 
 #if [ $num_of_onnx_files -ne $num_of_models ]
-#then 
+#then
 #    echo $num_of_onnx_files
 #    echo $num_of_models
 #    echo "[ERROR] num_of_onnx_files != num_of_models"

@@ -4,7 +4,7 @@
 [![PyPI Status](https://pepy.tech/badge/x2paddle/month)](https://pepy.tech/project/x2paddle)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
-![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
+![python version](https://img.shields.io/badge/python-3.5+-orange.svg)
 
 ## 简介
 
@@ -47,8 +47,8 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 ## 安装
 
 ### 环境依赖
-- python >= 3.5  
-- paddlepaddle >= 2.2.2
+- python >= 3.5
+- paddlepaddle >= 2.2.2 (官方验证到2.4.2)
 - tensorflow == 1.14 (如需转换TensorFlow模型)
 - onnx >= 1.6.0 (如需转换ONNX模型)
 - torch >= 1.5.0 (如需转换PyTorch模型)
@@ -155,4 +155,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 ## :hugs:贡献代码:hugs:
 
-我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests，如果有PyTorch训练项目转换需求欢迎随时提issue~
+我们非常欢迎您为X2Paddle贡献代码或者提供使用建议:
+- 如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests
+- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)
+- 如果有PyTorch训练项目转换需求欢迎随时提issue

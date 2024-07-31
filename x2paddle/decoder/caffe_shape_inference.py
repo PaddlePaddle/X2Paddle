@@ -36,8 +36,8 @@ def get_kernel_parameters(params):
         [s_h, s_w] = [params.stride] * 2
     elif len(params.stride) > 0:
         s_h = params.stride_h if params.stride_h > 0 else params.stride[0]
-        s_w = params.stride_w if params.stride_w > 0 else params.stride[len(
-            params.stride) - 1]
+        s_w = params.stride_w if params.stride_w > 0 else params.stride[
+            len(params.stride) - 1]
     [p_h, p_w] = [0, 0]
     if isinstance(params.pad, numbers.Number):
         [p_h, p_w] = [params.pad] * 2
@@ -239,6 +239,7 @@ def shape_scale(layer, input_shape):
 
 
 def shape_reshape(layer, input_shape):
+
     def count(num_list):
         return reduce(lambda a, b: a * b, num_list)
 

@@ -28,7 +28,7 @@ x2paddle --convert_torch_project --project_dir=stargan --save_dir=paddle_project
 ```
 【注意】此示例中的`pretrain_model`是训练后的PyTorch模型，转换后则为PaddlePaddle训练后的模型，用户可修改转换后代码将其作为预训练模型，也可直接用于预测。
 ### 第三步：转换后代码后处理
-**需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**  
+**需要修改的文件位于paddle_project文件夹中，其中文件命名与原始stargan文件夹中文件命名一致。**
 1. DataLoader的`num_workers`设置为0，在[config处](https://github.com/SunAhong1993/stargan/blob/paddle/main.py#L116)设置强制设置`num_workers`，具体添加代码如下：
 ``` python
 ...
@@ -74,7 +74,7 @@ class Solver(object):
         for i in range(c_dim):
             if dataset == 'CelebA':
                 c_trg = c_org.clone()
-                if i in hair_color_indices:  
+                if i in hair_color_indices:
                     c_trg[:, i] = 1
                     for j in hair_color_indices:
                         if j != i:
@@ -88,7 +88,7 @@ class Solver(object):
                 paddle.assign(c_trg, c_trg_tmp)
                 c_trg_tmp = c_trg_tmp.cast("bool")
                 c_trg_tmp[:, i] = c_trg[:, i] == 0
-                c_trg = c_trg_tmp 
+                c_trg = c_trg_tmp
             ...
         ...
     ...

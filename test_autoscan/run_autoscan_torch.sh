@@ -12,7 +12,7 @@ echo "===================torch-${torch_version}===================" >> result.tx
 
 logs_path=logs/${torch_version}
 mkdir -p ${logs_path}
- 
+
 
 ls | grep test_auto_scan > test_file.txt
 test_num=`ls | grep test_auto_scan | wc -l`
@@ -26,14 +26,14 @@ file_arr=(${file_str//,/ })
 
 for var in ${file_arr[@]}
 do
-  log_name=${logs_path}/${var}.log 
+  log_name=${logs_path}/${var}.log
   echo " Now start test: ${var}"
   python ${var} > ${log_name} 2>&1
-  
+
 done
 
 for var in ${file_arr[@]}
-do 
+do
   log_name=${logs_path}/${var}.log
   success=`cat ${log_name} | grep 'Run Successfully!' | wc -l`
   fail=`cat ${log_name} | grep 'FAILED' | wc -l`

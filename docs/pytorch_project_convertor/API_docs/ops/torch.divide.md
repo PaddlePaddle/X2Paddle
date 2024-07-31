@@ -18,7 +18,7 @@ paddle.divide(x, y, name=None)
 ### 功能差异
 
 #### 舍入模式设置
-***PyTorch***：可以通过`rounding_mode`设置舍入模式，`"trunc"`表示向0取整，`"floor"`表示向下取整，默认值为`None`表示不进行任何舍入操作。  
+***PyTorch***：可以通过`rounding_mode`设置舍入模式，`"trunc"`表示向0取整，`"floor"`表示向下取整，默认值为`None`表示不进行任何舍入操作。
 ***PaddlePaddle***：PaddlePaddle无此功能，需要组合实现。
 
 

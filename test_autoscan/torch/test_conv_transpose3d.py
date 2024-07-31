@@ -50,8 +50,8 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
         result = False
         # Warning: "same" padding mode doesn’t support any stride values other than 1
         if isinstance(config["stride"], list):
-            if config["padding"] == "same" and (config["stride"][0] > 1 or
-                                                config["stride"][1] > 1):
+            if config["padding"] == "same" and (config["stride"][0] > 1
+                                                or config["stride"][1] > 1):
                 result = True
         else:
             if config["padding"] == "same" and config["stride"] > 1:
@@ -81,15 +81,15 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=10, max_value=20), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=10, max_value=20),
+                     min_size=5,
+                     max_size=5))
         # BS = 1
         input_shape[0] = 1
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=7), min_size=5, max_size=5))
+            st.lists(st.integers(min_value=1, max_value=7),
+                     min_size=5,
+                     max_size=5))
 
         groups = draw(st.integers(min_value=1, max_value=4))
         muti1 = draw(st.integers(min_value=1, max_value=4))
@@ -109,11 +109,9 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
                 strides = kernel_size[4]
         else:
             strides = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=3,
+                         max_size=3))
             if strides[0] > kernel_size[2]:
                 strides[0] = kernel_size[2]
             if strides[1] > kernel_size[3]:
@@ -127,11 +125,9 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
             padding = draw(st.integers(min_value=1, max_value=3))
         else:
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=3,
+                         max_size=3))
 
         output_padding_type = draw(st.sampled_from(["int", "tuple"]))
         output_padding = None
@@ -139,11 +135,9 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
             output_padding = draw(st.integers(min_value=0, max_value=0))
         else:
             output_padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=0, max_value=0),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=0, max_value=0),
+                         min_size=3,
+                         max_size=3))
 
         dilations_type = draw(st.sampled_from(["int", "tuple"]))
         dilations = None
@@ -151,11 +145,9 @@ class TestConvtranspose3dConvert(OPConvertAutoScanTest):
             dilations = draw(st.integers(min_value=1, max_value=3))
         else:
             dilations = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=3,
-                    max_size=3))
+                st.lists(st.integers(min_value=1, max_value=3),
+                         min_size=3,
+                         max_size=3))
 
         config = {
             "op_names": ["conv_transpose3d"],

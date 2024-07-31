@@ -11,16 +11,17 @@ tf_result = np.load("../dataset/ShuffleNet/result.npy")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model", 
-                                                            executor=exe, 
-                                                model_filename="model.pdmodel",
-                                                params_filename="model.pdiparams")
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
-    
+
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
+
     diff = result[0] - tf_result
     max_abs_diff = np.fabs(diff).max()
-    
+
     if max_abs_diff < 1e-05:
         f.write("Dygraph Successed\n")
     else:
