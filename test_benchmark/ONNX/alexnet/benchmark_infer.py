@@ -12,10 +12,10 @@ from predict import BenchmarkPipeline
 def parse_args():
     parser = argparse.ArgumentParser(description='Model inference')
     parser.add_argument('--batch_size',
-                        dest='batch_size',
-                        help='Mini batch size of one gpu or cpu.',
-                        type=int,
-                        default=1)
+                dest='batch_size',
+                help='Mini batch size of one gpu or cpu.',
+                type=int,
+                default=1)
 
     def str2bool(v):
         return v.lower() in ("true", "t", "1")
