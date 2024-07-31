@@ -155,7 +155,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 ## :hugs:贡献代码:hugs:
 
-我们非常欢迎您为X2Paddle贡献代码或者提供使用建议。
+我们非常欢迎您为X2Paddle贡献代码或者提供使用建议:
 - 如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests
-- 可以使用[开发镜像](./docker)：paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82
-- 如果有PyTorch训练项目转换需求欢迎随时提issue~
+- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)
+- 如果有PyTorch训练项目转换需求欢迎随时提issue
