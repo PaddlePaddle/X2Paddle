@@ -33,7 +33,7 @@ pip install git+https://github.com/PaddlePaddle/X2Paddle.git@develop
 使用脚本./tools/compile.sh将caffe.proto（包含所需的自定义Layer信息）编译成我们所需的目标语言（Python）  
 使用方式：
 ```
-bash ./toos/compile.sh /home/root/caffe/src/caffe/proto
+bash ./tools/compile.sh /home/root/caffe/src/caffe/proto
 # /home/root/caffe/src/caffe/proto为caffe.proto的存放路径，生成的caffe_pb2.py也将保存在该路径下
 ```
 将生成的caffe_pb2.py替换x2paddle/decoder下的caffe_pb2.py。

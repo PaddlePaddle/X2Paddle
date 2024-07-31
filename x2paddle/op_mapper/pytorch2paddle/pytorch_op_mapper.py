@@ -311,7 +311,9 @@ class PyTorchOpMapper():
             last_name_segments = scope_name_part[index].split(".")
             name_segments = scope_name_part[index + 1].split(".")
             for j, name in enumerate(last_name_segments):
-                name_segments[j] = name
+                if j < len(name_segments) and name_segments[j] == name:
+                    continue
+                name_segments.insert(j, name)
             scope_name_part[index + 1] = ".".join(name_segments)
         last_name = scope_name_part[-1]
         name_segments = last_name.split(".")

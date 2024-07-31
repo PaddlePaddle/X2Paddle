@@ -27,6 +27,22 @@ class LayerNormFuser(FuseBase):
     def build_pattern(self):
         """
         code describe:
+            mode1:
+            x2paddle_ln_pre_weight = self.x2paddle_ln_pre_weight
+            x2paddle_ln_pre_bias = self.x2paddle_ln_pre_bias
+            x2paddle_166 = paddle.full(dtype='float32', shape=[1], fill_value=2.0)
+            x2paddle_169 = paddle.full(dtype='float32', shape=[1], fill_value=9.999999747378752e-06)
+            x2paddle_164 = paddle.mean(x=x2paddle_162, axis=[-1], keepdim=True)
+            x2paddle_165 = paddle.subtract(x=x2paddle_162, y=x2paddle_164)
+            x2paddle_165 = paddle.cast(x2paddle_165, dtype='float32')
+            x2paddle_167 = paddle.pow(x=x2paddle_165, y=x2paddle_166)
+            x2paddle_168 = paddle.mean(x=x2paddle_167, axis=[-1], keepdim=True)
+            x2paddle_170 = paddle.add(x=x2paddle_168, y=x2paddle_169)
+            x2paddle_171 = paddle.sqrt(x=x2paddle_170)
+            x2paddle_172 = paddle.divide(x=x2paddle_165, y=x2paddle_171)
+            x2paddle_173 = paddle.multiply(x=x2paddle_172, y=x2paddle_ln_pre_weight)
+            x2paddle_174 = paddle.add(x=x2paddle_173, y=x2paddle_ln_pre_bias)
+            mode2:
             x2paddle_ln_pre_weight = self.x2paddle_ln_pre_weight
             x2paddle_ln_pre_bias = self.x2paddle_ln_pre_bias
             x2paddle_166 = paddle.full(dtype='float32', shape=[1], fill_value=2.0)
@@ -45,63 +61,129 @@ class LayerNormFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
+        # mode1
+        pattern = PaddleGraph()
+        pattern.add_layer(
             "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "self.create_parameter", inputs={}, outputs=[gen_name(1)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.full",
             inputs={},
             outputs=[gen_name(2)],
             shape=[1],
-            fill_value=0.5)
-        self.pattern.add_layer(
+            fill_value=2)
+        pattern.add_layer(
             "paddle.full", inputs={}, outputs=[gen_name(3)], shape=[1])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.mean",
             inputs={"x": "layernorm-input-0"},
             outputs=[gen_name(4)],
             axis=[-1],
             keep_dim=True)
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.subtract",
             inputs={"x": "layernorm-input-0",
                     "y": gen_name(4)},
             outputs=[gen_name(5)])
-        self.pattern.add_layer(
+        pattern.add_layer(
+            "paddle.cast", inputs={"x": gen_name(5)}, outputs=[gen_name(6)])
+        pattern.add_layer(
+            "paddle.pow",
+            inputs={"x": gen_name(6),
+                    "y": gen_name(2)},
+            outputs=[gen_name(7)])
+        pattern.add_layer(
+            "paddle.mean",
+            inputs={"x": gen_name(7)},
+            outputs=[gen_name(8)],
+            axis=[-1],
+            keep_dim=True)
+        pattern.add_layer(
+            "paddle.add",
+            inputs={"x": gen_name(8),
+                    "y": gen_name(3)},
+            outputs=[gen_name(9)])
+        pattern.add_layer(
+            "paddle.sqrt", inputs={"x": gen_name(9)}, outputs=[gen_name(10)])
+        pattern.add_layer(
+            "paddle.divide",
+            inputs={"x": gen_name(5),
+                    "y": gen_name(10)},
+            outputs=[gen_name(11)])
+        pattern.add_layer(
+            "paddle.multiply",
+            inputs={"x": gen_name(11),
+                    "y": gen_name(0)},
+            outputs=[gen_name(12)])
+        pattern.add_layer(
+            "paddle.add",
+            inputs={"x": gen_name(12),
+                    "y": gen_name(1)},
+            outputs=[gen_name(13)])
+        pattern.build(inputs={"input-0": "layernorm-input-0", })
+        self.patterns.append(pattern)
+
+        # mode2
+        pattern = PaddleGraph()
+        pattern.add_layer(
+            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
+        pattern.add_layer(
+            "self.create_parameter", inputs={}, outputs=[gen_name(1)])
+        pattern.add_layer(
+            "paddle.full",
+            inputs={},
+            outputs=[gen_name(2)],
+            shape=[1],
+            fill_value=0.5)
+        pattern.add_layer(
+            "paddle.full", inputs={}, outputs=[gen_name(3)], shape=[1])
+        pattern.add_layer(
+            "paddle.mean",
+            inputs={"x": "layernorm-input-0"},
+            outputs=[gen_name(4)],
+            axis=[-1],
+            keep_dim=True)
+        pattern.add_layer(
+            "paddle.subtract",
+            inputs={"x": "layernorm-input-0",
+                    "y": gen_name(4)},
+            outputs=[gen_name(5)])
+        pattern.add_layer(
             "paddle.pow",
             inputs={"x": gen_name(5),
                     "y": gen_name(2)},
             outputs=[gen_name(6)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.mean",
             inputs={"x": gen_name(6)},
             outputs=[gen_name(7)],
             axis=[-1],
             keep_dim=True)
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.add",
             inputs={"x": gen_name(7),
                     "y": gen_name(3)},
             outputs=[gen_name(8)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.sqrt", inputs={"x": gen_name(8)}, outputs=[gen_name(9)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.divide",
             inputs={"x": gen_name(5),
                     "y": gen_name(9)},
             outputs=[gen_name(10)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.multiply",
             inputs={"x": gen_name(10),
                     "y": gen_name(0)},
             outputs=[gen_name(11)])
-        self.pattern.add_layer(
+        pattern.add_layer(
             "paddle.add",
             inputs={"x": gen_name(11),
                     "y": gen_name(1)},
             outputs=[gen_name(12)])
-        self.pattern.build(inputs={"input-0": "layernorm-input-0", })
+        pattern.build(inputs={"input-0": "layernorm-input-0", })
+        self.patterns.append(pattern)
 
     def insert_new_layer(self, graph, parameters, matches):
         new_layer, new_layer_id = self.gen_new_layer(parameters, matches)
