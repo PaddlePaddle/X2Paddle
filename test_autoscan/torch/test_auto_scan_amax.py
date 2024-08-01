@@ -29,10 +29,9 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.amax(
-            inputs,
-            dim=self.config["dim"],
-            keepdim=self.config["keepdim"])
+        x = torch.amax(inputs,
+                       dim=self.config["dim"],
+                       keepdim=self.config["keepdim"])
         return x
 
 
@@ -43,24 +42,25 @@ class TestAmaxConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(min_value=1, max_value=64),
-                min_size=1, max_size=5))
-        
+            st.lists(st.integers(min_value=1, max_value=64),
+                     min_size=1,
+                     max_size=5))
+
         dim_type = draw(st.sampled_from(["tuple", "int", None]))
-        
+
         dim = None
         if dim_type == "int":
             dim = draw(
-                st.integers(
-                    min_value=-len(input_shape), max_value=len(input_shape) - 1))
+                st.integers(min_value=-len(input_shape),
+                            max_value=len(input_shape) - 1))
         elif dim_type == "tuple":
             dim = draw(
-                st.lists(
-                    st.integers(min_value=-len(input_shape), max_value=len(input_shape) - 1),
-                    min_size=1,
-                    max_size=len(input_shape),
-                    unique_by=lambda x: x + len(input_shape) if x < 0 else x))
+                st.lists(st.integers(min_value=-len(input_shape),
+                                     max_value=len(input_shape) - 1),
+                         min_size=1,
+                         max_size=len(input_shape),
+                         unique_by=lambda x: x + len(input_shape)
+                         if x < 0 else x))
 
         keepdim = draw(st.booleans())
 
