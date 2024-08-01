@@ -29,12 +29,11 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.topk(
-            inputs,
-            k=self.config["k"],
-            dim=self.config["dim"],
-            largest=self.config["largest"],
-            sorted=self.config["sorted"])
+        x = torch.topk(inputs,
+                       k=self.config["k"],
+                       dim=self.config["dim"],
+                       largest=self.config["largest"],
+                       sorted=self.config["sorted"])
         return x
 
 
@@ -43,30 +42,24 @@ class TestTopkConvert(OPConvertAutoScanTest):
     Torch API: torch.topk
     """
 
-
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(min_value=1, max_value=32),
-                min_size=1, max_size=5
-            )
-        )
-        
+            st.lists(st.integers(min_value=1, max_value=32),
+                     min_size=1,
+                     max_size=5))
+
         dim = draw(
-            st.integers(
-                min_value=-len(input_shape), max_value=len(input_shape) - 1
-            )
-        )
-        
-        k = draw(
-            st.integers(
-                min_value=1, max_value=input_shape[dim]
-            )
-        )
+            st.integers(min_value=-len(input_shape),
+                        max_value=len(input_shape) - 1))
+
+        k = draw(st.integers(min_value=1, max_value=input_shape[dim]))
 
         largest = draw(st.booleans())
-        
-        sorted_value = draw(st.booleans())
+
+        # Paddle will sort the result when using GPU.
+        sorted_value = True
+        if not torch.cuda.is_available():
+            sorted_value = draw(st.booleans())
 
         config = {
             "op_names": ["topk"],
