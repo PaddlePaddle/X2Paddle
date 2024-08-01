@@ -15,6 +15,7 @@ sess.run(tf.global_variables_initializer())
 
 input0 = sess.graph.get_tensor_by_name('input:0')
 import numpy
+
 numpy.random.seed(13)
 data0 = numpy.random.rand(2, 3, 640, 640).astype('float32')
 data0 = numpy.transpose(data0, (0, 2, 3, 1))
@@ -32,7 +33,7 @@ outputs[8] = sess.graph.get_tensor_by_name("rf/oup_2/conv_3/Conv2D:0")
 outputs[9] = sess.graph.get_tensor_by_name("rf/oup_3/score:0")
 outputs[10] = sess.graph.get_tensor_by_name("rf/oup_3/conv_2/Conv2D:0")
 outputs[11] = sess.graph.get_tensor_by_name("rf/oup_3/conv_3/Conv2D:0")
-result = sess.run(outputs, {input0:data0})
+result = sess.run(outputs, {input0: data0})
 
 for r in result:
     print(r.shape)

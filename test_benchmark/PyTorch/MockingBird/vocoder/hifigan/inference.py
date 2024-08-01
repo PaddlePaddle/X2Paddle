@@ -9,8 +9,7 @@ from vocoder.hifigan.meldataset import mel_spectrogram, MAX_WAV_VALUE, load_wav
 from vocoder.hifigan.models import Generator
 import soundfile as sf
 
-
-generator = None       # type: Generator
+generator = None  # type: Generator
 _device = None
 
 
@@ -41,9 +40,7 @@ def load_model(weights_fpath, verbose=True):
         _device = torch.device('cpu')
 
     generator = Generator(h).to(_device)
-    state_dict_g = load_checkpoint(
-        weights_fpath, _device
-    )
+    state_dict_g = load_checkpoint(weights_fpath, _device)
     generator.load_state_dict(state_dict_g['generator'])
     generator.eval()
     generator.remove_weight_norm()
@@ -67,4 +64,3 @@ def infer_waveform(mel, progress_callback=None):
     audio = audio.cpu().numpy()
 
     return audio
-

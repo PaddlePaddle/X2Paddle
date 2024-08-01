@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class ReshapeFuser(FuseBase):
+
     def __init__(self):
         super(ReshapeFuser, self).__init__()
 
@@ -33,29 +34,29 @@ class ReshapeFuser(FuseBase):
         def gen_name(id):
             return "x" + str(id)
 
-        self.pattern.add_layer(
-            "prim.int",
-            inputs={"input": "reshape-input-0"},
-            outputs=[gen_name(0)])
-        self.pattern.add_layer(
-            "prim.list",
+        self.pattern.add_layer("prim.int",
+                               inputs={"input": "reshape-input-0"},
+                               outputs=[gen_name(0)])
+        self.pattern.add_layer("prim.list",
+                               inputs={
+                                   "input0": "reshape-input-1",
+                                   "input1": "reshape-input-2",
+                                   "input2": gen_name(0)
+                               },
+                               outputs=[gen_name(1)])
+        self.pattern.add_layer("paddle.reshape",
+                               inputs={
+                                   "x": "reshape-input-3",
+                                   "shape": gen_name(1)
+                               },
+                               outputs=[gen_name(2)])
+        self.pattern.build(
             inputs={
-                "input0": "reshape-input-1",
-                "input1": "reshape-input-2",
-                "input2": gen_name(0)
-            },
-            outputs=[gen_name(1)])
-        self.pattern.add_layer(
-            "paddle.reshape",
-            inputs={"x": "reshape-input-3",
-                    "shape": gen_name(1)},
-            outputs=[gen_name(2)])
-        self.pattern.build(inputs={
-            "input-0": "reshape-input-0",
-            "input-1": "reshape-input-1",
-            "input-2": "reshape-input-2",
-            "input-3": "reshape-input-3",
-        })
+                "input-0": "reshape-input-0",
+                "input-1": "reshape-input-1",
+                "input-2": "reshape-input-2",
+                "input-3": "reshape-input-3",
+            })
 
     def insert_new_layer(self, graph, parameters, matches):
         self.update_layer(matches)

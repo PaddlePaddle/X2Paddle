@@ -30,7 +30,7 @@ paddle.nn.BatchNorm3D(num_features,
 ### 功能差异
 
 #### 输入格式
-***PyTorch***：只支持`NCDHW`的输入。  
+***PyTorch***：只支持`NCDHW`的输入。
 ***PaddlePaddle***：支持`NCDHW`和`NDHWC`两种格式的输入（通过`data_format`设置）。
 
 #### 反射变换设置

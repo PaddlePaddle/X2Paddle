@@ -17,6 +17,7 @@ from x2paddle.core.program import PaddleGraph
 
 
 class PatternMatcher(object):
+
     def __init__(self, pattern):
         self.pattern = pattern
         # matches的每个match是按照拓扑排序组成layer的dict
@@ -45,8 +46,8 @@ class PatternMatcher(object):
             subgraph_id2layers = dict()
             graph_layers = dict(list(graph.layers.items())[start_index:])
             for layer_id, layer in graph_layers.items():
-                pattern_layer = pattern.layers[list(pattern.layers.keys())[
-                    pattern_index]]
+                pattern_layer = pattern.layers[list(
+                    pattern.layers.keys())[pattern_index]]
                 if layer.kernel == pattern_layer.kernel:
                     subgraph_id2layers[layer_id] = layer
                     pattern_layer_id = pattern_layer.id
@@ -144,11 +145,10 @@ class PatternMatcher(object):
                                 continue
                         is_subblock_match = True
                         for i, b in enumerate(pattern_layer.blocks):
-                            match_info = get_subgraph(
-                                pattern_layer.blocks[i],
-                                layer.blocks[i],
-                                0,
-                                is_subblock=True)
+                            match_info = get_subgraph(pattern_layer.blocks[i],
+                                                      layer.blocks[i],
+                                                      0,
+                                                      is_subblock=True)
                             if match_info is not False:
                                 subgraph_id2layers.update(match_info)
                             else:
@@ -158,10 +158,10 @@ class PatternMatcher(object):
                             if pattern_index == 0 or is_subblock:
                                 return False
                             else:
-                                index = list(subgraph_id2layers.keys()).index(
-                                    layer_id)
-                                for key in list(subgraph_id2layers.keys())[
-                                        index:]:
+                                index = list(
+                                    subgraph_id2layers.keys()).index(layer_id)
+                                for key in list(
+                                        subgraph_id2layers.keys())[index:]:
                                     subgraph_id2layers.pop(key)
                                 continue
                     pattern_index += 1
@@ -207,8 +207,8 @@ class PatternMatcher(object):
                     if len(pattern.edges_in[pattern_layer_id]) != \
                             len(graph.edges_in[layer_id]):
                         return False
-                    for i, pattern_layer_id_in in enumerate(pattern.edges_in[
-                            pattern_layer_id]):
+                    for i, pattern_layer_id_in in enumerate(
+                            pattern.edges_in[pattern_layer_id]):
                         if pattern_layer_id_in == -1:
                             continue
                         if pattern_layer_id_in in pattern_ids:
@@ -222,8 +222,8 @@ class PatternMatcher(object):
                     if len(pattern.edges_out[pattern_layer_id]) != \
                             len(graph.edges_out[layer_id]):
                         return False
-                    for i, pattern_layer_id_out in enumerate(pattern.edges_out[
-                            pattern_layer_id]):
+                    for i, pattern_layer_id_out in enumerate(
+                            pattern.edges_out[pattern_layer_id]):
                         if pattern_layer_id_out in pattern_ids:
                             new_layer_id_out = graph.edges_out[layer_id][i]
                             if new_layer_id_out in subgraph_id2layers:
@@ -322,6 +322,7 @@ def get_subgraph(prefix_layer_id, suffix_layer_id, graph):
 
 
 class FuseBase(object):
+
     def __init__(self):
         self.pattern = PaddleGraph()
         self.patterns = list()
@@ -347,7 +348,11 @@ class FuseBase(object):
             self.matches = list()
             for pattern in self.patterns:
                 pattern_matcher = PatternMatcher(pattern)
-                self.matches.extend(pattern_matcher.operate(graph, match_kind))
+                match = pattern_matcher.operate(graph, match_kind)
+                # Return if one of the patterns matches
+                if len(match) > 0:
+                    self.matches.extend(match)
+                    return
         else:
             pattern_matcher = PatternMatcher(self.pattern)
             self.matches = pattern_matcher.operate(graph, match_kind)

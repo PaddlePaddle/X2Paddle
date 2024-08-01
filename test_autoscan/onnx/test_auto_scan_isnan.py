@@ -28,13 +28,15 @@ class TestIsNaNConcert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=20, max_value=30), min_size=3, max_size=5))
+            st.lists(st.integers(min_value=20, max_value=30),
+                     min_size=3,
+                     max_size=5))
         input_dtype = draw(st.sampled_from(["float32"]))
 
         config = {
-            "op_names": ["IsNaN", ],
+            "op_names": [
+                "IsNaN",
+            ],
             "test_data_shapes": [input_shape],
             "test_data_types": [input_dtype],
             "inputs_shape": [input_shape],

@@ -15,10 +15,10 @@ torch.var_mean(input, dim, keepdim=False, unbiased=True)
 import paddle
 
 def var_mean(input, dim=None, unbiased=True, keepdim=False):
-    var = paddle.var(input, axis=dim, 
+    var = paddle.var(input, axis=dim,
                      unbiased=unbiased, keepdim=keepdim)
-    mean = paddle.mean(input, 
-                       axis=dim, 
+    mean = paddle.mean(input,
+                       axis=dim,
                        keepdim=keepdim)
     return var, mean
 ```

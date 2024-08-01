@@ -74,11 +74,10 @@ class HierarchicalTree(Tree):
                             if len1 > len2:
                                 min_scope_name = scope_name
                     if min_scope_name == "":
-                        self.create_node(
-                            tag=layer.id,
-                            identifier="no_scope_" + layer.id,
-                            parent=self.pd_graph.name,
-                            data=layer)
+                        self.create_node(tag=layer.id,
+                                         identifier="no_scope_" + layer.id,
+                                         parent=self.pd_graph.name,
+                                         data=layer)
                         return
                     layer.scope_name = min_scope_name
                     scope_name = min_scope_name
@@ -92,11 +91,10 @@ class HierarchicalTree(Tree):
                             break
                     layer.scope_name = scope_name
             else:
-                self.create_node(
-                    tag=layer.id,
-                    identifier="no_scope_" + layer.id,
-                    parent=self.pd_graph.name,
-                    data=layer)
+                self.create_node(tag=layer.id,
+                                 identifier="no_scope_" + layer.id,
+                                 parent=self.pd_graph.name,
+                                 data=layer)
                 return
         scopes = scope_name.split(SEPARATOR_IN_SCOPE)
         for idx, scope in enumerate(scopes):
@@ -116,11 +114,10 @@ class HierarchicalTree(Tree):
                             self.identifier_idx[identifier] += 1
                         identifier_name = identifier + SEPARATOR_IN_SCOPE + str(
                             self.identifier_idx[identifier])
-                        self.create_node(
-                            tag=scopes[idx],
-                            identifier=identifier_name,
-                            parent=identifier,
-                            data=data)
+                        self.create_node(tag=scopes[idx],
+                                         identifier=identifier_name,
+                                         parent=identifier,
+                                         data=data)
                         data.scope_name = identifier_name
                         continue
                     else:
@@ -132,28 +129,27 @@ class HierarchicalTree(Tree):
                             self.identifier_idx[identifier] = 0
                         else:
                             self.identifier_idx[identifier] += 1
-                        self.create_node(
-                            tag=scopes[idx],
-                            identifier=identifier + SEPARATOR_IN_SCOPE +
-                            str(self.identifier_idx[identifier]),
-                            parent=identifier,
-                            data=data)
+                        self.create_node(tag=scopes[idx],
+                                         identifier=identifier +
+                                         SEPARATOR_IN_SCOPE +
+                                         str(self.identifier_idx[identifier]),
+                                         parent=identifier,
+                                         data=data)
                         self.identifier_idx[identifier] += 1
                         data = layer
-                        self.create_node(
-                            tag=scopes[idx],
-                            identifier=identifier + SEPARATOR_IN_SCOPE +
-                            str(self.identifier_idx[identifier]),
-                            parent=identifier,
-                            data=data)
+                        self.create_node(tag=scopes[idx],
+                                         identifier=identifier +
+                                         SEPARATOR_IN_SCOPE +
+                                         str(self.identifier_idx[identifier]),
+                                         parent=identifier,
+                                         data=data)
                         continue
             if idx == 0 and not self.contains(identifier):
                 data = layer if idx == len(scopes) - 1 else None
-                self.create_node(
-                    tag=scopes[idx],
-                    identifier=identifier,
-                    parent=self.pd_graph.name,
-                    data=data)
+                self.create_node(tag=scopes[idx],
+                                 identifier=identifier,
+                                 parent=self.pd_graph.name,
+                                 data=data)
             else:
                 if idx == len(scopes) - 1:
                     if parent == "":
@@ -178,11 +174,10 @@ class HierarchicalTree(Tree):
                         identifier = prefix + "_{}".format(identifier_ids[-1] +
                                                            1)
                 data = layer if idx == len(scopes) - 1 else None
-                self.create_node(
-                    tag=scopes[idx],
-                    identifier=identifier,
-                    parent=parent,
-                    data=data)
+                self.create_node(tag=scopes[idx],
+                                 identifier=identifier,
+                                 parent=parent,
+                                 data=data)
 
     def update_hierarchical_order(self):
         """ 更新层次排序，使用一个字典存储该信息，
@@ -239,11 +234,10 @@ class HierarchicalTree(Tree):
             module_name = module_name[0].upper() + module_name[1:]
         if module_name in self.module_name2count:
             module_name = module_name + "_0"
-        code_str = gen_layer_code(
-            self.pd_graph,
-            sub_layers,
-            module_name,
-            different_attrs=diff_attrs_column)
+        code_str = gen_layer_code(self.pd_graph,
+                                  sub_layers,
+                                  module_name,
+                                  different_attrs=diff_attrs_column)
 
         self.codes.append(code_str)
         for sub_layers in sub_layers_list:
@@ -259,9 +253,8 @@ class HierarchicalTree(Tree):
                 mn = module_name.lower() + "__"
             else:
                 mn = module_name.lower()
-            outputs = [
-                "{}/{}".format(mn, self.module_name2count[module_name])
-            ] + outputs
+            outputs = ["{}/{}".format(mn, self.module_name2count[module_name])
+                       ] + outputs
             node_name = get_node_name(sub_layers)
             diff_attrs = dict()
             for column in diff_attrs_column:
@@ -270,14 +263,13 @@ class HierarchicalTree(Tree):
             node_name_seg = node_name.split(SEPARATOR_IN_SCOPE)
             node_name_seg[-1] = module_name.lower()
             new_node_name = SEPARATOR_IN_SCOPE.join(node_name_seg)
-            new_layer = PaddleLayer(
-                id=list(sub_layers.keys())[-1],
-                kernel="module",
-                inputs=inputs_dict,
-                outputs=outputs,
-                scope_name=new_node_name,
-                module=module_name,
-                **diff_attrs)
+            new_layer = PaddleLayer(id=list(sub_layers.keys())[-1],
+                                    kernel="module",
+                                    inputs=inputs_dict,
+                                    outputs=outputs,
+                                    scope_name=new_node_name,
+                                    module=module_name,
+                                    **diff_attrs)
 
             _, nn_param_nodes, _ = rename_layers(sub_layers, self.param_tree)
             param_node = PamareterNode(old_name=outputs[0])
@@ -333,8 +325,8 @@ class HierarchicalTree(Tree):
                     sub_layers = dict()
                     sub_identifiers = dict()
                     for successor_name in node_inst.successors(self.identifier):
-                        sub_layers[self[successor_name].data.id] = self[
-                            successor_name].data
+                        sub_layers[self[successor_name].data.
+                                   id] = self[successor_name].data
                         sub_identifiers[self[successor_name].data.id] = self[
                             successor_name].data.scope_name.split("/")[-1]
                     node_name2sub_layers[node_name] = sub_layers
@@ -366,10 +358,12 @@ class HierarchicalTree(Tree):
                                         len(module_name2sub_layers[module_name][0][list(module_name2sub_layers[module_name][0].keys())[-1]].outputs):
                                     break
                             if module_name not in module_name2sub_layers:
-                                module_name2sub_layers[
-                                    module_name] = [sub_layers]
-                                module_name2sub_identifiers[
-                                    module_name] = [sub_identifiers]
+                                module_name2sub_layers[module_name] = [
+                                    sub_layers
+                                ]
+                                module_name2sub_identifiers[module_name] = [
+                                    sub_identifiers
+                                ]
                             else:
                                 module_name2sub_layers[module_name].append(
                                     sub_layers)
@@ -382,8 +376,9 @@ class HierarchicalTree(Tree):
                                 sub_identifiers)
                     else:
                         module_name2sub_layers[module_name] = [sub_layers]
-                        module_name2sub_identifiers[
-                            module_name] = [sub_identifiers]
+                        module_name2sub_identifiers[module_name] = [
+                            sub_identifiers
+                        ]
             module_names = list(module_name2sub_layers.keys())
             for module_name in module_names:
                 sequentials2attrs_table = self.find_subgraph_diff(
@@ -406,8 +401,8 @@ class HierarchicalTree(Tree):
         """ 更新参数。
         """
         self.param_tree.traverse()
-        full_old_name_list = copy.deepcopy(
-            list(self.pd_graph.parameters.keys()))
+        full_old_name_list = copy.deepcopy(list(
+            self.pd_graph.parameters.keys()))
         for old_name, new_name in self.param_tree.old2new.items():
             for full_old_name in full_old_name_list:
                 if full_old_name.startswith("{}.".format(old_name)):
@@ -421,6 +416,7 @@ class HierarchicalTree(Tree):
                     self.pd_graph.parameters[full_new_name] = params
 
     def save_source_files(self, save_dir):
+
         def gen_main_code():
             input_data_name = ', '.join(self.pd_graph.inputs)
             run_func_list = list()
@@ -428,8 +424,8 @@ class HierarchicalTree(Tree):
             run_func_list.append("    # There are {} inputs.".format(
                 len(self.pd_graph.inputs_info)))
             for k, v in self.pd_graph.inputs_info.items():
-                run_func_list.append("    # {}: shape-{}, type-{}.".format(k, v[
-                    0], v[1]))
+                run_func_list.append("    # {}: shape-{}, type-{}.".format(
+                    k, v[0], v[1]))
             run_func_list.extend([
                 "    paddle.disable_static()",
                 "    params = paddle.load('{}')".format(

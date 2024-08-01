@@ -18,6 +18,7 @@ from x2paddle.optimizer.elimination import *
 
 
 class GraphOptimizer(object):
+
     def __init__(self, source_frame, jit_type="trace"):
         if source_frame == "pytorch":
             if jit_type == "trace":

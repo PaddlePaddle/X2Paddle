@@ -5,7 +5,12 @@ from kornia.geometry.transform import rotate
 
 
 class LearnableSpatialTransformWrapper(nn.Module):
-    def __init__(self, impl, pad_coef=0.5, angle_init_range=80, train_angle=True):
+
+    def __init__(self,
+                 impl,
+                 pad_coef=0.5,
+                 angle_init_range=80,
+                 train_angle=True):
         super().__init__()
         self.impl = impl
         self.angle = torch.rand(1) * angle_init_range
@@ -19,7 +24,9 @@ class LearnableSpatialTransformWrapper(nn.Module):
         elif isinstance(x, tuple):
             x_trans = tuple(self.transform(elem) for elem in x)
             y_trans = self.impl(x_trans)
-            return tuple(self.inverse_transform(elem, orig_x) for elem, orig_x in zip(y_trans, x))
+            return tuple(
+                self.inverse_transform(elem, orig_x)
+                for elem, orig_x in zip(y_trans, x))
         else:
             raise ValueError(f'Unexpected input type {type(x)}')
 
@@ -34,16 +41,18 @@ class LearnableSpatialTransformWrapper(nn.Module):
         height, width = orig_x.shape[2:]
         pad_h, pad_w = int(height * self.pad_coef), int(width * self.pad_coef)
 
-        y_padded = rotate(y_padded_rotated, angle=-self.angle.to(y_padded_rotated))
+        y_padded = rotate(y_padded_rotated,
+                          angle=-self.angle.to(y_padded_rotated))
         y_height, y_width = y_padded.shape[2:]
-        y = y_padded[:, :, pad_h : y_height - pad_h, pad_w : y_width - pad_w]
+        y = y_padded[:, :, pad_h:y_height - pad_h, pad_w:y_width - pad_w]
         return y
 
 
 if __name__ == '__main__':
     layer = LearnableSpatialTransformWrapper(nn.Identity())
-    x = torch.arange(2* 3 * 15 * 15).view(2, 3, 15, 15).float()
+    x = torch.arange(2 * 3 * 15 * 15).view(2, 3, 15, 15).float()
     y = layer(x)
     assert x.shape == y.shape
-    assert torch.allclose(x[:, :, 1:, 1:][:, :, :-1, :-1], y[:, :, 1:, 1:][:, :, :-1, :-1])
+    assert torch.allclose(x[:, :, 1:, 1:][:, :, :-1, :-1],
+                          y[:, :, 1:, 1:][:, :, :-1, :-1])
     print('all ok')

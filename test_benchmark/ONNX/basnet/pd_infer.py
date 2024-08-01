@@ -9,14 +9,15 @@ f.write("======BASNET: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    
+
     # test Dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load("../dataset/basnet/input_0.npy")
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
     result = np.array(result)
     with open("../dataset/basnet/result.pkl", "rb") as fr:

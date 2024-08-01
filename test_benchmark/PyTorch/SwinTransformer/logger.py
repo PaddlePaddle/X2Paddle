@@ -33,9 +33,12 @@ def create_logger(output_dir, dist_rank=0, name=''):
         logger.addHandler(console_handler)
 
     # create file handlers
-    file_handler = logging.FileHandler(os.path.join(output_dir, f'log_rank{dist_rank}.txt'), mode='a')
+    file_handler = logging.FileHandler(os.path.join(output_dir,
+                                                    f'log_rank{dist_rank}.txt'),
+                                       mode='a')
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(fmt=fmt, datefmt='%Y-%m-%d %H:%M:%S'))
+    file_handler.setFormatter(
+        logging.Formatter(fmt=fmt, datefmt='%Y-%m-%d %H:%M:%S'))
     logger.addHandler(file_handler)
 
     return logger

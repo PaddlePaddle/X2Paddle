@@ -35,7 +35,7 @@ c_trg_tmp = paddle.zeros_like(c_trg)
 paddle.assign(c_trg, c_trg_tmp)
 c_trg_tmp = c_trg_tmp.cast("bool")
 c_trg_tmp[:, i] = c_trg[:, i] == 0
-c_trg = c_trg_tmp 
+c_trg = c_trg_tmp
 ```
 
 4. 如若转换后的运行代码的入口为sh脚本文件，且其中有预训练模型路径，应将其中的预训练模型的路径字符串中的“.pth”、“.pt”、“.ckpt”替换为“.pdiparams”。

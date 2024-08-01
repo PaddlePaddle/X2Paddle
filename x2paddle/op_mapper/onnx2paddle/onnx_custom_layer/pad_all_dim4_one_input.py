@@ -17,6 +17,7 @@ from x2paddle.core.util import *
 
 
 class PadAllDim4WithOneInput(object):
+
     def __init__(self, pad, value, mode):
         self.layer_attrs = {}
         self.layer_attrs['mode'] = mode

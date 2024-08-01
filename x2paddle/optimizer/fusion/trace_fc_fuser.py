@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class TraceFcFuser(FuseBase):
+
     def __init__(self):
         self.linear_index = 0
         super(TraceFcFuser, self).__init__()
@@ -44,47 +45,52 @@ class TraceFcFuser(FuseBase):
             return "x" + str(id)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            "paddle.transpose",
-            inputs={"x": gen_name(0)},
-            outputs=[gen_name(1)],
-            perm=[1, 0])
-        pattern.add_layer(
-            "paddle.matmul",
-            inputs={"x": "fc-input-0",
-                    "y": gen_name(1)},
-            outputs=[gen_name(2)])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(3)])
-        pattern.add_layer(
-            "prim.add_",
-            inputs={"x": gen_name(2),
-                    "y": gen_name(3)},
-            outputs=[gen_name(4)],
-            alpha=1)
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("paddle.transpose",
+                          inputs={"x": gen_name(0)},
+                          outputs=[gen_name(1)],
+                          perm=[1, 0])
+        pattern.add_layer("paddle.matmul",
+                          inputs={
+                              "x": "fc-input-0",
+                              "y": gen_name(1)
+                          },
+                          outputs=[gen_name(2)])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(3)])
+        pattern.add_layer("prim.add_",
+                          inputs={
+                              "x": gen_name(2),
+                              "y": gen_name(3)
+                          },
+                          outputs=[gen_name(4)],
+                          alpha=1)
         pattern.build(inputs={"input-0": "fc-input-0"})
         self.patterns.append(pattern)
 
         pattern = PaddleGraph()
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(0)])
-        pattern.add_layer(
-            "paddle.transpose",
-            inputs={"x": gen_name(0)},
-            outputs=[gen_name(1)],
-            perm=[1, 0])
-        pattern.add_layer(
-            "self.create_parameter", inputs={}, outputs=[gen_name(2)])
-        pattern.add_layer(
-            "paddle.addmm",
-            inputs={"input": gen_name(2),
-                    "x": "fc-input-0",
-                    "y": gen_name(1)},
-            outputs=[gen_name(4)],
-            alpha=1,
-            beta=1)
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(0)])
+        pattern.add_layer("paddle.transpose",
+                          inputs={"x": gen_name(0)},
+                          outputs=[gen_name(1)],
+                          perm=[1, 0])
+        pattern.add_layer("self.create_parameter",
+                          inputs={},
+                          outputs=[gen_name(2)])
+        pattern.add_layer("paddle.addmm",
+                          inputs={
+                              "input": gen_name(2),
+                              "x": "fc-input-0",
+                              "y": gen_name(1)
+                          },
+                          outputs=[gen_name(4)],
+                          alpha=1,
+                          beta=1)
         pattern.build(inputs={"input-0": "fc-input-0"})
         self.patterns.append(pattern)
 
@@ -111,7 +117,7 @@ class TraceFcFuser(FuseBase):
         attrs = dict()
         attrs["in_features"] = parameters[weight_name].shape[1]
         attrs["out_features"] = parameters[weight_name].shape[0]
-        linear_name = "linear{}".format(self.linear_index)
+        linear_name = "linear_{}".format(weight_name.replace("_weight", ""))
         self.linear_index += 1
         weight_numpy = parameters[weight_name]
         parameters["{}.weight".format(linear_name)] = weight_numpy.transpose(
@@ -122,11 +128,10 @@ class TraceFcFuser(FuseBase):
             bias_numpy = np.squeeze(bias_numpy)
         parameters["{}.bias".format(linear_name)] = bias_numpy
         self.rm_params.add(bias_name)
-        new_layer = PaddleLayer(
-            layers_id[0],
-            "paddle.nn.Linear",
-            inputs={"input": input_name},
-            outputs=[linear_name, output_name],
-            scope_name=scope_name,
-            **attrs)
+        new_layer = PaddleLayer(layers_id[0],
+                                "paddle.nn.Linear",
+                                inputs={"input": input_name},
+                                outputs=[linear_name, output_name],
+                                scope_name=scope_name,
+                                **attrs)
         return new_layer

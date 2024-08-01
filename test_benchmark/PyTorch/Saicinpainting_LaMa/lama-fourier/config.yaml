@@ -40,7 +40,7 @@ visualizer:
   - discr_output_real
   kind: directory
   outdir: dummy_lol
-  
+
 location:
   data_root_dir: /group-volume/User-Driven-Content-Generation/datasets/inpainting_data_root_final
   out_root_dir: /group-volume/User-Driven-Content-Generation/${env:USER}/inpainting/experiments

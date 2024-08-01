@@ -58,8 +58,8 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
             logging.error("Output has diff! max diff: {}".format(np.amax(diff)))
         if result.dtype != expect.dtype:
             logging.error(
-                "Different output data types! res type is: {}, and expect type is: {}".
-                format(result.dtype, expect.dtype))
+                "Different output data types! res type is: {}, and expect type is: {}"
+                .format(result.dtype, expect.dtype))
         assert res
         assert result.shape == expect.shape, "result.shape: {} != expect.shape: {}".format(
             result.shape, expect.shape)
@@ -180,12 +180,11 @@ class ONNXConverter(object):
                                  self.name + '_' + str(ver) + '.onnx')
         paddle_path = os.path.join(self.pwd, self.name,
                                    self.name + '_' + str(ver) + '_paddle')
-        onnx2paddle(
-            onnx_path,
-            paddle_path,
-            convert_to_lite=False,
-            enable_onnx_checker=self.enable_onnx_checker,
-            disable_feedback=True)
+        onnx2paddle(onnx_path,
+                    paddle_path,
+                    convert_to_lite=False,
+                    enable_onnx_checker=self.enable_onnx_checker,
+                    disable_feedback=True)
 
     def _mk_paddle_res(self, ver):
         """
@@ -245,8 +244,8 @@ class ONNXConverter(object):
                 output_tensor = predictor.get_output_handle(output_name)
                 result.append(output_tensor.copy_to_cpu())
         shutil.rmtree(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
-                         '_paddle/'))
+            os.path.join(self.pwd, self.name,
+                         self.name + '_' + str(ver) + '_paddle/'))
         # get paddle outputs
         if isinstance(result, (tuple, list)):
             if isinstance(result[0], np.ndarray):
@@ -265,8 +264,8 @@ class ONNXConverter(object):
         make onnx res
         """
         sess = InferenceSession(
-            os.path.join(self.pwd, self.name, self.name + '_' + str(ver) +
-                         '.onnx'))
+            os.path.join(self.pwd, self.name,
+                         self.name + '_' + str(ver) + '.onnx'))
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs
 
@@ -274,9 +273,10 @@ class ONNXConverter(object):
         graph_inputs = list()
         for i in range(len(self.inputs_name)):
             graph_inputs.append(
-                helper.make_tensor_value_info(self.inputs_name[
-                    i], DTYPE_ONNX_STR_MAP[self.inputs_dtype[i]],
-                                              self.inputs_shape[i]))
+                helper.make_tensor_value_info(
+                    self.inputs_name[i],
+                    DTYPE_ONNX_STR_MAP[self.inputs_dtype[i]],
+                    self.inputs_shape[i]))
 
         return graph_inputs
 
@@ -295,7 +295,8 @@ class ONNXConverter(object):
             self.op_type,
             inputs=self.inputs_name,
             outputs=self.outputs_name,
-            **self.attrs, )
+            **self.attrs,
+        )
         graph_inputs = self.set_onnx_inputs()
         graph_outputs = self.set_onnx_outputs()
         graph = helper.make_graph(
@@ -305,12 +306,14 @@ class ONNXConverter(object):
             graph_outputs,  # graph outputs
         )
         opset_imports = [helper.make_opsetid("", ver)]
-        model = helper.make_model(
-            graph, producer_name='onnx-example', opset_imports=opset_imports)
+        model = helper.make_model(graph,
+                                  producer_name='onnx-example',
+                                  opset_imports=opset_imports)
         model = onnx.shape_inference.infer_shapes(model)
-        onnx.save(model,
-                  os.path.join(self.pwd, self.name,
-                               self.name + '_' + str(ver) + '.onnx'))
+        onnx.save(
+            model,
+            os.path.join(self.pwd, self.name,
+                         self.name + '_' + str(ver) + '.onnx'))
         if self.enable_onnx_checker:
             onnx.checker.check_model(model)
 
@@ -332,8 +335,7 @@ class ONNXConverter(object):
                 self._onnx_to_paddle(ver=v)
                 onnx_res[str(v)] = self._mk_onnx_res(ver=v)
                 paddle_res[str(v)] = self._mk_paddle_res(ver=v)
-                compare(
-                    onnx_res[str(v)],
-                    paddle_res[str(v)],
-                    delta=self.delta,
-                    rtol=self.rtol)
+                compare(onnx_res[str(v)],
+                        paddle_res[str(v)],
+                        delta=self.delta,
+                        rtol=self.rtol)

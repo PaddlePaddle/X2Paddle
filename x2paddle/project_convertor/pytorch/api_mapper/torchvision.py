@@ -16,6 +16,7 @@ from .utils import *
 
 
 class ImageFolderMapper(Mapper):
+
     def __init__(self,
                  func_name,
                  pytorch_api_name,

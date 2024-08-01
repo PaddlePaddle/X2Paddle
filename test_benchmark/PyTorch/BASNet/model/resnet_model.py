@@ -21,10 +21,16 @@ import torchvision
 #     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
 # }
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(in_planes,
+                     out_planes,
+                     kernel_size=3,
+                     stride=stride,
+                     padding=1,
+                     bias=False)
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -57,13 +63,14 @@ class BasicBlock(nn.Module):
 
         return out
 
+
 class BasicBlockDe(nn.Module):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlockDe, self).__init__()
 
-        self.convRes = conv3x3(inplanes,planes,stride)
+        self.convRes = conv3x3(inplanes, planes, stride)
         self.bnRes = nn.BatchNorm2d(planes)
         self.reluRes = nn.ReLU(inplace=True)
 
@@ -103,8 +110,12 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(planes,
+                               planes,
+                               kernel_size=3,
+                               stride=stride,
+                               padding=1,
+                               bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)

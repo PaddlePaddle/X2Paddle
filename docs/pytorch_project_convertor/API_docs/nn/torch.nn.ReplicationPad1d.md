@@ -11,15 +11,15 @@ paddle.nn.Pad1D(padding, mode='constant', value=0.0, data_format='NCL', name=Non
 ### 功能差异
 
 #### 使用方式
-***PyTorch***：只支持`replicate`方式的Pad方式。  
+***PyTorch***：只支持`replicate`方式的Pad方式。
 ***PaddlePaddle***：支持`constant`、`reflect`、`replicate`、`circular`四种格式的输入（通过`mode`设置）。
 
 #### 输入格式
-***PyTorch***：只支持`NCL`的输入。  
+***PyTorch***：只支持`NCL`的输入。
 ***PaddlePaddle***：支持`NCL`和`NLC`两种格式的输入（通过`data_format`设置）。
 
 #### padding的设置
-***PyTorch***：padding参数的类型只能为int或tuple。  
+***PyTorch***：padding参数的类型只能为int或tuple。
 ***PaddlePaddle***：padding参数的类型只能为Tensor或list。
 
 

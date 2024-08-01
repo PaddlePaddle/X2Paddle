@@ -1,16 +1,15 @@
 import torch
 import numpy as np
 from x2paddle.convert import pytorch2paddle
-from model_v3 import mobilenet_v3_large,mobilenet_v3_small
-
+from model_v3 import mobilenet_v3_large, mobilenet_v3_small
 
 #配置
 n_classes = 3
 modelFile = '../dataset/mobilenetv3/MobileNetV3_large.pth'
-torch_model = mobilenet_v3_large(num_classes=n_classes) #模型结构
+torch_model = mobilenet_v3_large(num_classes=n_classes)  #模型结构
 #加载模型
 checkpoint = torch.load(modelFile, map_location='cuda:0')
-torch_model.load_state_dict(checkpoint)#加载预训练参数
+torch_model.load_state_dict(checkpoint)  #加载预训练参数
 # 设置为eval模式
 torch_model.eval()
 
@@ -21,16 +20,18 @@ result = torch_model(torch.tensor(input_data))
 
 # 进行转换
 from x2paddle.convert import pytorch2paddle
-pytorch2paddle(torch_model,
-               save_dir="pd_model",
-               jit_type="trace",
-               input_examples=[torch.tensor(input_data)],
-               disable_feedback=True,
-            #    convert_to_lite=True,
-            #    lite_valid_places="arm",
-            #    lite_model_type="naive_buffer"
-               )
-               
+
+pytorch2paddle(
+    torch_model,
+    save_dir="pd_model",
+    jit_type="trace",
+    input_examples=[torch.tensor(input_data)],
+    disable_feedback=True,
+    #    convert_to_lite=True,
+    #    lite_valid_places="arm",
+    #    lite_model_type="naive_buffer"
+)
+
 # module (torch.nn.Module): PyTorch的Module
 # save_dir (str): 转换后模型保存路径
 # jit_type (str): 转换方式。目前有两种:trace和script,默认为trace

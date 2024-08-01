@@ -22,4 +22,4 @@ paddle.to_tensor(data,
 | ------------- | ------------ | ------------------------------------------------------ |
 | device        | place            | 表示Tensor存放位置。                   |
 | requires_grad | stop_gradient    | PyTorch表示是否不阻断梯度传导，PaddlePaddle表示是否阻断梯度传导。 |
-| pin_memeory   | -            | 表示是否使用锁页内存，PaddlePaddle无此参数。           |  
+| pin_memeory   | -            | 表示是否使用锁页内存，PaddlePaddle无此参数。           |

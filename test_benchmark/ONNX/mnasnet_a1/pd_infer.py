@@ -3,7 +3,6 @@ import paddle
 import numpy as np
 import sys
 
-
 f = open('result.txt', 'w')
 f.write("======mNasNet: \n")
 try:
@@ -11,12 +10,13 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                            executor=exe, 
-                                                            model_filename="model.pdmodel",
-                                                            params_filename="model.pdiparams")
+    [prog, inputs, outputs] = fluid.io.load_inference_model(
+        dirname="pd_model_dygraph/inference_model/",
+        executor=exe,
+        model_filename="model.pdmodel",
+        params_filename="model.pdiparams")
     data = np.load('../dataset/mnasnet_a1/input_0.npy')
-    result = exe.run(prog, feed={inputs[0]:data}, fetch_list=outputs)
+    result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 
     onnx_result = np.load('../dataset/mnasnet_a1/result.npy')
     diff = result[0] - onnx_result

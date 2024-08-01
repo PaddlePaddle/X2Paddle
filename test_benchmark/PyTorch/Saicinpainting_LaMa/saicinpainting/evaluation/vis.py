@@ -25,11 +25,12 @@ def save_item_for_vis(item, out_file):
 
 
 def save_mask_for_sidebyside(item, out_file):
-    mask = item['mask']# > 0.5
+    mask = item['mask']  # > 0.5
     if mask.ndim == 3:
         mask = mask[0]
     mask = np.clip(mask * 255, 0, 255).astype('uint8')
     io.imsave(out_file, mask)
+
 
 def save_img_for_sidebyside(item, out_file):
     img = np.transpose(item['image'], (1, 2, 0))

@@ -2,9 +2,9 @@
 1. 去除TensorBoard相关的操作。
 
 2. 将PyTorch中Tensor逐位逻辑与、或、异或运算操作符替换为对应的API的操作：
-> | 替换为 torch.bitwise_or  
-> & 替换为 torch.bitwise_and  
-> ^ 替换为 torch.bitwise_xor  
+> | 替换为 torch.bitwise_or
+> & 替换为 torch.bitwise_and
+> ^ 替换为 torch.bitwise_xor
 
 ``` python
 # 原始代码：

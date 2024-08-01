@@ -24,11 +24,11 @@ paddle.save(obj, path, pickle_protocol=2)
 ### 功能差异
 
 #### 存储类型
-***PyTorch***：可存储到文件或者内存中的写缓冲区(例如`io.BytesIO`、`io.StringIO`)。  
+***PyTorch***：可存储到文件或者内存中的写缓冲区(例如`io.BytesIO`、`io.StringIO`)。
 ***PaddlePaddle***：只能存储到文件中。
 
 #### 存储内容
-***PyTorch***：可以存储`torch.Tensor`、`torch.nn.Module`、优化器等多个类型的数据。  
+***PyTorch***：可以存储`torch.Tensor`、`torch.nn.Module`、优化器等多个类型的数据。
 ***PaddlePaddle***：只能存储`paddle.nn.Layer`、优化器这两个类型的数据。
 
 

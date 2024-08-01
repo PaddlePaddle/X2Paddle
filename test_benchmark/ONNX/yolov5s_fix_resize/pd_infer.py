@@ -12,16 +12,16 @@ paddle.enable_static()
 exe = paddle.static.Executor(paddle.CPUPlace())
 
 # test dygraph
-[prog, inputs, outputs] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/", 
-                                                        executor=exe, 
-                                                        model_filename="model.pdmodel",
-                                                        params_filename="model.pdiparams")
+[prog, inputs, outputs
+ ] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/",
+                                   executor=exe,
+                                   model_filename="model.pdmodel",
+                                   params_filename="model.pdiparams")
 # data = np.load('onnx_inputs.npy',allow_pickle=True)
 with open("../dataset/yolov5s_fix_resize/onnx_inputs.pkl", "rb") as fr:
     data = pickle.load(fr)
     # print(data)
-result = exe.run(prog, feed={inputs[0]:data["images"]}, fetch_list=outputs)
-
+result = exe.run(prog, feed={inputs[0]: data["images"]}, fetch_list=outputs)
 
 # paddle.disable_static()
 # from pd_model_dygraph.x2paddle_code import main
@@ -39,8 +39,6 @@ max_abs_diff = np.fabs(diff).max()
 if max_abs_diff < 1e-05:
     f.write("Dygraph Successed\n")
 
-
-
 else:
     relative_diff = max_abs_diff / np.fabs(onnx_result).max()
     print(relative_diff)
@@ -48,5 +46,3 @@ else:
         f.write("Dygraph Successed\n")
     else:
         f.write("!!!!!Dygraph Failed\n")
-
-    

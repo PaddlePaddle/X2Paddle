@@ -23,9 +23,10 @@ def string(param):
     """
     return "\'{}\'".format(param)
 
+
 def name_generator(nn_name, nn_name2id):
     """ 生成paddle.nn类op的名字。
-    
+
     Args:
         nn_name (str): 名字。
         nn_name2id (dict): key为名字，value为名字出现的次数-1。
@@ -37,13 +38,15 @@ def name_generator(nn_name, nn_name2id):
     real_nn_name = nn_name + str(nn_name2id[nn_name])
     return real_nn_name
 
+
 def remove_default_attrs(kernel, attrs):
     """ 删除每个OP的默认参数。
-    
+
     Args:
         kernel (str): OP的类型名字。
         attrs (dict): 目前该OP所包含的参数， key为参数名，value为参数值。
     """
+
     def get_default_args(func):
         signature = inspect.signature(func)
         return {
@@ -51,8 +54,9 @@ def remove_default_attrs(kernel, attrs):
             for k, v in signature.parameters.items()
             if v.default is not inspect.Parameter.empty
         }
+
     is_func = True
-    if "paddle.nn" in kernel and "functional"not in kernel:
+    if "paddle.nn" in kernel and "functional" not in kernel:
         is_func = False
     import paddle
     obj = paddle
@@ -63,7 +67,7 @@ def remove_default_attrs(kernel, attrs):
     if is_func:
         func = obj
     else:
-        func = obj.__init__ 
+        func = obj.__init__
     default_attrs = get_default_args(func)
     for default_k, default_v in default_attrs.items():
         if default_k in attrs:

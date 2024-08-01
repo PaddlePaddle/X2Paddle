@@ -13,14 +13,15 @@ LOG_PATH_ROOT = f"{CUR_DIR}/../output"
 
 
 class PaddleInferBenchmark(object):
+
     def __init__(self,
                  config,
-                 model_info: dict={},
-                 data_info: dict={},
-                 perf_info: dict={},
-                 resource_info: dict={},
-                 op_info: dict={},
-                 compare_info: dict={},
+                 model_info: dict = {},
+                 data_info: dict = {},
+                 perf_info: dict = {},
+                 resource_info: dict = {},
+                 op_info: dict = {},
+                 compare_info: dict = {},
                  **kwargs):
         """
         Construct PaddleInferBenchmark Class to format logs.
@@ -32,7 +33,7 @@ class PaddleInferBenchmark(object):
                 {'batch_size': 1}
             perf_info(dict): performance result
                 {'inference_time_s': 2.0}
-            resource_info(dict): 
+            resource_info(dict):
                 cpu and gpu resources
                 {'cpu_rss': 100
                  'gpu_rss': 100
@@ -63,7 +64,7 @@ class PaddleInferBenchmark(object):
 
         # op info
         self.op_info = op_info
-        
+
         # compare info
         self.compare_info = compare_info
 
@@ -129,17 +130,16 @@ class PaddleInferBenchmark(object):
         if self.config_status['enable_mkldnn']:
             runtime_device += '_mkldnn'
         self.model_name = self.model_name + '_' + runtime_device
-#         log_output = f"{LOG_PATH_ROOT}/{self.model_name}.log"
+        #         log_output = f"{LOG_PATH_ROOT}/{self.model_name}.log"
         log_output = f"{LOG_PATH_ROOT}/{self.model_name}.log"
         Path(f"{LOG_PATH_ROOT}").mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(
-            level=logging.INFO,
-            format=FORMAT,
-            handlers=[
-                logging.FileHandler(
-                    filename=log_output, mode='w'),
-                logging.StreamHandler(),
-            ])
+        logging.basicConfig(level=logging.INFO,
+                            format=FORMAT,
+                            handlers=[
+                                logging.FileHandler(filename=log_output,
+                                                    mode='w'),
+                                logging.StreamHandler(),
+                            ])
         self.logger = logging.getLogger(__name__)
         self.logger.info(
             f"Paddle Inference benchmark log will be saved to {log_output}")
@@ -207,7 +207,8 @@ class PaddleInferBenchmark(object):
             f"{identifier} enable_tensorrt: {self.config_status['enable_tensorrt']}"
         )
         self.logger.info(
-            f"{identifier} enable_mkldnn: {self.config_status['enable_mkldnn']}")
+            f"{identifier} enable_mkldnn: {self.config_status['enable_mkldnn']}"
+        )
         self.logger.info(
             f"{identifier} cpu_math_library_num_threads: {self.config_status['cpu_math_library_num_threads']}"
         )
@@ -219,10 +220,14 @@ class PaddleInferBenchmark(object):
         self.logger.info(f"{identifier} batch_size: {self.batch_size}")
         self.logger.info(
             "----------------------- op info -----------------------")
-        self.logger.info(f"{identifier} op_nums: {self.op_info['op_nums']}, op_classes: {self.op_info['op_classes']}")
+        self.logger.info(
+            f"{identifier} op_nums: {self.op_info['op_nums']}, op_classes: {self.op_info['op_classes']}"
+        )
         self.logger.info(
             "----------------------- compare info -----------------------")
-        self.logger.info(f"{identifier} compare_result: {self.compare_info['compare_result']}")
+        self.logger.info(
+            f"{identifier} compare_result: {self.compare_info['compare_result']}"
+        )
         self.logger.info(
             "----------------------- Perf info -----------------------")
         self.logger.info(
@@ -232,7 +237,8 @@ class PaddleInferBenchmark(object):
             f"{identifier} gpu_rss(MB): {self.gpu_rss_mb}, gpu_util: {self.gpu_util}%, gpu_mem_util: {self.gpu_mem_util}%"
         )
         self.logger.info(
-            f"{identifier} inference_time(ms): {round(self.inference_time_s*1000, 1)}")
+            f"{identifier} inference_time(ms): {round(self.inference_time_s*1000, 1)}"
+        )
         if self.inference_time_s_90:
             self.looger.info(
                 f"{identifier} 90%_cost: {self.inference_time_s_90}, 99%_cost: {self.inference_time_s_99}, succ_rate: {self.succ_rate}"
@@ -244,7 +250,7 @@ class PaddleInferBenchmark(object):
         """
         print function help
         """
-        print("""Usage: 
+        print("""Usage:
             ==== Print inference benchmark logs. ====
             config = paddle.inference.Config()
             model_info = {'model_name': 'resnet50'}

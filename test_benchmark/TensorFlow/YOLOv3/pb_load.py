@@ -14,6 +14,7 @@ with open('yolov3_coco.pb', 'rb') as f:
 sess.run(tf.compat.v1.global_variables_initializer())
 
 import numpy
+
 data = numpy.load('input.npy')
 input = sess.graph.get_tensor_by_name("input/input_data:0")
 outputs = list()
@@ -21,7 +22,7 @@ outputs.append(sess.graph.get_tensor_by_name("pred_sbbox/concat_2:0"))
 outputs.append(sess.graph.get_tensor_by_name("pred_mbbox/concat_2:0"))
 outputs.append(sess.graph.get_tensor_by_name("pred_lbbox/concat_2:0"))
 
-result = sess.run(outputs, {input:data})
+result = sess.run(outputs, {input: data})
 
 for r in result:
     print(r.shape)

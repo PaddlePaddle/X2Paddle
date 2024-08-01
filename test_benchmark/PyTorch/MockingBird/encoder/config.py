@@ -27,11 +27,11 @@ libritts_datasets = {
     },
 }
 voxceleb_datasets = {
-    "voxceleb1" : {
+    "voxceleb1": {
         "train": ["VoxCeleb1/wav"],
         "test": ["VoxCeleb1/test_wav"]
     },
-    "voxceleb2" : {
+    "voxceleb2": {
         "train": ["VoxCeleb2/dev/aac"],
         "test": ["VoxCeleb2/test_wav"]
     }

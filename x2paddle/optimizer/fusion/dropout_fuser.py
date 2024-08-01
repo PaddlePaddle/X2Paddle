@@ -19,6 +19,7 @@ from x2paddle.core.util import *
 
 
 class DropoutFuser(FuseBase):
+
     def __init__(self):
         super(DropoutFuser, self).__init__()
 
@@ -29,14 +30,14 @@ class DropoutFuser(FuseBase):
             for _x70 in range(x3):
                 ...
         """
-        self.pattern.add_layer(
-            "paddle.nn.Dropout",
-            inputs={"input": "dropout-input-0"},
-            outputs=["dropout0", "x1"])
+        self.pattern.add_layer("paddle.nn.Dropout",
+                               inputs={"input": "dropout-input-0"},
+                               outputs=["dropout0", "x1"])
         self.pattern.build(inputs={"input-0": "dropout-input-0"})
         self.pattern.outputs = ["dropout0", "x1"]
 
     def insert_new_layer(self, graph, parameters, matches):
+
         def replace_value(layer_connect, match_name, match_input):
             for k, v in layer_connect.inputs.items():
                 if v == match_name:

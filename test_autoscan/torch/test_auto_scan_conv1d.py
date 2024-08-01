@@ -29,13 +29,12 @@ class Net(BaseNet):
         """
         forward
         """
-        x = torch.nn.functional.conv1d(
-            inputs,
-            weight,
-            stride=self.config["stride"],
-            padding=self.config["padding"],
-            dilation=self.config["dilation"],
-            groups=self.config["groups"])
+        x = torch.nn.functional.conv1d(inputs,
+                                       weight,
+                                       stride=self.config["stride"],
+                                       padding=self.config["padding"],
+                                       dilation=self.config["dilation"],
+                                       groups=self.config["groups"])
         return x
 
 
@@ -58,14 +57,14 @@ class TestConv1dConvert(OPConvertAutoScanTest):
 
     def sample_convert_config(self, draw):
         input_shape = draw(
-            st.lists(
-                st.integers(
-                    min_value=15, max_value=25), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=15, max_value=25),
+                     min_size=3,
+                     max_size=3))
 
         kernel_size = draw(
-            st.lists(
-                st.integers(
-                    min_value=1, max_value=5), min_size=3, max_size=3))
+            st.lists(st.integers(min_value=1, max_value=5),
+                     min_size=3,
+                     max_size=3))
 
         groups = draw(st.integers(min_value=1, max_value=4))
         muti1 = draw(st.integers(min_value=1, max_value=4))
@@ -81,11 +80,9 @@ class TestConv1dConvert(OPConvertAutoScanTest):
                 strides = kernel_size[2]
         else:
             strides = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=1,
-                    max_size=1))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=1,
+                         max_size=1))
             if strides[0] > kernel_size[2]:
                 strides[0] = kernel_size[2]
 
@@ -105,11 +102,9 @@ class TestConv1dConvert(OPConvertAutoScanTest):
             padding = draw(st.sampled_from(["valid", "same"]))
         else:
             padding = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=5),
-                    min_size=1,
-                    max_size=1))
+                st.lists(st.integers(min_value=1, max_value=5),
+                         min_size=1,
+                         max_size=1))
 
         dilations_type = draw(st.sampled_from(["int", "tuple"]))
         dilations = None
@@ -117,11 +112,9 @@ class TestConv1dConvert(OPConvertAutoScanTest):
             dilations = draw(st.integers(min_value=1, max_value=3))
         else:
             dilations = draw(
-                st.lists(
-                    st.integers(
-                        min_value=1, max_value=3),
-                    min_size=1,
-                    max_size=1))
+                st.lists(st.integers(min_value=1, max_value=3),
+                         min_size=1,
+                         max_size=1))
         if padding == "same":
             dilations = 1
 

@@ -16,4 +16,3 @@ fi
 if [ ${result_torch} -ne 0 ];then
   exit 1
 fi
-

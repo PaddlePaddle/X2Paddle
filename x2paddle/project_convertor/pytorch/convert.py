@@ -58,8 +58,9 @@ def convert_code(folder_path, new_folder_path, file_dependencies):
             if not osp.exists(new_current_path):
                 os.makedirs(new_current_path)
             convert_code(current_path, new_current_path, file_dependencies)
-        elif osp.isfile(current_path) and osp.splitext(current_path)[
-                -1] in [".pth", ".pt", ".ckpt"]:
+        elif osp.isfile(current_path) and osp.splitext(current_path)[-1] in [
+                ".pth", ".pt", ".ckpt"
+        ]:
             continue
         elif osp.isfile(current_path) and current_path.endswith(".pyc"):
             continue
@@ -79,11 +80,11 @@ def convert_params(params_path):
     bn_w_name_list = list()
     for k, v in params.items():
         if k.endswith(".running_mean"):
-            new_params[k.replace(".running_mean", "._mean")] = v.detach().numpy(
-            )
+            new_params[k.replace(".running_mean",
+                                 "._mean")] = v.detach().numpy()
         elif k.endswith(".running_var"):
-            new_params[k.replace(".running_var", "._variance")] = v.detach(
-            ).numpy()
+            new_params[k.replace(".running_var",
+                                 "._variance")] = v.detach().numpy()
             bn_w_name_list.append(k.replace(".running_var", ".weight"))
         else:
             new_params[k] = v.detach().numpy()
@@ -91,9 +92,11 @@ def convert_params(params_path):
         if len(v.shape) == 2 and k.endswith(
                 ".weight") and k not in bn_w_name_list:
             new_params[k] = v.T
-    paddle.save(new_params,
-                params_path.replace(".pth", ".pdiparams").replace(
-                    ".pt", ".pdiparams").replace(".ckpt", ".pdiparams"))
+    paddle.save(
+        new_params,
+        params_path.replace(".pth",
+                            ".pdiparams").replace(".pt", ".pdiparams").replace(
+                                ".ckpt", ".pdiparams"))
 
 
 def main(args):

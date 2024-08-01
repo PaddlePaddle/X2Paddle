@@ -35,8 +35,8 @@ paddle.unique(x, return_index=False, return_inverse=False, return_counts=False, 
 # PyTorch示例：
 import torch
 x = torch.tensor([[[1, 3], [2, 3]], [[1, 6], [2, 3]]], dtype=torch.float32)
-output, inverse_indices, counts = torch.unique(x, 
-                      sorted=True, 
+output, inverse_indices, counts = torch.unique(x,
+                      sorted=True,
                       return_inverse=True,
                       return_counts=True)
 # 输出
@@ -56,7 +56,7 @@ output, inverse_indices, counts = torch.unique(x,
 # PaddlePaddle示例：
 import paddle
 x = paddle.to_tensor([[[1, 3], [2, 3]], [[1, 6], [2, 3]]], dtype="float32")
-out, inverse, counts = paddle.unique(x, 
+out, inverse, counts = paddle.unique(x,
                       return_inverse=True,
                       return_counts=True)
 # 输出

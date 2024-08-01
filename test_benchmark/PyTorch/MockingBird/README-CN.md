@@ -72,7 +72,7 @@
 `python web.py`
 运行成功后在浏览器打开地址, 默认为 `http://localhost:8080`
 <img width="578" alt="bd64cd80385754afa599e3840504f45" src="https://user-images.githubusercontent.com/7423248/134275205-c95e6bd8-4f41-4eb5-9143-0390627baee1.png">
-> 注：目前界面比较buggy, 
+> 注：目前界面比较buggy,
 > * 第一次点击`录制`要等待几秒浏览器正常启动录音，否则会有重音
 > * 录制结束不要再点`录制`而是`停止`
 > * 仅支持手动新录音（16khz）, 不支持超过4MB的录音，最佳长度在5~15秒
@@ -106,7 +106,7 @@
     ├─config
     │  └─ Web端配置文件
     ├─static 前端静态脚本
-    │  └─js 
+    │  └─js
     ├─templates 前端模板
     └─__init__.py Web端入口文件
 
@@ -195,4 +195,3 @@ voc_pad =2
 ![attention_step_20500_sample_1](https://user-images.githubusercontent.com/7423248/128587252-f669f05a-f411-4811-8784-222156ea5e9d.png)
 
 ![step-135500-mel-spectrogram_sample_1](https://user-images.githubusercontent.com/7423248/128587255-4945faa0-5517-46ea-b173-928eff999330.png)
-

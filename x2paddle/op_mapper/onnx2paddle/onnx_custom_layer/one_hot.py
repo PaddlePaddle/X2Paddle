@@ -16,6 +16,7 @@ import paddle
 
 
 class OneHot(object):
+
     def __init__(self, axis):
         self.axis = axis
 
@@ -28,9 +29,9 @@ class OneHot(object):
         depth_range = paddle.arange(end=depth)
         ls = tuple(indices_shape[0:real_axis])
         rs = tuple(indices_shape[real_axis:rank])
-        targets = paddle.reshape(depth_range, (1, ) *
-                                 (real_axis - 0) + tuple(depth_range.shape) +
-                                 (1, ) * (rank - real_axis))
+        targets = paddle.reshape(depth_range, (1, ) * (real_axis - 0) +
+                                 tuple(depth_range.shape) + (1, ) *
+                                 (rank - real_axis))
         mod = paddle.mod(indices, depth)
         v = paddle.reshape(mod, ls + (1, ) + rs)
         out = targets == v
