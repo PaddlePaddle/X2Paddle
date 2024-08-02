@@ -6611,10 +6611,144 @@ def aten_zeros_like(mapper, graph, node):
     # 处理输入1，即%655，代表dtype
     layer_attrs["dtype"] = dtype_dict[mapper.attrs[inputs_name[1]]]
 
-    graph.add_layer(
-        "paddle.zeros_like",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name,
-        **layer_attrs)
+    graph.add_layer("paddle.zeros_like",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+    return current_inputs, current_outputs
+
+
+def aten_amax(mapper, graph, node):
+    """
+    TorchScript:
+        %max_scores : Tensor = aten::argmax(%scores.1, %2973, %1914)
+        Parameter meaning:
+        %max_scores (Tensor): Output Tensor
+        %scores.1 (Tensor): Input Tensor
+        %2973 (int/list): Axis
+        %1914 (bool): Keepdim
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    squeeze_dim = None
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%scores.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # process Axis
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+        squeeze_dim = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+        squeeze_dim = inputs_name[1]
+    # process Keepdim
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["keepdim"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    if "keepdim" in layer_inputs and not layer_inputs["keepdim"] or (
+            "keepdim" in layer_attrs and not layer_attrs["keepdim"]):
+        if "keepdim" in layer_inputs:
+            layer_inputs["keepdim"] = True
+        else:
+            layer_attrs["keepdim"] = True
+        graph.add_layer("paddle.amax",
+                        inputs=layer_inputs,
+                        outputs=[output_name + "_unsqueezed"],
+                        scope_name=scope_name,
+                        **layer_attrs)
+
+        graph.add_layer("paddle.squeeze",
+                        inputs={"x": output_name + "_unsqueezed"},
+                        outputs=layer_outputs,
+                        scope_name=scope_name,
+                        **{"axis": squeeze_dim})
+    else:
+        graph.add_layer("paddle.amax",
+                        inputs=layer_inputs,
+                        outputs=layer_outputs,
+                        scope_name=scope_name,
+                        **layer_attrs)
+
+    return current_inputs, current_outputs
+
+
+def aten_topk(mapper, graph, node):
+    """
+    TorchScript:
+        %scores, %index.5 = aten::topk(%2233, %1900, %1909, %1916, %1916)
+        Parameter meaning:
+        %scores (Tensor): Output Tensor, values
+        %index.5 (Tensor): Output Tensor, indices
+        %2233 (Tensor): Input Tensor
+        %1900 (int): K
+        %1909 (int): Dim
+        %1916 (bool): Largest
+        %1916 (bool): Sorted
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)
+    layer_outputs = output_name
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%2233
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # 处理输入1，即%1900，代表k
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["k"] = inputs_name[1]
+    current_inputs.append(inputs_name[1])
+    # process axis
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+    # process largest
+    if inputs_name[3] in mapper.attrs:
+        layer_attrs["largest"] = mapper.attrs[inputs_name[3]]
+    else:
+        mapper._check_input(graph, inputs_node[3], inputs_name[3],
+                            current_outputs, scope_name)
+        layer_inputs["largest"] = inputs_name[3]
+        current_inputs.append(inputs_name[3])
+    # process sorted
+    if inputs_name[4] in mapper.attrs:
+        layer_attrs["sorted"] = mapper.attrs[inputs_name[4]]
+    else:
+        mapper._check_input(graph, inputs_node[4], inputs_name[4],
+                            current_outputs, scope_name)
+        layer_inputs["sorted"] = inputs_name[4]
+        current_inputs.append(inputs_name[4])
+
+    graph.add_layer("paddle.topk",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+
     return current_inputs, current_outputs
