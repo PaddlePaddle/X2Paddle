@@ -111,7 +111,7 @@ class TraceFcFuser(FuseBase):
         attrs = dict()
         attrs["in_features"] = parameters[weight_name].shape[1]
         attrs["out_features"] = parameters[weight_name].shape[0]
-        linear_name = "linear{}".format(self.linear_index)
+        linear_name = "linear_{}".format(weight_name.replace("_weight", ""))
         self.linear_index += 1
         weight_numpy = parameters[weight_name]
         parameters["{}.weight".format(linear_name)] = weight_numpy.transpose(

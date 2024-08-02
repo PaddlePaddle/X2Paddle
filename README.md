@@ -6,19 +6,6 @@
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
 ![python version](https://img.shields.io/badge/python-3.5+-orange.svg)  
 
-## 🆕 新开源项目FastDeploy
-
-若您的最终目的是用于模型部署，当前飞桨提供[FastDeploy](https://github.com/PaddlePaddle/FastDeploy)，提供📦**开箱即用**的**云边端**部署体验, 支持超过 🔥150+ **Text**, **Vision**, **Speech**和**跨模态**模型，并实现🔚**端到端**的推理性能优化。
-
-- 欢迎Star🌟 [https://github.com/PaddlePaddle/FastDeploy](https://github.com/PaddlePaddle/FastDeploy)
-- [YOLOv5 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov5)
-- [YOLOv6 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov6)
-- [YOLOv7 C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/yolov7)
-- [RetinaFace C++ & Python 部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/facedet/retinaface)
-- [YOLOv5Face 安卓部署示例](https://github.com/PaddlePaddle/FastDeploy/tree/develop/java/android#yolov5face-java-api-%E8%AF%B4%E6%98%8E)
-
-**【问卷调查】** 为了更好的推进飞桨框架以及X2Paddle的迭代开发，诚邀您参加我们的问卷，期待您的宝贵意见:https://iwenjuan.baidu.com/?code=npyd51
-
 ## 简介
 
 X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学习框架用户快速迁移至飞桨框架。目前支持**推理模型的框架转换**与**PyTorch训练代码迁移**，我们还提供了详细的不同框架间API对比文档，降低开发者将模型迁移到飞桨的时间成本。
@@ -139,7 +126,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 目前X2Paddle提供API方式转换模型，可参考[X2PaddleAPI](docs/inference_model_convertor/x2paddle_api.md)
 
 #### 一键转换Paddle-Lite支持格式
-可参考[使用X2paddle导出Padde-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
+可参考[使用X2paddle导出Paddle-Lite支持格式](docs/inference_model_convertor/convert2lite_api.md)
 
 ### 功能二：PyTorch模型训练迁移
 
@@ -150,6 +137,12 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 3. 转换后代码后处理
 
 详见[PyTorch训练项目转换文档](./docs/pytorch_project_convertor/README.md)。
+
+### 使用VisualDL进行模型转换
+
+飞桨可视化工具VisualDL已经将模型转换工具部署在官网提供服务，可以点击[服务链接](https://www.paddlepaddle.org.cn/paddle/visualdl/modelconverter/)进行在线的ONNX2Paddle模型转换。
+
+![ONNX2Paddle](https://user-images.githubusercontent.com/22424850/226797893-ef697887-a056-445f-933e-f1bbc7c7df76.gif)
 
 
 ## 使用教程

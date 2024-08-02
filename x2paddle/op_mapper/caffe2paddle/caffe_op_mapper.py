@@ -796,11 +796,17 @@ class CaffeOpMapper():
                 inputs=inputs_dict,
                 outputs=[node.layer_name + "_mul"])
         else:
+            new_shape = [1] * len(node.in_shapes[0])
+            new_shape[axis] = node.in_shapes[0][1]
             self.paddle_graph.add_layer(
-                "paddle.fluid.layers.elementwise_mul",
+                "paddle.reshape",
+                inputs={"x": node.layer_name + "_cparam1"},
+                outputs=[node.layer_name + "_cparam1"],
+                shape=new_shape)
+            self.paddle_graph.add_layer(
+                "paddle.multiply",
                 inputs=inputs_dict,
-                outputs=[node.layer_name + "_mul"],
-                axis=axis)
+                outputs=[node.layer_name + "_mul"])
         self.paddle_graph.add_layer(
             "self.create_parameter",
             inputs={},

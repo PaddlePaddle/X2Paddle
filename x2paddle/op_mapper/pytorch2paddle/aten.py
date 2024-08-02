@@ -1375,6 +1375,72 @@ def aten_conv2d(mapper, graph, node):
         **layer_attrs)
     return current_inputs, current_outputs
 
+def aten__convolution_mode(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.10 : Tensor = aten::_convolution_mode(%inputs, %weight, %3, %13, %7, %14, %11)
+        Parameter meaning:
+        %input.10 (Tensor): Output Tensor
+        %inputs (Tensor): Input Tensor
+        %weight (Tensor): weights
+        %3 (Tensor): bias
+        %13 (list): stride
+        %7 (list): padding
+        %14 (list): dilation
+        %11 (list): groups
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    # output list
+    current_outputs = [output_name]
+    # deal with inputs
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["weight"] = inputs_name[1]
+    layer_attrs["bias"] = mapper.attrs[inputs_name[2]]
+    current_inputs = list(layer_inputs.values())
+    # deal with stride
+    layer_attrs["stride"] = mapper.attrs[inputs_name[3]]
+    # deal with padding
+    padding = mapper.attrs[inputs_name[4]]
+    if isinstance(padding, str):
+        layer_attrs["padding"] = padding.upper()
+    else:
+        layer_attrs["padding"] = padding
+    # deal with dilation
+    layer_attrs["dilation"] = mapper.attrs[inputs_name[5]]
+    # deal with groups
+    layer_attrs["groups"] = mapper.attrs[inputs_name[6]]
+    if len(layer_attrs["stride"]) == 1:
+        graph.add_layer(
+            "paddle.nn.functional.conv1d",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
+    elif len(layer_attrs["stride"]) == 2:
+        graph.add_layer(
+            "paddle.nn.functional.conv2d",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
+    elif len(layer_attrs["stride"]) == 3:
+        graph.add_layer(
+            "paddle.nn.functional.conv3d",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
+    return current_inputs, current_outputs
+
 
 def aten__convolution(mapper, graph, node):
     """
@@ -5640,13 +5706,13 @@ def aten_sqrt(mapper, graph, node):
 
 
 def aten_squeeze(mapper, graph, node):
-    """ 构造删除位数为1的维度的PaddleLayer。
-    TorchScript示例:
+    """
+    TorchScript Code:
         %12 : Tensor = aten::squeeze(%start_logits.1, %4)
-        参数含义:
-        %12 (Tensor): 输出，删除维度后的Tensor。
-        %start_logits.1 (Tensor): 需要删除维度的Tensor。
-        %4 (int): 维度。
+        Parameter meaning:
+        %12 (Tensor): Output Tensor
+        %start_logits.1 (Tensor): Input Tensor
+        %4 (int): Axis
     """
     scope_name = mapper.normalize_scope_name(node)
     output_name = mapper._get_outputs_name(node)[0]
@@ -5654,28 +5720,35 @@ def aten_squeeze(mapper, graph, node):
     layer_inputs = {}
     layer_attrs = {}
     inputs_name, inputs_node = mapper._get_inputs_name(node)
-    # 获取当前节点输出的list
+    # output list
     current_outputs = [output_name]
-    # 处理输入0，即%start_logits.1
+    # process Input Tensor
     mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
                         scope_name)
     layer_inputs["x"] = inputs_name[0]
-    # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
-    # 处理输入1，即%4
-    if inputs_name[1] in mapper.attrs:
-        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+    # If only one input, no axis input
+    if len(inputs_name) == 1:
+        graph.add_layer(
+            "paddle.squeeze",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
     else:
-        mapper._check_input(graph, inputs_node[1], inputs_name[1],
-                            current_outputs, scope_name)
-        layer_inputs["axis"] = inputs_name[1]
-        current_inputs.append(inputs_name[1])
-    graph.add_layer(
-        "paddle.squeeze",
-        inputs=layer_inputs,
-        outputs=layer_outputs,
-        scope_name=scope_name,
-        **layer_attrs)
+        if inputs_name[1] in mapper.attrs:
+            layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+        else:
+            mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                                current_outputs, scope_name)
+            layer_inputs["axis"] = inputs_name[1]
+            current_inputs.append(inputs_name[1])
+        graph.add_layer(
+            "paddle.squeeze",
+            inputs=layer_inputs,
+            outputs=layer_outputs,
+            scope_name=scope_name,
+            **layer_attrs)
     return current_inputs, current_outputs
 
 

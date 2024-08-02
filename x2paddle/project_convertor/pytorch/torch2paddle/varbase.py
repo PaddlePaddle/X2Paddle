@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import paddle
-from paddle.fluid.core import VarBase
+from paddle.framework import core
 from x2paddle.utils import paddle_dtypes
 
 
@@ -24,7 +24,7 @@ def is_condition_one(idx):
     a[mask, :]
     a[mask, ...]
     """
-    if not (isinstance(idx[0], paddle.Tensor) and \
+    if not (isinstance(idx[0], paddle.Tensor) and
             idx[0].dtype == paddle_dtypes.t_bool):
         return False
     if len(idx) == 1:
@@ -52,6 +52,8 @@ def is_condition_two(idx):
         return True
     return False
 
+
+VarBase = core.eager.Tensor
 
 VarBase.tmp = VarBase.__getitem__
 
