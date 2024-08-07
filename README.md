@@ -16,7 +16,7 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 
 - **支持主流深度学习框架**
 
-  - 目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的预测模型的转换，PyTorch训练项目的转换，涵盖了目前市面主流深度学习框架
+  - 目前已经支持Caffe/TensorFlow/ONNX/PyTorch四大框架的预测模型的转换，PyTorch训练项目的转换，涵盖了目前市面主流深度学习框架，详见 ***[测试 demo ](./test_benchmark)***
 
 - **支持的模型丰富**
 
@@ -157,5 +157,5 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 我们非常欢迎您为X2Paddle贡献代码或者提供使用建议:
 - 如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests
-- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)
+- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)，国内镜像下载地址：https://x2paddle.bj.bcebos.com/Docker/latest-dev-cuda11.2-cudnn8-gcc82.tar
 - 如果有PyTorch训练项目转换需求欢迎随时提issue
