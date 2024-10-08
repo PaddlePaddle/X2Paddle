@@ -740,7 +740,10 @@ class OpSet():
                 if output_shape:
                     assume_pad |= output_shape and 2 * len(
                         output_shape) == pads_len  # NCHW
-                if assume_pad or pads_len == -1:
+
+                assume_pad |= pads_len == -1
+
+                if assume_pad:
                     self.paddle_graph.add_layer("custom_layer:PadAllDim4",
                                                 inputs={
                                                     'x': val_x.name,
