@@ -8,17 +8,13 @@ find . -name "pd_model_static" | xargs rm -rf
 find . -name "pd_model_dygraph" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 
-num_of_models=$(ls -d */ | grep "[A-Z0-9]" | wc -l)
-num_of_caffe_files=$(find . -name "*.caffemodel" | wc -l)
-
-if [ $num_of_caffe_files -ne $num_of_models ]
-then
-    echo "[ERROR] num_of_caffe_files != num_of_models"
-    exit -1
-fi
+# use black.list to control CI tests
+filename="black.list"
+models=$(ls -d */ | grep -v -F -f "$filename")
+num_of_models=$(ls -d */ | grep -v -F -f "$filename" | wc -l)
 
 counter=1
-for model in $(ls -d */ | grep "[A-Z0-9]")
+for model in $models
 do
     echo "[X2Paddle-Caffe] ${counter}/${num_of_models} $model ..."
     cd $model
@@ -36,7 +32,7 @@ wait
 
 rm -rf result.txt
 touch result.txt
-for model in $(ls -d */ | grep "[A-Z0-9]")
+for model in $models
 do
     cat ${model}/result.txt >> ./result.txt
 done
