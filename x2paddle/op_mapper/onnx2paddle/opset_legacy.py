@@ -733,13 +733,16 @@ class OpSet():
                                 mode=string(mode))
                         else:
                             raise Exception("The padding value is wrong!")
-            elif pads_len == 8:
+            elif pads_len in [8, -1]:
                 if data_shape:
                     assume_pad |= data_shape and 2 * len(
                         data_shape) == pads_len  # NCHW
                 if output_shape:
                     assume_pad |= output_shape and 2 * len(
                         output_shape) == pads_len  # NCHW
+
+                assume_pad |= pads_len == -1
+
                 if assume_pad:
                     self.paddle_graph.add_layer("custom_layer:PadAllDim4",
                                                 inputs={
