@@ -11,14 +11,13 @@ fi;
 
 # convert.sh 会自动下载数据集
 cd test_benchmark/Caffe;
-bash convert.sh;
+#bash convert.sh;
 
-cd ../PyTorch;
-mv YOLOX ..; #暂时取消
-bash convert.sh;
+#cd ../PyTorch;
+#bash convert.sh;
 
-cd ../ONNX;
-bash convert.sh;
+#cd ../ONNX;
+#bash convert.sh;
 
 cd ../TensorFlow;
 bash convert.sh;
