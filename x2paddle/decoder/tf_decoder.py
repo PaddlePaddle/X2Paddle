@@ -430,6 +430,7 @@ class TFDecoder(object):
                 ]
                 assert shape.count(None) <= 1, "Only one dimension can be None"
                 try:
+                    tf.compat.v1.disable_eager_execution()
                     x2paddle_input = tf.compat.v1.placeholder(
                         dtype=dtype,
                         shape=shape,
