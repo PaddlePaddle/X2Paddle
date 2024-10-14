@@ -55,6 +55,4 @@ try:
         f.write("Dygraph Successed\n")
 except:
     f.write("!!!!!Failed\n")
-
-    raise
 f.close()
