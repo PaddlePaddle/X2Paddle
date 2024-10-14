@@ -1,5 +1,4 @@
 import paddle
-import paddle.fluid as fluid
 import numpy as np
 import pickle
 import sys
@@ -12,11 +11,8 @@ try:
     exe = paddle.static.Executor(paddle.CPUPlace())
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(
-        dirname="pd_model_dygraph/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model_dygraph/inference_model/model", executor=exe)
     data = [np.load('../dataset/YOLOv3/input.npy')]
     result = exe.run(prog, feed={inputs[0]: data[0]}, fetch_list=outputs)
 
