@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from six import text_type as _text_type
-from x2paddle import program
-from x2paddle.utils import ConverterCheck, check_version
+from packaging.version import Version
 import argparse
 import sys
 import logging
 import time
+
+from x2paddle import program
+from x2paddle.utils import ConverterCheck, check_version
 
 
 def arg_parser():
@@ -156,10 +158,8 @@ def tf2paddle(model_path,
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
         import tensorflow as tf
         version = tf.__version__
-        if version >= '2.0.0' or version < '1.0.0':
-            logging.info(
-                "[ERROR] 1.0.0<=TensorFlow<2.0.0 is required, and v1.14.0 is recommended"
-            )
+        if Version(version) >= Version('3.0.0'):
+            logging.info("[ERROR] TensorFlow<3.0.0 is required.")
             return
     except:
         logging.info(
