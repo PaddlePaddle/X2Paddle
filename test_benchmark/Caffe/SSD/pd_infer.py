@@ -1,6 +1,5 @@
 from __future__ import print_function
 import paddle
-import paddle.fluid as fluid
 import sys
 import os
 import numpy as np
@@ -18,16 +17,14 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test dygraph
-    [prog, feed_target_names, fetch_targets] = fluid.io.load_inference_model(
-        dirname="pd_model_dygraph/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, feed_target_names,
+     fetch_targets] = paddle.static.load_inference_model(
+         path_prefix="pd_model_dygraph/inference_model/model", executor=exe)
     result = exe.run(prog,
                      feed={feed_target_names[0]: input_data},
                      fetch_list=fetch_targets,
                      return_numpy=False)
-    lod = result[0].lod()[0]
+    lod = result[0].lod()
     res_pd = np.asarray(result[0])
     res_cf = caffe_output['detection_out'][0]
     diffTest = True
@@ -58,4 +55,6 @@ try:
         f.write("Dygraph Successed\n")
 except:
     f.write("!!!!!Failed\n")
+
+    raise
 f.close()
