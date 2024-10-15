@@ -4850,6 +4850,9 @@ def aten_replication_pad1d(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+aten_pad = aten_replication_pad1d
+
+
 def aten_reshape(mapper, graph, node):
     """ 构造调整大小的PaddleLayer。
     TorchScript示例:
