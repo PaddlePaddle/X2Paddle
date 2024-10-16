@@ -11,10 +11,7 @@ try:
 
     # test dygraph
     [prog, inputs, outputs] = paddle.static.load_inference_model(
-        path_prefix="pd_model/inference_model",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+        path_prefix="pd_model/inference_model/model", executor=exe)
     dummy_input_left = np.load("../dataset/Mobilestereonet/input_left.npy")
     dummy_input_right = np.load("../dataset/Mobilestereonet/input_right.npy")
     result = exe.run(prog,

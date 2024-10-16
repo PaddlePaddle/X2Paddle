@@ -4850,9 +4850,6 @@ def aten_replication_pad1d(mapper, graph, node):
     return current_inputs, current_outputs
 
 
-aten_pad = aten_replication_pad1d
-
-
 def aten_reshape(mapper, graph, node):
     """ 构造调整大小的PaddleLayer。
     TorchScript示例:
@@ -6552,4 +6549,95 @@ def aten_topk(mapper, graph, node):
                     scope_name=scope_name,
                     **layer_attrs)
 
+    return current_inputs, current_outputs
+
+
+def aten_pad(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.23 : Tensor = aten::pad(%input.21, %116, %114, %113)
+        Parameter meaning:
+        %input.21 (Tensor): Input Tensor
+        %116 (list): pad
+        %114 (str): pad mode
+        %113 (float): value
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+
+    # process pad
+    padding_attr = None
+    if inputs_name[1] in mapper.attrs:
+        padding_attr = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["pad"] = inputs_name[1]
+
+    # process `mode`
+    _pad_mode = mapper.attrs[inputs_name[2]]
+    layer_attrs["mode"] = _pad_mode
+
+    # process value, try to conver to `float`
+    # with `None` which raise exception, make `value` be `0` as default.
+    _pad_value = mapper.attrs[inputs_name[3]]
+    _pad_value = _pad_value or 0
+    try:
+        _pad_value = float(_pad_value)
+    except ValueError:
+        _pad_value = 0
+    layer_attrs["value"] = _pad_value
+
+    # process `data_format`
+    # TODO(megemini): the lastest version of `Paddle v3`,
+    # just make `data_format = string("None")`
+    # because `paddle.nn.functional.pad` can infer from input `x`
+    data_format = string("None")
+    if inputs_name[0] in mapper.attrs:
+        x_dim = len(mapper.attrs[inputs_name[0]])
+        if x_dim == 3:
+            data_format = string("NCL")
+        elif x_dim == 4:
+            data_format = string("NCHW")
+        elif x_dim == 5:
+            data_format = string("NCDHW")
+    else:
+        if len(padding_attr) == 2:
+            data_format = string("NCL")
+        elif len(padding_attr) == 4:
+            data_format = string("NCHW")
+        elif len(padding_attr) == 6:
+            data_format = string("NCDHW")
+    layer_attrs["data_format"] = data_format
+
+    # process `pad`
+    if padding_attr is not None:
+        layer_attrs["pad"] = padding_attr
+        if 'constant' in _pad_mode:
+            if len(padding_attr) == 2:
+                layer_attrs["pad"] = [0, 0, 0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 4:
+                layer_attrs["pad"] = [0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 6:
+                layer_attrs["pad"] = [0, 0] + padding_attr
+
+    # input and kernel
+    layer_inputs["x"] = inputs_name[0]
+    kernel_name = "paddle.nn.functional.pad"
+
+    graph.add_layer(kernel_name,
+                    inputs=layer_inputs,
+                    outputs=[output_name],
+                    scope_name=scope_name,
+                    **layer_attrs)
+    current_inputs = list(layer_inputs.values())
     return current_inputs, current_outputs
