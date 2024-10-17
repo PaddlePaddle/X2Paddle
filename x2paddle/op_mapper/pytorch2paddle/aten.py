@@ -6569,10 +6569,13 @@ def aten_list(mapper, graph, node):
     # 获取当前节点输出的list
     current_outputs = [output_name]
 
+    # process input
+    layer_inputs["x"] = inputs_name[0]
+
     # 获取当前节点输入的list
     current_inputs = list(layer_inputs.values())
 
-    graph.add_layer("prim.list",
+    graph.add_layer("prim.list_",
                     inputs=layer_inputs,
                     outputs=layer_outputs,
                     scope_name=scope_name)
