@@ -8,19 +8,13 @@ find . -name "pd_model_dygraph" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | wc -l)
-num_of_onnx_files=$(find . -name "*.onnx" | wc -l)
-
-#if [ $num_of_onnx_files -ne $num_of_models ]
-#then
-#    echo $num_of_onnx_files
-#    echo $num_of_models
-#    echo "[ERROR] num_of_onnx_files != num_of_models"
-#    exit -1
-#fi
+# use black.list to control CI tests
+filename="black.list"
+models=$(ls -d */ | grep -v -F -f "$filename")
+num_of_models=$(ls -d */ | grep -v -F -f "$filename" | wc -l)
 
 counter=1
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $models
 do
     echo "[X2Paddle-ONNX] ${counter}/${num_of_models} $model ..."
     cd $model
@@ -38,7 +32,7 @@ wait
 
 rm -rf result.txt
 touch result.txt
-for model in $(ls -d */ | grep -v 'tools' | grep -v 'output')
+for model in $models
 do
     cat ${model}/result.txt >> ./result.txt
 done

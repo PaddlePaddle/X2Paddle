@@ -8,15 +8,10 @@ find . -name "pd_model_dygraph" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'KerasBert')
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'KerasBert' | wc -l)
-num_of_pb_files=$(find . -name "*.pb" | wc -l)
-
-#if [ $num_of_pb_files -ne $num_of_models ]
-#then
-#    echo "[ERROR] num_of_pb_files != num_of_models"
-#    exit -1
-#fi
+# use black.list to control CI tests
+filename="black.list"
+models=$(ls -d */ | grep -v -F -f "$filename")
+num_of_models=$(ls -d */ | grep -v -F -f "$filename" | wc -l)
 
 counter=1
 for model in $models
