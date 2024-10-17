@@ -32,6 +32,8 @@ from inspect import isfunction
 paddle.set_device("cpu")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 settings.register_profile("ci",
                           max_examples=100,
@@ -112,36 +114,36 @@ class OPConvertAutoScanTest(unittest.TestCase):
         loop_func = given(generator())(run_test)
         if reproduce is not None:
             loop_func = reproduce(loop_func)
-        logging.info("Start to running test of {}".format(type(self)))
+        logger.info("Start to running test of {}".format(type(self)))
 
         paddle.disable_static()
         loop_func()
 
-        logging.info(
+        logger.info(
             "===================Statistical Information===================")
-        logging.info("Number of Generated Programs: {}".format(
+        logger.info("Number of Generated Programs: {}".format(
             self.num_ran_tests))
-        logging.info("Number of Ignore Programs: {}".format(
+        logger.info("Number of Ignore Programs: {}".format(
             self.num_ignore_tests))
         successful_ran_programs = int(self.num_ran_tests -
                                       self.num_ignore_tests)
         if successful_ran_programs < min_success_num:
-            logging.warning("satisfied_programs = ran_programs")
-            logging.error(
+            logger.warning("satisfied_programs = ran_programs")
+            logger.error(
                 "At least {} programs need to ran successfully, but now only about {} programs satisfied."
                 .format(min_success_num, successful_ran_programs))
             assert False
         used_time = time.time() - start_time
-        logging.info("Used time: {} s".format(round(used_time, 2)))
+        logger.info("Used time: {} s".format(round(used_time, 2)))
         if max_duration > 0 and used_time > max_duration:
-            logging.error(
+            logger.error(
                 "The duration exceeds {} seconds, if this is neccessary, try to set a larger number for parameter `max_duration`."
                 .format(max_duration))
             assert False
 
     def run_test(self, configs):
         config, models = configs
-        logging.info("Run configs: {}".format(config))
+        logger.info("Run configs: {}".format(config))
 
         assert "op_names" in config.keys(
         ), "config must include op_names in dict keys"
@@ -218,9 +220,9 @@ class OPConvertAutoScanTest(unittest.TestCase):
                             randtool("float", -2, 2,
                                      shape).astype(input_type[j]))
                 obj.set_input_data("input_data", tuple(input_data))
-                logging.info("Now Run >>> dtype: {}, op_name: {}".format(
+                logger.info("Now Run >>> dtype: {}, op_name: {}".format(
                     input_type, op_names[i]))
                 obj.run()
             if len(input_type_list) == 0:
                 obj.run()
-        logging.info("Run Successfully!")
+        logger.info("Run Successfully!")

@@ -10,7 +10,7 @@ find . -name "run.log" | xargs rm -rf
 
 # use black.list to control CI tests
 filename="black.list"
-models=$(ls -d */ | grep -v -F -f "$filename")
+models=$(ls -d */ | grep -v -F -f "$filename" | awk -F '/' '{print $1}')
 num_of_models=$(ls -d */ | grep -v -F -f "$filename" | wc -l)
 
 counter=1
@@ -18,6 +18,11 @@ for model in $models
 do
     echo "[X2Paddle-Caffe] ${counter}/${num_of_models} $model ..."
     cd $model
+
+    # make default result is `Failed` in case of `result.txt` not generated
+    touch result.txt
+    echo $model ">>>Failed"> result.txt
+
     sh run_convert.sh $model 1>run.log 2>run.err &
     cd ..
     counter=$(($counter+1))
