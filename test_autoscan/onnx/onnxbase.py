@@ -48,6 +48,9 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     delta: absolute error
     rtol: relative error
     """
+
+    logger.info(">>> compare ...")
+
     if type(result) == np.ndarray:
         if type(expect) == list:
             expect = expect[0]
@@ -201,10 +204,14 @@ class ONNXConverter(object):
                     enable_onnx_checker=self.enable_onnx_checker,
                     disable_feedback=True)
 
+        logger.info(">>> onnx2paddle finished ...")
+
     def _mk_paddle_res(self, ver):
         """
         make paddle res
         """
+        logger.info(">>> _mk_paddle_res ...")
+
         # input data
         paddle_tensor_feed = list()
         result = list()
@@ -272,15 +279,24 @@ class ONNXConverter(object):
                 result = (result, )
             else:
                 result = (result.numpy(), )
+
+        logger.info(">>> _mk_paddle_res finished ...")
+
         return result
 
     def _mk_onnx_res(self, ver):
         """
         make onnx res
         """
+
+        logger.info('>>> _mk_onnx_res InferenceSession...')
+
         sess = InferenceSession(
             os.path.join(self.pwd, self.name,
                          self.name + '_' + str(ver) + '.onnx'))
+
+        logger.info('>>> sess.run ...')
+
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs
 
