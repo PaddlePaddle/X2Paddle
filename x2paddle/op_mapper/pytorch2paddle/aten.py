@@ -6620,3 +6620,33 @@ def aten_topk(mapper, graph, node):
                     **layer_attrs)
 
     return current_inputs, current_outputs
+
+
+def aten_list(mapper, graph, node):
+    """ python 的 `list` 转换，如 `list((1,2,3))`
+    TorchScript示例:
+        %1926 : int[] = aten::list(%1925)
+        参数含义:
+        %1926 (list): 输出，转换为list。
+        %1925 (-): 可以转为list的输入
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+
+    # process input
+    layer_inputs["x"] = inputs_name[0]
+
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.list_",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name)
+    return current_inputs, current_outputs

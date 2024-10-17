@@ -530,6 +530,18 @@ def prim_list(layer,
     forward_func.extend(gen_codes([line], indent=indent))
 
 
+def prim_list_(layer,
+               indent=1,
+               init_func=[],
+               forward_func=[],
+               layer_id=None,
+               different_attrs=None):
+    """ just a python function: `list(x)`
+    """
+    line = "{} = list({})".format(layer.outputs[0], layer.inputs["x"])
+    forward_func.extend(gen_codes([line], indent=indent))
+
+
 def prim_list_unpack(layer,
                      indent=1,
                      init_func=[],
