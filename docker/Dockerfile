@@ -1,4 +1,4 @@
-FROM paddlepaddle/paddle:latest-dev-cuda11.2-cudnn8.2-trt8.0-gcc82
+FROM paddlepaddle/paddle:latest-dev-cuda11.8-cudnn8.6-trt8.5-gcc82
 
 ENV HTTP_PROXY <HTTP_PROXY>
 ENV HTTPS_PROXY <HTTPS_PROXY>
