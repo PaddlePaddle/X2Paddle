@@ -269,9 +269,21 @@ class ONNXConverter(object):
 
             # disable feed, fetch OP, needed by zero_copy_run
             config.switch_use_feed_fetch_ops(False)
+
+            logger.info(">>> config.disable_glog_info...")
+
             config.disable_glog_info()
+
+            logger.info(">>> config.pass_builder...")
+
             pass_builder = config.pass_builder()
+
+            logger.info(">>> create_predictor(config)...")
+
             predictor = create_predictor(config)
+
+            logger.info(">>> predictor.get_input_names...")
+
             input_names = predictor.get_input_names()
             output_names = predictor.get_output_names()
 
