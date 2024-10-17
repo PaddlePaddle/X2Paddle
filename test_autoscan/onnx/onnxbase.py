@@ -224,6 +224,8 @@ class ONNXConverter(object):
             self.run_dynamic = True
 
         if self.run_dynamic:
+            logger.info(">>> self.run_dynamic...")
+
             paddle_path = os.path.join(self.pwd, self.name,
                                        self.name + '_' + str(ver) + '_paddle/')
             restore = paddle.load(os.path.join(paddle_path, "model.pdparams"))
@@ -235,7 +237,12 @@ class ONNXConverter(object):
             model.set_dict(restore)
             model.eval()
             result = model(*paddle_tensor_feed)
+
+            logger.info(">>> self.run_dynamic finished...")
+
         else:
+            logger.info(">>> NOT self.run_dynamic...")
+
             paddle_model_path = os.path.join(
                 self.pwd, self.name, self.name + '_' + str(ver) +
                 '_paddle/inference_model/model.pdmodel')
@@ -246,6 +253,9 @@ class ONNXConverter(object):
             config.set_prog_file(paddle_model_path)
             if os.path.exists(paddle_param_path):
                 config.set_params_file(paddle_param_path)
+
+            logger.info(">>> config.enable_use_gpu...")
+
             # initial GPU memory(M), device ID
             config.enable_use_gpu(200, 0)
             # optimize graph and fuse op
@@ -258,10 +268,19 @@ class ONNXConverter(object):
             predictor = create_predictor(config)
             input_names = predictor.get_input_names()
             output_names = predictor.get_output_names()
+
+            logger.info(">>> copy_from_cpu...")
+
             for i in range(len(input_names)):
                 input_tensor = predictor.get_input_handle(input_names[i])
                 input_tensor.copy_from_cpu(self.input_feed[self.inputs_name[i]])
+
+            logger.info(">>> predictor.run...")
+
             predictor.run()
+
+            logger.info(">>> predictor.run finished...")
+
             for output_name in output_names:
                 output_tensor = predictor.get_output_handle(output_name)
                 result.append(output_tensor.copy_to_cpu())
