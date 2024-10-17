@@ -26,6 +26,10 @@ from onnx import helper
 from onnx import TensorProto
 from onnxruntime import InferenceSession
 
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 DTYPE_ONNX_STR_MAP = {
     'float32': TensorProto.FLOAT,
     'float64': TensorProto.DOUBLE,
@@ -167,6 +171,9 @@ class ONNXConverter(object):
         """
         make dir to save all
         """
+
+        logger.info(">>> _mkdir ...")
+
         save_path = os.path.join(self.pwd, self.name)
         if not os.path.exists(save_path):
             os.mkdir(save_path)
@@ -175,11 +182,19 @@ class ONNXConverter(object):
         """
         convert onnx to paddle
         """
+        logger.info(">>> _onnx_to_paddle ...")
+
         from x2paddle.convert import onnx2paddle
+
+        logger.info(">>> from x2paddle.convert import onnx2paddle ...")
+
         onnx_path = os.path.join(self.pwd, self.name,
                                  self.name + '_' + str(ver) + '.onnx')
         paddle_path = os.path.join(self.pwd, self.name,
                                    self.name + '_' + str(ver) + '_paddle')
+
+        logger.info(">>> onnx2paddle ...")
+
         onnx2paddle(onnx_path,
                     paddle_path,
                     convert_to_lite=False,
@@ -291,6 +306,8 @@ class ONNXConverter(object):
         """
         make onnx graph
         """
+        logger.info(">>> _mk_onnx_graph ... make_node")
+
         node = onnx.helper.make_node(
             self.op_type,
             inputs=self.inputs_name,
@@ -324,8 +341,14 @@ class ONNXConverter(object):
         3. use onnx to make res
         4. compare diff
         """
+
+        logger.info(">>> run ...")
+
         self._mkdir()
         for place in self.places:
+
+            logger.info(">>> place ..." + str(place))
+
             paddle.set_device(place)
             onnx_res = {}
             paddle_res = {}
