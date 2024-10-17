@@ -24,6 +24,9 @@ for var in ${file_arr[@]}
 do
   log_name=${logs_path}/${var}.log
   echo " Now start test: ${var}"
+
+  echo " >>> begin test ..."
+
   python ${var} > ${log_name} 2>&1
 
 done
