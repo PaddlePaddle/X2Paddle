@@ -258,9 +258,15 @@ class ONNXConverter(object):
 
             # initial GPU memory(M), device ID
             config.enable_use_gpu(200, 0)
+
+            logger.info(">>> config.enable_use_gpu finished...")
+
             # optimize graph and fuse op
             config.switch_ir_optim(False)
             config.enable_memory_optim()
+
+            logger.info(">>> enable_memory_optim finished...")
+
             # disable feed, fetch OP, needed by zero_copy_run
             config.switch_use_feed_fetch_ops(False)
             config.disable_glog_info()
