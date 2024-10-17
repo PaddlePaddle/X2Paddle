@@ -172,7 +172,7 @@ class ONNXConverter(object):
         make dir to save all
         """
 
-        logger.info(">>> _mkdir ...")
+        print(">>> _mkdir ...")
 
         save_path = os.path.join(self.pwd, self.name)
         if not os.path.exists(save_path):
@@ -182,18 +182,18 @@ class ONNXConverter(object):
         """
         convert onnx to paddle
         """
-        logger.info(">>> _onnx_to_paddle ...")
+        print(">>> _onnx_to_paddle ...")
 
         from x2paddle.convert import onnx2paddle
 
-        logger.info(">>> from x2paddle.convert import onnx2paddle ...")
+        print(">>> from x2paddle.convert import onnx2paddle ...")
 
         onnx_path = os.path.join(self.pwd, self.name,
                                  self.name + '_' + str(ver) + '.onnx')
         paddle_path = os.path.join(self.pwd, self.name,
                                    self.name + '_' + str(ver) + '_paddle')
 
-        logger.info(">>> onnx2paddle ...")
+        print(">>> onnx2paddle ...")
 
         onnx2paddle(onnx_path,
                     paddle_path,
@@ -306,7 +306,7 @@ class ONNXConverter(object):
         """
         make onnx graph
         """
-        logger.info(">>> _mk_onnx_graph ... make_node")
+        print(">>> _mk_onnx_graph ... make_node")
 
         node = onnx.helper.make_node(
             self.op_type,
@@ -342,12 +342,12 @@ class ONNXConverter(object):
         4. compare diff
         """
 
-        logger.info(">>> run ...")
+        print(">>> run ...")
 
         self._mkdir()
         for place in self.places:
 
-            logger.info(">>> place ..." + str(place))
+            print(">>> place ..." + str(place))
 
             paddle.set_device(place)
             onnx_res = {}

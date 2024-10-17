@@ -51,6 +51,8 @@ class TestAbsConvert(OPConvertAutoScanTest):
         return (config, attrs)
 
     def test(self):
+        print('>>> test_auto_scan_abs.py::test')
+
         self.run_and_statis(max_examples=30)
 
 
