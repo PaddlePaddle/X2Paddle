@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from six import text_type as _text_type
-from x2paddle import program
-from x2paddle.utils import ConverterCheck
+from packaging.version import Version
 import argparse
 import sys
 import logging
 import time
+
+from x2paddle import program
+from x2paddle.utils import ConverterCheck, check_version
 
 
 def arg_parser():
@@ -156,10 +158,8 @@ def tf2paddle(model_path,
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
         import tensorflow as tf
         version = tf.__version__
-        if version >= '2.0.0' or version < '1.0.0':
-            logging.info(
-                "[ERROR] 1.0.0<=TensorFlow<2.0.0 is required, and v1.14.0 is recommended"
-            )
+        if Version(version) >= Version('3.0.0'):
+            logging.info("[ERROR] TensorFlow<3.0.0 is required.")
             return
     except:
         logging.info(
@@ -449,20 +449,15 @@ def main():
     assert args.save_dir is not None, "--save_dir is not defined"
 
     try:
-        import platform
-        v0, v1, v2 = platform.python_version().split('.')
-        if not (int(v0) >= 3 and int(v1) >= 5):
-            logging.info("[ERROR] python>=3.5 is required")
+        if not sys.version_info >= (3, 8):
+            logging.error("[ERROR] python>=3.8 is required")
             return
+
         import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        logging.info("paddle.__version__ = {}".format(paddle.__version__))
-        if v0 == '0' and v1 == '0' and v2 == '0':
-            logging.info(
-                "[WARNING] You are use develop version of paddlepaddle")
-        elif int(v0) != 2 or int(v1) < 0:
-            logging.info("[ERROR] paddlepaddle>=2.0.0 is required")
+        if not check_version('2.0.0'):
+            logging.error("[ERROR] paddlepaddle>=2.0.0 is required")
             return
+
     except:
         logging.info(
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
