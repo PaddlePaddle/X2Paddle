@@ -10,7 +10,7 @@ cd ..
 
 # use black.list to control CI tests
 filename="black.list"
-models=$(ls -d */ | grep -v -F -f "$filename")
+models=$(ls -d */ | grep -v -F -f "$filename" | awk -F '/' '{print $1}')
 
 for model in $models
 do
