@@ -1,5 +1,5 @@
 from __future__ import print_function
-import paddle.fluid as fluid
+
 import paddle
 import sys
 import os
@@ -16,11 +16,8 @@ try:
     # trace
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs] = fluid.io.load_inference_model(
-        dirname="pd_model_trace/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model_trace/inference_model/model", executor=exe)
     result = exe.run(prog, feed={inputs[0]: input_data}, fetch_list=outputs)
     result_string = "Trace Successed"
     for i in range(len(result)):

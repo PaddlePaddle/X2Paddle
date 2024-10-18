@@ -4,7 +4,6 @@ import pickle
 
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
