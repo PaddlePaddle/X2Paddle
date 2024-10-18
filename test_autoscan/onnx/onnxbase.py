@@ -224,7 +224,7 @@ class ONNXConverter(object):
             self.run_dynamic = True
 
         # TODO(megemini): create_predictor stuck
-        self.run_dynamic = True
+        # self.run_dynamic = True
 
         if self.run_dynamic:
             logger.info(">>> self.run_dynamic...")
@@ -275,7 +275,8 @@ class ONNXConverter(object):
 
             logger.info(">>> config.disable_glog_info...")
 
-            config.disable_glog_info()
+            # TODO(megemini): debug
+            # config.disable_glog_info()
 
             logger.info(">>> config.pass_builder...")
 

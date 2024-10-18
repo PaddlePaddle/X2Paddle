@@ -181,7 +181,7 @@ class TorchConverter(object):
             self.run_dynamic = True
 
         # TODO(megemini): create_predictor stuck
-        self.run_dynamic = True
+        # self.run_dynamic = True
 
         if self.run_dynamic:
             paddle_path = os.path.join(self.pwd, self.name,
@@ -213,7 +213,10 @@ class TorchConverter(object):
             config.enable_memory_optim()
             # disable feed, fetch OP, needed by zero_copy_run
             config.switch_use_feed_fetch_ops(False)
-            config.disable_glog_info()
+
+            # TODO(megemini): debug
+            # config.disable_glog_info()
+
             pass_builder = config.pass_builder()
             predictor = create_predictor(config)
             input_names = predictor.get_input_names()

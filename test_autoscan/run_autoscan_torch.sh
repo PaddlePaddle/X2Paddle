@@ -46,6 +46,9 @@ do
         cat ${log_name}
   fi
 
+  # TODO(megemini): debug, only run one test
+  break
+
 done
 
 tar zcvf logs.tar.gz logs
