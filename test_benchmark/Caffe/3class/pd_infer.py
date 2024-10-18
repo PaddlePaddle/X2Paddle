@@ -1,6 +1,5 @@
 from __future__ import print_function
 import paddle
-import paddle.fluid as fluid
 import sys
 import os
 import numpy as np
@@ -16,11 +15,8 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(
-        dirname="pd_model_dygraph/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model_dygraph/inference_model/model", executor=exe)
     # test dygraph
     paddle.disable_static()
     from pd_model_dygraph.x2paddle_code import main

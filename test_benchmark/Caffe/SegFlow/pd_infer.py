@@ -1,4 +1,3 @@
-import paddle.fluid as fluid
 import paddle
 import numpy as np
 import sys
@@ -11,11 +10,8 @@ try:
     exe = paddle.static.Executor(paddle.CUDAPlace(0))
 
     # test dygraph
-    [prog, inputs, outputs] = fluid.io.load_inference_model(
-        dirname="pd_model_dygraph/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model_dygraph/inference_model/model", executor=exe)
     with open("../dataset/SegFlow/inputs_segflow_0314.pkl", "rb") as fr:
         input_list = pickle.load(fr)
     result = exe.run(prog,
