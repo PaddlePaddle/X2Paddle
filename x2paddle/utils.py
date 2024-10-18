@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
+from packaging.version import Version
+
 import paddle
 import x2paddle
 import hashlib
@@ -30,14 +34,25 @@ def string(param):
     return "\'{}\'".format(param)
 
 
-def check_version():
-    version = paddle.__version__
-    v0, v1, v2 = version.split('.')
-    if not ((v0 == '0' and v1 == '0' and v2 == '0') or
-            (int(v0) >= 2 and int(v1) >= 1)):
-        return False
-    else:
+def check_version(base_version: str = '2.1.0') -> bool:
+    """
+    Return `True` if the current version is equal or bigger than `base_version`.
+    The default version `2.1.0` is used for checking `is_new_version`.
+    """
+    is_new = False
+
+    dev_version = Version('0.0.0')
+    cur_version = Version(paddle.__version__)
+
+    if cur_version == dev_version:
+        logging.info("[WARNING] You are use develop version of paddlepaddle")
+
         return True
+
+    if cur_version >= Version(base_version):
+        return True
+
+    return False
 
 
 def _md5(text: str):

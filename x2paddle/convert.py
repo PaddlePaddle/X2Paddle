@@ -14,11 +14,15 @@
 
 from six import text_type as _text_type
 from x2paddle import program
-from x2paddle.utils import ConverterCheck
+from x2paddle.utils import ConverterCheck, check_version
 import argparse
 import sys
 import logging
 import time
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def arg_parser():
@@ -275,6 +279,9 @@ def onnx2paddle(model_path,
                 lite_model_type="naive_buffer",
                 disable_feedback=False,
                 enable_onnx_checker=True):
+
+    logger.info(">>> onnx2paddle ...")
+
     # for convert_id
     time_info = int(time.time())
     if not disable_feedback:
@@ -287,27 +294,27 @@ def onnx2paddle(model_path,
         v0, v1, v2 = version.split('.')
         version_sum = int(v0) * 100 + int(v1) * 10 + int(v2)
         if version_sum < 160:
-            logging.info("[ERROR] onnx>=1.6.0 is required")
+            logger.info("[ERROR] onnx>=1.6.0 is required")
             return
     except:
-        logging.info(
+        logger.info(
             "[ERROR] onnx is not installed, use \"pip install onnx==1.6.0\".")
         return
-    logging.info("Now translating model from onnx to paddle.")
+    logger.info("Now translating model from onnx to paddle.")
 
     # Do optimizer
     if enable_optim:
         from onnxsim import simplify
         onnx_net_opt_path = model_path[:-5] + '_opt.onnx'
-        logging.info("ONNX Model optimizing ...")
+        logger.info("ONNX Model optimizing ...")
         # load your predefined ONNX model
         model = onnx.load(model_path)
         # convert model
         model_simp, check = simplify(model)
         assert check, "Simplified ONNX model could not be validated"
-        logging.info("Export optimized onnx model:{}".format(onnx_net_opt_path))
+        logger.info("Export optimized onnx model:{}".format(onnx_net_opt_path))
         onnx.save(model_simp, onnx_net_opt_path)
-        logging.info("ONNX Model optimized!")
+        logger.info("ONNX Model optimized!")
         model_path = onnx_net_opt_path
 
     from x2paddle.decoder.onnx_decoder import ONNXDecoder
@@ -315,36 +322,36 @@ def onnx2paddle(model_path,
     model = ONNXDecoder(model_path, enable_onnx_checker, input_shape_dict)
     mapper = ONNXOpMapper(model)
     mapper.paddle_graph.build()
-    logging.info("Model optimizing ...")
+    logger.info("Model optimizing ...")
     from x2paddle.optimizer.optimizer import GraphOptimizer
     graph_opt = GraphOptimizer(source_frame="onnx")
     graph_opt.optimize(mapper.paddle_graph)
-    logging.info("Model optimized.")
+    logger.info("Model optimized.")
     mapper.paddle_graph.gen_model(save_dir)
-    logging.info("Successfully exported Paddle static graph model!")
+    logger.info("Successfully exported Paddle static graph model!")
     if not disable_feedback:
         ConverterCheck(task="ONNX",
                        time_info=time_info,
                        convert_state="Success").start()
     if convert_to_lite:
-        logging.info("Now translating model from Paddle to Paddle Lite ...")
+        logger.info("Now translating model from Paddle to Paddle Lite ...")
         if not disable_feedback:
             ConverterCheck(task="ONNX", time_info=time_info,
                            lite_state="Start").start()
         convert2lite(save_dir, lite_valid_places, lite_model_type)
-        logging.info("Successfully exported Paddle Lite support model!")
+        logger.info("Successfully exported Paddle Lite support model!")
         if not disable_feedback:
             ConverterCheck(task="ONNX",
                            time_info=time_info,
                            lite_state="Success").start()
     # for convert survey
-    logging.info("================================================")
-    logging.info("")
-    logging.info(
+    logger.info("================================================")
+    logger.info("")
+    logger.info(
         "Model Converted! Fill this survey to help X2Paddle better, https://iwenjuan.baidu.com/?code=npyd51 "
     )
-    logging.info("")
-    logging.info("================================================")
+    logger.info("")
+    logger.info("================================================")
 
 
 def pytorch2paddle(module,
@@ -449,20 +456,15 @@ def main():
     assert args.save_dir is not None, "--save_dir is not defined"
 
     try:
-        import platform
-        v0, v1, v2 = platform.python_version().split('.')
-        if not (int(v0) >= 3 and int(v1) >= 5):
-            logging.info("[ERROR] python>=3.5 is required")
+        if not sys.version_info >= (3, 8):
+            logging.error("[ERROR] python>=3.8 is required")
             return
+
         import paddle
-        v0, v1, v2 = paddle.__version__.split('.')
-        logging.info("paddle.__version__ = {}".format(paddle.__version__))
-        if v0 == '0' and v1 == '0' and v2 == '0':
-            logging.info(
-                "[WARNING] You are use develop version of paddlepaddle")
-        elif int(v0) != 2 or int(v1) < 0:
-            logging.info("[ERROR] paddlepaddle>=2.0.0 is required")
+        if not check_version('2.0.0'):
+            logging.error("[ERROR] paddlepaddle>=2.0.0 is required")
             return
+
     except:
         logging.info(
             "[ERROR] paddlepaddle not installed, use \"pip install paddlepaddle\""
