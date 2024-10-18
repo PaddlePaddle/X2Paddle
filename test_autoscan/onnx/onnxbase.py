@@ -223,6 +223,9 @@ class ONNXConverter(object):
         if "float64" in self.inputs_dtype:
             self.run_dynamic = True
 
+        # TODO(megemini): create_predictor stuck
+        self.run_dynamic = True
+
         if self.run_dynamic:
             logger.info(">>> self.run_dynamic...")
 
