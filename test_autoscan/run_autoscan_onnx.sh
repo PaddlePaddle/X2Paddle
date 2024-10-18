@@ -27,8 +27,8 @@ do
 
   echo " >>> begin test ..."
 
-  # python ${var} > ${log_name} 2>&1
-  python ${var}
+  python ${var} > ${log_name} 2>&1
+  # python ${var}
 
 done
 
