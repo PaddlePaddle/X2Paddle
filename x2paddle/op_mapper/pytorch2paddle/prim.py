@@ -31,6 +31,21 @@ def prim_Constant(mapper, graph, node):
     output = list(node.outputs())[0]
     value = output.toIValue()
     output_type = output.type()
+
+    # make a `0` for `None` value
+    if value is None:
+        dtype = str(torch.get_default_dtype()).split('.')[1]
+        mapper.paddle_params[output_name] = np.array(0.0).astype(dtype)
+        graph.add_layer(
+            "self.create_parameter",
+            inputs={},
+            outputs=[output_name],
+            scope_name=scope_name,
+            dtype=string(dtype),
+            shape=mapper.paddle_params[output_name].shape,
+            default_initializer="paddle.nn.initializer.Constant(value=0.0)")
+        return [], [output_name]
+
     if isinstance(value, str):
         value = string(value)
     if "Tensor" in str(output_type):
@@ -75,6 +90,23 @@ def prim_Constant(mapper, graph, node):
                     default_initializer=
                     "paddle.nn.initializer.Constant(value=0.0)")
                 return [], [output_name]
+
+        # new control flow for PaddleV3 task
+        tensor_str_value = str(tensor_value)
+        if "tensor" in tensor_str_value:
+            mapper.paddle_params[output_name] = tensor_value.cpu().detach(
+            ).numpy()
+            graph.add_layer("self.create_parameter",
+                            inputs={},
+                            outputs=[output_name],
+                            scope_name=scope_name,
+                            dtype=string(
+                                str(mapper.paddle_params[output_name].dtype)),
+                            shape=mapper.paddle_params[output_name].shape,
+                            default_initializer=
+                            f"paddle.nn.initializer.Constant(value={value})")
+            return [], [output_name]
+
     if "inf" in str(value):
         t = str(type(value)).split("'")[1]
         if str(value).startswith("-"):

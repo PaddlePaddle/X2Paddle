@@ -60,12 +60,24 @@ class TraceDecoder(Decoder):
 
     def __init__(self, module, input_examples):
         try:
-            self.script = torch.jit.trace(module, input_examples)
+            if isinstance(input_examples, dict):
+                self.script = torch.jit.trace(
+                    module, example_kwarg_inputs=input_examples)
+            else:
+                self.script = torch.jit.trace(module,
+                                              example_inputs=input_examples)
+
         except RuntimeError as e:
             if "strict" in str(e):
-                self.script = torch.jit.trace(module,
-                                              input_examples,
-                                              strict=False)
+                if isinstance(input_examples, dict):
+                    self.script = torch.jit.trace(
+                        module,
+                        example_kwarg_inputs=input_examples,
+                        strict=False)
+                else:
+                    self.script = torch.jit.trace(module,
+                                                  example_inputs=input_examples,
+                                                  strict=False)
             else:
                 print(e)
                 exit(0)

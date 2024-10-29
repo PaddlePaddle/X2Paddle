@@ -161,7 +161,9 @@ class BenchmarkPipeline:
                 import torch
                 if isinstance(pytorch_result[i], torch.Tensor):
                     diff = results[i] - pytorch_result[i].detach().numpy()
-                    if np.max(np.fabs(diff)) > 1e-04:
+                    # if `abs_diff_threshold` being set by user,
+                    # we should choose the bigger one.
+                    if np.max(np.fabs(diff)) > max(1e-04, abs_diff_threshold):
                         self.compare_result = "Compare Failed"
                 else:
                     diff = results[i] - pytorch_result[i]

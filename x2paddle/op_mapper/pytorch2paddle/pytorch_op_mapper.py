@@ -25,7 +25,9 @@ class PyTorchOpMapper():
 
     def __init__(self, decoder):
         self.script = decoder.script
-        self.input_examples = decoder.input_examples
+        self.input_examples = list(
+            decoder.input_examples.values()) if isinstance(
+                decoder.input_examples, dict) else decoder.input_examples
         self.paddle_params = dict()
         self.outputs_info = {}  # key为output unique id，value为当前节点的输出名字
         self.pytorch_params = {}  # key为节点名，value为参数
@@ -173,7 +175,14 @@ class PyTorchOpMapper():
             outputs_name.append(output_name)
         return outputs_name
 
-    def _check_input(self, graph, node, output_name, node_outputs, scope_name):
+    def _check_input(self,
+                     graph,
+                     node,
+                     output_name,
+                     node_outputs,
+                     scope_name,
+                     dtype=None,
+                     shape=None):
         if node.kind() == "prim::GetAttr":
             param = self.pytorch_params[output_name]
             if isinstance(param, np.ndarray):
@@ -231,19 +240,32 @@ class PyTorchOpMapper():
                                     value=string(param) if isinstance(
                                         param, str) else param)
             node_outputs.append(output_name)
-        elif node.kind(
-        ) == "prim::Constant" and output_name in self.pytorch_params:
-            param = self.pytorch_params[output_name]
-            self.paddle_params[output_name] = param
-            layer_id = graph.add_layer(
-                "self.create_parameter",
-                inputs={},
-                outputs=[output_name],
-                scope_name=scope_name,
-                dtype=string(str(param.dtype)),
-                shape=param.shape,
-                default_initializer="paddle.nn.initializer.Constant(value=0.0)")
-            self.output2id[output_name] = layer_id
+        elif node.kind() == "prim::Constant":
+            if output_name in self.pytorch_params:
+                param = self.pytorch_params[output_name]
+                self.paddle_params[output_name] = param
+                layer_id = graph.add_layer(
+                    "self.create_parameter",
+                    inputs={},
+                    outputs=[output_name],
+                    scope_name=scope_name,
+                    dtype=string(str(param.dtype)),
+                    shape=param.shape,
+                    default_initializer=
+                    "paddle.nn.initializer.Constant(value=0.0)")
+                self.output2id[output_name] = layer_id
+            else:
+                if dtype is not None and shape is not None:
+                    layer_id = graph.add_layer(
+                        "self.create_parameter",
+                        inputs={},
+                        outputs=[output_name],
+                        scope_name=scope_name,
+                        dtype=dtype,
+                        shape=shape,
+                        default_initializer=
+                        "paddle.nn.initializer.Constant(value=0.0)")
+                    self.output2id[output_name] = layer_id
 
     def _get_inputs_name(self, node):
         inputs_name = []
