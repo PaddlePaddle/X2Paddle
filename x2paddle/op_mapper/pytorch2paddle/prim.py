@@ -36,6 +36,7 @@ def prim_Constant(mapper, graph, node):
     if value is None:
         dtype = str(torch.get_default_dtype()).split('.')[1]
         mapper.paddle_params[output_name] = np.array(0.0).astype(dtype)
+        mapper.attrs[output_name] = None
         graph.add_layer(
             "self.create_parameter",
             inputs={},
