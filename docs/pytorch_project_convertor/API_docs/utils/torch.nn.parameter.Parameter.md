@@ -4,7 +4,7 @@
 torch.nn.parameter.Parameter(data, requires_grad=True)
 ```
 
-## [paddle.create_parameter](https://github.com/PaddlePaddle/Paddle/blob/release/2.1/python/paddle/fluid/layers/tensor.py#L77)
+## [paddle.create_parameter](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api/paddle/create_parameter_cn.html#create-parameter)
 ```python
 paddle.create_parameter(shape,
                        dtype,
