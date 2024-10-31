@@ -8,7 +8,7 @@ n_classes = 3
 modelFile = '../dataset/mobilenetv3/MobileNetV3_large.pth'
 torch_model = mobilenet_v3_large(num_classes=n_classes)  #模型结构
 #加载模型
-checkpoint = torch.load(modelFile, map_location='cuda:0')
+checkpoint = torch.load(modelFile, map_location='cpu')
 torch_model.load_state_dict(checkpoint)  #加载预训练参数
 # 设置为eval模式
 torch_model.eval()
