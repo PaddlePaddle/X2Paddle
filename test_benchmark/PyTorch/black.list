@@ -1,14 +1,8 @@
-BertForMaskedLM_dccuchile
-BertModel_SpanBert
-CamembertForQuestionAnswering
-DPRContextEncoder
 EasyOCR_detector
 EasyOCR_recognizer
 MiniFasNet
 MockingBird
-Roberta
 SwinTransformer
-XLMRobertaForTokenClassification
 dataset
 tools
 output
