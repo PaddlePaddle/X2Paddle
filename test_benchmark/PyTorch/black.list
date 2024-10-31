@@ -4,7 +4,6 @@ CamembertForQuestionAnswering
 DPRContextEncoder
 EasyOCR_detector
 EasyOCR_recognizer
-GRU
 MiniFasNet
 MockingBird
 Roberta
