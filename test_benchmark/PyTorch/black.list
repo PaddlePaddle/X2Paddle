@@ -2,10 +2,8 @@ BertForMaskedLM_dccuchile
 BertModel_SpanBert
 CamembertForQuestionAnswering
 DPRContextEncoder
-DeepLabv3_ResNet50
 EasyOCR_detector
 EasyOCR_recognizer
-FCN_ResNet50
 GRU
 MiniFasNet
 MockingBird
