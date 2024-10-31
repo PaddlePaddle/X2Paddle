@@ -1,4 +1,3 @@
-import paddle.fluid as fluid
 import paddle
 import numpy as np
 import sys
@@ -12,11 +11,8 @@ paddle.enable_static()
 exe = paddle.static.Executor(paddle.CPUPlace())
 
 # test dygraph
-[prog, inputs, outputs
- ] = fluid.io.load_inference_model(dirname="pd_model_dygraph/inference_model/",
-                                   executor=exe,
-                                   model_filename="model.pdmodel",
-                                   params_filename="model.pdiparams")
+[prog, inputs, outputs] = paddle.static.load_inference_model(
+    path_prefix="pd_model_dygraph/inference_model/model", executor=exe)
 # data = np.load('onnx_inputs.npy',allow_pickle=True)
 with open("../dataset/yolov5s_fix_resize/onnx_inputs.pkl", "rb") as fr:
     data = pickle.load(fr)

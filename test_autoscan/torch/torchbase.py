@@ -180,6 +180,9 @@ class TorchConverter(object):
         if "float64" in self.inputs_dtype:
             self.run_dynamic = True
 
+        # TODO(megemini): create_predictor stuck
+        self.run_dynamic = True
+
         if self.run_dynamic:
             paddle_path = os.path.join(self.pwd, self.name,
                                        self.name + '_paddle/')

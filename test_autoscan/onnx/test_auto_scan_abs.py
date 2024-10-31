@@ -19,6 +19,12 @@ import hypothesis.strategies as st
 import numpy as np
 import unittest
 
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class TestAbsConvert(OPConvertAutoScanTest):
     """
@@ -51,6 +57,8 @@ class TestAbsConvert(OPConvertAutoScanTest):
         return (config, attrs)
 
     def test(self):
+        logger.info('>>> test_auto_scan_abs.py::test')
+
         self.run_and_statis(max_examples=30)
 
 

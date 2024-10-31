@@ -10,7 +10,6 @@ import GPUtil
 import yaml
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from paddle.inference import create_predictor, PrecisionType
 from paddle.inference import Config
 from benchmark_utils import PaddleInferBenchmark
@@ -201,11 +200,8 @@ class BenchmarkPipeline:
         paddle.enable_static()
         exe = paddle.static.Executor(paddle.CPUPlace())
         # test Dygraph
-        [prog, inputs, outputs
-         ] = fluid.io.load_inference_model(dirname=model_dir,
-                                           executor=exe,
-                                           model_filename="model.pdmodel",
-                                           params_filename="model.pdiparams")
+        [prog, inputs, outputs] = paddle.static.load_inference_model(
+            path_prefix=model_dir + "/model", executor=exe)
         #test op nums
         op_dict = dict()
         op_nums = 0

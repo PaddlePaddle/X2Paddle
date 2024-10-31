@@ -1,5 +1,5 @@
 import paddle
-import paddle.fluid as fluid
+
 import numpy as np
 import pickle
 import sys
@@ -11,11 +11,8 @@ try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
     # test trace
-    [prog, inputs, outputs] = fluid.io.load_inference_model(
-        dirname="pd_model_trace/inference_model/",
-        executor=exe,
-        model_filename="model.pdmodel",
-        params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model_trace/inference_model/model", executor=exe)
     data = np.load('../dataset/ResNet18_2/input.npy')
     result = exe.run(prog, feed={inputs[0]: data}, fetch_list=outputs)
 

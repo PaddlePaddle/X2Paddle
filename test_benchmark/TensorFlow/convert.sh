@@ -8,21 +8,21 @@ find . -name "pd_model_dygraph" | xargs rm -rf
 find . -name "run.log" | xargs rm -rf
 find . -name "run.err" | xargs rm -rf
 
-models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'KerasBert')
-num_of_models=$(ls -d */ | grep -v 'tools' | grep -v 'output' | grep -v 'dataset' | grep -v 'KerasBert' | wc -l)
-num_of_pb_files=$(find . -name "*.pb" | wc -l)
-
-#if [ $num_of_pb_files -ne $num_of_models ]
-#then
-#    echo "[ERROR] num_of_pb_files != num_of_models"
-#    exit -1
-#fi
+# use black.list to control CI tests
+filename="black.list"
+models=$(ls -d */ | grep -v -F -f "$filename" | awk -F '/' '{print $1}')
+num_of_models=$(ls -d */ | grep -v -F -f "$filename" | wc -l)
 
 counter=1
 for model in $models
 do
     echo "[X2Paddle-TensorFlow] ${counter}/${num_of_models} $model ..."
     cd $model
+
+    # make default result is `Failed` in case of `result.txt` not generated
+    touch result.txt
+    echo $model ">>>Failed"> result.txt
+
     sh run_convert.sh $model 1>run.log 2>run.err &
     cd ..
     counter=$(($counter+1))

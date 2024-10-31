@@ -6487,6 +6487,76 @@ def aten_amax(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+def aten_amin(mapper, graph, node):
+    """
+    TorchScript:
+        %max_scores : Tensor = aten::amin(%scores.1, %2973, %1914)
+        Parameter meaning:
+        %max_scores (Tensor): Output Tensor
+        %scores.1 (Tensor): Input Tensor
+        %2973 (int/list): Axis
+        %1914 (bool): Keepdim
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    squeeze_dim = None
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+    # 处理输入0，即%scores.1
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["x"] = inputs_name[0]
+    current_inputs = list(layer_inputs.values())
+    # process Axis
+    if inputs_name[1] in mapper.attrs:
+        layer_attrs["axis"] = mapper.attrs[inputs_name[1]]
+        squeeze_dim = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["axis"] = inputs_name[1]
+        current_inputs.append(inputs_name[1])
+        squeeze_dim = inputs_name[1]
+    # process Keepdim
+    if inputs_name[2] in mapper.attrs:
+        layer_attrs["keepdim"] = mapper.attrs[inputs_name[2]]
+    else:
+        mapper._check_input(graph, inputs_node[2], inputs_name[2],
+                            current_outputs, scope_name)
+        layer_inputs["keepdim"] = inputs_name[2]
+        current_inputs.append(inputs_name[2])
+
+    if "keepdim" in layer_inputs and not layer_inputs["keepdim"] or (
+            "keepdim" in layer_attrs and not layer_attrs["keepdim"]):
+        if "keepdim" in layer_inputs:
+            layer_inputs["keepdim"] = True
+        else:
+            layer_attrs["keepdim"] = True
+        graph.add_layer("paddle.amin",
+                        inputs=layer_inputs,
+                        outputs=[output_name + "_unsqueezed"],
+                        scope_name=scope_name,
+                        **layer_attrs)
+
+        graph.add_layer("paddle.squeeze",
+                        inputs={"x": output_name + "_unsqueezed"},
+                        outputs=layer_outputs,
+                        scope_name=scope_name,
+                        **{"axis": squeeze_dim})
+    else:
+        graph.add_layer("paddle.amin",
+                        inputs=layer_inputs,
+                        outputs=layer_outputs,
+                        scope_name=scope_name,
+                        **layer_attrs)
+
+    return current_inputs, current_outputs
+
+
 def aten_topk(mapper, graph, node):
     """
     TorchScript:
@@ -6549,6 +6619,97 @@ def aten_topk(mapper, graph, node):
                     scope_name=scope_name,
                     **layer_attrs)
 
+    return current_inputs, current_outputs
+
+
+def aten_pad(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.23 : Tensor = aten::pad(%input.21, %116, %114, %113)
+        Parameter meaning:
+        %input.21 (Tensor): Input Tensor
+        %116 (list): pad
+        %114 (str): pad mode
+        %113 (float): value
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+
+    # process pad
+    padding_attr = None
+    if inputs_name[1] in mapper.attrs:
+        padding_attr = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["pad"] = inputs_name[1]
+
+    # process `mode`
+    _pad_mode = mapper.attrs[inputs_name[2]]
+    layer_attrs["mode"] = _pad_mode
+
+    # process value, try to conver to `float`
+    # with `None` which raise exception, make `value` be `0` as default.
+    _pad_value = mapper.attrs[inputs_name[3]]
+    _pad_value = _pad_value or 0
+    try:
+        _pad_value = float(_pad_value)
+    except ValueError:
+        _pad_value = 0
+    layer_attrs["value"] = _pad_value
+
+    # process `data_format`
+    # TODO(megemini): the lastest version of `Paddle v3`,
+    # just make `data_format = string("None")`
+    # because `paddle.nn.functional.pad` can infer from input `x`
+    data_format = string("None")
+    if inputs_name[0] in mapper.attrs:
+        x_dim = len(mapper.attrs[inputs_name[0]])
+        if x_dim == 3:
+            data_format = string("NCL")
+        elif x_dim == 4:
+            data_format = string("NCHW")
+        elif x_dim == 5:
+            data_format = string("NCDHW")
+    else:
+        if len(padding_attr) == 2:
+            data_format = string("NCL")
+        elif len(padding_attr) == 4:
+            data_format = string("NCHW")
+        elif len(padding_attr) == 6:
+            data_format = string("NCDHW")
+    layer_attrs["data_format"] = data_format
+
+    # process `pad`
+    if padding_attr is not None:
+        layer_attrs["pad"] = padding_attr
+        if 'constant' in _pad_mode:
+            if len(padding_attr) == 2:
+                layer_attrs["pad"] = [0, 0, 0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 4:
+                layer_attrs["pad"] = [0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 6:
+                layer_attrs["pad"] = [0, 0] + padding_attr
+
+    # input and kernel
+    layer_inputs["x"] = inputs_name[0]
+    kernel_name = "paddle.nn.functional.pad"
+
+    graph.add_layer(kernel_name,
+                    inputs=layer_inputs,
+                    outputs=[output_name],
+                    scope_name=scope_name,
+                    **layer_attrs)
+    current_inputs = list(layer_inputs.values())
     return current_inputs, current_outputs
 
 
