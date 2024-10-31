@@ -1,8 +1,6 @@
 EasyOCR_detector
 EasyOCR_recognizer
-MiniFasNet
 MockingBird
-SwinTransformer
 dataset
 tools
 output
