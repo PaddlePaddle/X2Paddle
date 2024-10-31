@@ -32,7 +32,9 @@ do
     touch result.txt
     echo $model ">>>Failed"> result.txt
 
-    sh run_convert.sh 1>run.log 2>run.err &
+    # TODO(megemini): debug
+    # sh run_convert.sh 1>run.log 2>run.err &
+    sh run_convert.sh
     cd ..
     counter=$(($counter+1))
     step=$(( $counter % 1 ))

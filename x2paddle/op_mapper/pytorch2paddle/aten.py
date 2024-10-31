@@ -14,10 +14,16 @@
 # limitations under the License.
 
 import copy
+import logging
+
 import numpy as np
 from x2paddle.core.util import name_generator, string
 from x2paddle.utils import paddle_dtypes
 from x2paddle.core.program import PaddleGraph
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 dtype_dict = {
     0: string("uint8"),
@@ -4213,6 +4219,10 @@ def aten_norm(mapper, graph, node):
     return current_inputs, current_outputs
 
 
+# pytorch has one more param: `dtype`, which is not used.
+aten_linalg_vector_norm = aten_norm
+
+
 def aten___not__(mapper, graph, node):
     """ 构造对bool型取负的PaddleLayer。
     TorchScript示例:
@@ -6629,6 +6639,214 @@ def aten_topk(mapper, graph, node):
         current_inputs.append(inputs_name[4])
 
     graph.add_layer("paddle.topk",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name,
+                    **layer_attrs)
+
+    return current_inputs, current_outputs
+
+
+def aten_pad(mapper, graph, node):
+    """
+    TorchScript Code:
+        %input.23 : Tensor = aten::pad(%input.21, %116, %114, %113)
+        Parameter meaning:
+        %input.21 (Tensor): Input Tensor
+        %116 (list): pad
+        %114 (str): pad mode
+        %113 (float): value
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    op_name = name_generator("pad", mapper.nn_name2id)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # Output list
+    current_outputs = [output_name]
+    # process Input Tensor
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+
+    # process pad
+    padding_attr = None
+    if inputs_name[1] in mapper.attrs:
+        padding_attr = mapper.attrs[inputs_name[1]]
+    else:
+        mapper._check_input(graph, inputs_node[1], inputs_name[1],
+                            current_outputs, scope_name)
+        layer_inputs["pad"] = inputs_name[1]
+
+    # process `mode`
+    _pad_mode = mapper.attrs[inputs_name[2]]
+    layer_attrs["mode"] = _pad_mode
+
+    # process value, try to conver to `float`
+    # with `None` which raise exception, make `value` be `0` as default.
+    _pad_value = mapper.attrs[inputs_name[3]]
+    _pad_value = _pad_value or 0
+    try:
+        _pad_value = float(_pad_value)
+    except ValueError:
+        _pad_value = 0
+    layer_attrs["value"] = _pad_value
+
+    # process `data_format`
+    # TODO(megemini): the lastest version of `Paddle v3`,
+    # just make `data_format = string("None")`
+    # because `paddle.nn.functional.pad` can infer from input `x`
+    data_format = string("None")
+    if inputs_name[0] in mapper.attrs:
+        x_dim = len(mapper.attrs[inputs_name[0]])
+        if x_dim == 3:
+            data_format = string("NCL")
+        elif x_dim == 4:
+            data_format = string("NCHW")
+        elif x_dim == 5:
+            data_format = string("NCDHW")
+    else:
+        if len(padding_attr) == 2:
+            data_format = string("NCL")
+        elif len(padding_attr) == 4:
+            data_format = string("NCHW")
+        elif len(padding_attr) == 6:
+            data_format = string("NCDHW")
+    layer_attrs["data_format"] = data_format
+
+    # process `pad`
+    if padding_attr is not None:
+        layer_attrs["pad"] = padding_attr
+        if 'constant' in _pad_mode:
+            if len(padding_attr) == 2:
+                layer_attrs["pad"] = [0, 0, 0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 4:
+                layer_attrs["pad"] = [0, 0, 0, 0] + padding_attr
+            elif len(padding_attr) == 6:
+                layer_attrs["pad"] = [0, 0] + padding_attr
+
+    # input and kernel
+    layer_inputs["x"] = inputs_name[0]
+    kernel_name = "paddle.nn.functional.pad"
+
+    graph.add_layer(kernel_name,
+                    inputs=layer_inputs,
+                    outputs=[output_name],
+                    scope_name=scope_name,
+                    **layer_attrs)
+    current_inputs = list(layer_inputs.values())
+    return current_inputs, current_outputs
+
+
+def aten_list(mapper, graph, node):
+    """ python 的 `list` 转换，如 `list((1,2,3))`
+    TorchScript示例:
+        %1926 : int[] = aten::list(%1925)
+        参数含义:
+        %1926 (list): 输出，转换为list。
+        %1925 (-): 可以转为list的输入
+    """
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)[0]
+    layer_outputs = [output_name]
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+
+    # process input
+    layer_inputs["x"] = inputs_name[0]
+
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("prim.list_",
+                    inputs=layer_inputs,
+                    outputs=layer_outputs,
+                    scope_name=scope_name)
+    return current_inputs, current_outputs
+
+
+def aten_scaled_dot_product_attention(mapper, graph, node):
+    """
+    TorchScript:
+        %attn_output.17 : Tensor = aten::scaled_dot_product_attention(
+            %query_layer.9,
+            %key_layer.9,
+            %value_layer.9,
+            %attention_mask,
+            %13,
+            %29,
+            %19)
+        Parameter meaning:
+        %attn_output.17 (Tensor): output Tensor
+        %query_layer.9 (Tensor): input query
+        %key_layer.9 (Tensor): input key
+        %value_layer.9 (Tensor): input value
+        %attention_mask (Tensor): input mask
+        %13 (float): dropout ratio
+        %29 (bool): is_causal
+        %19 (float): scale, default is None. Note: paddle not support this param.
+    """
+    logger.warning(
+        "This API `paddle.nn.functional.scaled_dot_product_attention` only supports inputs with dtype float16 and bfloat16.\n"
+        "And the function is subject to change.\n"
+        "If `transformers` is using for loading model from pretrained, try to use `attn_implementation='eager'`.\n"
+        "e.g. `torch_model = BertForMaskedLM.from_pretrained('/checkpoints', attn_implementation='eager')`"
+    )
+
+    scope_name = mapper.normalize_scope_name(node)
+    output_name = mapper._get_outputs_name(node)
+    layer_outputs = output_name
+    layer_inputs = {}
+    layer_attrs = {}
+    inputs_name, inputs_node = mapper._get_inputs_name(node)
+    # 获取当前节点输出的list
+    current_outputs = [output_name]
+
+    # 处理输入0，即%query_layer.9
+    mapper._check_input(graph, inputs_node[0], inputs_name[0], current_outputs,
+                        scope_name)
+    layer_inputs["query"] = inputs_name[0]
+
+    # 处理输入1，即%key_layer.9
+    mapper._check_input(graph, inputs_node[1], inputs_name[1], current_outputs,
+                        scope_name)
+    layer_inputs["key"] = inputs_name[1]
+
+    # 处理输入2，即%value_layer.9
+    mapper._check_input(graph, inputs_node[2], inputs_name[2], current_outputs,
+                        scope_name)
+    layer_inputs["value"] = inputs_name[2]
+
+    # 处理输入3，即%attention_mask
+    mapper._check_input(graph, inputs_node[3], inputs_name[3], current_outputs,
+                        scope_name)
+    layer_inputs["attn_mask"] = inputs_name[3]
+
+    # process dropout ratio
+    if inputs_name[4] in mapper.attrs:
+        layer_attrs["dropout_p"] = mapper.attrs[inputs_name[4]]
+    else:
+        mapper._check_input(graph, inputs_node[4], inputs_name[4],
+                            current_outputs, scope_name)
+        layer_inputs["dropout_p"] = inputs_name[4]
+
+    # process is_causal
+    if inputs_name[5] in mapper.attrs:
+        layer_attrs["is_causal"] = mapper.attrs[inputs_name[5]]
+    else:
+        mapper._check_input(graph, inputs_node[5], inputs_name[5],
+                            current_outputs, scope_name)
+        layer_inputs["is_causal"] = inputs_name[5]
+
+    layer_attrs["training"] = False
+
+    # 获取当前节点输入的list
+    current_inputs = list(layer_inputs.values())
+
+    graph.add_layer("paddle.nn.functional.scaled_dot_product_attention",
                     inputs=layer_inputs,
                     outputs=layer_outputs,
                     scope_name=scope_name,
