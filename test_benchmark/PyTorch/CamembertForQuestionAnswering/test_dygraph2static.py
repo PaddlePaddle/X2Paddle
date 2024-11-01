@@ -1,15 +1,11 @@
-import paddle.fluid as fluid
-import paddle.fluid.core as core
+import paddle.base.core as core
 import paddle
 import pickle
 
 paddle.enable_static()
-exe = fluid.Executor(fluid.CPUPlace())
-[prog, feed,
- fetchs] = fluid.io.load_inference_model(dirname="pd_model/inference_model/",
-                                         executor=exe,
-                                         model_filename="model.pdmodel",
-                                         params_filename="model.pdiparams")
+exe = paddle.static.Executor(paddle.CPUPlace())
+[prog, feed, fetchs] = paddle.static.load_inference_model(
+    path_prefix="pd_model/inference_model/model", executor=exe)
 
 
 def append_fetch_ops(program, fetch_target_names, fetch_holder_name='fetch'):

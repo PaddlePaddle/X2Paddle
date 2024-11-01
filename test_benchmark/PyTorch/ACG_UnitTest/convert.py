@@ -14,7 +14,8 @@ def main():
                                num_blocks=2,
                                time_window=3)
 
-    ckpt = torch.load("../dataset/ACG_UnitTest/model_best.pth")
+    ckpt = torch.load("../dataset/ACG_UnitTest/model_best.pth",
+                      map_location=torch.device('cpu'))
     state_dict = ckpt['model']
     model.load_state_dict(state_dict)
 
