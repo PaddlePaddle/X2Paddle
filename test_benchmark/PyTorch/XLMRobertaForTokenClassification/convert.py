@@ -6,9 +6,17 @@ with open('../dataset/XLMRobertaForTokenClassification/pytorch_input.pkl',
           'rb') as inp:
     input_data = pickle.load(inp)
 
-torch_model = RobertaForTokenClassification.from_pretrained(
-    "../dataset/XLMRobertaForTokenClassification/checkpoints",
-    return_dict=False)
+try:
+    # the latest version of `transformers` support `scaled_dot_product_attention` (SDPA),
+    # we can set `attn_implementation="eager"` not using it.
+    torch_model = RobertaForTokenClassification.from_pretrained(
+        '../dataset/XLMRobertaForTokenClassification/checkpoints',
+        return_dict=False,
+        attn_implementation="eager")
+except:
+    torch_model = RobertaForTokenClassification.from_pretrained(
+        '../dataset/XLMRobertaForTokenClassification/checkpoints',
+        return_dict=False)
 
 torch_model.eval()
 save_dir = "pd_model"

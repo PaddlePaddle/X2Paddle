@@ -1,5 +1,4 @@
 from __future__ import print_function
-import paddle.fluid as fluid
 import paddle
 import sys
 import os
@@ -22,11 +21,8 @@ f.write("======DPRContextEncoder: \n")
 try:
     paddle.enable_static()
     exe = paddle.static.Executor(paddle.CPUPlace())
-    [prog, inputs, outputs
-     ] = fluid.io.load_inference_model(dirname="pd_model/inference_model/",
-                                       executor=exe,
-                                       model_filename="model.pdmodel",
-                                       params_filename="model.pdiparams")
+    [prog, inputs, outputs] = paddle.static.load_inference_model(
+        path_prefix="pd_model/inference_model/model", executor=exe)
     result = exe.run(prog,
                      feed={
                          inputs[0]: input_data["input_ids"],
@@ -34,9 +30,7 @@ try:
                          inputs[2]: input_data["token_type_ids"]
                      },
                      fetch_list=outputs)
-    print(pytorch_output["output0"])
     df = pytorch_output["output0"] - result[0]
-    print(numpy.max(numpy.fabs(df)))
     if numpy.max(numpy.fabs(df)) > 1e-04:
         print("Dygraph Failed\n", file=f)
     else:
