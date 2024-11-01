@@ -6,8 +6,16 @@ with open('../dataset/BertForMaskedLM_dccuchile/pytorch_input.pkl',
           'rb') as inp:
     input_data = pickle.load(inp)
 
-torch_model = BertForMaskedLM.from_pretrained(
-    '../dataset/BertForMaskedLM_dccuchile/checkpoints', return_dict=False)
+try:
+    # the latest version of `transformers` support `scaled_dot_product_attention` (SDPA),
+    # we can set `attn_implementation="eager"` not using it.
+    torch_model = BertForMaskedLM.from_pretrained(
+        '../dataset/BertForMaskedLM_dccuchile/checkpoints',
+        return_dict=False,
+        attn_implementation="eager")
+except:
+    torch_model = BertForMaskedLM.from_pretrained(
+        '../dataset/BertForMaskedLM_dccuchile/checkpoints', return_dict=False)
 
 torch_model.eval()
 save_dir = "pd_model"

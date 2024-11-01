@@ -21,7 +21,7 @@ def load_checkpoint(filepath, device):
     return checkpoint_dict
 
 
-def load_model(weights_fpath, verbose=True):
+def load_model(weights_fpath, verbose=True, device=None):
     global generator, _device
 
     if verbose:
@@ -33,11 +33,10 @@ def load_model(weights_fpath, verbose=True):
     h = AttrDict(json_config)
     torch.manual_seed(h.seed)
 
-    if torch.cuda.is_available():
-        # _model = _model.cuda()
-        _device = torch.device('cuda')
-    else:
-        _device = torch.device('cpu')
+    if device is None:
+        _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    elif isinstance(device, str):
+        _device = torch.device(device)
 
     generator = Generator(h).to(_device)
     state_dict_g = load_checkpoint(weights_fpath, _device)
