@@ -16,7 +16,8 @@ swin_model_cfg_map = {
 model_name = "swin_tiny_patch4_window7_224"
 torch_module = SwinTransformer(**swin_model_cfg_map[model_name])
 torch_state_dict = torch.load(
-    "../dataset/SwinTransformer/{}.pth".format(model_name))["model"]
+    "../dataset/SwinTransformer/{}.pth".format(model_name),
+    map_location=torch.device('cpu'))["model"]
 torch_module.load_state_dict(torch_state_dict)
 model_name = "pd_model_trace"
 # 设置为eval模式
