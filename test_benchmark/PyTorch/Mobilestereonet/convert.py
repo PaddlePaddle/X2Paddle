@@ -7,7 +7,8 @@ import numpy as np
 model = __models__['MSNet2D'](192)
 # state_dict = torch.load('./MSNet2D_SF_DS_KITTI2015.ckpt', map_location=torch.device('cpu'))
 state_dict = torch.load(
-    '../dataset/Mobilestereonet/MSNet2D_SF_DS_KITTI2015.ckpt')
+    '../dataset/Mobilestereonet/MSNet2D_SF_DS_KITTI2015.ckpt',
+    map_location=torch.device('cpu'))
 param_dict = state_dict['model']
 new_param_dict = {}
 for k, v in param_dict.items():
