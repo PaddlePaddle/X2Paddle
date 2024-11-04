@@ -31,8 +31,18 @@ def get_attribute(node, attr_name, default_value=None):
     return default_value
 
 
+def filter_dim(dim):
+    """
+    onnx latest version make `unk_` dim instead of `None`
+    """
+    if isinstance(dim, str) and dim.startswith('unk_'):
+        return None
+
+    return dim
+
+
 def get_dim_from_type_proto(dim):
-    return getattr(dim, dim.WhichOneof('value')) if type(
+    return filter_dim(getattr(dim, dim.WhichOneof('value'))) if type(
         dim.WhichOneof('value')) == str else None
 
 
@@ -73,7 +83,13 @@ def as_scalar(x):
         assert len(x) == 1
         return x[0]
     elif type(x) == np.ndarray:
-        return np.asscalar(x)
+        _x = None
+        try:
+            _x = np.asscalar(x)
+        except:
+            _x = as_scalar(x.tolist())
+
+        return _x
     else:
         return x
 
@@ -508,7 +524,7 @@ class SymbolicShapeInference:
                 if len(v.shape) > 1:
                     new_v = None  # ignore value for rank > 1
                 elif len(v.shape) == 0:
-                    new_v = int(np.asscalar(v))
+                    new_v = int(as_scalar(v))
                 else:
                     assert len(v.shape) == 1
                     new_v = [int(vv) for vv in v]

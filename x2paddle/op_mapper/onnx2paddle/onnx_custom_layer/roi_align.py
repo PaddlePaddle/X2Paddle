@@ -15,53 +15,117 @@
 import paddle
 from paddle import _C_ops
 from paddle import in_dynamic_mode
+from paddle.base.framework import in_dynamic_or_pir_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
+from x2paddle.utils import check_version
 
-@paddle.jit.not_to_static
-def roi_align(input,
-              rois,
-              pooled_height,
-              pooled_width,
-              spatial_scale=1.0,
-              sampling_ratio=-1,
-              rois_num=None,
-              aligned=False,
-              name=None):
-    if in_dynamic_mode():
-        assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        align_out = _C_ops.roi_align(input, rois, rois_num, "pooled_height",
-                                     pooled_height, "pooled_width",
-                                     pooled_width, "spatial_scale",
-                                     spatial_scale, "sampling_ratio",
-                                     sampling_ratio, "aligned", aligned)
-        return align_out
+if check_version('2.5.0'):
 
-    else:
-        check_variable_and_dtype(input, 'input', ['float32', 'float64'],
-                                 'roi_align')
-        check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
-                                 'roi_align')
-        helper = LayerHelper('roi_align', **locals())
-        dtype = helper.input_dtype()
-        align_out = helper.create_variable_for_type_inference(dtype)
-        inputs = {
-            "X": input,
-            "ROIs": rois,
-        }
-        if rois_num is not None:
-            inputs['RoisNum'] = rois_num
-        helper.append_op(type="roi_align",
-                         inputs=inputs,
-                         outputs={"Out": align_out},
-                         attrs={
-                             "pooled_height": pooled_height,
-                             "pooled_width": pooled_width,
-                             "spatial_scale": spatial_scale,
-                             "sampling_ratio": sampling_ratio,
-                             "aligned": aligned,
-                         })
-        return align_out
+    @paddle.jit.not_to_static
+    def roi_align(
+        input,
+        rois,
+        pooled_height,
+        pooled_width,
+        spatial_scale=1.0,
+        sampling_ratio=-1,
+        rois_num=None,
+        aligned=False,
+        name=None,
+    ):
+        # make input's param name like before
+        x = input
+        boxes = rois
+        boxes_num = rois_num
+
+        if in_dynamic_or_pir_mode():
+            assert (
+                boxes_num
+                is not None), "boxes_num should not be None in dygraph mode."
+            return _C_ops.roi_align(
+                x,
+                boxes,
+                boxes_num,
+                pooled_height,
+                pooled_width,
+                spatial_scale,
+                sampling_ratio,
+                aligned,
+            )
+        else:
+            check_variable_and_dtype(x, 'x', ['float32', 'float64'],
+                                     'roi_align')
+            check_variable_and_dtype(boxes, 'boxes', ['float32', 'float64'],
+                                     'roi_align')
+            helper = LayerHelper('roi_align', **locals())
+            dtype = helper.input_dtype()
+            align_out = helper.create_variable_for_type_inference(dtype)
+            inputs = {
+                "X": x,
+                "ROIs": boxes,
+            }
+            if boxes_num is not None:
+                inputs['RoisNum'] = boxes_num
+            helper.append_op(
+                type="roi_align",
+                inputs=inputs,
+                outputs={"Out": align_out},
+                attrs={
+                    "pooled_height": pooled_height,
+                    "pooled_width": pooled_width,
+                    "spatial_scale": spatial_scale,
+                    "sampling_ratio": sampling_ratio,
+                    "aligned": aligned,
+                },
+            )
+            return align_out
+else:
+
+    @paddle.jit.not_to_static
+    def roi_align(input,
+                  rois,
+                  pooled_height,
+                  pooled_width,
+                  spatial_scale=1.0,
+                  sampling_ratio=-1,
+                  rois_num=None,
+                  aligned=False,
+                  name=None):
+        if in_dynamic_mode():
+            assert rois_num is not None, "rois_num should not be None in dygraph mode."
+            align_out = _C_ops.roi_align(input, rois, rois_num, "pooled_height",
+                                         pooled_height, "pooled_width",
+                                         pooled_width, "spatial_scale",
+                                         spatial_scale, "sampling_ratio",
+                                         sampling_ratio, "aligned", aligned)
+            return align_out
+
+        else:
+            check_variable_and_dtype(input, 'input', ['float32', 'float64'],
+                                     'roi_align')
+            check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
+                                     'roi_align')
+            helper = LayerHelper('roi_align', **locals())
+            dtype = helper.input_dtype()
+            align_out = helper.create_variable_for_type_inference(dtype)
+            inputs = {
+                "X": input,
+                "ROIs": rois,
+            }
+            if rois_num is not None:
+                inputs['RoisNum'] = rois_num
+            helper.append_op(type="roi_align",
+                             inputs=inputs,
+                             outputs={"Out": align_out},
+                             attrs={
+                                 "pooled_height": pooled_height,
+                                 "pooled_width": pooled_width,
+                                 "spatial_scale": spatial_scale,
+                                 "sampling_ratio": sampling_ratio,
+                                 "aligned": aligned,
+                             })
+            return align_out
 
 
 class ROIAlign(object):

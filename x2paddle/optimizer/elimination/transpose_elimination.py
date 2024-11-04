@@ -18,6 +18,7 @@ import numpy as np
 from x2paddle.optimizer.pattern_matcher import FuseBase
 from x2paddle.core.program import PaddleGraph, PaddleLayer
 from x2paddle.core.util import *
+from x2paddle.utils import check_version
 
 
 class TransposeElimination(FuseBase):
@@ -30,10 +31,18 @@ class TransposeElimination(FuseBase):
             'paddle.nn.Swish', 'paddle.nn.Tanh', 'paddle.nn.Softplus',
             'paddle.nn.LeakyReLU', 'paddle.floor', 'paddle.erf', 'paddle.square'
         ]
-        self.elementwise_layers = [
-            'paddle.add', 'fluid.layers.elementwise_sub', 'paddle.multiply',
-            'paddle.divide'
-        ]
+
+        if check_version('2.5.0'):
+            self.elementwise_layers = [
+                'paddle.add', 'paddle.subtract', 'paddle.multiply',
+                'paddle.divide'
+            ]
+        else:
+            self.elementwise_layers = [
+                'paddle.add', 'fluid.layers.elementwise_sub', 'paddle.multiply',
+                'paddle.divide'
+            ]
+
         self.reduce_layers = [
             'paddle.mean', 'paddle.all', 'paddle.max', 'paddle.any',
             'paddle.sum', 'paddle.prod'

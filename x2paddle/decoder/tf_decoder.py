@@ -350,8 +350,15 @@ class TFDecoder(object):
         if initializer is not None:
             self.sess.run(initializer)
 
-        self.tf_graph = TFGraph(
-            self.sess.graph._as_graph_def(add_shapes=True)[0], data_format)
+        # PaddleV3 for tf 2.x, manually updates shapes
+        _graph, _ = self.sess.graph._as_graph_def(add_shapes=False)
+        for node in _graph.node:
+            op = self.sess.graph._get_operation_by_name(node.name)
+            if op.outputs:
+                node.attr["_output_shapes"].list.shape.extend(
+                    [output.get_shape().as_proto() for output in op.outputs])
+
+        self.tf_graph = TFGraph(_graph, data_format)
         self.tf_graph.build()
 
     def _fix_output_shape(self, graph):
@@ -414,11 +421,7 @@ class TFDecoder(object):
 
                 right_shape_been_input = False
                 while not right_shape_been_input:
-                    try:
-                        shape = raw_input(
-                            "Shape of Input(e.g. None,224,224,3): ")
-                    except:
-                        shape = input("Shape of Input(e.g. None,224,224,3): ")
+                    shape = input("Shape of Input(e.g. None,224,224,3): ")
                     if shape.count("None") > 1:
                         print("Only 1 dimension can be None, type again:)")
                     else:

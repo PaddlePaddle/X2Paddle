@@ -17,7 +17,11 @@ from functools import partial
 
 
 def add_parambase_function(func):
-    setattr(paddle.fluid.framework.ParamBase, func.__name__, func)
+    try:
+        # paddle `2.4.0`
+        setattr(paddle.fluid.framework.ParamBase, func.__name__, func)
+    except AttributeError:
+        setattr(paddle.base.framework.EagerParamBase, func.__name__, func)
 
 
 @add_parambase_function
