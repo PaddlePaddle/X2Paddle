@@ -34,7 +34,7 @@ class OneHot(object):
                                  (rank - real_axis))
         mod = paddle.mod(indices, depth)
         v = paddle.reshape(mod, ls + (1, ) + rs)
-        out = targets == v
+        out = targets == v.astype(targets.dtype)
         out = paddle.cast(out, "float32")
         on_value = paddle.slice(values, axes=[0], starts=[1], ends=[2])
         off_value = paddle.slice(values, axes=[0], starts=[0], ends=[1])

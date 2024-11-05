@@ -1603,10 +1603,10 @@ class OpSet():
             else:
                 # flatten + reshape
                 self.paddle_graph.add_layer("paddle.flatten",
-                                            inputs={"input": val_x.name},
+                                            inputs={"x": val_x.name},
                                             outputs=[val_x.name + "_flatten"],
-                                            start_axis=[0],
-                                            stop_axis=[axis])
+                                            start_axis=0,
+                                            stop_axis=-1)
                 self.paddle_graph.add_layer(
                     'paddle.reshape',
                     inputs={'x': val_x.name + "_flatten"},

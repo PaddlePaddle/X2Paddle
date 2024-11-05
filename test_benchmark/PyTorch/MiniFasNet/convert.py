@@ -11,7 +11,7 @@ from MiniFASNet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2S
 import torch
 import numpy as np
 from torchvision.models import AlexNet
-from torchvision.models.utils import load_state_dict_from_url
+# from torchvision.models.utils import load_state_dict_from_url
 from x2paddle.convert import pytorch2paddle
 # 构建输入,pytorch-to-paddle
 input_data = np.random.rand(1, 3, 80, 80).astype("float32")
