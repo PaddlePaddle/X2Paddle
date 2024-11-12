@@ -279,7 +279,7 @@ class ONNXConverter(object):
             # config.disable_glog_info()
             # TODO(megemini):
             try:
-                config.DisableMKLDNN()
+                config.disable_mkldnn()
             except:
                 pass
 
