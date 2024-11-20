@@ -85,16 +85,16 @@ def shape_permute(layer, input_shape):
 class ROIPooling(object):
     def __init__(self, pooled_height, pooled_width, spatial_scale):
         self.roipooling_layer_attrs = {
-            "pooled_height": pooled_height,
-            "pooled_width": pooled_width,
+            "output_size": (pooled_height, pooled_width),
             "spatial_scale": spatial_scale}
 
-    def __call__(self, x0, x1):
+    def __call__(self, x0, x1, x2):
         slice_x1 = paddle.slice(input=x1, axes=[1],
                                 starts=[1], ends=[5])
-        out = fluid.layers.roi_pool(input=x0,
-                                    rois=slice_x1,
-                                    **self.roipooling_layer_attrs)
+        out = paddle.vision.ops.roi_pool(x=x0,
+                                         boxes=slice_x1,
+                                         boxes_num=x2,
+                                         **self.roipooling_layer_attrs)
         return out
 ```
 
@@ -112,9 +112,11 @@ def ROIPooling(self, node):
           node.inputs) == 2, "The count of ROIPooling node\'s input is not 2."
       input0 = self.graph.get_input_node(node, idx=0, copy=True)
       input1 = self.graph.get_input_node(node, idx=1, copy=True)
+      input2 = self.graph.get_input_node(node, idx=2, copy=True)
       inputs_dict = {}
       inputs_dict["x0"] = input0.name
       inputs_dict["x1"] = input1.name
+      inputs_dict["x2"] = input2.name
       params = node.layer.roi_pooling_param
       layer_attrs = {
           "pooled_height": params.pooled_h,

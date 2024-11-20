@@ -15,10 +15,19 @@
 import math
 from functools import reduce
 import paddle
-from paddle.fluid import framework, unique_name
-from paddle.fluid.core import VarDesc
-from paddle.fluid.initializer import XavierInitializer, MSRAInitializer
-from paddle.fluid.data_feeder import check_variable_and_dtype
+
+try:
+    # paddle `2.4.0`
+    from paddle.fluid import framework, unique_name
+    from paddle.fluid.core import VarDesc
+    from paddle.fluid.initializer import XavierInitializer, MSRAInitializer
+    from paddle.fluid.data_feeder import check_variable_and_dtype
+except ModuleNotFoundError:
+    from paddle.base import framework, unique_name
+    from paddle.base.core import VarDesc
+    from paddle.nn.initializer import XavierInitializer, MSRAInitializer
+    from paddle.base.data_feeder import check_variable_and_dtype
+
 from x2paddle.utils import paddle_dtypes
 
 
@@ -109,7 +118,7 @@ class KaimingNormal(MSRAInitializer):
                 ['masra_init', var.name, 'tmp'])),
                                        shape=var.shape,
                                        dtype=out_dtype,
-                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       type=VarDesc.VarType.DENSE_TENSOR,
                                        persistable=False)
         else:
             out_dtype = var.dtype
@@ -180,7 +189,7 @@ class XavierNormal(XavierInitializer):
                 ['xavier_init', var.name, 'tmp'])),
                                        shape=var.shape,
                                        dtype=out_dtype,
-                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       type=VarDesc.VarType.DENSE_TENSOR,
                                        persistable=False)
         else:
             out_dtype = var.dtype
@@ -246,7 +255,7 @@ class XavierUniform(XavierInitializer):
                 ['xavier_init', var.name, 'tmp'])),
                                        shape=var.shape,
                                        dtype=out_dtype,
-                                       type=VarDesc.VarType.LOD_TENSOR,
+                                       type=VarDesc.VarType.DENSE_TENSOR,
                                        persistable=False)
         else:
             out_dtype = var.dtype

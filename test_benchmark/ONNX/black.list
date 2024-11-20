@@ -1,15 +1,3 @@
-SwinTransformer
-bert6
-mmdetection_fasterrcnn
-mmdetection_fcos
-mmdetection_fsaf
-mmdetection_retina
-mmdetection_ssd
-mmdetection_yolov3
-mnasnet_a1
-mobilefacenet
-mobilenet_v2
-yolov5s
 dataset
 tools
 output

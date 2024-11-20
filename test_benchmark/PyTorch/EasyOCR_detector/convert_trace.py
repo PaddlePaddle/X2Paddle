@@ -6,6 +6,7 @@ import numpy as np
 reader = easyocr.Reader(
     ['ch_sim', 'en'],
     model_storage_directory="../dataset/EasyOCR_detector/models",
+    recog_network="zh_sim_g1",
     download_enabled=False)
 torch_model = reader.detector
 torch_model.eval()

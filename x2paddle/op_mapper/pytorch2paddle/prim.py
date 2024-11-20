@@ -78,7 +78,7 @@ def prim_Constant(mapper, graph, node):
                                 scope_name=scope_name)
                 return [], [output_name]
             else:
-                #                 mapper.pytorch_params[output_name] = tensor_value.cpu().detach().numpy()
+                # mapper.pytorch_params[output_name] = tensor_value.cpu().detach().numpy()
                 mapper.paddle_params[output_name] = tensor_value.cpu().detach(
                 ).numpy()
                 graph.add_layer(

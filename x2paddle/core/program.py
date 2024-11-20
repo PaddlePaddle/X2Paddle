@@ -579,7 +579,9 @@ class PaddleGraph(object):
         else:
             model.set_dict(restore)
         model.eval()
-        static_model = paddle.jit.to_static(model, input_spec=spec_list)
+        static_model = paddle.jit.to_static(model,
+                                            input_spec=spec_list,
+                                            full_graph=True)
         try:
             paddle.jit.save(static_model,
                             osp.join(save_dir, "inference_model/model"))

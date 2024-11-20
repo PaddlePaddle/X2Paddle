@@ -61,12 +61,12 @@ class Predictor(object):
     def predict(self, warmup=0, repeats=1):
         results = None
         input_names = self.predictor.get_input_names()
+        with open('../dataset/gpt2/pytorch_input.pkl', 'rb') as inp:
+            input_data = pickle.load(inp)
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
-            with open('../dataset/DeepLabv3_ResNet50/pytorch_input.pkl',
-                      'rb') as inp:
-                data = pickle.load(inp)["data0"]
-            input_tensor.copy_from_cpu(data)
+            data = input_data[list(input_data.keys())[i]]
+            input_tensor.copy_from_cpu(np.asarray(data))
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -128,7 +128,7 @@ def load_predictor(model_dir,
 
 def main():
     # for trace
-    predictor = Predictor("pd_model_trace/inference_model/",
+    predictor = Predictor("pd_model/inference_model/",
                           use_gpu=True,
                           cpu_threads=1,
                           enable_mkldnn=False)
@@ -176,60 +176,10 @@ def main():
         'gpu_mem_trace': gm,
         'gpu_percent_trace': gu
     }
-
-    # for script
-    predictor = Predictor("pd_model_script/inference_model/",
-                          use_gpu=True,
-                          cpu_threads=1,
-                          enable_mkldnn=False)
-    predictor.predict(warmup=10, repeats=10)
-    cm, gm, gu = get_current_memory_mb()
-    cost_time = predictor.inference_time
-
-    #record change
-    if os.path.exists('result_mem_script.txt'):
-        with open('result_mem_script.txt', 'r') as f1:
-            lines = f1.readlines()
-            inference_time_pre = lines[0].strip().split(',')[0].split(':')[1]
-            cpu_mem_pre = lines[1].strip().split(',')[0].split(':')[1]
-            gpu_mem_pre = lines[2].strip().split(',')[0].split(':')[1]
-            gpu_percent_pre = lines[3].strip().split(',')[0].split(':')[1]
-
-        inference_time_change = cost_time - float(inference_time_pre)
-        cpu_mem_change = cm - float(cpu_mem_pre)
-        gpu_mem_change = gm - float(gpu_mem_pre)
-        gpu_percent_change = gu - float(gpu_percent_pre)
-        if cpu_mem_change >= 1000 or gpu_mem_change >= 1000:
-            assert 'change is so big! please check the model!'
-        with open('result_mem_script.txt', 'w') as f2:
-            f2.write("inference_time:" + str(cost_time) + ",change:" +
-                     str(inference_time_change) + "\n")
-            f2.write("cpu_mem:" + str(cm) + ",change:" + str(cpu_mem_change) +
-                     "\n")
-            f2.write("gpu_mem:" + str(gm) + ",change:" + str(gpu_mem_change) +
-                     "\n")
-            f2.write("gpu_percent:" + str(gu) + ",change:" +
-                     str(gpu_percent_change) + "\n")
-        f1.close()
-        f2.close()
-    else:
-        with open('result_mem_script.txt', 'w') as f1:
-            f1.write("inference_time:" + str(cost_time) + ",change:0" + "\n")
-            f1.write("cpu_mem:" + str(cm) + ",change:0" + "\n")
-            f1.write("gpu_mem:" + str(gm) + ",change:0" + '\n')
-            f1.write("gpu_percent:" + str(gu) + ",change:0" + '\n')
-        f1.close()
-
-    print_info.update({
-        'inference_time_script': cost_time,
-        'cpu_mem_script': cm,
-        'gpu_mem_script': gm,
-        'gpu_percent_script': gu
-    })
     return print_info
 
 
 if __name__ == '__main__':
     paddle.enable_static()
-
     print_info = main()
+    print(print_info)
