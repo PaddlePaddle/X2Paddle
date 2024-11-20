@@ -119,7 +119,8 @@ Aten:
 | 133 | aten::rsqrt | 134 | aten::replication\_pad1d | 135 | aten::full | 136 | aten::group\_norm |
 | 137 | aten::argmax | 138 | aten::copy | 139 | aten::upsample\_trilinear3d | 140 | aten::clone |
 | 137 | aten::argmax | 138 | aten::copy | 139 | aten::upsample\_trilinear3d | 140 | aten::\_convolution\_mode |
-| 141 | aten::rand | 142 | aten::randn | 143 | aten::clone |  |  |
+| 141 | aten::rand | 142 | aten::randn | 143 | aten::clone | 144 | aten::pad |
+| 145 | aten::list | 146 | aten::linalg\_vector\_norm | 147 | aten::unsafe\_chunk |  |  |
 
 Prim:
 | 序号 | OP | 序号 | OP | 序号 | OP | 序号 | OP |

@@ -47,12 +47,14 @@ X2Paddle是飞桨生态下的模型转换工具，致力于帮助其它深度学
 ## 安装
 
 ### 环境依赖
-- python >= 3.5
-- paddlepaddle >= 2.2.2 (官方验证到2.4.2)
-- tensorflow == 1.14 (如需转换TensorFlow模型)
-- onnx >= 1.6.0 (如需转换ONNX模型)
-- torch >= 1.5.0 (如需转换PyTorch模型)
+- python >= 3.8
+- paddlepaddle >= 2.2.2 (官方验证到 `3.0.0beta1`)
+- tensorflow == 1.14 (如需转换TensorFlow模型。其中 `test_benchmark` 模型已在 `2.16.1` 测试通过)
+- onnx >= 1.6.0 (如需转换ONNX模型，其中 `test_benchmark` 模型已在 `1.17.0` 测试通过)
+- torch >= 1.5.0 (如需转换PyTorch模型，其中 `test_benchmark` 模型已在 `2.4.1` 测试通过)
 - paddlelite >= 2.9.0 (如需一键转换成Paddle-Lite支持格式,推荐最新版本)
+
+> 说明：以上测试通过的版本，不代表 X2Paddle 支持相应版本中的所有算子，仅表示可在此环境中使用。具体支持的算子请详见 [支持列表](./docs/inference_model_convertor/op_list.md)
 
 ### pip安装(推荐）
 
@@ -157,5 +159,5 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 我们非常欢迎您为X2Paddle贡献代码或者提供使用建议:
 - 如果您可以修复某个issue或者增加一个新功能，欢迎给我们提交Pull Requests
-- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.2-cudnn8-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)，国内镜像下载地址：https://x2paddle.bj.bcebos.com/Docker/latest-dev-cuda11.2-cudnn8-gcc82.tar
+- 可以使用[开发镜像](./docker)：[paddlepaddle/x2paddle:latest-dev-cuda11.8-cudnn8.6-trt8.5-gcc82](https://hub.docker.com/r/paddlepaddle/x2paddle/tags)
 - 如果有PyTorch训练项目转换需求欢迎随时提issue
