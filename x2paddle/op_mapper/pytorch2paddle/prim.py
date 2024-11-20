@@ -32,21 +32,6 @@ def prim_Constant(mapper, graph, node):
     value = output.toIValue()
     output_type = output.type()
 
-    # make a `0` for `None` value
-    if value is None:
-        dtype = str(torch.get_default_dtype()).split('.')[1]
-        mapper.paddle_params[output_name] = np.array(0.0).astype(dtype)
-        mapper.attrs[output_name] = None
-        graph.add_layer(
-            "self.create_parameter",
-            inputs={},
-            outputs=[output_name],
-            scope_name=scope_name,
-            dtype=string(dtype),
-            shape=mapper.paddle_params[output_name].shape,
-            default_initializer="paddle.nn.initializer.Constant(value=0.0)")
-        return [], [output_name]
-
     if isinstance(value, str):
         value = string(value)
     if "Tensor" in str(output_type):
