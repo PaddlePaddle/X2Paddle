@@ -17,4 +17,4 @@ set -x
 #
 #  bash run_autoscan_torch.sh ${torch_version}
 #done
-bash run_autoscan_torch.sh 1.7.0
+bash run_autoscan_torch.sh 2.4.1

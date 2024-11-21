@@ -108,6 +108,8 @@
 | SOLAR |[code](https://github.com/tonyngjichun/SOLAR)  |只支持trace模式|
 | YOLOX |[code](https://github.com/Megvii-BaseDetection/YOLOX)  |只支持trace模式|
 | MockingBird |[code](https://github.com/babysor/MockingBird)  |只支持trace模式|
+| gpt2 |[code](https://hf-mirror.com/openai-community/gpt2/tree/main)  |只支持trace模式|
+| mt5_small |[code](https://hf-mirror.com/google/mt5-small/tree/main)  |只支持trace模式|
 
 
 ## PyTorch训练项目
