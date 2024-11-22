@@ -110,6 +110,7 @@
 | MockingBird |[code](https://github.com/babysor/MockingBird)  |只支持trace模式|
 | gpt2 |[code](https://hf-mirror.com/openai-community/gpt2/tree/main)  |只支持trace模式|
 | mt5_small |[code](https://hf-mirror.com/google/mt5-small/tree/main)  |只支持trace模式|
+| yolov5 |[code](https://github.com/ultralytics/yolov5)  |只支持trace模式|
 
 
 ## PyTorch训练项目
