@@ -28,11 +28,11 @@ X2Paddle is a model conversion tool under the PaddlePaddle ecosystem, dedicated 
 
 - **Inference model conversion**
 
-  - Support one command model conversion from Caffe/TensorFlow/ONNX/PyTorch to PaddlePaddle inference model, and use PaddleInference/PaddleLite for CPU/GPU/Arm and other devices deployment.
+  - Support one-stop model conversion from Caffe/TensorFlow/ONNX/PyTorch to PaddlePaddle inference model, and use PaddleInference/PaddleLite for CPU/GPU/Arm and other devices deployment.
 
 - **PyTorch training projects conversion**
 
-  - Support one command conversion of PyTorch project Python code (including training, prediction) into the project based on PaddlePaddle framework, helping developers quickly migrate their project quickly. And can enjoy [AIStudio platform](https://aistudio.baidu.com/), which provide a large number of free computational power. **[New feature, try it!](/docs/pytorch_project_convertor/README.md)**
+  - Support one-stop conversion of PyTorch project Python code (including training, prediction) into the project based on PaddlePaddle framework, helping developers quickly migrate their project quickly. And can enjoy [AIStudio platform](https://aistudio.baidu.com/), which provide a large number of free computational power. **[New feature, try it!](/docs/pytorch_project_convertor/README.md)**
 
 - **API Documentation**
 
@@ -131,7 +131,7 @@ x2paddle --framework=caffe --prototxt=deploy.prototxt --weight=deploy.caffemodel
 
 Currently X2Paddle provides API to convert models, you can refer to [X2PaddleAPI](docs/inference_model_convertor/x2paddle_api.md)
 
-#### One Command Conversion of Paddle-Lite Supported Formats
+#### One-Stop Conversion of Paddle-Lite Supported Formats
 
 Refer to [convert2lite_api](docs/inference_model_convertor/convert2lite_api.md)
 
@@ -140,7 +140,7 @@ Refer to [convert2lite_api](docs/inference_model_convertor/convert2lite_api.md)
 Project conversion consists of 3 steps
 
 1. project code preprocessing
-2. one command code/pre-trained model conversion
+2. one-stop code/pre-trained model conversion
 3. post-processing of the converted code
 
 Refer to [pytorch_project_convertor](./docs/pytorch_project_convertor/README.md)
