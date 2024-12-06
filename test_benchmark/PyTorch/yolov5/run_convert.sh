@@ -1,3 +1,4 @@
+pip install setuptools==75.5.0
 pip install ultralytics
 # 进行转换
 python convert_trace.py
