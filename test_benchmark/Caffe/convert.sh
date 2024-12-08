@@ -23,7 +23,13 @@ do
     touch result.txt
     echo $model ">>>Failed"> result.txt
 
-    sh run_convert.sh $model 1>run.log 2>run.err &
+    sh run_convert.sh $model 1>run.log 2>run.err
+
+    echo ">>> run.log"
+    cat run.log
+    echo ">>> run.err"
+    cat run.err
+
     cd ..
     counter=$(($counter+1))
     step=$(( $counter % 3 ))

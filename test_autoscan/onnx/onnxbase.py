@@ -48,9 +48,6 @@ def compare(result, expect, delta=1e-10, rtol=1e-10):
     delta: absolute error
     rtol: relative error
     """
-
-    logger.info(">>> compare ...")
-
     if type(result) == np.ndarray:
         if type(expect) == list:
             expect = expect[0]
@@ -174,9 +171,6 @@ class ONNXConverter(object):
         """
         make dir to save all
         """
-
-        logger.info(">>> _mkdir ...")
-
         save_path = os.path.join(self.pwd, self.name)
         if not os.path.exists(save_path):
             os.mkdir(save_path)
@@ -185,33 +179,21 @@ class ONNXConverter(object):
         """
         convert onnx to paddle
         """
-        logger.info(">>> _onnx_to_paddle ...")
-
         from x2paddle.convert import onnx2paddle
-
-        logger.info(">>> from x2paddle.convert import onnx2paddle ...")
-
         onnx_path = os.path.join(self.pwd, self.name,
                                  self.name + '_' + str(ver) + '.onnx')
         paddle_path = os.path.join(self.pwd, self.name,
                                    self.name + '_' + str(ver) + '_paddle')
-
-        logger.info(">>> onnx2paddle ...")
-
         onnx2paddle(onnx_path,
                     paddle_path,
                     convert_to_lite=False,
                     enable_onnx_checker=self.enable_onnx_checker,
                     disable_feedback=True)
 
-        logger.info(">>> onnx2paddle finished ...")
-
     def _mk_paddle_res(self, ver):
         """
         make paddle res
         """
-        logger.info(">>> _mk_paddle_res ...")
-
         # input data
         paddle_tensor_feed = list()
         result = list()
@@ -227,8 +209,6 @@ class ONNXConverter(object):
         self.run_dynamic = True
 
         if self.run_dynamic:
-            logger.info(">>> self.run_dynamic...")
-
             paddle_path = os.path.join(self.pwd, self.name,
                                        self.name + '_' + str(ver) + '_paddle/')
             restore = paddle.load(os.path.join(paddle_path, "model.pdparams"))
@@ -241,11 +221,7 @@ class ONNXConverter(object):
             model.eval()
             result = model(*paddle_tensor_feed)
 
-            logger.info(">>> self.run_dynamic finished...")
-
         else:
-            logger.info(">>> NOT self.run_dynamic...")
-
             paddle_model_path = os.path.join(
                 self.pwd, self.name, self.name + '_' + str(ver) +
                 '_paddle/inference_model/model.pdmodel')
@@ -257,50 +233,25 @@ class ONNXConverter(object):
             if os.path.exists(paddle_param_path):
                 config.set_params_file(paddle_param_path)
 
-            logger.info(">>> config.enable_use_gpu...")
-
             # initial GPU memory(M), device ID
             config.enable_use_gpu(200, 0)
-
-            logger.info(">>> config.enable_use_gpu finished...")
 
             # optimize graph and fuse op
             config.switch_ir_optim(False)
             config.enable_memory_optim()
 
-            logger.info(">>> enable_memory_optim finished...")
-
             # disable feed, fetch OP, needed by zero_copy_run
             config.switch_use_feed_fetch_ops(False)
-
-            logger.info(">>> config.disable_glog_info...")
-
             config.disable_glog_info()
-
-            logger.info(">>> config.pass_builder...")
-
             pass_builder = config.pass_builder()
-
-            logger.info(">>> create_predictor(config)...")
-
             predictor = create_predictor(config)
-
-            logger.info(">>> predictor.get_input_names...")
-
             input_names = predictor.get_input_names()
             output_names = predictor.get_output_names()
-
-            logger.info(">>> copy_from_cpu...")
-
             for i in range(len(input_names)):
                 input_tensor = predictor.get_input_handle(input_names[i])
                 input_tensor.copy_from_cpu(self.input_feed[self.inputs_name[i]])
 
-            logger.info(">>> predictor.run...")
-
             predictor.run()
-
-            logger.info(">>> predictor.run finished...")
 
             for output_name in output_names:
                 output_tensor = predictor.get_output_handle(output_name)
@@ -320,22 +271,15 @@ class ONNXConverter(object):
             else:
                 result = (result.numpy(), )
 
-        logger.info(">>> _mk_paddle_res finished ...")
-
         return result
 
     def _mk_onnx_res(self, ver):
         """
         make onnx res
         """
-
-        logger.info('>>> _mk_onnx_res InferenceSession...')
-
         sess = InferenceSession(
             os.path.join(self.pwd, self.name,
                          self.name + '_' + str(ver) + '.onnx'))
-
-        logger.info('>>> sess.run ...')
 
         ort_outs = sess.run(output_names=None, input_feed=self.input_feed)
         return ort_outs
@@ -362,8 +306,6 @@ class ONNXConverter(object):
         """
         make onnx graph
         """
-        logger.info(">>> _mk_onnx_graph ... make_node")
-
         node = onnx.helper.make_node(
             self.op_type,
             inputs=self.inputs_name,
@@ -397,14 +339,8 @@ class ONNXConverter(object):
         3. use onnx to make res
         4. compare diff
         """
-
-        logger.info(">>> run ...")
-
         self._mkdir()
         for place in self.places:
-
-            logger.info(">>> place ..." + str(place))
-
             paddle.set_device(place)
             onnx_res = {}
             paddle_res = {}

@@ -23,11 +23,15 @@ do
 
     # make default result is `Failed` in case of `result.txt` not generated
     touch result.txt
-    echo $model ">>>Failed"> result.txt
+    echo $model ">>> Failed"> result.txt
 
-    # TODO(megemini): debug
-    # sh run_convert.sh 1>run.log 2>run.err &
-    sh run_convert.sh
+    sh run_convert.sh $model 1>run.log 2>run.err
+
+    echo ">>> run.log"
+    cat run.log
+    echo ">>> run.err"
+    cat run.err
+
     cd ..
     counter=$(($counter+1))
     step=$(( $counter % 1 ))
