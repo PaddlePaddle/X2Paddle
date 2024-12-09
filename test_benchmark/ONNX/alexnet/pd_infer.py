@@ -19,7 +19,7 @@ try:
     data = paddle.to_tensor(data)
     result = main(data).numpy()
 
-    onnx_result = np.load('TODO test ../dataset/alexnet/result.npy')
+    onnx_result = np.load('../dataset/alexnet/result.npy')
     diff = result[0] - onnx_result
     max_abs_diff = np.fabs(diff).max()
 
