@@ -24,6 +24,7 @@ import pickle
 import importlib
 from os import path as osp
 from x2paddle.core.util import *
+from x2paddle.utils import check_version
 
 
 class PaddleLayer(object):
@@ -579,9 +580,13 @@ class PaddleGraph(object):
         else:
             model.set_dict(restore)
         model.eval()
-        static_model = paddle.jit.to_static(model,
-                                            input_spec=spec_list,
-                                            full_graph=True)
+
+        if check_version('3.0.0-beta'):
+            static_model = paddle.jit.to_static(model,
+                                                input_spec=spec_list,
+                                                full_graph=True)
+        else:
+            static_model = paddle.jit.to_static(model, input_spec=spec_list)
         try:
             paddle.jit.save(static_model,
                             osp.join(save_dir, "inference_model/model"))
