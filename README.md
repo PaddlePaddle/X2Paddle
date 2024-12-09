@@ -4,7 +4,7 @@
 [![PyPI Status](https://pepy.tech/badge/x2paddle/month)](https://pepy.tech/project/x2paddle)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/release/PaddlePaddle/X2Paddle.svg)](https://github.com/PaddlePaddle/X2Paddle/releases)
-![python version](https://img.shields.io/badge/python-3.5+-orange.svg)
+![python version](https://img.shields.io/badge/python-3.8+-orange.svg)
 
 ## 简介
 
