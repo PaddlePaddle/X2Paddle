@@ -8,3 +8,6 @@
 | Channingss | Ling-Chi Chen |
 | mamingjie-China | Ming-Jie Ma |
 | luotao1 | Tao Luo |
+| co63oc  | Xu-Jun Chen |
+| Ken-reddevil | Jun-Liang Liu |
+| megemini | Shun Liu |
