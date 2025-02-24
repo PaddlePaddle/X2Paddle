@@ -15,7 +15,7 @@ try:
         path_prefix="pd_model_trace/inference_model/model", executor=exe)
     result = exe.run(prog, feed={inputs[0]: img}, fetch_list=outputs)
     df = pytorch_output - result[0][0]
-    print(f">>> diff: {numpy.max(numpy.fabs(df))}")
+    print(f">>> diff: {np.max(np.fabs(df))}")
     if np.max(np.fabs(df)) > 5e-03:
         print("Trace Failed", file=f)
     else:
