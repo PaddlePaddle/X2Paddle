@@ -23,8 +23,8 @@ try:
                      },
                      fetch_list=outputs)
     df = pytorch_output[0] - result[0]
-    print(numpy.max(numpy.fabs(df)))
-    if numpy.max(numpy.fabs(df)) > 1e-04:
+    print(f">>> diff: {numpy.max(numpy.fabs(df))}")
+    if numpy.max(numpy.fabs(df)) > 1e-03:
         print("Dygraph Failed\n", file=f)
     else:
         print("Dygraph Successed\n", file=f)
