@@ -19,7 +19,7 @@ from functools import reduce
 import numpy as np
 import onnx
 import onnx.numpy_helper as numpy_helper
-from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
+from onnx.helper import tensor_dtype_to_np_dtype
 import logging as _logging
 from collections import OrderedDict
 import math
@@ -1506,7 +1506,7 @@ class OpSet():
 
         dtype = node.get_attr('to')
         if not isinstance(dtype, np.dtype):
-            dtype = TENSOR_TYPE_TO_NP_TYPE[dtype]
+            dtype = tensor_dtype_to_np_dtype(dtype)
 
         output_dtype = val_output.dtype
         if output_dtype:
