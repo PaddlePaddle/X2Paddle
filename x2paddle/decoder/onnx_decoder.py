@@ -50,7 +50,7 @@ class ONNXGraphNode(GraphNode):
 
     def get_input_index(self, input_name):
         """
-        get the index of input_name in layer.input
+        get the index of input_name in the layer.input
         -1 means input_name is not in the input
         """
         index = -1
