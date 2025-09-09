@@ -19,7 +19,7 @@ from onnx.checker import check_model
 from onnx import helper, shape_inference
 from onnx.helper import get_attribute_value, make_attribute
 from onnx.shape_inference import infer_shapes
-from onnx.mapping import TENSOR_TYPE_TO_NP_TYPE
+from onnx.helper import tensor_dtype_to_np_dtype
 from onnx.numpy_helper import to_array
 from onnx import AttributeProto, TensorProto, GraphProto
 from collections import OrderedDict as Dict
@@ -50,7 +50,7 @@ class ONNXGraphNode(GraphNode):
 
     def get_input_index(self, input_name):
         """
-        get the index of input_name in layer.input
+        get the index of input_name in the layer.input
         -1 means input_name is not in the input
         """
         index = -1
@@ -87,7 +87,7 @@ class ONNXGraphNode(GraphNode):
         get_attribute_value enhanced
         """
         if attr.type == onnx.AttributeProto.TENSOR:
-            dtype = np.dtype(TENSOR_TYPE_TO_NP_TYPE[attr.t.data_type])
+            dtype = np.dtype(tensor_dtype_to_np_dtype(attr.t.data_type))
             data = attr.t.raw_data
             value = np.frombuffer(data,
                                   dtype=dtype,
@@ -169,10 +169,10 @@ class ONNXGraphDataNode(GraphNode):
     def dtype(self):
         if isinstance(self.layer, ValueInfoProto):
             dtype = self.layer.type.tensor_type.elem_type
-            return TENSOR_TYPE_TO_NP_TYPE[dtype]
+            return tensor_dtype_to_np_dtype(dtype)
         else:
             dtype = self.layer.data_type
-            return TENSOR_TYPE_TO_NP_TYPE[dtype]
+            return tensor_dtype_to_np_dtype(dtype)
 
 
 class ONNXGraph(Graph):
@@ -371,7 +371,7 @@ class ONNXGraph(Graph):
         for item in self.graph.value_info:
             self.value_infos[item.name] = {
                 'dtype':
-                TENSOR_TYPE_TO_NP_TYPE[item.type.tensor_type.elem_type],
+                tensor_dtype_to_np_dtype(item.type.tensor_type.elem_type),
                 'shape':
                 [dim.dim_value for dim in item.type.tensor_type.shape.dim],
                 'external': False
@@ -533,7 +533,7 @@ class ONNXDecoder(object):
             elif not keep_input_only and name in output_refs:
                 ret_initializers.add().CopyFrom(initializer)
             else:
-                dtype = TENSOR_TYPE_TO_NP_TYPE[initializer.data_type]
+                dtype = tensor_dtype_to_np_dtype(initializer.data_type)
 
         # strip inputs
         ret.graph.ClearField('input')
