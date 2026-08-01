@@ -641,9 +641,9 @@ def aten_avg_pool3d(mapper, graph, node):
 
 
 def aten_avg_pool1d(mapper, graph, node):
-    """ 构造最大池化的PaddleLayer。
+    """ 构造平均池化的PaddleLayer。
     TorchScript示例:
-        %branch_pool.2 : Tensor = aten::avg_pool1d(%x.43, %538, %539, %540, %273, %272, %271)
+        %branch_pool.2 : Tensor = aten::avg_pool1d(%x.43, %538, %539, %540, %273, %272)
         参数含义:
         %branch_pool.2 (Tensor): 输出，池化后的结果。
         %x.43 (Tensor): 需要池化的Tensor。
@@ -652,10 +652,9 @@ def aten_avg_pool1d(mapper, graph, node):
         %540 (list): 填充大小。
         %273 (bool): 是否用ceil函数计算输出高度和宽度。
         %272 (bool): 是否在平均池化模式不忽略填充值，False为忽略。
-        %271 (int): 如果指定，它将用作除数，否则将使用池化区域的大小。
     """
     scope_name = mapper.normalize_scope_name(node)
-    op_name = name_generator("pool2d", mapper.nn_name2id)
+    op_name = name_generator("pool1d", mapper.nn_name2id)
     output_name = mapper._get_outputs_name(node)[0]
     layer_outputs = [op_name, output_name]
     layer_inputs = {}
@@ -679,15 +678,6 @@ def aten_avg_pool1d(mapper, graph, node):
     layer_attrs["ceil_mode"] = mapper.attrs[inputs_name[4]]
     # 处理输入5，即%272
     layer_attrs["exclusive"] = not mapper.attrs[inputs_name[5]]
-    # 处理输入6，即%271
-    graph.add_layer("prim.assert",
-                    inputs={},
-                    outputs=[inputs_name[6] + "_assert"],
-                    scope_name=scope_name if scope_name == "" else scope_name +
-                    "_assert",
-                    type="eq",
-                    key=mapper.attrs[inputs_name[6]],
-                    value=None)
 
     graph.add_layer(kernel="paddle.nn.AvgPool1D",
                     inputs=layer_inputs,
