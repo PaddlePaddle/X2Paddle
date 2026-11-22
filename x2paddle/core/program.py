@@ -19,7 +19,6 @@ import paddle
 import collections
 import sys
 import os
-import six
 import pickle
 import importlib
 from os import path as osp
@@ -41,14 +40,14 @@ class PaddleLayer(object):
                 if isinstance(v, (list, tuple)):
                     for i in v:
                         assert isinstance(
-                            i, six.string_types
+                            i, str
                         ), "value in inputs should be type of string or list of string"
                 else:
-                    assert isinstance(v, six.string_types) or isinstance(
+                    assert isinstance(v, str) or isinstance(
                         v, list
                     ), "value in inputs should be type of string or list of string"
         for v in outputs:
-            assert isinstance(v, six.string_types
+            assert isinstance(v, str
                               ), "elements in outputs should be type of string"
         self.kernel = kernel
         self.inputs = inputs

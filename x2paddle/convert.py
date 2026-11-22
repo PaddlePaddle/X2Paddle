@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from six import text_type as _text_type
 from packaging.version import Version
 
 import argparse
@@ -32,28 +31,28 @@ def arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model",
                         "-m",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="define model file path for tensorflow or onnx")
     parser.add_argument("--prototxt",
                         "-p",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="prototxt file of caffe model")
     parser.add_argument("--weight",
                         "-w",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="weight file of caffe model")
     parser.add_argument("--save_dir",
                         "-s",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="path to save translated model")
     parser.add_argument(
         "--framework",
         "-f",
-        type=_text_type,
+        type=str,
         default=None,
         help=
         "define which deeplearning framework(tensorflow/caffe/onnx/paddle2onnx)"
@@ -61,7 +60,7 @@ def arg_parser():
     parser.add_argument(
         "--caffe_proto",
         "-c",
-        type=_text_type,
+        type=str,
         default=None,
         help="optional: the .py file compiled by caffe proto file of caffe model"
     )
@@ -78,7 +77,7 @@ def arg_parser():
     parser.add_argument(
        "--input_shape_dict",
        "-isd",
-       type=_text_type,
+       type=str,
        default=None,
        help="define input shapes, e.g --input_shape_dict=\"{'image':[1, 3, 608, 608]}\" or" \
        "--input_shape_dict=\"{'image':[1, 3, 608, 608], 'im_shape': [1, 2], 'scale_factor': [1, 2]}\"")
@@ -88,12 +87,12 @@ def arg_parser():
                         help="Convert the PyTorch Project.")
     parser.add_argument("--project_dir",
                         "-pd",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="define project folder path for pytorch")
     parser.add_argument("--pretrain_model",
                         "-pm",
-                        type=_text_type,
+                        type=str,
                         default=None,
                         help="pretrain model file of pytorch model")
     parser.add_argument("--enable_optim",
@@ -118,12 +117,12 @@ def arg_parser():
                         help="convert to Paddle-Lite format")
     parser.add_argument("--lite_valid_places",
                         "-vp",
-                        type=_text_type,
+                        type=str,
                         default="arm",
                         help="Specify the executable backend of the model")
     parser.add_argument("--lite_model_type",
                         "-mt",
-                        type=_text_type,
+                        type=str,
                         default="naive_buffer",
                         help="The type of lite model")
 

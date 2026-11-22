@@ -18,7 +18,6 @@ import os
 import os.path as osp
 import shutil
 import argparse
-from six import text_type as _text_type
 
 from .dependency_analyzer import analyze
 from .ast_update import update
