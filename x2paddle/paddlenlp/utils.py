@@ -16,7 +16,6 @@ import copy
 import io
 import json
 import os
-import six
 import inspect
 from collections import OrderedDict
 
